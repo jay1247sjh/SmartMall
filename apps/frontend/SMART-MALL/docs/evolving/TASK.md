@@ -20,18 +20,19 @@
 
 | 阶段 | 名称 | 任务数 | 预估时间 | 优先级 | 状态 |
 |------|------|--------|----------|--------|------|
-| P0 | 项目基础设施 | 10 | 2-4h | 最高 | 进行中 |
-| P1 | 类型系统与数据模型 | 10 | 3-4h | 最高 | 未开始 |
-| P2 | 渲染引擎层 (Three Core) | 12 | 4-6h | 最高 | 未开始 |
-| P3 | 领域场景层 (Domain Layer) | 14 | 5-7h | 高 | 未开始 |
-| P4 | 业务协调层 (Orchestrator) | 10 | 4-5h | 高 | 未开始 |
-| P5 | 状态管理层 (Pinia Stores) | 8 | 3-4h | 高 | 未开始 |
-| P6 | UI 层 (Vue Components) | 16 | 6-8h | 中 | 未开始 |
-| P7 | AI Agent 模块 | 8 | 3-4h | 中 | 未开始 |
-| P8 | 路由与权限系统 | 10 | 4-5h | 中 | 未开始 |
-| P9 | 集成与优化 | 8 | 3-4h | 低 | 未开始 |
+| P0 | 项目基础设施 | 12 | 2-4h | 最高 | 进行中 |
+| P1 | 类型系统与数据模型 | 12 | 3-4h | 最高 | 未开始 |
+| P2 | 渲染引擎层 (Three Core) | 16 | 4-6h | 最高 | 未开始 |
+| P3 | 领域场景层 (Domain Layer) | 18 | 5-7h | 高 | 未开始 |
+| P4 | 业务协调层 (Orchestrator) | 14 | 4-5h | 高 | 未开始 |
+| P5 | 状态管理层 (Pinia Stores) | 10 | 3-4h | 高 | 未开始 |
+| P6 | UI 层 (Vue Components) | 20 | 6-8h | 中 | 未开始 |
+| P7 | AI Agent 模块 | 12 | 3-4h | 中 | 未开始 |
+| P8 | 路由与权限系统 | 12 | 4-5h | 中 | 未开始 |
+| P9 | 集成与优化 | 12 | 3-4h | 低 | 未开始 |
+| P10 | 区域建模权限模块 | 10 | 4-5h | 高 | 未开始 |
 
-**总计**: 约 106 个任务，预估 41-51 小时
+**总计**: 约 148 个任务，预估 45-56 小时
 
 ---
 
@@ -70,7 +71,7 @@
 
 ### 0.2 目录结构创建
 
-- [ ] 0.2.1 创建核心目录结构
+- [x] 0.2.1 创建核心目录结构
   ```
   src/
   ├── types/           # 类型定义
@@ -87,20 +88,29 @@
   ```
   - _Requirements: STRUCTURE.md_
 
-- [ ] 0.2.2 创建各层入口文件（index.ts）
+- [x] 0.2.2 创建各层入口文件（index.ts）
   - 每个目录创建 index.ts 作为模块导出入口
   - _Requirements: 工程化规范_
 
-### 0.3 测试环境配置
+### 0.3 测试环境配置 ⏸️ (暂时跳过)
 
-- [ ] 0.3.1 配置 Vitest
+- [ ] 0.3.1 配置 Vitest 
   - 创建 vitest.config.ts，配置测试环境
+  - 配置 @vue/test-utils 集成
   - _Requirements: 16. 测试策略_
 
-- [*] 0.3.2 配置 fast-check 属性测试
+- [ ] 0.3.2 配置 fast-check 属性测试
   - 创建测试工具函数和通用生成器
+  - 配置 numRuns: 100 作为默认迭代次数
   - _Requirements: 16.2 属性测试框架_
 
+### 0.4 基础设施检查点
+
+- [ ] 0.4.0 Checkpoint - 确保基础设施完成
+  - 确保项目可以正常启动
+  - 确保 TypeScript 编译无错误
+  - 确保测试框架配置正确
+  - _Requirements: 工程化规范_
 
 ---
 
@@ -112,56 +122,75 @@
 
 ### 1.1 基础类型定义
 
-- [ ] 1.1.1 创建空间类型 (src/types/geometry.ts)
-  - Vector3D、BoundingBox、Transform
+- [x] 1.1.1 创建场景领域类型 (src/domain/scene/)
+  - scene.types.ts: Vector3D、BoundingBox、Transform
+  - scene.enums.ts: SemanticType
+  - scene.utils.ts: 几何计算函数
   - _Requirements: 14.1.2 语义对象模型_
 
-- [ ] 1.1.2 创建枚举类型 (src/types/enums.ts)
-  - SemanticType、AreaType、Role、Capability、SystemMode
-  - ActionType、ActionSource、ErrorCode、OnlineStatus、TemporalState
+- [x] 1.1.2 创建领域枚举类型
+  - src/domain/mall/mall.enums.ts: AreaType、AreaStatus、PermissionRequestStatus 等
+  - src/domain/user/user.enums.ts: Role、OnlineStatus
+  - src/domain/permission/permission.enums.ts: Capability
+  - src/protocol/action.enums.ts: ActionType、ActionSource
+  - src/protocol/result.enums.ts: ErrorCode
+  - src/shared/system/system.enums.ts: SystemMode、TemporalState
   - _Requirements: 14.1.2, 14.1.3_
 
-- [ ] 1.1.3 创建通用工具类型 (src/types/utils.ts)
+- [x] 1.1.3 创建通用工具类型 (src/shared/types/utils.ts)
   - Nullable、Optional、DeepPartial
   - _Requirements: TypeScript 规范_
 
 ### 1.2 业务实体类型
 
-- [ ] 1.2.1 创建商城实体类型 (src/types/entities.ts)
+- [x] 1.2.1 创建商城实体类型 (src/domain/mall/mall.types.ts)
   - Mall、Floor、Area、Store、Product 接口
   - _Requirements: 14.1.1 商城结构模型_
 
-- [ ] 1.2.2 创建语义对象类型 (src/types/semantic.ts)
+- [x] 1.2.2 创建语义对象类型 (src/domain/scene/scene.model.ts)
   - SemanticObject 接口及其子类型
   - _Requirements: 14.1.2, Requirements 2_
 
-- [ ] 1.2.3 创建用户与会话类型 (src/types/user.ts)
+- [ ] 1.2.3 创建用户与会话类型 (src/domain/user/user.types.ts)
   - User、Session、OnlineUser 接口
   - _Requirements: 14.1.5_
 
 ### 1.3 行为与权限类型
 
-- [ ] 1.3.1 创建 Action 类型 (src/types/action.ts)
+- [ ] 1.3.1 创建 Action 协议类型 (src/protocol/action.protocol.ts)
   - Action 接口、ActionPayload 类型映射
   - _Requirements: 14.1.3, Requirements 4_
 
-- [ ] 1.3.2 创建权限类型 (src/types/permission.ts)
+- [ ] 1.3.2 创建权限类型 (src/domain/permission/permission.types.ts)
   - Context、PermissionResult、RCAC 相关类型
   - _Requirements: 14.1.3, Requirements 6_
 
-- [ ] 1.3.3 创建领域结果类型 (src/types/result.ts)
+- [ ] 1.3.3 创建领域结果类型 (src/protocol/result.protocol.ts)
   - DomainResult<T>、DomainError 接口
   - _Requirements: 14.1.4, Requirements 16_
 
 ### 1.4 类型导出与验证
 
-- [ ] 1.4.1 创建类型索引文件 (src/types/index.ts)
-  - 统一导出所有类型
+- [x] 1.4.1 创建各领域索引文件
+  - domain/scene/index.ts
+  - domain/mall/index.ts
+  - domain/user/index.ts
+  - domain/permission/index.ts
+  - protocol/index.ts
+  - shared/index.ts
+  - types/index.ts (向后兼容)
   - _Requirements: 工程化规范_
 
-- [*] 1.4.2 编写类型守卫函数 (src/types/guards.ts)
-  - isAction、isSemanticObject、isValidRole 等
+- [ ] 1.4.2 编写类型守卫函数 (src/utils/guards.ts)
+  - isAction、isSemanticObject、isValidRole、isValidAreaStatus 等
   - _Requirements: TypeScript 规范_
+
+### 1.5 类型系统检查点
+
+- [ ] 1.5.0 Checkpoint - 确保类型系统完整
+  - 确保所有类型定义完整
+  - 确保 TypeScript 编译无错误
+  - _Requirements: 工程化规范_
 
 ---
 
@@ -253,21 +282,35 @@
   - scene.click、scene.hover 等
   - _Requirements: 11.5, 11.6_
 
-### 2.6 Three Core 测试
+### 2.6 Three Core 检查点
 
-- [*] 2.6.1 编写 ThreeEngine 单元测试
+- [ ] 2.6.0 Checkpoint - 确保渲染引擎层完成
+  - 确保 Three.js 场景可以正常渲染
+  - 确保相机控制正常
+  - 确保资源释放正确
+  - _Requirements: 需求 1_
+
+### 2.7 Three Core 测试
+
+- [*] 2.7.1 编写 ThreeEngine 单元测试
   - 初始化/销毁测试
   - 渲染循环测试
   - _Requirements: 16.4_
 
-- [*] 2.6.2 编写属性测试 - Property 15: 资源释放完整性
+- [*] 2.7.2 编写属性测试 - Property 15: 资源释放完整性
   - **Property 15: 资源释放完整性**
+  - *对于任意* 场景卸载操作，所有 Three.js 资源都应被正确释放
   - **验证需求: Requirements 1**
 
-- [*] 2.6.3 编写属性测试 - Property 17: 多次进入退出稳定性
+- [*] 2.7.3 编写属性测试 - Property 17: 多次进入退出稳定性
   - **Property 17: 多次进入退出稳定性**
+  - *对于任意* 连续的进入和退出 3D 场景操作，系统应保持稳定
   - **验证需求: Requirements 1**
 
+- [*] 2.7.4 编写属性测试 - Property 16: 渲染循环可控性
+  - **Property 16: 渲染循环可控性**
+  - *对于任意* 场景静止状态，渲染循环应被暂停
+  - **验证需求: Requirements 14**
 
 ---
 
@@ -368,26 +411,39 @@
   - 验证引用关系
   - _Requirements: 17.1, 17.2, 17.3, 17.4, 17.5, 17.6_
 
-### 3.6 Domain Layer 测试
+### 3.6 Domain Layer 检查点
 
-- [*] 3.6.1 编写属性测试 - Property 10: 语义对象唯一性
+- [ ] 3.6.0 Checkpoint - 确保领域层完成
+  - 确保语义对象可以正确创建和查询
+  - 确保导航、高亮、楼层切换功能正常
+  - 确保数据加载和验证正常
+  - _Requirements: 需求 2, 9, 12, 13_
+
+### 3.7 Domain Layer 测试
+
+- [*] 3.7.1 编写属性测试 - Property 10: 语义对象唯一性
   - **Property 10: 语义对象唯一性**
+  - *对于任意* 业务实体，在系统中只存在一个对应的语义对象
   - **验证需求: Requirements 2**
 
-- [*] 3.6.2 编写属性测试 - Property 12: 导航目标可达性
+- [*] 3.7.2 编写属性测试 - Property 12: 导航目标可达性
   - **Property 12: 导航目标可达性**
+  - *对于任意* 有效的店铺 ID，导航后相机应移动到可视范围内
   - **验证需求: Requirements 12**
 
-- [*] 3.6.3 编写属性测试 - Property 13: 楼层切换完整性
+- [*] 3.7.3 编写属性测试 - Property 13: 楼层切换完整性
   - **Property 13: 楼层切换完整性**
+  - *对于任意* 楼层切换，当前楼层对象应隐藏，目标楼层对象应显示
   - **验证需求: Requirements 13**
 
-- [*] 3.6.4 编写属性测试 - Property 20: 语义映射一致性
+- [*] 3.7.4 编写属性测试 - Property 20: 语义映射一致性
   - **Property 20: 语义映射一致性**
+  - *对于任意* 语义对象，Domain Layer 与 Mesh.userData 表示应一致
   - **验证需求: Requirements 2**
 
-- [*] 3.6.5 编写属性测试 - Property 23: 配置数据验证完整性
+- [*] 3.7.5 编写属性测试 - Property 23: 配置数据验证完整性
   - **Property 23: 配置数据验证完整性**
+  - *对于任意* 格式错误的配置数据，系统应拒绝并返回详细错误
   - **验证需求: Requirements 17**
 
 ---
@@ -461,28 +517,45 @@
   - 支持日志级别控制
   - _Requirements: 4.7, 19.1, 19.2, 19.4_
 
-### 4.5 Orchestrator 测试
+### 4.5 Orchestrator 检查点
 
-- [*] 4.5.1 编写属性测试 - Property 2: Action 必经 Orchestrator
+- [ ] 4.5.0 Checkpoint - 确保协调层完成
+  - 确保 Action 可以正确分发
+  - 确保权限校验正常
+  - 确保日志记录正常
+  - _Requirements: 需求 4, 6_
+
+### 4.6 Orchestrator 测试
+
+- [*] 4.6.1 编写属性测试 - Property 2: Action 必经 Orchestrator
   - **Property 2: Action 必经 Orchestrator**
+  - *对于任意* 来源的 Action，都必须经过 Orchestrator 校验
   - **验证需求: Requirements 4**
 
-- [*] 4.5.2 编写属性测试 - Property 4: RCAC 完整性
+- [*] 4.6.2 编写属性测试 - Property 4: RCAC 完整性
   - **Property 4: RCAC 完整性**
+  - *对于任意* Action 执行请求，必须同时校验 Role、Capability、Context
   - **验证需求: Requirements 6**
 
-- [*] 4.5.3 编写属性测试 - Property 5: 商家权限隔离
+- [*] 4.6.3 编写属性测试 - Property 5: 商家权限隔离
   - **Property 5: 商家权限隔离**
+  - *对于任意* Merchant 角色用户，只能编辑自身店铺
   - **验证需求: Requirements 6**
 
-- [*] 4.5.4 编写属性测试 - Property 7: AI 权限等价性
+- [*] 4.6.4 编写属性测试 - Property 6: 配置态访问限制
+  - **Property 6: 配置态访问限制**
+  - *对于任意* User 角色用户，不能访问 CONFIG 模式页面
+  - **验证需求: Requirements 7**
+
+- [*] 4.6.5 编写属性测试 - Property 7: AI 权限等价性
   - **Property 7: AI 权限等价性**
+  - *对于任意* Agent 生成的 Action，权限校验规则与 UI 触发相同
   - **验证需求: Requirements 5**
 
-- [*] 4.5.5 编写属性测试 - Property 11: Action 格式合法性
+- [*] 4.6.6 编写属性测试 - Property 11: Action 格式合法性
   - **Property 11: Action 格式合法性**
+  - *对于任意* Action，必须包含 type、payload、source 字段
   - **验证需求: Requirements 4**
-
 
 ---
 
@@ -540,14 +613,23 @@
   - 页面刷新恢复
   - _Requirements: 可选功能_
 
-### 5.4 Store 测试
+### 5.4 Store 检查点
 
-- [*] 5.4.1 编写属性测试 - Property 8: 单一事实源
+- [ ] 5.4.0 Checkpoint - 确保状态管理完成
+  - 确保 Store 状态正确同步
+  - 确保 SSOT 原则得到遵守
+  - _Requirements: 需求 10_
+
+### 5.5 Store 测试
+
+- [*] 5.5.1 编写属性测试 - Property 8: 单一事实源
   - **Property 8: 单一事实源**
+  - *对于任意* 业务状态，系统中只存在一个权威数据源
   - **验证需求: Requirements 10**
 
-- [*] 5.4.2 编写属性测试 - Property 9: 状态同步一致性
+- [*] 5.5.2 编写属性测试 - Property 9: 状态同步一致性
   - **Property 9: 状态同步一致性**
+  - *对于任意* 状态变更，所有订阅者应在下一渲染周期收到更新
   - **验证需求: Requirements 10**
 
 ---
@@ -659,17 +741,30 @@
   - 加载指示器
   - _Requirements: UI 层职责_
 
-### 6.7 UI 层测试
+### 6.7 UI 层检查点
 
-- [*] 6.7.1 编写属性测试 - Property 3: UI 层隔离性
+- [ ] 6.7.0 Checkpoint - 确保 UI 层完成
+  - 确保所有组件正常渲染
+  - 确保用户交互正常
+  - 确保 UI 层不直接调用 Three.js
+  - _Requirements: 需求 3_
+
+### 6.8 UI 层测试
+
+- [*] 6.8.1 编写属性测试 - Property 3: UI 层隔离性
   - **Property 3: UI 层隔离性**
+  - *对于任意* UI 组件，其代码中不应包含对 Three.js API 的直接调用
   - **验证需求: Requirements 3**
 
-- [*] 6.7.2 编写 SceneContainer 组件测试
+- [*] 6.8.2 编写 SceneContainer 组件测试
   - 生命周期测试
   - 事件处理测试
   - _Requirements: 16.4_
 
+- [*] 6.8.3 编写属性测试 - Property 1: 分层依赖单向性
+  - **Property 1: 分层依赖单向性**
+  - *对于任意* Action 执行路径，调用链必须严格遵循单向依赖
+  - **验证需求: Requirements 3**
 
 ---
 
@@ -720,14 +815,29 @@
   - 标记 source 为 'AGENT'
   - _Requirements: 5.2, 5.3, 5.4, 5.7_
 
-### 7.4 Agent 测试
+### 7.4 Agent 检查点
 
-- [*] 7.4.1 编写属性测试 - Property 24: AI 输出格式约束
+- [ ] 7.4.0 Checkpoint - 确保 AI 集成完成
+  - 确保自然语言可以转换为 Action
+  - 确保 AI 输出格式正确
+  - 确保 AI 权限约束正常
+  - _Requirements: 需求 5_
+
+### 7.5 Agent 测试
+
+- [*] 7.5.1 编写属性测试 - Property 24: AI 输出格式约束
   - **Property 24: AI 输出格式约束**
+  - *对于任意* Agent 生成的输出，如果不符合 Action 协议格式，系统应拒绝执行
   - **验证需求: Requirements 5**
 
-- [*] 7.4.2 编写属性测试 - Property 26: AI 不可绕过权限
+- [*] 7.5.2 编写属性测试 - Property 25: AI 写操作确认
+  - **Property 25: AI 写操作确认**
+  - *对于任意* Agent 生成的涉及数据变更的 Action，必须要求用户确认
+  - **验证需求: Requirements 5**
+
+- [*] 7.5.3 编写属性测试 - Property 26: AI 不可绕过权限
   - **Property 26: AI 不可绕过权限**
+  - *对于任意* Agent 生成的 Action，必须通过与 UI 相同的 RCAC 权限校验
   - **验证需求: Requirements 5**
 
 ---
@@ -797,12 +907,25 @@
   - 404 页面
   - _Requirements: UI 层职责_
 
-### 8.4 路由测试
+### 8.4 路由检查点
 
-- [*] 8.4.1 编写路由守卫单元测试
+- [ ] 8.4.0 Checkpoint - 确保路由完成
+  - 确保动态路由正常加载
+  - 确保路由守卫正常工作
+  - 确保页面导航正常
+  - _Requirements: 需求 8_
+
+### 8.5 路由测试
+
+- [*] 8.5.1 编写路由守卫单元测试
   - 权限检查测试
   - 模式检查测试
   - _Requirements: 16.4_
+
+- [*] 8.5.2 编写路由树校验属性测试
+  - **Property: 路由树结构合法性**
+  - *对于任意* 路由树，必须通过结构与权限合法性校验
+  - **验证需求: Requirements 8.2**
 
 ---
 
@@ -854,16 +977,123 @@
   - 手势识别
   - _Requirements: 18.3_
 
-### 9.4 最终测试
+### 9.4 最终检查点
 
-- [*] 9.4.1 运行完整属性测试套件
+- [ ] 9.4.0 Checkpoint - 确保系统集成完成
+  - 确保完整功能可用
+  - 确保性能达标
+  - 确保所有测试通过
+  - _Requirements: 全部需求_
+
+### 9.5 最终测试
+
+- [*] 9.5.1 运行完整属性测试套件
   - 验证所有 26 个正确性属性
   - _Requirements: 15. 正确性属性_
 
-- [*] 9.4.2 运行集成测试
+- [*] 9.5.2 运行集成测试
   - 完整用户流程测试
   - _Requirements: 16.5_
 
+- [*] 9.5.3 编写属性测试 - Property 18: 配置数据驱动性
+  - **Property 18: 配置数据驱动性**
+  - *对于任意* 有效的商城配置数据，系统应能根据数据渲染出对应场景
+  - **验证需求: Requirements 9**
+
+- [*] 9.5.4 编写属性测试 - Property 19: 数据更新响应性
+  - **Property 19: 数据更新响应性**
+  - *对于任意* 商城数据更新，系统应能在不重启应用的情况下重新渲染
+  - **验证需求: Requirements 9**
+
+---
+
+## P10. 区域建模权限模块
+
+> 目标：实现区域建模权限申请、审批、沙盒约束等功能
+> 
+> **约束**:
+> - 商家只能在授权区域内建模
+> - 所有建模变更需经过审批
+> - 防止越权编辑和空间冲突
+
+### 10.1 区域权限状态管理
+
+- [ ] 10.1.1 创建 AreaPermissionStore (src/stores/areaPermissionStore.ts)
+  - 区域状态（LOCKED/PENDING/AUTHORIZED/OCCUPIED）
+  - 当前用户授权区域列表
+  - 申请记录管理
+  - _Requirements: 需求 21, 26_
+
+- [ ] 10.1.2 实现区域状态可视化服务 (src/domain/area/AreaStatusVisualizer.ts)
+  - 不同状态区域的颜色标识
+  - 悬停显示区域详情
+  - _Requirements: 需求 26_
+
+### 10.2 建模权限申请流程
+
+- [ ] 10.2.1 创建 AreaApplyService (src/domain/permission/AreaApplyService.ts)
+  - 获取可申请区域列表
+  - 提交建模权限申请
+  - 查询申请状态
+  - _Requirements: 需求 21_
+
+- [ ] 10.2.2 创建 AreaApplyPanel 组件 (src/components/permission/AreaApplyPanel.vue)
+  - 区域选择界面
+  - 申请理由填写
+  - 申请状态展示
+  - _Requirements: 需求 21_
+
+### 10.3 建模沙盒约束
+
+- [ ] 10.3.1 实现 BuilderConstraintChecker (src/orchestrator/permission/BuilderConstraintChecker.ts)
+  - 校验对象位置是否在授权区域内
+  - 校验操作对象是否属于授权区域
+  - 实时边界校验
+  - _Requirements: 需求 22, 28_
+
+- [ ] 10.3.2 实现授权区域边界可视化 (src/domain/area/AreaBoundaryVisualizer.ts)
+  - 在 3D 场景中显示授权区域边界
+  - 越界操作时的视觉反馈
+  - _Requirements: 需求 22_
+
+- [ ] 10.3.3 创建 BuilderMode 组件 (src/components/builder/BuilderMode.vue)
+  - Builder 模式入口
+  - 仅显示授权区域的编辑工具
+  - _Requirements: 需求 22_
+
+### 10.4 变更提案管理
+
+- [ ] 10.4.1 创建 LayoutProposalService (src/domain/layout/LayoutProposalService.ts)
+  - 收集变更内容
+  - 提交变更提案
+  - 查询提案状态
+  - _Requirements: 需求 23_
+
+- [ ] 10.4.2 创建 ProposalSubmitPanel 组件 (src/components/layout/ProposalSubmitPanel.vue)
+  - 变更预览
+  - 提案描述填写
+  - 提交确认
+  - _Requirements: 需求 23_
+
+### 10.5 版本更新通知
+
+- [ ] 10.5.1 实现 LayoutVersionNotifier (src/domain/layout/LayoutVersionNotifier.ts)
+  - WebSocket 监听版本发布
+  - 显示更新提示
+  - 处理刷新/稍后选项
+  - _Requirements: 需求 25_
+
+### 10.6 区域建模权限测试
+
+- [*] 10.6.1 编写属性测试 - 建模边界约束
+  - **Property: 建模操作在授权区域内**
+  - *对于任意* 商家建模操作，操作位置必须在授权区域边界内
+  - **验证需求: Requirements 22, 28**
+
+- [*] 10.6.2 编写属性测试 - 区域状态转换
+  - **Property: 区域状态转换合法性**
+  - *对于任意* 区域，状态只能按 LOCKED → PENDING → AUTHORIZED 转换
+  - **验证需求: Requirements 21**
 
 ---
 
@@ -931,6 +1161,14 @@
 - [ ] 性能达标
 - [ ] 所有测试通过
 
+### Checkpoint 10: 区域建模权限完成
+**触发条件**: P10 完成
+**验证内容**:
+- [ ] 区域权限申请流程正常
+- [ ] 建模沙盒约束正常
+- [ ] 变更提案管理正常
+- [ ] 版本更新通知正常
+
 ---
 
 ## 附录：任务依赖关系
@@ -946,11 +1184,13 @@ P0 (基础设施)
                                └─→ P7 (AI Agent)
                                     └─→ P8 (Router)
                                          └─→ P9 (集成优化)
+                                              └─→ P10 (区域建模权限)
 ```
 
 **并行可能性**:
 - P5 (Stores) 可以与 P3 (Domain) 并行开发
 - P6 (UI) 的部分组件可以与 P4 (Orchestrator) 并行开发
 - P7 (AI Agent) 可以独立开发，最后集成
+- P10 (区域建模权限) 可以与 P9 (集成优化) 并行开发
 
 ---
