@@ -4,4 +4,6 @@
  */
 
 export * from './action.enums'
+export * from './action.protocol'
 export * from './result.enums'
+export * from './result.protocol'
