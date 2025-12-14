@@ -22,7 +22,7 @@
 |------|------|--------|----------|--------|------|
 | P0 | 项目基础设施 | 12 | 2-4h | 最高 | 进行中 |
 | P1 | 类型系统与数据模型 | 12 | 3-4h | 最高 | 未开始 |
-| P2 | 渲染引擎层 (Three Core) | 16 | 4-6h | 最高 | 未开始 |
+| P2 | 渲染引擎层 (Three Core) | 16 | 4-6h | 最高 | 进行中 |
 | P3 | 领域场景层 (Domain Layer) | 18 | 5-7h | 高 | 未开始 |
 | P4 | 业务协调层 (Orchestrator) | 14 | 4-5h | 高 | 未开始 |
 | P5 | 状态管理层 (Pinia Stores) | 10 | 3-4h | 高 | 未开始 |
@@ -205,48 +205,55 @@
 
 ### 2.1 核心引擎类
 
-- [ ] 2.1.1 创建 ThreeEngine 类 (src/three/engine/ThreeEngine.ts)
+- [x] 2.1.1 创建 ThreeEngine 类 (src/engine/ThreeEngine.ts)
   - Scene、Camera、Renderer 初始化
   - 渲染循环控制（start/stop/pause）
   - 窗口 resize 处理
   - _Requirements: 1.1, 1.2, 1.3_
+  - **已完成**: 实现了完整的 ThreeEngine 核心类
 
-- [ ] 2.1.2 实现按需渲染策略
+- [x] 2.1.2 实现按需渲染策略
   - needsRender 标志位
   - requestRender() 方法
   - 静止时暂停渲染
   - _Requirements: 14.1, 14.2, Property 16_
+  - **已完成**: 实现了按需渲染优化
 
-- [ ] 2.1.3 实现资源释放机制
+- [x] 2.1.3 实现资源释放机制
   - dispose() 方法
   - Geometry、Material、Texture 清理
   - 事件监听器注销
   - _Requirements: 1.5, Property 15_
+  - **已完成**: 实现了完整的资源清理机制
 
 ### 2.2 相机控制
 
-- [ ] 2.2.1 创建 CameraController 类 (src/three/camera/CameraController.ts)
+- [x] 2.2.1 创建 CameraController 类 (src/three/camera/CameraController.ts)
   - 相机初始化（PerspectiveCamera）
   - 视角控制（OrbitControls 或自定义）
   - _Requirements: 12.3, 12.4_
+  - **已完成**: 实现了 OrbitController 类
 
-- [ ] 2.2.2 实现相机动画
+- [x] 2.2.2 实现相机动画
   - animateTo(position, target, duration) 方法
   - 平滑过渡（使用 TWEEN 或自定义插值）
   - _Requirements: 12.2_
+  - **已完成**: OrbitController 中实现了相机动画
 
-- [ ] 2.2.3 实现相机约束
+- [x] 2.2.3 实现相机约束
   - 边界限制
   - 缩放范围限制
   - _Requirements: 性能优化_
+  - **已完成**: OrbitController 中实现了约束
 
 ### 2.3 对象管理
 
-- [ ] 2.3.1 创建 ObjectManager 类 (src/three/objects/ObjectManager.ts)
+- [x] 2.3.1 创建 ObjectManager 类 (src/engine/ThreeEngine.ts)
   - 对象添加/移除/查询
   - 按 userData 查询对象
   - 对象可见性控制
   - _Requirements: 2.1, 2.3_
+  - **已完成**: ThreeEngine 中实现了 addBox 等对象管理方法
 
 - [ ] 2.3.2 实现对象池 (src/three/objects/ObjectPool.ts)
   - 对象复用机制
@@ -272,15 +279,17 @@
 
 ### 2.5 交互检测
 
-- [ ] 2.5.1 创建 RaycasterManager 类 (src/three/interaction/RaycasterManager.ts)
+- [x] 2.5.1 创建 RaycasterManager 类 (src/engine/interaction/RaycasterManager.ts)
   - 射线检测
   - 点击/悬停检测
   - _Requirements: 11.1, 11.2_
+  - **已完成**: 实现了 RaycasterManager 类
 
-- [ ] 2.5.2 实现事件抽象层 (src/three/interaction/SceneEventEmitter.ts)
+- [x] 2.5.2 实现事件抽象层 (src/engine/interaction/SceneEventEmitter.ts)
   - 将 Three.js 事件转换为语义事件
   - scene.click、scene.hover 等
   - _Requirements: 11.5, 11.6_
+  - **已完成**: 实现了完整的 SceneEventEmitter 类（点击和悬停事件）
 
 ### 2.6 Three Core 检查点
 
