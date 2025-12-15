@@ -22,7 +22,7 @@
 |------|------|--------|----------|--------|------|
 | P0 | 项目基础设施 | 12 | 2-4h | 最高 | 进行中 |
 | P1 | 类型系统与数据模型 | 12 | 3-4h | 最高 | 未开始 |
-| P2 | 渲染引擎层 (Three Core) | 16 | 4-6h | 最高 | 进行中 (62.5%) |
+| P2 | 渲染引擎层 (Three Core) | 16 | 4-6h | 最高 | 进行中 (81.25%) |
 | P3 | 领域场景层 (Domain Layer) | 18 | 5-7h | 高 | 未开始 |
 | P4 | 业务协调层 (Orchestrator) | 14 | 4-5h | 高 | 未开始 |
 | P5 | 状态管理层 (Pinia Stores) | 10 | 3-4h | 高 | 未开始 |
@@ -255,22 +255,29 @@
   - _Requirements: 2.1, 2.3_
   - **已完成**: ThreeEngine 中实现了 addBox 等对象管理方法
 
-- [ ] 2.3.2 实现对象池 (src/three/objects/ObjectPool.ts)
-  - 对象复用机制
+- [x] 2.3.2 实现对象池 (src/engine/objects/ObjectPool.ts)
+  - 对象复用机制（acquire/release）
   - 减少 GC 压力
+  - 容量限制（maxSize）
+  - 预创建支持（initialSize）
   - _Requirements: 14.5, 10.3.3_
+  - **已完成**: 实现了完整的 ObjectPool 泛型类
 
-- [ ] 2.3.3 创建几何体工厂 (src/three/objects/GeometryFactory.ts)
-  - 基础几何体创建（Box、Plane、Cylinder）
+- [x] 2.3.3 创建几何体工厂 (src/engine/objects/GeometryFactory.ts)
+  - 基础几何体创建（Box、Plane）
   - 几何体缓存与复用
+  - 资源清理（dispose 释放 GPU 资源）
   - _Requirements: 14.5_
+  - **已完成**: 实现了完整的 GeometryFactory 类
 
 ### 2.4 材质与效果
 
-- [ ] 2.4.1 创建 MaterialManager 类 (src/three/materials/MaterialManager.ts)
-  - 材质创建与缓存
-  - 材质复用
+- [x] 2.4.1 创建 MaterialManager 类 (src/engine/materials/MaterialManager.ts)
+  - 材质创建与缓存（标准材质、基础材质）
+  - 材质复用（相同配置共享实例）
+  - 资源清理（dispose 释放 GPU 资源）
   - _Requirements: 14.5_
+  - **已完成**: 实现了完整的 MaterialManager 类
 
 - [x] 2.4.2 实现高亮效果 (src/engine/effects/HighlightEffect.ts)
   - 发光效果（使用 emissive 自发光属性）
