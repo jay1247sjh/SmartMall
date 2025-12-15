@@ -226,7 +226,27 @@ export class HighlightEffect {
    * ```
    */
   public setSelected(object: THREE.Mesh): void {
-    // TODO: 实现选中高亮逻辑
+    // 步骤 1: 检查是否和当前选中对象相同
+    // 如果点击的是同一个对象，不需要重复操作
+    if (this.currentSelectedObject === object) {
+      return
+    }
+
+    // 步骤 2: 清除之前的选中高亮
+    // 如果之前有选中对象，先恢复它的原始状态
+    this.clearSelected()
+
+    // 步骤 3: 保存新对象的原始状态
+    // 以便后续恢复
+    this.saveOriginalState(object)
+
+    // 步骤 4: 应用选中高亮效果
+    // 使用配置中的选中颜色（橙黄色）
+    this.applyHighlight(object, this.options.selectedColor)
+
+    // 步骤 5: 更新当前选中对象
+    // 保存引用，供下次比较和清除使用
+    this.currentSelectedObject = object
   }
 
   /**
@@ -245,7 +265,19 @@ export class HighlightEffect {
    * ```
    */
   public clearSelected(): void {
-    // TODO: 实现清除选中高亮逻辑
+    // 步骤 1: 检查是否有当前选中对象
+    // 如果没有选中对象，不需要清除
+    if (!this.currentSelectedObject) {
+      return
+    }
+
+    // 步骤 2: 恢复对象的原始状态
+    // 传入 Mesh 对象
+    this.restoreOriginalState(this.currentSelectedObject)
+
+    // 步骤 3: 清空当前选中对象引用
+    // 表示现在没有选中对象了
+    this.currentSelectedObject = null
   }
 
   // ==========================================================================
@@ -385,7 +417,19 @@ export class HighlightEffect {
    * ```
    */
   public dispose(): void {
-    // TODO: 实现资源清理逻辑
+    // 步骤 1: 清除悬停高亮
+    // 如果有悬停对象，恢复其原始状态
+    this.clearHover()
+
+    // 步骤 2: 清除选中高亮
+    // 如果有选中对象，恢复其原始状态
+    this.clearSelected()
+
+    // 步骤 3: 清空状态存储
+    // 释放 Map 中所有存储的原始状态，防止内存泄漏
+    // 注意：虽然 clearHover/clearSelected 会删除对应的状态，
+    // 但可能存在一些边缘情况导致状态残留，所以这里做一次彻底清理
+    this.originalStates.clear()
   }
 
   // ==========================================================================

@@ -52,6 +52,16 @@
   - 资源清理（dispose）
   - 将 Three.js 底层事件转换为语义化场景事件
 
+**2.4 材质与效果**
+- ✅ 实现 `HighlightEffect` 高亮效果管理器 (`src/engine/effects/HighlightEffect.ts`)
+  - 悬停高亮（setHover/clearHover）- 灰色发光效果
+  - 选中高亮（setSelected/clearSelected）- 橙黄色发光效果
+  - 原始材质状态保存与恢复（saveOriginalState/restoreOriginalState）
+  - 使用 emissive 自发光属性实现高亮
+  - 支持 MeshStandardMaterial 材质
+  - 完整的资源清理（dispose）
+  - 可配置的高亮颜色和强度
+
 ### Technical Details - 技术细节
 
 **架构设计**
@@ -73,7 +83,7 @@
 
 ### Progress - 进度统计
 
-**P2 渲染引擎层完成度**: 9/16 任务 (56.25%)
+**P2 渲染引擎层完成度**: 10/16 任务 (62.5%)
 - ✅ 2.1.1 ThreeEngine 核心类
 - ✅ 2.1.2 按需渲染策略
 - ✅ 2.1.3 资源释放机制
@@ -81,14 +91,14 @@
 - ✅ 2.2.2 相机动画
 - ✅ 2.2.3 相机约束
 - ✅ 2.3.1 基础对象管理
+- ✅ 2.4.2 HighlightEffect 高亮效果管理器
 - ✅ 2.5.1 RaycasterManager 射线检测
-- ✅ 2.5.2 SceneEventEmitter 事件抽象层（完整）
+- ✅ 2.5.2 SceneEventEmitter 事件抽象层
 
 **待完成任务**:
 - ⏳ 2.3.2 对象池实现
 - ⏳ 2.3.3 几何体工厂
 - ⏳ 2.4.1 MaterialManager 材质管理
-- ⏳ 2.4.2 高亮效果
 - ⏳ 2.6.0 渲染引擎层检查点
 
 ---

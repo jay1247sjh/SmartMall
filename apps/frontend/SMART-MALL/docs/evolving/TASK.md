@@ -22,7 +22,7 @@
 |------|------|--------|----------|--------|------|
 | P0 | 项目基础设施 | 12 | 2-4h | 最高 | 进行中 |
 | P1 | 类型系统与数据模型 | 12 | 3-4h | 最高 | 未开始 |
-| P2 | 渲染引擎层 (Three Core) | 16 | 4-6h | 最高 | 进行中 |
+| P2 | 渲染引擎层 (Three Core) | 16 | 4-6h | 最高 | 进行中 (62.5%) |
 | P3 | 领域场景层 (Domain Layer) | 18 | 5-7h | 高 | 未开始 |
 | P4 | 业务协调层 (Orchestrator) | 14 | 4-5h | 高 | 未开始 |
 | P5 | 状态管理层 (Pinia Stores) | 10 | 3-4h | 高 | 未开始 |
@@ -272,10 +272,12 @@
   - 材质复用
   - _Requirements: 14.5_
 
-- [ ] 2.4.2 实现高亮效果 (src/three/effects/HighlightEffect.ts)
-  - 发光效果（OutlinePass 或自定义）
-  - 颜色变化效果
+- [x] 2.4.2 实现高亮效果 (src/engine/effects/HighlightEffect.ts)
+  - 发光效果（使用 emissive 自发光属性）
+  - 悬停高亮（灰色）和选中高亮（橙黄色）
+  - 状态管理和资源清理
   - _Requirements: 12.4, 12.5_
+  - **已完成**: 实现了完整的 HighlightEffect 类
 
 ### 2.5 交互检测
 
