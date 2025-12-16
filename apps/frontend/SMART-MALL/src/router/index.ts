@@ -11,6 +11,12 @@ const router = createRouter({
       path: '/builder',
       name: 'Builder',
       component: () => import('@/views/BuilderView.vue')
+    },
+    {
+      // 渲染引擎层集成测试页面
+      path: '/engine-test',
+      name: 'EngineTest',
+      component: () => import('@/views/EngineTestView.vue')
     }
   ]
 })

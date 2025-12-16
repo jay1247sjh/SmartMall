@@ -389,7 +389,7 @@ export class SceneEventEmitter {
    *
    * 绑定的事件：
    * - 'click': 鼠标点击事件 → handleClick
-   * - 'mousemove': 鼠标移动事件 → handleMouseMove（后续实现）
+   * - 'mousemove': 鼠标移动事件 → handleMouseMove
    *
    * @example
    * 事件流程：
