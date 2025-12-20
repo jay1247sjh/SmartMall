@@ -82,3 +82,35 @@ export function getBoundingBoxSize(box: BoundingBox): Vector3D {
     z: box.max.z - box.min.z
   }
 }
+
+/**
+ * 根据中心点和尺寸创建边界框
+ * 这是 getBoundingBoxCenter/getBoundingBoxSize 的逆操作
+ *
+ * @param center - 中心点位置
+ * @param size - 尺寸（宽、高、深）
+ * @returns 边界框
+ */
+export function createBoundingBoxFromCenterAndSize(
+  center: Vector3D,
+  size: Vector3D
+): BoundingBox {
+  const halfSize = {
+    x: size.x / 2,
+    y: size.y / 2,
+    z: size.z / 2
+  }
+
+  return {
+    min: {
+      x: center.x - halfSize.x,
+      y: center.y - halfSize.y,
+      z: center.z - halfSize.z
+    },
+    max: {
+      x: center.x + halfSize.x,
+      y: center.y + halfSize.y,
+      z: center.z + halfSize.z
+    }
+  }
+}

@@ -23,7 +23,7 @@
 | P0 | 项目基础设施 | 12 | 2-4h | 最高 | 基本完成 (83%) |
 | P1 | 类型系统与数据模型 | 12 | 3-4h | 最高 | 基本完成 (92%) |
 | P2 | 渲染引擎层 (Three Core) | 16 | 4-6h | 最高 | 基本完成 (87.5%) |
-| P3 | 领域场景层 (Domain Layer) | 18 | 5-7h | 高 | 未开始 |
+| P3 | 领域场景层 (Domain Layer) | 18 | 5-7h | 高 | 进行中 (33%) |
 | P4 | 业务协调层 (Orchestrator) | 14 | 4-5h | 高 | 未开始 |
 | P5 | 状态管理层 (Pinia Stores) | 10 | 3-4h | 高 | 未开始 |
 | P6 | UI 层 (Vue Components) | 20 | 6-8h | 中 | 未开始 |
@@ -345,38 +345,44 @@
 
 ### 3.1 语义对象管理
 
-- [ ] 3.1.1 创建 SemanticObjectRegistry 类 (src/domain/registry/SemanticObjectRegistry.ts)
+- [x] 3.1.1 创建 SemanticObjectRegistry 类 (src/domain/registry/SemanticObjectRegistry.ts)
   - 语义对象注册/注销
   - 按 id、semanticType、businessId 查询
   - 保证 businessId 唯一性
   - _Requirements: 2.1, 2.3, 2.5, Property 10_
+  - **已完成**: 实现了完整的语义对象注册表，支持三种索引的 O(1) 查询
 
-- [ ] 3.1.2 创建语义对象工厂 (src/domain/factory/SemanticObjectFactory.ts)
+- [x] 3.1.2 创建语义对象工厂 (src/domain/factory/SemanticObjectFactory.ts)
   - 从配置数据创建语义对象
   - 绑定 Three.js Mesh 与语义信息
   - _Requirements: 2.2, 9.5_
+  - **已完成**: 实现了 createFromStore/createFromFloor/createFromArea 方法
 
-- [ ] 3.1.3 实现语义对象与 Mesh 的双向映射
+- [x] 3.1.3 实现语义对象与 Mesh 的双向映射 (src/domain/registry/MeshRegistry.ts)
   - SemanticObject → Mesh
   - Mesh.userData → SemanticObject
   - _Requirements: Property 20_
+  - **已完成**: 实现了 MeshRegistry 类，支持 bind/unbind/getMesh/getSemanticId
 
 ### 3.2 商城实体管理
 
-- [ ] 3.2.1 创建 MallManager 类 (src/domain/mall/MallManager.ts)
+- [x] 3.2.1 创建 MallManager 类 (src/domain/mall/MallManager.ts)
   - 商城数据加载与初始化
   - 楼层/区域/店铺层级管理
   - _Requirements: 9.1, 9.2_
+  - **已完成**: 实现了商城顶层管理器，支持 loadMall 递归加载层级数据
 
-- [ ] 3.2.2 创建 FloorManager 类 (src/domain/mall/FloorManager.ts)
+- [x] 3.2.2 创建 FloorManager 类 (src/domain/mall/FloorManager.ts)
   - 楼层对象管理
   - 楼层可见性控制
   - _Requirements: 13.1, 13.2_
+  - **已完成**: 实现了楼层管理器，支持楼层切换和可见性控制
 
-- [ ] 3.2.3 创建 StoreManager 类 (src/domain/mall/StoreManager.ts)
+- [x] 3.2.3 创建 StoreManager 类 (src/domain/mall/StoreManager.ts)
   - 店铺对象管理
   - 店铺状态（高亮、选中）
   - _Requirements: 12.3, 12.4_
+  - **已完成**: 实现了店铺管理器，支持选中/高亮状态管理和多种查询方式
 
 ### 3.3 领域行为实现
 

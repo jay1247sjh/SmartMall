@@ -5,11 +5,11 @@
 > 
 > 本文档为 **变更日志（Changelog）**，用于记录版本变更历史，遵循 Keep a Changelog 格式规范。
 > 
-> 最后更新：2024-12-14
+> 最后更新：2024-12-20
 
 ---
 
-## [Unreleased] - 2024-12-14
+## [Unreleased] - 2024-12-20
 
 ### Added - 新增功能
 
@@ -129,6 +129,176 @@
 
 ---
 
+#### P3. 领域场景层 (Domain Layer) - 2024-12-20
+
+**3.1 语义对象管理**
+- ✅ 实现 `SemanticObjectRegistry` 语义对象注册表 (`src/domain/registry/SemanticObjectRegistry.ts`)
+  - 语义对象注册/注销（register/unregister）
+  - 三种索引实现 O(1) 快速查询：
+    - `objectsById`: 按语义 ID 查询
+    - `idsByType`: 按类型查询所有对象
+    - `idByBusinessId`: 按业务 ID 查询
+  - 保证 businessId 唯一性
+  - 完整的清理机制（clear）
+
+- ✅ 实现 `SemanticObjectFactory` 语义对象工厂 (`src/domain/factory/SemanticObjectFactory.ts`)
+  - `createFromStore()`: 从店铺业务数据创建语义对象
+  - `createFromFloor()`: 从楼层业务数据创建语义对象
+  - `createFromArea()`: 从区域业务数据创建语义对象
+  - 自动计算 BoundingBox
+  - 自动注册到 Registry
+
+- ✅ 实现 `MeshRegistry` Mesh 注册表 (`src/domain/registry/MeshRegistry.ts`)
+  - 语义对象与 Three.js Mesh 的双向映射
+  - `bind()`: 绑定语义对象与 Mesh
+  - `unbind()`: 解除绑定
+  - `getMesh()`: 通过语义 ID 获取 Mesh（用于高亮、隐藏）
+  - `getSemanticId()`: 通过 Mesh 获取语义 ID（用于点击检测）
+  - 在 Mesh.userData 中存储 semanticId 便于射线检测
+
+**3.2 商城实体管理**
+- ✅ 实现 `StoreManager` 店铺管理器 (`src/domain/mall/StoreManager.ts`)
+  - 店铺注册：`addStore()` / `removeStore()`
+  - 多种查询：`getStoreById()` / `getStoreByBusinessId()` / `getStoresByArea()` / `getAllStores()`
+  - 状态管理：`selectStore()` / `deselectStore()` / `highlightStore()` / `clearHighlight()`
+  - 状态检查：`isSelected()` / `isHighlighted()` / `getSelectedStore()` / `getHighlightedStore()`
+
+- ✅ 实现 `FloorManager` 楼层管理器 (`src/domain/mall/FloorManager.ts`)
+  - 楼层注册：`addFloor()` / `removeFloor()`
+  - 多种查询：`getFloorById()` / `getFloorByBusinessId()` / `getFloorByLevel()` / `getAllFloors()`
+  - 可见性控制：`showFloor()` / `hideFloor()` / `setFloorVisibility()` / `isFloorVisible()`
+  - 当前楼层：`setCurrentFloor()` / `getCurrentFloor()` / `isCurrentFloor()`
+
+- ✅ 实现 `MallManager` 商城管理器 (`src/domain/mall/MallManager.ts`)
+  - 顶层管理器，协调 FloorManager 和 StoreManager
+  - `loadMall()`: 递归加载商城 → 楼层 → 区域 → 店铺层级数据
+  - `getFloorManager()` / `getStoreManager()`: 获取子管理器
+  - `getMall()` / `isMallLoaded()`: 商城状态查询
+  - `clear()`: 清空所有数据
+  - `getStats()`: 获取统计信息
+
+---
+
+### P3 领域层架构图
+
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                        领域场景层 (Domain Layer)                             │
+├─────────────────────────────────────────────────────────────────────────────┤
+│                                                                             │
+│  ┌─────────────────────────────────────────────────────────────────────┐   │
+│  │                         管理器 (Managers)                            │   │
+│  │                                                                      │   │
+│  │    ┌─────────────────┐                                              │   │
+│  │    │   MallManager   │ ←── 顶层管理器，协调子管理器                   │   │
+│  │    │   商城管理器     │                                              │   │
+│  │    └────────┬────────┘                                              │   │
+│  │             │                                                        │   │
+│  │      ┌──────┴──────┐                                                │   │
+│  │      ▼             ▼                                                │   │
+│  │ ┌──────────┐ ┌──────────┐                                          │   │
+│  │ │FloorMgr  │ │StoreMgr  │ ←── 业务管理器，封装具体操作               │   │
+│  │ │楼层管理器│ │店铺管理器│                                          │   │
+│  │ └────┬─────┘ └────┬─────┘                                          │   │
+│  └──────┼────────────┼──────────────────────────────────────────────────┘   │
+│         │            │                                                      │
+│         ▼            ▼                                                      │
+│  ┌─────────────────────────────────────────────────────────────────────┐   │
+│  │                         注册表 (Registry)                            │   │
+│  │                                                                      │   │
+│  │  ┌────────────────────────┐    ┌────────────────────────┐          │   │
+│  │  │ SemanticObjectRegistry │    │     MeshRegistry       │          │   │
+│  │  │     语义对象注册表      │◄──►│     Mesh 注册表        │          │   │
+│  │  │                        │    │                        │          │   │
+│  │  │ • objectsById (ID索引) │    │ • meshBySemanticId     │          │   │
+│  │  │ • idsByType (类型索引) │    │ • semanticIdByMeshUuid │          │   │
+│  │  │ • idByBusinessId       │    │                        │          │   │
+│  │  └────────────────────────┘    └────────────────────────┘          │   │
+│  └──────────────────────────────────────────────────────────────────────┘   │
+│         ▲                                    ▲                              │
+│         │ 注册                               │ 绑定                         │
+│         │                                    │                              │
+│  ┌──────┴────────────────────────────────────┴──────────────────────────┐   │
+│  │                          工厂 (Factory)                               │   │
+│  │                                                                       │   │
+│  │  ┌─────────────────────────────────────────────────────────────┐    │   │
+│  │  │              SemanticObjectFactory 语义对象工厂              │    │   │
+│  │  │                                                              │    │   │
+│  │  │  • createFromStore(store)  → 创建店铺语义对象                │    │   │
+│  │  │  • createFromFloor(floor)  → 创建楼层语义对象                │    │   │
+│  │  │  • createFromArea(area)    → 创建区域语义对象                │    │   │
+│  │  └─────────────────────────────────────────────────────────────┘    │   │
+│  └───────────────────────────────────────────────────────────────────────┘   │
+│         ▲                                                                   │
+│         │ 业务数据输入                                                       │
+│         │                                                                   │
+└─────────┼───────────────────────────────────────────────────────────────────┘
+          │
+    ┌─────┴─────┐
+    │ Mall 数据  │  (业务实体: Mall / Floor / Area / Store)
+    └───────────┘
+```
+
+### 双向绑定流程图
+
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                     为什么需要双向绑定？                                      │
+├─────────────────────────────────────────────────────────────────────────────┤
+│                                                                             │
+│  【场景1】用户点击 3D 店铺 → 查询业务数据                                    │
+│  ════════════════════════════════════════                                   │
+│                                                                             │
+│    用户点击        Mesh           MeshRegistry      SemanticObject          │
+│       │             │                 │                  │                  │
+│       │   点击      │                 │                  │                  │
+│       ├────────────►│                 │                  │                  │
+│       │             │  getSemanticId  │                  │                  │
+│       │             ├────────────────►│                  │                  │
+│       │             │                 │    getById       │                  │
+│       │             │                 ├─────────────────►│                  │
+│       │             │                 │                  │                  │
+│       │◄────────────┴─────────────────┴──────────────────┤                  │
+│       │         返回店铺详情（名称、描述、商品...）         │                  │
+│                                                                             │
+│  ────────────────────────────────────────────────────────────────────────   │
+│                                                                             │
+│  【场景2】AI 说"高亮星巴克" → 控制 3D 对象                                   │
+│  ════════════════════════════════════════                                   │
+│                                                                             │
+│    AI 指令      SemanticRegistry    MeshRegistry         Mesh               │
+│       │               │                  │                 │                │
+│       │ getByBusinessId("starbucks")     │                 │                │
+│       ├──────────────►│                  │                 │                │
+│       │               │    getMesh       │                 │                │
+│       │               ├─────────────────►│                 │                │
+│       │               │                  │  应用高亮效果    │                │
+│       │               │                  ├────────────────►│                │
+│       │               │                  │                 │ ✨发光          │
+│       │◄──────────────┴──────────────────┴─────────────────┤                │
+│       │                    店铺在 3D 场景中高亮显示                          │
+│                                                                             │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                          双向绑定总结                                        │
+├─────────────────────────────────────────────────────────────────────────────┤
+│                                                                             │
+│   方向1: Mesh → SemanticObject                                              │
+│   ─────────────────────────────                                             │
+│   用途: 点击 3D 对象后，查询它代表什么业务实体                                │
+│   方法: meshRegistry.getSemanticId(mesh)                                    │
+│                                                                             │
+│   方向2: SemanticObject → Mesh                                              │
+│   ─────────────────────────────                                             │
+│   用途: 根据业务需求，控制 3D 对象（高亮、隐藏、动画）                         │
+│   方法: meshRegistry.getMesh(semanticId)                                    │
+│                                                                             │
+└─────────────────────────────────────────────────────────────────────────────┘
+```
+
+---
+
 ### Technical Details - 技术细节
 
 **架构设计**
@@ -153,43 +323,42 @@
 
 ### Progress - 进度统计
 
-**总体进度**: P0-P1 完成，P2 基本完成
+**总体进度**: P0-P2 基本完成，P3 进行中 (33%)
 
 | 阶段 | 完成度 | 状态 |
 |------|--------|------|
-| P0 项目基础设施 | 10/12 | 进行中 |
-| P1 类型系统 | 11/12 | 基本完成 |
-| P2 渲染引擎层 | 14/16 | 基本完成 |
-| P3 领域场景层 | 0/18 | 未开始 |
+| P0 项目基础设施 | 10/12 | 基本完成 (83%) |
+| P1 类型系统 | 11/12 | 基本完成 (92%) |
+| P2 渲染引擎层 | 14/16 | 基本完成 (87.5%) |
+| P3 领域场景层 | 6/18 | 进行中 (33%) |
 | P4 业务协调层 | 0/14 | 未开始 |
 
-**P2 渲染引擎层详细进度** (14/16 任务, 87.5%):
-- ✅ 2.1.1 ThreeEngine 核心类
-- ✅ 2.1.2 按需渲染策略
-- ✅ 2.1.3 资源释放机制
-- ✅ 2.2.1 OrbitController 相机控制器
-- ✅ 2.2.2 相机动画
-- ✅ 2.2.3 相机约束
-- ✅ 2.3.1 基础对象管理
-- ✅ 2.3.2 ObjectPool 对象池
-- ✅ 2.3.3 GeometryFactory 几何体工厂
-- ✅ 2.4.1 MaterialManager 材质管理器
-- ✅ 2.4.2 HighlightEffect 高亮效果管理器
-- ✅ 2.5.1 RaycasterManager 射线检测
-- ✅ 2.5.2 SceneEventEmitter 事件抽象层
-- ✅ 2.6.0 渲染引擎层检查点
+**P3 领域场景层详细进度** (6/18 任务, 33%):
+- ✅ 3.1.1 SemanticObjectRegistry 语义对象注册表
+- ✅ 3.1.2 SemanticObjectFactory 语义对象工厂
+- ✅ 3.1.3 MeshRegistry Mesh 注册表
+- ✅ 3.2.1 MallManager 商城管理器
+- ✅ 3.2.2 FloorManager 楼层管理器
+- ✅ 3.2.3 StoreManager 店铺管理器
+- ⏳ 3.3.x 领域行为实现（待开始）
+- ⏳ 3.4.x 领域事件处理（待开始）
+- ⏳ 3.5.x 数据加载与验证（待开始）
 
 **待完成任务**:
 - ⏳ 0.3.x 测试环境配置（暂时跳过）
 - ⏳ 1.4.2 类型守卫函数
 - ⏳ 2.7.x 测试任务（可选）
+- ⏳ 3.3.x 领域行为（NavigationBehavior、HighlightBehavior、FloorSwitchBehavior）
+- ⏳ 3.4.x 领域事件处理
+- ⏳ 3.5.x 数据加载与验证
 
 ---
 
 ### Next Steps - 下一步计划
 
-1. **P3 领域场景层** - 实现语义对象管理、商城实体管理、领域行为
-2. **P4 业务协调层** - 实现 Action 分发、权限校验
-3. **P5 状态管理层** - 实现 Pinia Stores
+1. **P3.3 领域行为实现** - NavigationBehavior、HighlightBehavior、FloorSwitchBehavior
+2. **P3.4 领域事件处理** - DomainEventHandler
+3. **P3.5 数据加载与验证** - MallDataLoader、MallDataValidator
+4. **P4 业务协调层** - ActionDispatcher、PermissionChecker
 
 ---
