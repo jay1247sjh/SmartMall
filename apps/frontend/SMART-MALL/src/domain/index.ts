@@ -26,3 +26,15 @@ export * from './permission'
 
 // 语义对象注册表
 export * from './registry'
+
+// 领域行为
+export * from './behaviors'
+
+// 领域事件
+export * from './events'
+
+// 语义对象工厂
+export * from './factory'
+
+// 数据加载器
+export * from './loader'

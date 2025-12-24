@@ -5,20 +5,20 @@ const router = createRouter({
   routes: [
     {
       path: '/',
-      redirect: '/builder'
+      redirect: '/builder',
     },
     {
       path: '/builder',
       name: 'Builder',
-      component: () => import('@/views/BuilderView.vue')
+      component: () => import('@/views/BuilderView.vue'),
     },
     {
-      // 渲染引擎层集成测试页面
-      path: '/engine-test',
-      name: 'EngineTest',
-      component: () => import('@/views/EngineTestView.vue')
-    }
-  ]
+      // 领域层测试页面
+      path: '/domain-test',
+      name: 'DomainTest',
+      component: () => import('@/views/DomainTestView.vue'),
+    },
+  ],
 })
 
 export default router
