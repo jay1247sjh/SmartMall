@@ -548,3 +548,94 @@
 
 ---
 
+
+
+### 需求 29：AI Agent RAG 知识检索集成
+
+**User Story**: As a AI Agent, I want 从 RAG 向量数据库检索商城知识, so that 我可以基于准确的事实信息为用户提供导购服务
+
+#### Acceptance Criteria
+
+1. WHEN Agent 需要决策导航目标 THEN THE Mall System SHALL 从 world_facts 集合检索店铺位置信息
+2. WHEN Agent 需要回答用户主观问题 THEN THE Mall System SHALL 从 reviews 集合检索用户评价
+3. WHEN Agent 生成 Action 前 THEN THE Mall System SHALL 从 rules 集合检索行为约束规则
+4. THE Mall System SHALL 支持多路检索，同时查询多个 RAG 集合
+5. THE Mall System SHALL 对检索结果按相关性分数排序
+6. WHEN 检索结果为空 THEN THE Mall System SHALL 返回明确的"未找到相关信息"提示
+7. THE Agent Module SHALL NOT 混淆不同 RAG 集合的数据用途
+
+---
+
+### 需求 30：RAG 数据类型区分与用途隔离
+
+**User Story**: As a 系统, I want 严格区分三类 RAG 数据的用途, so that Agent 不会将评论当作事实、不会将事实当作规则
+
+#### Acceptance Criteria
+
+1. THE Mall System SHALL 将 RAG 数据分为三类：世界事实（world_facts）、用户评论（reviews）、规则指南（rules）
+2. WHEN Agent 执行导航决策 THEN THE Mall System SHALL 仅使用 world_facts 和 rules 数据
+3. WHEN Agent 回答"好不好/值不值"类问题 THEN THE Mall System SHALL 使用 reviews 数据
+4. THE Mall System SHALL NOT 将 reviews 数据用于 Action 决策
+5. THE Mall System SHALL NOT 将 world_facts 数据用于主观评价回答
+6. WHEN rules 集合返回 CRITICAL 优先级规则 THEN THE Agent SHALL 强制遵守该规则
+7. THE Mall System SHALL 在 Agent 上下文中明确标注每条检索结果的数据类型
+
+---
+
+### 需求 31：RAG 检索结果展示与溯源
+
+**User Story**: As a 用户, I want 了解 AI 回答的信息来源, so that 我可以判断信息的可信度
+
+#### Acceptance Criteria
+
+1. WHEN Agent 基于 RAG 数据回答问题 THEN THE Mall System SHALL 提供信息来源标注
+2. WHEN 回答基于 world_facts THEN THE Mall System SHALL 标注为"商城信息"
+3. WHEN 回答基于 reviews THEN THE Mall System SHALL 标注为"用户评价"并显示评分
+4. THE Mall System SHALL 支持用户点击查看原始评论详情
+5. WHEN 多条评论观点冲突 THEN THE Mall System SHALL 展示多元观点而非单一结论
+6. THE Mall System SHALL 在 UI 中区分"客观事实"与"主观评价"的展示样式
+
+---
+
+## 需求优先级汇总（含 RAG 需求）
+
+### P0（核心功能，必须实现）
+- 需求 1：三维场景渲染与生命周期管理
+- 需求 2：语义对象建模与标识
+- 需求 3：分层架构实现
+- 需求 4：Action 协议与行为控制
+- 需求 6：角色与权限管理（RCAC）
+- 需求 9：数据驱动渲染
+- 需求 10：状态管理（SSOT）
+- 需求 21：区域建模权限申请与审批
+- 需求 22：商家建模沙盒约束
+
+### P1（重要功能，应当实现）
+- 需求 5：AI Agent 集成与约束
+- 需求 7：配置态与运行态
+- 需求 11：场景交互与事件抽象
+- 需求 12：导航与高亮行为
+- 需求 13：楼层切换
+- 需求 16：错误处理与用户反馈
+- 需求 23：建模变更提案与审核
+- 需求 24：Layout 版本管理
+- 需求 26：区域状态可视化
+- 需求 28：建模操作边界校验
+- **需求 29：AI Agent RAG 知识检索集成**
+- **需求 30：RAG 数据类型区分与用途隔离**
+
+### P2（增强功能，可选实现）
+- 需求 8：动态路由树
+- 需求 14：性能与渲染优化
+- 需求 15：多用户在线状态同步
+- 需求 17：配置数据验证
+- 需求 18：响应式布局与适配
+- 需求 19：日志与调试支持
+- 需求 25：在线用户版本更新通知
+- 需求 27：建模权限撤销
+- **需求 31：RAG 检索结果展示与溯源**
+
+### P3（辅助功能，可选实现）
+- 需求 20：可访问性支持
+
+---

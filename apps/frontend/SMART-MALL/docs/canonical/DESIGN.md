@@ -608,6 +608,240 @@ interface Action {
 
 ---
 
+### 9.3 AI Agent 与 RAG 知识库集成
+
+为支持 AI Agent 的智能导购能力，前端系统需要与后端 RAG 向量数据库进行集成。本节定义前端如何使用 RAG 检索结果。
+
+#### 9.3.1 RAG 数据类型与用途映射
+
+前端 Agent 模块必须严格区分三类 RAG 数据的用途：
+
+| RAG 类型 | 集合名称 | 前端用途 | 使用场景 |
+|---------|---------|---------|---------|
+| 世界事实 | world_facts | Action 决策 | 导航、定位、店铺查询 |
+| 用户评论 | reviews | 回答主观问题 | "好不好"、"值不值"、"推荐吗" |
+| 规则指南 | rules | 约束 Agent 行为 | 禁止导航到未开放区域 |
+
+**核心原则：**
+
+> **事实要稳，评论要散，规则要硬，用途要分**
+
+#### 9.3.2 RAG 检索服务接口
+
+```typescript
+// RAG 检索服务
+interface RAGService {
+  // 检索世界事实（用于 Action 决策）
+  searchWorldFacts(query: string, filter?: WorldFactFilter): Promise<WorldFactResult[]>;
+  
+  // 检索用户评论（用于回答主观问题）
+  searchReviews(query: string, filter?: ReviewFilter): Promise<ReviewResult[]>;
+  
+  // 检索规则指南（用于约束 Agent 行为）
+  searchRules(query: string, filter?: RuleFilter): Promise<RuleResult[]>;
+  
+  // 多路检索（综合查询）
+  multiSearch(request: MultiSearchRequest): Promise<MultiSearchResult>;
+}
+
+// 世界事实检索结果
+interface WorldFactResult {
+  id: string;
+  entityType: 'store' | 'area' | 'facility';
+  entityId: string;
+  text: string;
+  score: number;
+  meta: {
+    mallId: string;
+    floorId: string;
+    areaId: string;
+    category: string;
+    tags: string[];
+  };
+}
+
+// 用户评论检索结果
+interface ReviewResult {
+  id: string;
+  reviewId: string;
+  text: string;
+  score: number;
+  meta: {
+    storeId: string;
+    productId?: string;
+    rating: number;
+    sentiment: 'positive' | 'negative' | 'neutral';
+    aspects: string[];
+    createdAt: string;
+  };
+}
+
+// 规则检索结果
+interface RuleResult {
+  id: string;
+  ruleType: 'navigation' | 'recommendation' | 'safety';
+  text: string;
+  score: number;
+  meta: {
+    scope: 'global' | 'mall' | 'area';
+    scopeId?: string;
+    priority: 'CRITICAL' | 'HIGH' | 'NORMAL';
+    isActive: boolean;
+  };
+}
+```
+
+#### 9.3.3 Agent 决策流程中的 RAG 使用
+
+```typescript
+class AgentDecisionFlow {
+  private ragService: RAGService;
+  
+  /**
+   * 处理用户导航意图
+   * 使用 world_facts + rules，不使用 reviews
+   */
+  async handleNavigationIntent(userQuery: string): Promise<Action> {
+    // 1. 检索世界事实（店铺位置信息）
+    const facts = await this.ragService.searchWorldFacts(userQuery, {
+      entityTypes: ['store', 'area']
+    });
+    
+    // 2. 检索规则约束
+    const rules = await this.ragService.searchRules(userQuery, {
+      ruleTypes: ['navigation']
+    });
+    
+    // 3. 检查是否有 CRITICAL 规则禁止该操作
+    const criticalRules = rules.filter(r => r.meta.priority === 'CRITICAL');
+    if (criticalRules.length > 0) {
+      // 遵守规则约束
+      return this.handleRuleConstraint(criticalRules[0]);
+    }
+    
+    // 4. 基于事实生成导航 Action
+    if (facts.length > 0) {
+      return {
+        type: ActionType.NAVIGATE_TO_STORE,
+        payload: { storeId: facts[0].entityId },
+        source: ActionSource.AGENT
+      };
+    }
+    
+    return this.handleNotFound(userQuery);
+  }
+  
+  /**
+   * 处理用户评价问题
+   * 使用 reviews，不使用 world_facts 做决策
+   */
+  async handleEvaluationQuestion(userQuery: string): Promise<AgentResponse> {
+    // 只检索评论
+    const reviews = await this.ragService.searchReviews(userQuery, {
+      minRating: 1  // 包含所有评分
+    });
+    
+    // 返回多元观点，不做单一结论
+    return {
+      type: 'evaluation_response',
+      sources: reviews.map(r => ({
+        type: 'review',
+        text: r.text,
+        rating: r.meta.rating,
+        sentiment: r.meta.sentiment
+      })),
+      // 明确标注数据来源
+      disclaimer: '以上信息来自用户评价，仅供参考'
+    };
+  }
+}
+```
+
+#### 9.3.4 RAG 数据用途隔离约束
+
+前端 Agent 模块必须遵守以下约束：
+
+**❌ 禁止的行为：**
+- 将 reviews 数据用于 Action 决策（如导航目标选择）
+- 将 world_facts 数据用于主观评价回答
+- 忽略 CRITICAL 优先级的 rules
+
+**✅ 正确的行为：**
+- 导航决策 → 只用 world_facts + rules
+- 评价问题 → 只用 reviews
+- 综合回答 → 多路检索，明确标注来源
+
+```typescript
+// 用途隔离校验
+class RAGUsageValidator {
+  validateUsage(
+    ragType: 'world_facts' | 'reviews' | 'rules',
+    usageContext: 'action_decision' | 'evaluation_response' | 'general_response'
+  ): boolean {
+    const allowedUsage: Record<string, string[]> = {
+      'world_facts': ['action_decision', 'general_response'],
+      'reviews': ['evaluation_response', 'general_response'],
+      'rules': ['action_decision', 'general_response']
+    };
+    
+    return allowedUsage[ragType].includes(usageContext);
+  }
+}
+```
+
+#### 9.3.5 RAG 检索结果 UI 展示
+
+前端需要区分展示不同类型的 RAG 数据：
+
+```typescript
+// RAG 结果展示组件
+interface RAGResultDisplay {
+  // 世界事实展示（客观信息样式）
+  renderWorldFact(fact: WorldFactResult): VNode;
+  
+  // 用户评论展示（主观评价样式，带评分）
+  renderReview(review: ReviewResult): VNode;
+  
+  // 来源标注
+  renderSourceTag(type: 'world_facts' | 'reviews' | 'rules'): VNode;
+}
+
+// 展示样式区分
+const sourceStyles = {
+  world_facts: {
+    label: '商城信息',
+    icon: 'info-circle',
+    color: 'blue'
+  },
+  reviews: {
+    label: '用户评价',
+    icon: 'comment',
+    color: 'orange'
+  },
+  rules: {
+    label: '系统规则',
+    icon: 'shield',
+    color: 'red'
+  }
+};
+```
+
+#### 9.3.6 RAG 集成正确性属性
+
+**Property 32: RAG 用途隔离**
+*对于任意* Agent 的 Action 决策，不使用 reviews 集合的数据作为决策依据
+**验证需求: Requirements 30**
+
+**Property 33: 规则优先级遵守**
+*对于任意* rules 集合返回的 CRITICAL 优先级规则，Agent 必须强制遵守，不可忽略
+**验证需求: Requirements 30**
+
+**Property 34: 来源标注完整性**
+*对于任意* 基于 RAG 数据的 Agent 回答，必须标注数据来源类型
+**验证需求: Requirements 31**
+
+---
+
 ## 10. 多用户在线与人物模型设计
 
 ### 10.1 多用户同步策略
@@ -1673,7 +1907,7 @@ E2E 测试（可选）
 | 6. 配置态与运行态 | Requirements 7 |
 | 7. 商城语义建模 | Requirements 2 |
 | 8. 行为系统设计 | Requirements 4 |
-| 9. AI 在前端中的系统定位 | Requirements 5 |
+| 9. AI 在前端中的系统定位 | Requirements 5, 29, 30, 31 |
 | 10. 多用户在线与人物模型设计 | Requirements 15 |
 | 11. 状态管理与生命周期设计 | Requirements 1, 10 |
 | 12. 渲染策略与性能控制 | Requirements 14 |
