@@ -29,6 +29,12 @@
 - **LayoutVersion**：布局版本，商城结构的版本化管理
 - **RBAC**：Role-Based Access Control，基于角色的访问控制
 - **SSOT**：Single Source of Truth，单一事实源
+- **RAG**：Retrieval-Augmented Generation，检索增强生成，AI Agent 获取知识的核心机制
+- **Vector Database**：向量数据库，存储文本嵌入向量并支持语义检索的数据库
+- **World Facts Collection**：世界事实集合，存储商城客观事实的向量数据集合
+- **Reviews Collection**：体验评论集合，存储用户评价的向量数据集合
+- **Rules Collection**：规则指南集合，存储 Agent 行为约束的向量数据集合
+- **Embedding**：嵌入向量，将文本转换为高维向量表示
 
 ---
 
@@ -277,6 +283,102 @@
 
 ---
 
+### 需求 17：RAG 向量数据库存储架构
+
+**User Story**: As a AI Agent, I want 从向量数据库检索商城知识, so that 我可以准确理解用户意图并生成正确的 Action
+
+#### Acceptance Criteria
+
+1. THE Backend System SHALL 维护三个独立的向量数据集合：World Facts、Reviews、Rules
+2. THE Backend System SHALL 确保不同类型的数据存储在对应的集合中，禁止混存
+3. WHEN 商城结构数据变更 THEN THE Backend System SHALL 同步更新 World Facts 集合
+4. WHEN 用户提交评论 THEN THE Backend System SHALL 将评论存入 Reviews 集合
+5. WHEN 管理员配置规则 THEN THE Backend System SHALL 将规则存入 Rules 集合
+6. THE Backend System SHALL 为每条向量数据附加结构化元数据（metadata）
+7. THE Backend System SHALL 支持按集合类型进行隔离检索
+
+---
+
+### 需求 18：世界事实型 RAG 数据管理
+
+**User Story**: As a AI Agent, I want 检索商城的客观事实, so that 我可以准确回答"Nike 店在哪"等位置类问题
+
+#### Acceptance Criteria
+
+1. THE Backend System SHALL 将商城实体（Mall、Floor、Area、Store、Product）同步到 World Facts 集合
+2. WHEN 存储世界事实 THEN THE Backend System SHALL 使用实体级粒度（一个实体一条记录）
+3. THE Backend System SHALL 确保世界事实的文本表述稳定、客观、无主观评价
+4. WHEN 实体创建或更新 THEN THE Backend System SHALL 自动生成或更新对应的向量记录
+5. WHEN 实体删除 THEN THE Backend System SHALL 同步删除对应的向量记录
+6. THE Backend System SHALL 在元数据中包含实体类型、ID、空间位置、所属关系等结构化信息
+7. THE Backend System SHALL 支持按实体类型、楼层、区域等维度过滤检索
+
+---
+
+### 需求 19：体验评论型 RAG 数据管理
+
+**User Story**: As a AI Agent, I want 检索用户评价信息, so that 我可以回答"这家店好不好"等体验类问题
+
+#### Acceptance Criteria
+
+1. THE Backend System SHALL 将用户评论存储到 Reviews 集合
+2. WHEN 存储评论 THEN THE Backend System SHALL 使用评论级粒度（一条评论一条记录）
+3. THE Backend System SHALL 允许评论内容包含主观表述和情感倾向
+4. THE Backend System SHALL 在元数据中包含店铺 ID、商品 ID、评分、时间等信息
+5. THE Backend System SHALL 支持按店铺、商品、评分范围、时间范围过滤检索
+6. THE Backend System SHALL 支持评论的新增和删除，但不影响其他评论
+7. WHEN 检索评论 THEN THE Backend System SHALL 返回多条相关评论而非单一结论
+
+---
+
+### 需求 20：规则指南型 RAG 数据管理
+
+**User Story**: As a AI Agent, I want 检索行为约束规则, so that 我可以遵守"未开放区域禁止导航"等系统规则
+
+#### Acceptance Criteria
+
+1. THE Backend System SHALL 将系统规则存储到 Rules 集合
+2. WHEN 存储规则 THEN THE Backend System SHALL 使用规则级粒度（一条规则一条记录）
+3. THE Backend System SHALL 确保规则文本明确、可执行、近指令式
+4. THE Backend System SHALL 在元数据中包含规则作用域、优先级、生效状态等信息
+5. THE Backend System SHALL 支持按作用域（导航、编辑、权限等）过滤检索
+6. WHEN Agent 执行决策 THEN THE Backend System SHALL 优先检索 Rules 集合进行约束校验
+7. THE Backend System SHALL 支持规则的启用、禁用和版本管理
+
+---
+
+### 需求 21：RAG 多路检索与结果合并
+
+**User Story**: As a AI Agent, I want 同时检索多个集合并合并结果, so that 我可以综合回答复杂问题
+
+#### Acceptance Criteria
+
+1. THE Backend System SHALL 支持指定检索的目标集合列表
+2. WHEN Agent 执行导航决策 THEN THE Backend System SHALL 检索 World Facts + Rules 两个集合
+3. WHEN Agent 回答推荐问题 THEN THE Backend System SHALL 检索 World Facts + Reviews 两个集合
+4. THE Backend System SHALL 在返回结果中标注每条数据的来源集合
+5. THE Backend System SHALL 支持设置每个集合的检索数量上限
+6. THE Backend System SHALL 支持按相关性分数排序合并结果
+7. THE Backend System SHALL 确保多路检索的响应时间在可接受范围内
+
+---
+
+### 需求 22：RAG 数据同步与一致性
+
+**User Story**: As a 系统, I want 保证关系数据库与向量数据库的数据一致性, so that AI Agent 获取的知识始终准确
+
+#### Acceptance Criteria
+
+1. WHEN 关系数据库中的实体变更 THEN THE Backend System SHALL 异步同步到向量数据库
+2. THE Backend System SHALL 使用事件驱动机制触发向量数据同步
+3. WHEN 同步失败 THEN THE Backend System SHALL 记录失败日志并支持重试
+4. THE Backend System SHALL 支持全量重建向量数据的能力
+5. THE Backend System SHALL 在向量记录中存储源数据的版本号或时间戳
+6. WHEN 检测到数据不一致 THEN THE Backend System SHALL 以关系数据库为准进行修复
+7. THE Backend System SHALL 提供数据一致性检查的管理接口
+
+---
+
 ## 需求优先级说明
 
 ### P0（核心功能，必须实现）
@@ -288,6 +390,8 @@
 - 需求 11：数据查询与导航支持
 - 需求 14：错误处理
 - 需求 15：数据完整性
+- **需求 17：RAG 向量数据库存储架构**
+- **需求 18：世界事实型 RAG 数据管理**
 
 ### P1（重要功能，应当实现）
 - 需求 6：权限撤销
@@ -296,10 +400,14 @@
 - 需求 9：布局版本管理
 - 需求 10：变更提案管理
 - 需求 13：日志与审计
+- **需求 19：体验评论型 RAG 数据管理**
+- **需求 20：规则指南型 RAG 数据管理**
+- **需求 21：RAG 多路检索与结果合并**
 
 ### P2（增强功能，可选实现）
 - 需求 12：缓存与性能优化
 - 需求 16：WebSocket 通知
+- **需求 22：RAG 数据同步与一致性**
 
 ---
 

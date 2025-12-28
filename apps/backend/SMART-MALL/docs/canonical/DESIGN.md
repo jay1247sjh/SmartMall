@@ -1733,7 +1733,582 @@ AI Agent 可调用的后端能力：
 
 ---
 
-## 17. 后续演进计划
+## 17. RAG 向量数据库架构设计
+
+### 17.1 设计动机与核心原则
+
+为支持 AI Agent 的智能导购能力，本系统引入 **RAG（Retrieval-Augmented Generation）向量数据库架构**，用于存储和检索商城结构化知识。
+
+**核心设计原则：**
+
+> **RAG 的"用途"决定存储的"粒度、结构和语义密度"**
+
+不同类型的 RAG 数据服务于不同目的，必须采用不同的存储策略：
+
+| RAG 类型 | 用途 | 粒度 | 特点 |
+|---------|------|------|------|
+| 世界事实型 | Action 决策 | 实体级 | 稳定、客观、结构化 |
+| 体验解释型 | 回答用户问题 | 评论级 | 主观、多样、允许冲突 |
+| 规则指南型 | 约束 Agent 行为 | 规则级 | 明确、可执行、高优先级 |
+
+**设计口诀：**
+
+> **事实要稳，评论要散，规则要硬，用途要分**
+
+---
+
+### 17.2 向量数据库选型
+
+**推荐选型：Milvus / Qdrant**
+
+| 特性 | Milvus | Qdrant | 说明 |
+|------|--------|--------|------|
+| 开源协议 | Apache 2.0 | Apache 2.0 | 均可商用 |
+| 部署方式 | 分布式/单机 | 分布式/单机 | 支持 Docker |
+| 向量维度 | 支持高维 | 支持高维 | 1536 维（OpenAI） |
+| 过滤能力 | 支持标量过滤 | 支持 Payload 过滤 | 关键能力 |
+| 多租户 | 支持 Collection | 支持 Collection | 按类型隔离 |
+
+**本系统采用 Collection 级别隔离**，不同 RAG 类型使用独立 Collection：
+
+```
+vector_db/
+├── world_facts/      # 世界事实集合
+├── reviews/          # 用户评论集合
+└── rules/            # 规则指南集合
+```
+
+---
+
+### 17.3 三类 RAG 数据模型设计
+
+#### 17.3.1 世界事实集合（World Facts Collection）
+
+**用途：** 为 Agent 提供商城客观事实，用于 Action 决策
+
+**存储原则：**
+- 粒度：实体级（店铺、区域、设施）
+- 内容：稳定、低主观性
+- 表述：接近结构化
+- 更新频率：低频（随商城结构变更）
+
+**数据模型：**
+
+```java
+public class WorldFactDocument {
+    private String id;              // 唯一标识，如 "store:nike_001"
+    private String entityType;      // 实体类型：store, area, facility
+    private String entityId;        // 业务实体 ID
+    private String text;            // 向量化文本
+    private float[] embedding;      // 向量表示（1536 维）
+    private WorldFactMeta meta;     // 元数据
+}
+
+public class WorldFactMeta {
+    private String mallId;          // 所属商城
+    private String floorId;         // 所属楼层
+    private String areaId;          // 所属区域
+    private String category;        // 分类（运动、餐饮等）
+    private String[] tags;          // 标签
+    private LocalDateTime updatedAt;// 更新时间
+}
+```
+
+**示例数据：**
+
+```json
+{
+  "id": "store:nike_001",
+  "entityType": "store",
+  "entityId": "nike_001",
+  "text": "Nike 官方店，位于三层运动区，主营跑鞋与运动装备，营业时间 10:00-22:00",
+  "meta": {
+    "mallId": "mall_001",
+    "floorId": "floor_3",
+    "areaId": "sports_zone",
+    "category": "运动",
+    "tags": ["跑鞋", "运动装备", "品牌店"]
+  }
+}
+```
+
+**存储约束：**
+- ❌ 不存评价（"这家店很好"）
+- ❌ 不存情绪（"超级推荐"）
+- ❌ 不存夸张描述（"全城最便宜"）
+- ✅ 只存客观事实
+
+---
+
+#### 17.3.2 用户评论集合（Reviews Collection）
+
+**用途：** 回答用户"好不好 / 值不值 / 适不适合我"等主观问题
+
+**存储原则：**
+- 粒度：评论级 / 段落级
+- 内容：主观、多样
+- 表述：自然语言
+- 更新频率：高频（用户持续产生）
+
+**数据模型：**
+
+```java
+public class ReviewDocument {
+    private String id;              // 唯一标识，如 "review:20240321:001"
+    private String reviewId;        // 评论业务 ID
+    private String text;            // 评论原文
+    private float[] embedding;      // 向量表示
+    private ReviewMeta meta;        // 元数据
+}
+
+public class ReviewMeta {
+    private String storeId;         // 关联店铺
+    private String productId;       // 关联商品（可选）
+    private String userId;          // 评论用户
+    private Integer rating;         // 评分（1-5）
+    private String sentiment;       // 情感倾向：positive, negative, neutral
+    private String[] aspects;       // 评价维度：价格、服务、质量
+    private LocalDateTime createdAt;// 评论时间
+}
+```
+
+**示例数据：**
+
+```json
+{
+  "id": "review:20240321:001",
+  "reviewId": "r_001",
+  "text": "这双跑鞋缓震很好，跑长距离不累，但脚背高的人可能偏紧。",
+  "meta": {
+    "storeId": "nike_001",
+    "productId": "shoe_001",
+    "rating": 4,
+    "sentiment": "positive",
+    "aspects": ["舒适度", "尺码"],
+    "createdAt": "2024-03-21T10:00:00Z"
+  }
+}
+```
+
+**存储约束：**
+- ❌ 不保证一致（允许观点冲突）
+- ❌ 不保证结论（不同人有不同体验）
+- ✅ 允许主观表达
+- ✅ 保留情感倾向
+
+---
+
+#### 17.3.3 规则指南集合（Rules Collection）
+
+**用途：** 约束 Agent 行为，告诉 Agent 什么能做、什么不能做
+
+**存储原则：**
+- 粒度：规则级
+- 内容：明确、可执行
+- 表述：近指令式
+- 更新频率：极低频（系统配置级）
+
+**数据模型：**
+
+```java
+public class RuleDocument {
+    private String id;              // 唯一标识，如 "rule:navigation:001"
+    private String ruleType;        // 规则类型：navigation, recommendation, safety
+    private String text;            // 规则描述
+    private float[] embedding;      // 向量表示
+    private RuleMeta meta;          // 元数据
+}
+
+public class RuleMeta {
+    private String scope;           // 作用范围：global, mall, area
+    private String scopeId;         // 范围 ID（如 mallId）
+    private RulePriority priority;  // 优先级：critical, high, normal
+    private Boolean isActive;       // 是否生效
+    private LocalDateTime effectiveFrom; // 生效时间
+    private LocalDateTime effectiveTo;   // 失效时间
+}
+
+public enum RulePriority {
+    CRITICAL,   // 关键规则，必须遵守
+    HIGH,       // 高优先级
+    NORMAL      // 普通规则
+}
+```
+
+**示例数据：**
+
+```json
+{
+  "id": "rule:navigation:001",
+  "ruleType": "navigation",
+  "text": "未开放区域禁止导航，仅允许高亮提示。",
+  "meta": {
+    "scope": "global",
+    "priority": "CRITICAL",
+    "isActive": true
+  }
+}
+```
+
+```json
+{
+  "id": "rule:recommendation:001",
+  "ruleType": "recommendation",
+  "text": "推荐商品时，优先推荐用户历史偏好类目，不推荐已下架商品。",
+  "meta": {
+    "scope": "global",
+    "priority": "HIGH",
+    "isActive": true
+  }
+}
+```
+
+**存储约束：**
+- ✅ 规则必须明确可执行
+- ✅ 规则有优先级
+- ❌ 不存模糊建议
+- ❌ 不参与用户问答（仅约束 Agent）
+
+---
+
+### 17.4 Embedding 策略
+
+#### 17.4.1 Embedding 模型选择
+
+| 模型 | 维度 | 适用场景 | 说明 |
+|------|------|---------|------|
+| OpenAI text-embedding-3-small | 1536 | 通用场景 | 推荐 |
+| OpenAI text-embedding-3-large | 3072 | 高精度场景 | 成本较高 |
+| 本地模型（BGE/M3E） | 768/1024 | 私有化部署 | 需自建服务 |
+
+**推荐方案：** OpenAI text-embedding-3-small（1536 维）
+
+#### 17.4.2 文本预处理策略
+
+**世界事实：**
+```
+模板：{店铺名称}，位于{楼层}{区域}，主营{品类}，{补充信息}
+示例：Nike 官方店，位于三层运动区，主营跑鞋与运动装备，营业时间 10:00-22:00
+```
+
+**用户评论：**
+```
+保留原文，可选添加前缀：
+模板：关于{店铺/商品}的评价：{评论原文}
+示例：关于 Nike 跑鞋的评价：这双跑鞋缓震很好，跑长距离不累
+```
+
+**规则指南：**
+```
+保留原文，确保语义完整
+示例：未开放区域禁止导航，仅允许高亮提示。
+```
+
+---
+
+### 17.5 数据同步机制
+
+#### 17.5.1 同步架构
+
+```
+┌─────────────────────────────────────────────────────────┐
+│                    PostgreSQL（主数据库）                 │
+│         mall_store / mall_product / user_review         │
+└─────────────────────────────────────────────────────────┘
+                           │
+                           ▼ 变更事件
+┌─────────────────────────────────────────────────────────┐
+│                    同步服务（Sync Service）               │
+│         监听变更 → 生成 Embedding → 写入向量库            │
+└─────────────────────────────────────────────────────────┘
+                           │
+                           ▼
+┌─────────────────────────────────────────────────────────┐
+│                    向量数据库（Milvus/Qdrant）            │
+│         world_facts / reviews / rules                   │
+└─────────────────────────────────────────────────────────┘
+```
+
+#### 17.5.2 同步触发机制
+
+| 数据类型 | 触发事件 | 同步策略 |
+|---------|---------|---------|
+| 世界事实 | 店铺/区域创建、更新、删除 | 实时同步 |
+| 用户评论 | 评论创建、审核通过 | 准实时（延迟 < 1 分钟） |
+| 规则指南 | 管理员配置变更 | 实时同步 |
+
+#### 17.5.3 同步服务实现
+
+```java
+@Service
+public class VectorSyncService {
+    
+    private final EmbeddingService embeddingService;
+    private final VectorDbClient vectorDbClient;
+    
+    /**
+     * 同步店铺到世界事实集合
+     */
+    @Transactional
+    @EventListener(StoreUpdatedEvent.class)
+    public void syncStoreToWorldFacts(StoreUpdatedEvent event) {
+        Store store = event.getStore();
+        
+        // 1. 生成文本描述
+        String text = generateStoreDescription(store);
+        
+        // 2. 生成 Embedding
+        float[] embedding = embeddingService.embed(text);
+        
+        // 3. 构建文档
+        WorldFactDocument doc = WorldFactDocument.builder()
+            .id("store:" + store.getStoreId())
+            .entityType("store")
+            .entityId(store.getStoreId())
+            .text(text)
+            .embedding(embedding)
+            .meta(buildStoreMeta(store))
+            .build();
+        
+        // 4. 写入向量库
+        vectorDbClient.upsert("world_facts", doc);
+    }
+    
+    /**
+     * 同步评论到评论集合
+     */
+    @Async
+    @EventListener(ReviewApprovedEvent.class)
+    public void syncReviewToReviews(ReviewApprovedEvent event) {
+        Review review = event.getReview();
+        
+        String text = review.getContent();
+        float[] embedding = embeddingService.embed(text);
+        
+        ReviewDocument doc = ReviewDocument.builder()
+            .id("review:" + review.getReviewId())
+            .reviewId(review.getReviewId())
+            .text(text)
+            .embedding(embedding)
+            .meta(buildReviewMeta(review))
+            .build();
+        
+        vectorDbClient.upsert("reviews", doc);
+    }
+}
+```
+
+---
+
+### 17.6 RAG 检索 API 设计
+
+#### 17.6.1 检索接口定义
+
+```java
+// 世界事实检索
+@PostMapping("/api/rag/world-facts/search")
+public ApiResponse<List<WorldFactResult>> searchWorldFacts(
+    @RequestBody WorldFactSearchRequest request
+);
+
+// 评论检索
+@PostMapping("/api/rag/reviews/search")
+public ApiResponse<List<ReviewResult>> searchReviews(
+    @RequestBody ReviewSearchRequest request
+);
+
+// 规则检索
+@PostMapping("/api/rag/rules/search")
+public ApiResponse<List<RuleResult>> searchRules(
+    @RequestBody RuleSearchRequest request
+);
+
+// 多路检索（综合查询）
+@PostMapping("/api/rag/multi-search")
+public ApiResponse<MultiSearchResult> multiSearch(
+    @RequestBody MultiSearchRequest request
+);
+```
+
+#### 17.6.2 请求与响应模型
+
+```java
+// 世界事实检索请求
+public class WorldFactSearchRequest {
+    private String query;           // 查询文本
+    private Integer topK;           // 返回数量，默认 5
+    private WorldFactFilter filter; // 过滤条件
+}
+
+public class WorldFactFilter {
+    private String mallId;          // 限定商城
+    private String floorId;         // 限定楼层
+    private String category;        // 限定类目
+    private String[] entityTypes;   // 限定实体类型
+}
+
+// 检索结果
+public class WorldFactResult {
+    private String id;
+    private String entityType;
+    private String entityId;
+    private String text;
+    private Double score;           // 相似度分数
+    private WorldFactMeta meta;
+}
+
+// 多路检索请求
+public class MultiSearchRequest {
+    private String query;
+    private Boolean includeWorldFacts;  // 是否检索世界事实
+    private Boolean includeReviews;     // 是否检索评论
+    private Boolean includeRules;       // 是否检索规则
+    private Integer topKPerCollection;  // 每个集合返回数量
+}
+
+// 多路检索结果
+public class MultiSearchResult {
+    private List<WorldFactResult> worldFacts;
+    private List<ReviewResult> reviews;
+    private List<RuleResult> rules;
+}
+```
+
+#### 17.6.3 检索策略
+
+**Action 决策场景：**
+```java
+// 只查 world_facts + rules
+MultiSearchRequest request = MultiSearchRequest.builder()
+    .query("Nike 店在哪里")
+    .includeWorldFacts(true)
+    .includeRules(true)
+    .includeReviews(false)
+    .topKPerCollection(3)
+    .build();
+```
+
+**用户问答场景：**
+```java
+// 只查 reviews
+ReviewSearchRequest request = ReviewSearchRequest.builder()
+    .query("Nike 跑鞋怎么样")
+    .topK(5)
+    .filter(ReviewFilter.builder()
+        .storeId("nike_001")
+        .minRating(3)
+        .build())
+    .build();
+```
+
+**综合回答场景：**
+```java
+// 多路检索，后端合并
+MultiSearchRequest request = MultiSearchRequest.builder()
+    .query("推荐一家运动品牌店")
+    .includeWorldFacts(true)
+    .includeReviews(true)
+    .includeRules(true)
+    .topKPerCollection(3)
+    .build();
+```
+
+---
+
+### 17.7 数据库表设计（PostgreSQL 侧）
+
+为支持 RAG 数据管理，在 PostgreSQL 中增加以下表：
+
+```sql
+-- 用户评论表
+CREATE TABLE user_review (
+    review_id VARCHAR(32) PRIMARY KEY,
+    store_id VARCHAR(32) NOT NULL,             -- 逻辑外键，关联 mall_store.store_id
+    product_id VARCHAR(32),                    -- 逻辑外键，关联 mall_product.product_id
+    user_id VARCHAR(32) NOT NULL,              -- 逻辑外键，关联 user.user_id
+    content TEXT NOT NULL,                     -- 评论内容
+    rating INT NOT NULL CHECK (rating >= 1 AND rating <= 5),
+    sentiment VARCHAR(20),                     -- 情感倾向
+    aspects JSONB,                             -- 评价维度
+    status VARCHAR(20) NOT NULL DEFAULT 'PENDING', -- PENDING, APPROVED, REJECTED
+    vector_synced BOOLEAN NOT NULL DEFAULT FALSE,  -- 是否已同步到向量库
+    version INT NOT NULL DEFAULT 0,
+    create_time TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    update_time TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    is_deleted BOOLEAN NOT NULL DEFAULT FALSE
+);
+CREATE INDEX idx_review_store_id ON user_review(store_id);
+CREATE INDEX idx_review_product_id ON user_review(product_id);
+CREATE INDEX idx_review_user_id ON user_review(user_id);
+CREATE INDEX idx_review_status ON user_review(status);
+CREATE INDEX idx_review_vector_synced ON user_review(vector_synced);
+CREATE TRIGGER trigger_review_update_time BEFORE UPDATE ON user_review FOR EACH ROW EXECUTE FUNCTION update_timestamp();
+
+-- 系统规则表
+CREATE TABLE system_rule (
+    rule_id VARCHAR(32) PRIMARY KEY,
+    rule_type VARCHAR(50) NOT NULL,            -- navigation, recommendation, safety
+    content TEXT NOT NULL,                     -- 规则内容
+    scope VARCHAR(20) NOT NULL DEFAULT 'global', -- global, mall, area
+    scope_id VARCHAR(32),                      -- 范围 ID
+    priority VARCHAR(20) NOT NULL DEFAULT 'NORMAL', -- CRITICAL, HIGH, NORMAL
+    is_active BOOLEAN NOT NULL DEFAULT TRUE,
+    effective_from TIMESTAMPTZ,
+    effective_to TIMESTAMPTZ,
+    vector_synced BOOLEAN NOT NULL DEFAULT FALSE,
+    version INT NOT NULL DEFAULT 0,
+    create_time TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    update_time TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    is_deleted BOOLEAN NOT NULL DEFAULT FALSE
+);
+CREATE INDEX idx_rule_type ON system_rule(rule_type);
+CREATE INDEX idx_rule_scope ON system_rule(scope, scope_id);
+CREATE INDEX idx_rule_active ON system_rule(is_active);
+CREATE TRIGGER trigger_rule_update_time BEFORE UPDATE ON system_rule FOR EACH ROW EXECUTE FUNCTION update_timestamp();
+
+-- 向量同步日志表（用于追踪同步状态）
+CREATE TABLE vector_sync_log (
+    log_id VARCHAR(32) PRIMARY KEY,
+    collection_name VARCHAR(50) NOT NULL,      -- world_facts, reviews, rules
+    entity_type VARCHAR(50) NOT NULL,          -- store, review, rule
+    entity_id VARCHAR(32) NOT NULL,
+    sync_action VARCHAR(20) NOT NULL,          -- INSERT, UPDATE, DELETE
+    sync_status VARCHAR(20) NOT NULL,          -- SUCCESS, FAILED, PENDING
+    error_message TEXT,
+    create_time TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+CREATE INDEX idx_sync_log_collection ON vector_sync_log(collection_name);
+CREATE INDEX idx_sync_log_entity ON vector_sync_log(entity_type, entity_id);
+CREATE INDEX idx_sync_log_status ON vector_sync_log(sync_status);
+```
+
+---
+
+### 17.8 RAG 架构正确性属性
+
+**Property 16: RAG 数据隔离性**
+*对于任意* RAG 检索请求，world_facts、reviews、rules 三个集合的数据不会混合存储，检索时按用途分别查询
+**验证需求: RAG 架构**
+
+**Property 17: 世界事实客观性**
+*对于任意* world_facts 集合中的文档，不包含主观评价、情感表达或夸张描述
+**验证需求: 数据质量**
+
+**Property 18: 评论多样性**
+*对于任意* reviews 集合中的文档，允许存在观点冲突，不强制一致性
+**验证需求: 数据特性**
+
+**Property 19: 规则优先级**
+*对于任意* Agent 决策场景，rules 集合中 priority 为 CRITICAL 的规则必须被优先考虑
+**验证需求: 规则约束**
+
+**Property 20: 数据同步一致性**
+*对于任意* PostgreSQL 中的数据变更，在配置的延迟时间内必须同步到向量数据库
+**验证需求: 数据同步**
+
+---
+
+## 18. 后续演进计划
 
 ### 17.1 短期计划
 
@@ -1771,5 +2346,6 @@ AI Agent 可调用的后端能力：
 | 10. 安全、认证与鉴权 | 安全要求 |
 | 11. 正确性属性 | 系统正确性保证 |
 | 15. 与前端 / AI Agent 的协作 | 系统集成 |
+| 17. RAG 向量数据库架构设计 | RAG 知识库、AI Agent 集成 |
 
 ---

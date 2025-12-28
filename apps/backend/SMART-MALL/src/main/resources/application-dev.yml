@@ -1,0 +1,20 @@
+# 开发环境配置
+spring:
+  datasource:
+    url: jdbc:postgresql://localhost:5432/smartmall_dev
+    username: smartmall
+    password: smartmall
+
+  data:
+    redis:
+      host: localhost
+      port: 6379
+      password:
+
+# 开发环境日志级别
+logging:
+  level:
+    root: INFO
+    com.smartmall: DEBUG
+    org.springframework.security: DEBUG
+    com.baomidou.mybatisplus: DEBUG
