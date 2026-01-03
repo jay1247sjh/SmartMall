@@ -8,10 +8,33 @@
 
 - **前端框架**：Vue 3 + TypeScript + Vite
 - **UI 框架**：Element Plus（已集成）
+- **样式系统**：SCSS（嵌套语法 + 设计令牌）
 - **状态管理**：Pinia
 - **3D 引擎**：Three.js
 - **后端框架**：Spring Boot 3.x + MyBatis-Plus
 - **数据库**：PostgreSQL + Redis
+
+## 前端设计原则
+
+项目遵循以下优先级进行 UI 开发：
+
+1. **优先使用 Element Plus 组件**：ElButton、ElCard、ElTable、ElForm、ElDialog 等
+2. **使用 HTML5 语义化标签**：main、section、article、header、footer、nav、aside、hgroup
+3. **使用 SCSS 嵌套语法**：所有样式采用嵌套写法，提高可读性和可维护性
+
+### SCSS 样式系统
+
+项目包含完整的 SCSS 设计系统（`src/assets/styles/scss/`）：
+
+| 文件 | 说明 |
+|------|------|
+| `_variables.scss` | 设计令牌（颜色、间距、字体、阴影、断点） |
+| `_mixins.scss` | 可复用混入（响应式、Flexbox、Grid、定位） |
+| `_animations.scss` | 关键帧动画和工具类 |
+| `_utilities.scss` | 工具类（显示、间距、尺寸、文本、背景） |
+| `_components.scss` | 组件样式（按钮、卡片、输入框、徽章） |
+| `_base.scss` | 重置和基础元素样式 |
+| `main.scss` | 主入口文件，包含 Element Plus 覆盖样式 |
 
 ## 学习顺序建议
 
@@ -52,26 +75,34 @@
 
 ### 认证组件 (`@/components/auth/`)
 
-| 组件 | 说明 |
-|------|------|
-| `AuthLayout` | 认证页面统一布局（左侧品牌面板 + 右侧表单面板） |
-| `AuthFormCard` | 表单卡片容器 |
-| `AuthInput` | 带图标、验证状态的输入框 |
-| `AuthButton` | 带加载状态的主按钮 |
-| `AlertMessage` | 错误/成功/警告提示 |
-| `TypewriterCard` | 打字机效果卡片 |
-| `SocialLogin` | 第三方登录按钮组 |
-| `FeatureList` | 功能特点列表 |
+| 组件 | 说明 | Element Plus 组件 |
+|------|------|------------------|
+| `AuthLayout` | 认证页面统一布局（左侧品牌面板 + 右侧表单面板） | ElIcon |
+| `AuthFormCard` | 表单卡片容器 | ElCard |
+| `AuthInput` | 带图标、验证状态的输入框 | ElInput, ElIcon, ElFormItem |
+| `AuthButton` | 带加载状态的主按钮 | ElButton, ElIcon |
+| `AlertMessage` | 错误/成功/警告提示 | ElAlert |
+| `TypewriterCard` | 打字机效果卡片 | ElCard |
+| `SocialLogin` | 第三方登录按钮组 | ElButton, ElDivider, ElSpace, ElIcon |
+| `FeatureList` | 功能特点列表 | ElIcon |
 
 ### 共享组件 (`@/components/shared/`)
 
-| 组件 | 说明 |
-|------|------|
-| `StatCard` | 统计卡片 |
-| `QuickActionCard` | 快捷操作卡片 |
-| `DataTable` | 数据表格 |
-| `Modal` | 模态框 |
-| `CustomSelect` | 自定义选择器 |
+| 组件 | 说明 | Element Plus 组件 |
+|------|------|------------------|
+| `StatCard` | 统计卡片 | ElCard, ElStatistic, ElTag, ElIcon |
+| `QuickActionCard` | 快捷操作卡片 | ElCard, ElIcon |
+| `DataTable` | 数据表格 | ElTable, ElTableColumn, ElEmpty, ElIcon |
+| `Modal` | 模态框 | ElDialog, ElButton, ElSpace |
+| `CustomSelect` | 自定义选择器 | ElSelect, ElOption, ElIcon |
+
+### 布局组件 (`@/views/layouts/`)
+
+| 组件 | 说明 | Element Plus 组件 |
+|------|------|------------------|
+| `AdminLayout` | 管理员布局 | ElContainer, ElAside, ElHeader, ElMain, ElMenu, ElMenuItem, ElButton, ElIcon, ElTag |
+| `MerchantLayout` | 商户布局 | ElContainer, ElAside, ElHeader, ElMain, ElMenu, ElMenuItem, ElButton, ElIcon, ElTag |
+| `MainLayout` | 主布局 | ElContainer, ElHeader, ElMain, ElMenu, ElMenuItem, ElButton, ElIcon |
 
 ---
 
@@ -86,6 +117,12 @@
 1. 先阅读问答，尝试自己回答
 2. 对照代码验证你的想法
 3. 动手修改代码，观察效果
+
+**代码风格要点**：
+1. 优先使用 Element Plus 组件替代原生 HTML
+2. 使用 HTML5 语义化标签（main、section、article、header、footer、nav、aside）
+3. 样式使用 SCSS 嵌套语法，避免扁平 CSS
+4. 使用 `:deep()` 穿透 Element Plus 组件样式
 
 ---
 

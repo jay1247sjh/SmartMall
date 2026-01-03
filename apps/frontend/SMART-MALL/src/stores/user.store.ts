@@ -140,31 +140,51 @@ export const useUserStore = defineStore('user', () => {
 
   /**
    * 从 localStorage 恢复状态（应用启动时调用）
+   * 
+   * @returns 是否恢复成功
    */
   function restoreFromStorage(): boolean {
-    const token = localStorage.getItem('sm_accessToken')
-    const refresh = localStorage.getItem('sm_refreshToken')
-    const userStr = localStorage.getItem('sm_userInfo')
-    const merchantStr = localStorage.getItem('sm_merchantInfo')
+    try {
+      const token = localStorage.getItem('sm_accessToken')
+      const refresh = localStorage.getItem('sm_refreshToken')
+      const userStr = localStorage.getItem('sm_userInfo')
+      const merchantStr = localStorage.getItem('sm_merchantInfo')
 
-    if (token && refresh && userStr) {
-      try {
-        accessToken.value = token
-        refreshToken.value = refresh
-        currentUser.value = JSON.parse(userStr)
+      if (!token || !refresh || !userStr) {
+        return false
+      }
 
-        if (merchantStr) {
-          merchantInfo.value = JSON.parse(merchantStr)
-        }
-
-        return true
-      } catch {
+      const parsedUser = JSON.parse(userStr) as UserInfo
+      
+      // 验证必要字段
+      if (!parsedUser.userId || !parsedUser.username || !parsedUser.userType) {
+        console.warn('[UserStore] Invalid user info in storage')
         clearUser()
         return false
       }
-    }
 
-    return false
+      accessToken.value = token
+      refreshToken.value = refresh
+      currentUser.value = parsedUser
+
+      if (merchantStr) {
+        try {
+          const parsedMerchant = JSON.parse(merchantStr) as MerchantInfo
+          if (parsedMerchant.merchantId) {
+            merchantInfo.value = parsedMerchant
+          }
+        } catch {
+          console.warn('[UserStore] Failed to parse merchant info')
+          localStorage.removeItem('sm_merchantInfo')
+        }
+      }
+
+      return true
+    } catch (error) {
+      console.error('[UserStore] Failed to restore from storage:', error)
+      clearUser()
+      return false
+    }
   }
 
   /**

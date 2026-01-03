@@ -1,45 +1,47 @@
 <script setup lang="ts">
 /**
  * 功能列表组件
- * 用于品牌面板展示功能特点
+ * 使用 Element Plus 组件 + HTML5 语义化标签
  */
+import { ElIcon } from 'element-plus'
+import { CircleCheck } from '@element-plus/icons-vue'
+
 defineProps<{
-  /** 功能列表 */
   features: string[]
 }>()
 </script>
 
 <template>
-  <div class="feature-list">
-    <div v-for="(feature, index) in features" :key="index" class="feature-item">
-      <svg viewBox="0 0 24 24" fill="none">
-        <path d="M9 12l2 2 4-4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-        <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="1.5"/>
-      </svg>
+  <ul class="feature-list" role="list">
+    <li v-for="(feature, index) in features" :key="index" class="feature-item">
+      <ElIcon :size="20" class="feature-icon">
+        <CircleCheck />
+      </ElIcon>
       <span>{{ feature }}</span>
-    </div>
-  </div>
+    </li>
+  </ul>
 </template>
 
-<style scoped>
+<style scoped lang="scss">
 .feature-list {
   display: flex;
   flex-direction: column;
   gap: 14px;
-}
+  list-style: none;
+  padding: 0;
+  margin: 0;
 
-.feature-item {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  color: #bdc1c6;
-  font-size: 14px;
-}
+  .feature-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    color: #bdc1c6;
+    font-size: 14px;
 
-.feature-item svg {
-  width: 20px;
-  height: 20px;
-  color: #81c995;
-  flex-shrink: 0;
+    .feature-icon {
+      color: #81c995;
+      flex-shrink: 0;
+    }
+  }
 }
 </style>

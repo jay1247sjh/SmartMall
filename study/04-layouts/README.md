@@ -882,4 +882,141 @@ onDeactivated(() => {
 
 ---
 
+## Element Plus 布局组件
+
+项目布局已使用 Element Plus 组件重构：
+
+### 布局组件对照表
+
+| 布局 | Element Plus 组件 |
+|------|------------------|
+| `AdminLayout` | ElContainer, ElAside, ElHeader, ElMain, ElMenu, ElMenuItem, ElButton, ElIcon, ElTag |
+| `MerchantLayout` | ElContainer, ElAside, ElHeader, ElMain, ElMenu, ElMenuItem, ElButton, ElIcon, ElTag |
+| `MainLayout` | ElContainer, ElHeader, ElMain, ElMenu, ElMenuItem, ElButton, ElIcon |
+
+### 布局组件示例
+
+```vue
+<script setup lang="ts">
+import {
+  ElContainer,
+  ElAside,
+  ElHeader,
+  ElMain,
+  ElMenu,
+  ElMenuItem,
+  ElButton,
+  ElIcon,
+  ElTag,
+} from 'element-plus'
+import { House, User, Setting, SwitchButton } from '@element-plus/icons-vue'
+</script>
+
+<template>
+  <ElContainer class="admin-layout">
+    <ElAside width="240px" class="layout-aside">
+      <header class="aside-header">
+        <ElIcon :size="24"><House /></ElIcon>
+        <h1>Smart Mall</h1>
+      </header>
+      
+      <ElMenu
+        :default-active="activeMenu"
+        router
+        class="aside-menu"
+      >
+        <ElMenuItem index="/admin/dashboard">
+          <ElIcon><House /></ElIcon>
+          <span>控制台</span>
+        </ElMenuItem>
+        <ElMenuItem index="/admin/users">
+          <ElIcon><User /></ElIcon>
+          <span>用户管理</span>
+        </ElMenuItem>
+      </ElMenu>
+    </ElAside>
+
+    <ElContainer class="layout-main">
+      <ElHeader class="layout-header">
+        <nav class="header-nav">
+          <ElTag type="info">{{ userRole }}</ElTag>
+          <ElButton text @click="handleLogout">
+            <ElIcon><SwitchButton /></ElIcon>
+            退出
+          </ElButton>
+        </nav>
+      </ElHeader>
+
+      <ElMain class="layout-content">
+        <router-view />
+      </ElMain>
+    </ElContainer>
+  </ElContainer>
+</template>
+```
+
+### SCSS 嵌套语法示例
+
+```scss
+.admin-layout {
+  min-height: 100vh;
+
+  .layout-aside {
+    background: #1d1e1f;
+    border-right: 1px solid rgba(255, 255, 255, 0.06);
+
+    .aside-header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 20px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+
+      h1 {
+        font-size: 18px;
+        font-weight: 600;
+        color: #e8eaed;
+        margin: 0;
+      }
+    }
+
+    .aside-menu {
+      border-right: none;
+      background: transparent;
+
+      :deep(.el-menu-item) {
+        color: #9aa0a6;
+
+        &:hover {
+          background: rgba(255, 255, 255, 0.04);
+        }
+
+        &.is-active {
+          color: #8ab4f8;
+          background: rgba(138, 180, 248, 0.08);
+        }
+      }
+    }
+  }
+
+  .layout-main {
+    .layout-header {
+      background: #1d1e1f;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      padding: 0 24px;
+    }
+
+    .layout-content {
+      background: #0a0a0a;
+      padding: 24px;
+    }
+  }
+}
+```
+
+---
+
 *"教育不是灌输，而是点燃火焰。" —— 苏格拉底*

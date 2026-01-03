@@ -27,12 +27,25 @@ export * from './admin.api'
 export { default as adminApi } from './admin.api'
 
 // 商家 API
-export * from './merchant.api'
-export { default as merchantApi } from './merchant.api'
+export {
+  merchantApi,
+  type MerchantStats,
+  type Store,
+  type UpdateStoreRequest,
+  type AreaApplication,
+  type AvailableArea as MerchantAvailableArea,
+} from './merchant.api'
+export { default as merchantApiDefault } from './merchant.api'
 
 // 商城 API
-export * from './mall.api'
-export { default as mallApi } from './mall.api'
+export {
+  mallApi,
+  type MallListItem,
+  type MallStructure,
+  type StoreDetail,
+  type AvailableArea as MallAvailableArea,
+} from './mall.api'
+export { default as mallApiDefault } from './mall.api'
 
 // 商城管理 API
 export * from './mall-manage.api'

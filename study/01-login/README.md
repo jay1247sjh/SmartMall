@@ -570,19 +570,19 @@ onUnmounted(() => {
 
 ## 组件化重构说明
 
-登录页面已使用可复用组件重构，大幅减少代码量：
+登录页面已使用 Element Plus 组件 + SCSS 嵌套语法重构，大幅减少代码量：
 
 ### 使用的组件
 
-| 组件 | 路径 | 说明 |
-|------|------|------|
-| `AuthLayout` | `@/components/auth/AuthLayout.vue` | 认证页面统一布局（左侧品牌面板 + 右侧表单面板） |
-| `AuthFormCard` | `@/components/auth/AuthFormCard.vue` | 表单卡片容器 |
-| `AuthInput` | `@/components/auth/AuthInput.vue` | 带图标、验证状态的输入框 |
-| `AuthButton` | `@/components/auth/AuthButton.vue` | 带加载状态的主按钮 |
-| `AlertMessage` | `@/components/auth/AlertMessage.vue` | 错误/成功/警告提示 |
-| `TypewriterCard` | `@/components/auth/TypewriterCard.vue` | 打字机效果卡片 |
-| `SocialLogin` | `@/components/auth/SocialLogin.vue` | 第三方登录按钮组 |
+| 组件 | 路径 | Element Plus 组件 |
+|------|------|------------------|
+| `AuthLayout` | `@/components/auth/AuthLayout.vue` | ElIcon |
+| `AuthFormCard` | `@/components/auth/AuthFormCard.vue` | ElCard |
+| `AuthInput` | `@/components/auth/AuthInput.vue` | ElInput, ElIcon, ElFormItem |
+| `AuthButton` | `@/components/auth/AuthButton.vue` | ElButton, ElIcon |
+| `AlertMessage` | `@/components/auth/AlertMessage.vue` | ElAlert |
+| `TypewriterCard` | `@/components/auth/TypewriterCard.vue` | ElCard |
+| `SocialLogin` | `@/components/auth/SocialLogin.vue` | ElButton, ElDivider, ElSpace, ElIcon |
 
 ### 重构前后对比
 
@@ -595,6 +595,23 @@ onUnmounted(() => {
 ### 组件使用示例
 
 ```vue
+<script setup lang="ts">
+import { ref } from 'vue'
+import { useRouter, useRoute } from 'vue-router'
+import { useUserStore } from '@/stores'
+import { authApi } from '@/api'
+import { ElForm, ElText, ElLink, ElDivider } from 'element-plus'
+import {
+  AuthLayout,
+  AuthFormCard,
+  AuthInput,
+  AuthButton,
+  AlertMessage,
+  TypewriterCard,
+  SocialLogin,
+} from '@/components'
+</script>
+
 <template>
   <AuthLayout
     brand-headline="重新定义商城管理的可能性"
@@ -605,13 +622,14 @@ onUnmounted(() => {
     </template>
 
     <AuthFormCard title="欢迎回来" description="登录以继续使用 Smart Mall">
-      <form @submit.prevent="handleLogin">
+      <ElForm @submit.prevent="handleLogin">
         <AuthInput
           id="username"
           v-model="username"
           label="用户名"
           icon="user"
           placeholder="输入用户名"
+          autocomplete="username"
           required
         />
         <AuthInput
@@ -621,15 +639,62 @@ onUnmounted(() => {
           type="password"
           icon="password"
           placeholder="输入密码"
+          autocomplete="current-password"
           required
         />
         <AlertMessage v-if="errorMsg" type="error" :message="errorMsg" />
         <AuthButton text="登录" :loading="loading" />
-      </form>
+      </ElForm>
       <SocialLogin />
+
+      <template #footer>
+        <nav class="form-footer">
+          <ElLink type="primary" :underline="false" @click="router.push('/forgot-password')">
+            忘记密码？
+          </ElLink>
+          <ElDivider direction="vertical" />
+          <ElLink type="primary" :underline="false" @click="router.push('/register')">
+            创建账号
+          </ElLink>
+        </nav>
+      </template>
     </AuthFormCard>
   </AuthLayout>
 </template>
+```
+
+### SCSS 嵌套语法示例
+
+```scss
+// 使用 SCSS 嵌套语法
+.form-footer {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 8px;
+
+  // 使用 :deep() 穿透 Element Plus 组件样式
+  :deep(.el-link) {
+    font-size: 13px;
+  }
+
+  :deep(.el-divider--vertical) {
+    margin: 0;
+    border-color: #3c4043;
+  }
+}
+
+.test-hint {
+  margin-top: 20px;
+  padding-top: 20px;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+  text-align: center;
+
+  :deep(.el-text) {
+    font-size: 11px;
+    color: #5f6368;
+  }
+}
 ```
 
 ### UI 框架
@@ -637,6 +702,7 @@ onUnmounted(() => {
 项目已集成 Element Plus UI 框架：
 - 全局注册在 `main.ts`
 - 支持暗色主题
+- 使用 `ElConfigProvider` 配置中文语言
 - 可按需使用 Element Plus 组件
 
 ---

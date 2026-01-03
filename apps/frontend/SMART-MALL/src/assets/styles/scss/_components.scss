@@ -1,0 +1,758 @@
+/**
+ * Smart Mall 设计系统 - 组件样式
+ * 可复用的 UI 组件样式
+ */
+
+@use 'variables' as *;
+@use 'mixins' as *;
+
+// ========================================
+// Buttons
+// ========================================
+
+.btn {
+  @include flex-center;
+  display: inline-flex;
+  gap: $space-2;
+  padding: $space-2 $space-4;
+  font-size: $text-sm;
+  font-weight: $font-medium;
+  line-height: $leading-tight;
+  border-radius: $radius-md;
+  border: 1px solid transparent;
+  white-space: nowrap;
+  user-select: none;
+  cursor: pointer;
+  transition: all $duration-normal $ease-default;
+
+  &:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    pointer-events: none;
+  }
+
+  // Sizes
+  &--sm {
+    padding: $space-1 $space-3;
+    font-size: $text-xs;
+  }
+
+  &--lg {
+    padding: $space-3 $space-6;
+    font-size: $text-base;
+  }
+
+  &--xl {
+    padding: $space-4 $space-8;
+    font-size: $text-lg;
+  }
+
+  // Variants
+  &--primary {
+    background: $gradient-blue;
+    color: #fff;
+    
+    &:hover:not(:disabled) {
+      filter: brightness(1.1);
+    }
+  }
+
+  &--secondary {
+    background-color: $bg-tertiary;
+    color: $text-primary;
+    border-color: $border-subtle;
+
+    &:hover:not(:disabled) {
+      background-color: $bg-secondary;
+      border-color: $border-focus;
+    }
+  }
+
+  &--outline {
+    background-color: transparent;
+    color: $accent-primary;
+    border-color: $accent-primary;
+
+    &:hover:not(:disabled) {
+      background-color: rgba($accent-primary, 0.1);
+    }
+  }
+
+  &--ghost {
+    background-color: transparent;
+    color: $text-secondary;
+
+    &:hover:not(:disabled) {
+      background-color: $bg-tertiary;
+      color: $text-primary;
+    }
+  }
+
+  &--danger {
+    background-color: $error;
+    color: #fff;
+
+    &:hover:not(:disabled) {
+      background-color: darken($error, 10%);
+    }
+  }
+
+  &--success {
+    background-color: $success;
+    color: #fff;
+
+    &:hover:not(:disabled) {
+      background-color: darken($success, 10%);
+    }
+  }
+
+  // Full width
+  &--block {
+    width: 100%;
+  }
+
+  // Icon only
+  &--icon {
+    padding: $space-2;
+    aspect-ratio: 1;
+  }
+
+  // Loading state
+  &--loading {
+    position: relative;
+    color: transparent;
+    pointer-events: none;
+
+    &::after {
+      content: '';
+      @include absolute-center;
+      @include square(1em);
+      border: 2px solid currentColor;
+      border-right-color: transparent;
+      border-radius: 50%;
+      animation: spin 0.6s linear infinite;
+      color: #fff;
+    }
+  }
+}
+
+// ========================================
+// Cards
+// ========================================
+
+.card {
+  @include card;
+
+  &__header {
+    @include flex-between;
+    padding: $space-4;
+    border-bottom: 1px solid $border-subtle;
+  }
+
+  &__title {
+    font-size: $text-lg;
+    font-weight: $font-semibold;
+    color: $text-primary;
+    margin: 0;
+  }
+
+  &__subtitle {
+    font-size: $text-sm;
+    color: $text-muted;
+    margin-top: $space-1;
+  }
+
+  &__body {
+    padding: $space-4;
+  }
+
+  &__footer {
+    @include flex-between;
+    padding: $space-4;
+    border-top: 1px solid $border-subtle;
+    background-color: $bg-secondary;
+    border-radius: 0 0 $radius-lg $radius-lg;
+  }
+
+  // Variants
+  &--hover {
+    cursor: pointer;
+    transition: all $duration-normal $ease-default;
+
+    &:hover {
+      transform: translateY(-2px);
+      box-shadow: $shadow-lg;
+    }
+  }
+
+  &--bordered {
+    border: 1px solid $border-subtle;
+    box-shadow: none;
+  }
+
+  &--flat {
+    box-shadow: none;
+    background-color: $bg-secondary;
+  }
+}
+
+// ========================================
+// Inputs
+// ========================================
+
+.input {
+  width: 100%;
+  padding: $space-2 $space-3;
+  font-size: $text-sm;
+  line-height: $leading-normal;
+  color: $text-primary;
+  background-color: $bg-tertiary;
+  border: 1px solid $border-subtle;
+  border-radius: $radius-md;
+  transition: all $duration-normal $ease-default;
+
+  &:hover:not(:disabled):not(:focus) {
+    border-color: $border-focus;
+  }
+
+  &:focus {
+    outline: none;
+    border-color: $accent-primary;
+    box-shadow: 0 0 0 3px rgba($accent-primary, 0.15);
+  }
+
+  &:disabled {
+    background-color: $bg-tertiary;
+    cursor: not-allowed;
+    opacity: 0.6;
+  }
+
+  &::placeholder {
+    color: $text-muted;
+  }
+
+  // States
+  &--error {
+    border-color: $error;
+
+    &:focus {
+      box-shadow: 0 0 0 3px rgba($error, 0.15);
+    }
+  }
+
+  &--success {
+    border-color: $success;
+
+    &:focus {
+      box-shadow: 0 0 0 3px rgba($success, 0.15);
+    }
+  }
+
+  // Sizes
+  &--sm {
+    padding: $space-1 $space-2;
+    font-size: $text-xs;
+  }
+
+  &--lg {
+    padding: $space-3 $space-4;
+    font-size: $text-lg;
+  }
+}
+
+// Input Group
+.input-group {
+  position: relative;
+  display: flex;
+  width: 100%;
+
+  &__prepend,
+  &__append {
+    @include flex-center;
+    padding: 0 $space-3;
+    background-color: $bg-tertiary;
+    border: 1px solid $border-subtle;
+    color: $text-muted;
+    font-size: $text-sm;
+  }
+
+  &__prepend {
+    border-right: none;
+    border-radius: $radius-md 0 0 $radius-md;
+  }
+
+  &__append {
+    border-left: none;
+    border-radius: 0 $radius-md $radius-md 0;
+  }
+
+  .input {
+    &:first-child:not(:last-child) {
+      border-radius: $radius-md 0 0 $radius-md;
+    }
+
+    &:last-child:not(:first-child) {
+      border-radius: 0 $radius-md $radius-md 0;
+    }
+
+    &:not(:first-child):not(:last-child) {
+      border-radius: 0;
+    }
+  }
+}
+
+// ========================================
+// Form Group
+// ========================================
+
+.form-group {
+  margin-bottom: $space-4;
+
+  &__label {
+    display: block;
+    margin-bottom: $space-2;
+    font-size: $text-sm;
+    font-weight: $font-medium;
+    color: $text-primary;
+
+    &--required::after {
+      content: '*';
+      color: $error;
+      margin-left: $space-1;
+    }
+  }
+
+  &__hint {
+    margin-top: $space-1;
+    font-size: $text-xs;
+    color: $text-muted;
+  }
+
+  &__error {
+    margin-top: $space-1;
+    font-size: $text-xs;
+    color: $error;
+  }
+}
+
+// ========================================
+// Badges
+// ========================================
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  padding: $space-1 $space-2;
+  font-size: $text-xs;
+  font-weight: $font-medium;
+  line-height: 1;
+  border-radius: $radius-full;
+  white-space: nowrap;
+
+  &--primary {
+    background-color: rgba($accent-primary, 0.15);
+    color: $accent-primary;
+  }
+
+  &--success {
+    background-color: rgba($success, 0.15);
+    color: $success;
+  }
+
+  &--warning {
+    background-color: rgba($warning, 0.15);
+    color: $warning;
+  }
+
+  &--error {
+    background-color: rgba($error, 0.15);
+    color: $error;
+  }
+
+  &--info {
+    background-color: rgba($info, 0.15);
+    color: $info;
+  }
+
+  &--neutral {
+    background-color: $bg-tertiary;
+    color: $text-secondary;
+  }
+
+  // Dot indicator
+  &--dot {
+    &::before {
+      content: '';
+      @include square(6px);
+      border-radius: 50%;
+      margin-right: $space-1;
+      background-color: currentColor;
+    }
+  }
+}
+
+// ========================================
+// Alerts
+// ========================================
+
+.alert {
+  display: flex;
+  align-items: flex-start;
+  gap: $space-3;
+  padding: $space-3 $space-4;
+  border-radius: $radius-md;
+  border: 1px solid transparent;
+
+  &__icon {
+    flex-shrink: 0;
+    font-size: $text-lg;
+  }
+
+  &__content {
+    flex: 1;
+    min-width: 0;
+  }
+
+  &__title {
+    font-weight: $font-semibold;
+    margin-bottom: $space-1;
+  }
+
+  &__message {
+    font-size: $text-sm;
+    opacity: 0.9;
+  }
+
+  &__close {
+    flex-shrink: 0;
+    cursor: pointer;
+    padding: $space-1;
+    opacity: 0.7;
+    transition: opacity $duration-fast $ease-default;
+
+    &:hover {
+      opacity: 1;
+    }
+  }
+
+  // Variants
+  &--success {
+    background-color: rgba($success, 0.1);
+    border-color: rgba($success, 0.3);
+    color: $success;
+  }
+
+  &--warning {
+    background-color: rgba($warning, 0.1);
+    border-color: rgba($warning, 0.3);
+    color: $warning;
+  }
+
+  &--error {
+    background-color: rgba($error, 0.1);
+    border-color: rgba($error, 0.3);
+    color: $error;
+  }
+
+  &--info {
+    background-color: rgba($info, 0.1);
+    border-color: rgba($info, 0.3);
+    color: $info;
+  }
+}
+
+// ========================================
+// Avatar
+// ========================================
+
+.avatar {
+  @include flex-center;
+  @include square(40px);
+  border-radius: 50%;
+  background-color: $bg-tertiary;
+  color: $text-secondary;
+  font-weight: $font-medium;
+  overflow: hidden;
+  flex-shrink: 0;
+
+  img {
+    @include square(100%);
+    object-fit: cover;
+  }
+
+  // Sizes
+  &--xs { @include square(24px); font-size: $text-xs; }
+  &--sm { @include square(32px); font-size: $text-sm; }
+  &--lg { @include square(48px); font-size: $text-lg; }
+  &--xl { @include square(64px); font-size: $text-xl; }
+  &--2xl { @include square(80px); font-size: $text-2xl; }
+
+  // Variants
+  &--square {
+    border-radius: $radius-md;
+  }
+}
+
+// Avatar Group
+.avatar-group {
+  display: flex;
+  flex-direction: row-reverse;
+  justify-content: flex-end;
+
+  .avatar {
+    border: 2px solid $bg-primary;
+    margin-left: -$space-2;
+
+    &:last-child {
+      margin-left: 0;
+    }
+  }
+}
+
+// ========================================
+// Divider
+// ========================================
+
+.divider {
+  display: flex;
+  align-items: center;
+  margin: $space-4 0;
+  color: $text-muted;
+  font-size: $text-sm;
+
+  &::before,
+  &::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background-color: $border-subtle;
+  }
+
+  &:not(:empty) {
+    &::before {
+      margin-right: $space-3;
+    }
+
+    &::after {
+      margin-left: $space-3;
+    }
+  }
+
+  &--vertical {
+    flex-direction: column;
+    margin: 0 $space-4;
+    height: auto;
+    min-height: 1em;
+
+    &::before,
+    &::after {
+      width: 1px;
+      height: auto;
+      flex: 1;
+    }
+
+    &:not(:empty) {
+      &::before {
+        margin-right: 0;
+        margin-bottom: $space-2;
+      }
+
+      &::after {
+        margin-left: 0;
+        margin-top: $space-2;
+      }
+    }
+  }
+}
+
+// ========================================
+// Skeleton Loading
+// ========================================
+
+.skeleton {
+  background: linear-gradient(
+    90deg,
+    $bg-tertiary 25%,
+    $bg-hover 50%,
+    $bg-tertiary 75%
+  );
+  background-size: 200% 100%;
+  animation: skeleton-loading 1.5s ease-in-out infinite;
+  border-radius: $radius-sm;
+
+  &--text {
+    height: 1em;
+    margin-bottom: $space-2;
+
+    &:last-child {
+      width: 60%;
+    }
+  }
+
+  &--title {
+    height: 1.5em;
+    width: 40%;
+    margin-bottom: $space-3;
+  }
+
+  &--avatar {
+    @include square(40px);
+    border-radius: 50%;
+  }
+
+  &--button {
+    height: 36px;
+    width: 100px;
+    border-radius: $radius-md;
+  }
+
+  &--image {
+    aspect-ratio: 16/9;
+    border-radius: $radius-md;
+  }
+}
+
+@keyframes skeleton-loading {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}
+
+// ========================================
+// Tooltip (CSS only)
+// ========================================
+
+.tooltip {
+  position: relative;
+
+  &::before,
+  &::after {
+    position: absolute;
+    opacity: 0;
+    visibility: hidden;
+    transition: all $duration-fast $ease-default;
+    pointer-events: none;
+    z-index: $z-tooltip;
+  }
+
+  &::before {
+    content: attr(data-tooltip);
+    padding: $space-1 $space-2;
+    background-color: $bg-elevated;
+    color: $text-primary;
+    font-size: $text-xs;
+    white-space: nowrap;
+    border-radius: $radius-sm;
+    bottom: 100%;
+    left: 50%;
+    transform: translateX(-50%) translateY(-$space-1);
+  }
+
+  &::after {
+    content: '';
+    border: 5px solid transparent;
+    border-top-color: $bg-elevated;
+    bottom: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+  }
+
+  &:hover {
+    &::before,
+    &::after {
+      opacity: 1;
+      visibility: visible;
+    }
+
+    &::before {
+      transform: translateX(-50%) translateY(-$space-2);
+    }
+  }
+}
+
+// ========================================
+// Spinner
+// ========================================
+
+.spinner {
+  @include square(24px);
+  border: 2px solid $border-subtle;
+  border-top-color: $accent-primary;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+
+  &--sm { @include square(16px); border-width: 2px; }
+  &--lg { @include square(32px); border-width: 3px; }
+  &--xl { @include square(48px); border-width: 4px; }
+}
+
+// ========================================
+// Progress Bar
+// ========================================
+
+.progress {
+  height: 8px;
+  background-color: $bg-tertiary;
+  border-radius: $radius-full;
+  overflow: hidden;
+
+  &__bar {
+    height: 100%;
+    background: $gradient-blue;
+    border-radius: $radius-full;
+    transition: width $duration-normal $ease-default;
+  }
+
+  &--sm { height: 4px; }
+  &--lg { height: 12px; }
+
+  // Indeterminate
+  &--indeterminate &__bar {
+    width: 30%;
+    animation: progress-indeterminate 1.5s ease-in-out infinite;
+  }
+}
+
+@keyframes progress-indeterminate {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(400%);
+  }
+}
+
+// ========================================
+// Empty State
+// ========================================
+
+.empty-state {
+  @include flex-center;
+  flex-direction: column;
+  padding: $space-8;
+  text-align: center;
+
+  &__icon {
+    font-size: 48px;
+    color: $text-muted;
+    margin-bottom: $space-4;
+    opacity: 0.5;
+  }
+
+  &__title {
+    font-size: $text-lg;
+    font-weight: $font-semibold;
+    color: $text-primary;
+    margin-bottom: $space-2;
+  }
+
+  &__description {
+    font-size: $text-sm;
+    color: $text-muted;
+    max-width: 300px;
+    margin-bottom: $space-4;
+  }
+}

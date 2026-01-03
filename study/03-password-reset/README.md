@@ -803,16 +803,23 @@ onUnmounted(() => {
 
 ## 组件化重构说明
 
-密码重置相关页面已使用可复用组件重构：
+密码重置相关页面已使用 Element Plus 组件 + SCSS 嵌套语法重构：
 
 ### 使用的组件
 
-| 组件 | 路径 | 说明 |
-|------|------|------|
-| `AuthFormCard` | `@/components/auth/AuthFormCard.vue` | 表单卡片容器 |
-| `AuthInput` | `@/components/auth/AuthInput.vue` | 带图标的输入框 |
-| `AuthButton` | `@/components/auth/AuthButton.vue` | 带加载状态的主按钮 |
-| `AlertMessage` | `@/components/auth/AlertMessage.vue` | 错误提示 |
+| 组件 | 路径 | Element Plus 组件 |
+|------|------|------------------|
+| `AuthFormCard` | `@/components/auth/AuthFormCard.vue` | ElCard |
+| `AuthInput` | `@/components/auth/AuthInput.vue` | ElInput, ElIcon, ElFormItem |
+| `AuthButton` | `@/components/auth/AuthButton.vue` | ElButton, ElIcon |
+| `AlertMessage` | `@/components/auth/AlertMessage.vue` | ElAlert |
+
+### 页面级 Element Plus 组件
+
+| 页面 | Element Plus 组件 |
+|------|------------------|
+| `ForgotPasswordView` | ElForm, ElButton, ElIcon, ElResult |
+| `ResetPasswordView` | ElForm, ElButton, ElIcon, ElResult, ElSkeleton |
 
 ### 重构前后对比
 
@@ -828,35 +835,99 @@ ResetPasswordView:
 
 ### 页面状态管理模式
 
-密码重置页面展示了多状态页面的设计模式：
+密码重置页面展示了多状态页面的设计模式，使用 Element Plus 组件：
 
 ```vue
 <template>
-  <!-- 加载状态 -->
+  <!-- 加载状态 - 使用 ElSkeleton -->
   <template v-if="verifying">
-    <div class="loading-content">...</div>
+    <section class="loading-content">
+      <ElSkeleton :rows="3" animated />
+    </section>
   </template>
 
-  <!-- 令牌无效 -->
+  <!-- 令牌无效 - 使用 ElResult -->
   <template v-else-if="!tokenValid && !success">
-    <div class="status-content error">...</div>
+    <ElResult
+      icon="error"
+      title="链接无效"
+      sub-title="重置链接已过期或无效，请重新申请"
+    >
+      <template #extra>
+        <ElButton type="primary" @click="goToForgotPassword">
+          重新申请
+        </ElButton>
+      </template>
+    </ElResult>
   </template>
 
-  <!-- 成功状态 -->
+  <!-- 成功状态 - 使用 ElResult -->
   <template v-else-if="success">
-    <div class="status-content success">...</div>
+    <ElResult
+      icon="success"
+      title="密码已重置"
+      sub-title="您的密码已成功重置，请使用新密码登录"
+    >
+      <template #extra>
+        <ElButton type="primary" @click="goToLogin">
+          前往登录
+        </ElButton>
+      </template>
+    </ElResult>
   </template>
 
   <!-- 表单状态 -->
   <template v-else>
-    <AuthFormCard title="重置密码">...</AuthFormCard>
+    <AuthFormCard title="重置密码">
+      <ElForm @submit.prevent="handleReset">
+        <!-- 表单内容 -->
+      </ElForm>
+    </AuthFormCard>
   </template>
 </template>
 ```
 
+### SCSS 嵌套语法示例
+
+```scss
+// 密码重置页面样式
+.reset-password-page {
+  .loading-content {
+    padding: 40px;
+    text-align: center;
+
+    :deep(.el-skeleton) {
+      max-width: 300px;
+      margin: 0 auto;
+    }
+  }
+
+  .password-strength {
+    margin-top: 8px;
+
+    .strength-bar {
+      height: 4px;
+      background: #e0e0e0;
+      border-radius: 2px;
+      overflow: hidden;
+
+      .strength-fill {
+        height: 100%;
+        transition: width 0.3s, background-color 0.3s;
+
+        &.weak { background-color: #f56c6c; }
+        &.medium { background-color: #e6a23c; }
+        &.strong { background-color: #67c23a; }
+      }
+    }
+  }
+}
+```
+
 这种模式确保：
 - 用户不会在 token 验证完成前看到表单
-- 每种状态都有清晰的 UI 反馈
+- 每种状态都有清晰的 UI 反馈（使用 ElResult 组件）
+- 加载状态使用 ElSkeleton 提供骨架屏
 - 状态转换逻辑清晰可维护
 
 ---

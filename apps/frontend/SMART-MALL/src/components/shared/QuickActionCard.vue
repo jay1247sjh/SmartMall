@@ -1,9 +1,11 @@
 <script setup lang="ts">
 /**
  * QuickActionCard - 快捷入口卡片组件
- * 用于展示快捷操作入口 - Gemini 风格
+ * 使用 Element Plus 组件 + HTML5 语义化标签
  */
 import { useRouter } from 'vue-router'
+import { ElCard, ElIcon } from 'element-plus'
+import { ArrowRight } from '@element-plus/icons-vue'
 
 interface Props {
   title: string
@@ -20,68 +22,67 @@ function handleClick() {
 </script>
 
 <template>
-  <button class="action-card" @click="handleClick">
-    <div class="action-content">
-      <span class="action-title">{{ title }}</span>
-      <span class="action-desc">{{ description }}</span>
-    </div>
-    <svg class="action-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-      <path d="M9 18l6-6-6-6" stroke-linecap="round" stroke-linejoin="round" />
-    </svg>
-  </button>
+  <ElCard shadow="hover" class="action-card" @click="handleClick">
+    <article class="action-content">
+      <hgroup class="action-text">
+        <h4 class="action-title">{{ title }}</h4>
+        <p class="action-desc">{{ description }}</p>
+      </hgroup>
+      <ElIcon class="action-arrow" :size="20">
+        <ArrowRight />
+      </ElIcon>
+    </article>
+  </ElCard>
 </template>
 
-<style scoped>
+<style scoped lang="scss">
 .action-card {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 16px;
-  padding: 20px 24px;
-  background: rgba(255, 255, 255, 0.02);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 12px;
   cursor: pointer;
-  transition: all 0.2s;
-  text-align: left;
-  width: 100%;
-  color: inherit;
-}
+  border-radius: 12px;
+  transition: transform 0.2s;
 
-.action-card:hover {
-  background: rgba(255, 255, 255, 0.04);
-  border-color: rgba(255, 255, 255, 0.12);
-}
+  &:hover {
+    transform: translateY(-2px);
 
-.action-content {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  min-width: 0;
-}
+    .action-arrow {
+      transform: translateX(4px);
+      color: var(--el-color-primary);
+    }
+  }
 
-.action-title {
-  font-size: 15px;
-  font-weight: 500;
-  color: #e8eaed;
-}
+  :deep(.el-card__body) {
+    padding: 20px 24px;
+  }
 
-.action-desc {
-  font-size: 13px;
-  color: #9aa0a6;
-}
+  .action-content {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
 
-.action-arrow {
-  width: 20px;
-  height: 20px;
-  color: #5f6368;
-  flex-shrink: 0;
-  transition: all 0.2s;
-}
+    .action-text {
+      flex: 1;
+      min-width: 0;
 
-.action-card:hover .action-arrow {
-  transform: translateX(4px);
-  color: #8ab4f8;
+      .action-title {
+        font-size: 15px;
+        font-weight: 500;
+        margin: 0 0 4px 0;
+        color: var(--el-text-color-primary);
+      }
+
+      .action-desc {
+        font-size: 13px;
+        margin: 0;
+        color: var(--el-text-color-secondary);
+      }
+    }
+
+    .action-arrow {
+      flex-shrink: 0;
+      color: var(--el-text-color-placeholder);
+      transition: all 0.2s;
+    }
+  }
 }
 </style>

@@ -1,10 +1,12 @@
 <script setup lang="ts">
 /**
- * 注册页面 - 使用可复用组件重构
+ * 注册页面
+ * 使用 Element Plus 组件 + HTML5 语义化标签
  */
 import { ref, computed, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { registerApi } from '@/api'
+import { ElForm, ElText, ElLink } from 'element-plus'
 import {
   AuthLayout,
   AuthFormCard,
@@ -16,36 +18,30 @@ import {
 
 const router = useRouter()
 
-// 表单数据
 const username = ref('')
 const email = ref('')
 const password = ref('')
 const confirmPassword = ref('')
 const phone = ref('')
 
-// 状态
 const loading = ref(false)
 const errorMsg = ref('')
 const successMsg = ref('')
 
-// 字段验证状态
 const usernameChecking = ref(false)
 const usernameAvailable = ref<boolean | null>(null)
 const emailChecking = ref(false)
 const emailAvailable = ref<boolean | null>(null)
 
-// 防抖定时器
 let usernameTimer: number | null = null
 let emailTimer: number | null = null
 
-// 功能特点
 const features = [
   '免费注册，即刻体验',
   '3D 商城可视化管理',
   'AI 智能助手随时待命',
 ]
 
-// 用户名验证
 const usernameError = computed(() => {
   if (!username.value) return ''
   if (username.value.length < 3) return '用户名至少3个字符'
@@ -55,7 +51,6 @@ const usernameError = computed(() => {
   return ''
 })
 
-// 邮箱验证
 const emailError = computed(() => {
   if (!email.value) return ''
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.value)) return '邮箱格式不正确'
@@ -63,28 +58,24 @@ const emailError = computed(() => {
   return ''
 })
 
-// 密码验证
 const passwordError = computed(() => {
   if (!password.value) return ''
   if (password.value.length < 6) return '密码至少6个字符'
   return ''
 })
 
-// 确认密码验证
 const confirmPasswordError = computed(() => {
   if (!confirmPassword.value) return ''
   if (confirmPassword.value !== password.value) return '两次密码不一致'
   return ''
 })
 
-// 手机号验证
 const phoneError = computed(() => {
   if (!phone.value) return ''
   if (!/^1[3-9]\d{9}$/.test(phone.value)) return '手机号格式不正确'
   return ''
 })
 
-// 表单是否有效
 const isFormValid = computed(() => {
   const hasRequiredFields = username.value && email.value && password.value && confirmPassword.value
   const noFormatErrors = !usernameError.value && !emailError.value && !passwordError.value && !confirmPasswordError.value && !phoneError.value
@@ -92,7 +83,6 @@ const isFormValid = computed(() => {
   return hasRequiredFields && noFormatErrors && availabilityOk
 })
 
-// 监听用户名变化
 watch(username, (val) => {
   usernameAvailable.value = null
   if (usernameTimer) clearTimeout(usernameTimer)
@@ -111,7 +101,6 @@ watch(username, (val) => {
   }
 })
 
-// 监听邮箱变化
 watch(email, (val) => {
   emailAvailable.value = null
   if (emailTimer) clearTimeout(emailTimer)
@@ -130,7 +119,6 @@ watch(email, (val) => {
   }
 })
 
-// 提交注册
 async function handleRegister() {
   if (!isFormValid.value) {
     errorMsg.value = '请检查表单填写是否正确'
@@ -170,7 +158,7 @@ async function handleRegister() {
     </template>
 
     <AuthFormCard title="创建账号" description="填写以下信息完成注册">
-      <form @submit.prevent="handleRegister">
+      <ElForm @submit.prevent="handleRegister">
         <AuthInput
           id="username"
           v-model="username"
@@ -242,39 +230,34 @@ async function handleRegister() {
           :loading="loading" 
           :disabled="!isFormValid" 
         />
-      </form>
+      </ElForm>
 
       <template #footer>
-        <div class="form-footer">
-          <span class="footer-text">已有账号？</span>
-          <router-link to="/login" class="footer-link">立即登录</router-link>
-        </div>
+        <nav class="form-footer">
+          <ElText type="info" size="small">已有账号？</ElText>
+          <ElLink type="primary" :underline="false" @click="router.push('/login')">
+            立即登录
+          </ElLink>
+        </nav>
       </template>
     </AuthFormCard>
   </AuthLayout>
 </template>
 
-<style scoped>
+<style scoped lang="scss">
 .form-footer {
   display: flex;
   justify-content: center;
   align-items: center;
   gap: 6px;
-}
 
-.footer-text {
-  font-size: 13px;
-  color: #9aa0a6;
-}
+  :deep(.el-text) {
+    font-size: 13px;
+    color: #9aa0a6;
+  }
 
-.footer-link {
-  font-size: 13px;
-  color: #8ab4f8;
-  text-decoration: none;
-  transition: color 0.2s;
-}
-
-.footer-link:hover {
-  color: #aecbfa;
+  :deep(.el-link) {
+    font-size: 13px;
+  }
 }
 </style>

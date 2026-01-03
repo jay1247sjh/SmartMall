@@ -1,8 +1,10 @@
 <script setup lang="ts">
 /**
  * StatCard - 统计卡片组件
- * 用于展示数值统计信息 - Gemini 风格
+ * 使用 Element Plus 组件 + HTML5 语义化标签
  */
+import { ElCard, ElStatistic, ElIcon, ElTag } from 'element-plus'
+import { Top, Bottom } from '@element-plus/icons-vue'
 
 interface Props {
   value: string | number
@@ -17,81 +19,63 @@ defineProps<Props>()
 </script>
 
 <template>
-  <div class="stat-card">
-    <div class="stat-content">
-      <span class="stat-value">{{ value }}</span>
-      <span class="stat-label">{{ label }}</span>
-    </div>
-    <div v-if="trend" class="stat-trend" :class="trend.direction">
-      <svg v-if="trend.direction === 'up'" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-        <path d="M7 17l5-5 5 5" />
-      </svg>
-      <svg v-else viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-        <path d="M7 7l5 5 5-5" />
-      </svg>
-      <span>{{ trend.value }}%</span>
-    </div>
-  </div>
+  <ElCard shadow="hover" class="stat-card">
+    <article class="stat-content">
+      <ElStatistic :title="label" :value="value" class="stat-statistic" />
+      <ElTag
+        v-if="trend"
+        :type="trend.direction === 'up' ? 'success' : 'danger'"
+        size="small"
+        class="stat-trend"
+      >
+        <ElIcon :size="12">
+          <Top v-if="trend.direction === 'up'" />
+          <Bottom v-else />
+        </ElIcon>
+        <span>{{ trend.value }}%</span>
+      </ElTag>
+    </article>
+  </ElCard>
 </template>
 
-<style scoped>
+<style scoped lang="scss">
 .stat-card {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 24px;
-  background: rgba(255, 255, 255, 0.02);
-  border: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: 12px;
-  transition: all 0.2s;
-}
+  transition: transform 0.2s;
 
-.stat-card:hover {
-  background: rgba(255, 255, 255, 0.03);
-  border-color: rgba(255, 255, 255, 0.12);
-}
+  &:hover {
+    transform: translateY(-2px);
+  }
 
-.stat-content {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
+  :deep(.el-card__body) {
+    padding: 20px 24px;
+  }
 
-.stat-value {
-  font-size: 32px;
-  font-weight: 500;
-  color: #e8eaed;
-  line-height: 1;
-  letter-spacing: -0.02em;
-}
+  .stat-content {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
 
-.stat-label {
-  font-size: 13px;
-  color: #9aa0a6;
-}
+    .stat-statistic {
+      :deep(.el-statistic__head) {
+        font-size: 13px;
+        color: var(--el-text-color-secondary);
+        margin-bottom: 8px;
+      }
 
-.stat-trend {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  font-size: 13px;
-  font-weight: 500;
-  padding: 6px 10px;
-  border-radius: 8px;
-}
+      :deep(.el-statistic__content) {
+        font-size: 28px;
+        font-weight: 500;
+        color: var(--el-text-color-primary);
+      }
+    }
 
-.stat-trend svg {
-  width: 14px;
-  height: 14px;
-}
-
-.stat-trend.up {
-  color: #34d399;
-  background: rgba(52, 211, 153, 0.1);
-}
-
-.stat-trend.down {
-  color: #f28b82;
-  background: rgba(242, 139, 130, 0.1);
+    .stat-trend {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      border-radius: 6px;
+    }
+  }
 }
 </style>

@@ -1,8 +1,11 @@
 <script setup lang="ts">
 /**
  * 403 无权限页面
+ * 使用 Element Plus 组件 + HTML5 语义化标签
  */
 import { useRouter } from 'vue-router'
+import { ElResult, ElButton, ElIcon, ElSpace } from 'element-plus'
+import { Back, HomeFilled } from '@element-plus/icons-vue'
 
 const router = useRouter()
 
@@ -16,66 +19,78 @@ function goHome() {
 </script>
 
 <template>
-  <div class="error-view">
-    <div class="error-content">
-      <h1>403</h1>
-      <p>抱歉，您没有权限访问此页面</p>
-      <div class="actions">
-        <button @click="goBack">返回上页</button>
-        <button class="secondary" @click="goHome">返回首页</button>
-      </div>
-    </div>
-  </div>
+  <main class="error-view">
+    <article class="error-content">
+      <ElResult
+        icon="error"
+        title="403"
+        sub-title="抱歉，您没有权限访问此页面"
+        class="error-result"
+      >
+        <template #extra>
+          <ElSpace>
+            <ElButton @click="goBack">
+              <ElIcon class="btn-icon"><Back /></ElIcon>
+              返回上页
+            </ElButton>
+            <ElButton type="primary" @click="goHome">
+              <ElIcon class="btn-icon"><HomeFilled /></ElIcon>
+              返回首页
+            </ElButton>
+          </ElSpace>
+        </template>
+      </ElResult>
+    </article>
+  </main>
 </template>
 
-<style scoped>
+<style scoped lang="scss">
 .error-view {
   min-height: 100vh;
   display: flex;
   align-items: center;
   justify-content: center;
-  background: #f5f5f5;
-}
+  background: #0a0a0a;
 
-.error-content {
-  text-align: center;
-}
+  .error-content {
+    text-align: center;
 
-h1 {
-  font-size: 6rem;
-  color: #ff6b6b;
-  margin: 0;
-}
+    .error-result {
+      :deep(.el-result__icon) {
+        svg {
+          width: 120px;
+          height: 120px;
+          color: var(--el-color-danger);
+        }
+      }
 
-p {
-  color: #666;
-  margin: 1rem 0 2rem;
-}
+      :deep(.el-result__title) {
+        font-size: 72px;
+        font-weight: 600;
+        color: var(--el-color-danger-light-3);
+        margin-top: 0;
+      }
 
-.actions {
-  display: flex;
-  gap: 1rem;
-  justify-content: center;
-}
+      :deep(.el-result__subtitle) {
+        font-size: 16px;
+        color: var(--el-text-color-placeholder);
+      }
 
-button {
-  padding: 0.75rem 2rem;
-  background: #667eea;
-  color: white;
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
-}
+      :deep(.el-button--primary) {
+        background: linear-gradient(135deg, #60a5fa 0%, #818cf8 100%);
+        border: none;
+        border-radius: 10px;
+      }
 
-button:hover {
-  background: #5a6fd6;
-}
+      :deep(.el-button) {
+        border-radius: 10px;
+        padding: 12px 24px;
 
-button.secondary {
-  background: #999;
-}
-
-button.secondary:hover {
-  background: #777;
+        .btn-icon {
+          margin-right: 8px;
+        }
+      }
+    }
+  }
 }
 </style>

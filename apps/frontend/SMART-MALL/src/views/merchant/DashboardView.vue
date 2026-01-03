@@ -1,19 +1,27 @@
 <script setup lang="ts">
 /**
  * 商家工作台
- * 显示商家统计、店铺列表、申请状态
- * Gemini 风格 - 专业深色主题
+ * 使用 Element Plus 组件 + HTML5 语义化标签
  */
 import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
+import {
+  ElRow,
+  ElCol,
+  ElCard,
+  ElStatistic,
+  ElButton,
+  ElIcon,
+  ElTag,
+  ElEmpty,
+  ElSkeleton,
+  ElAvatar,
+} from 'element-plus'
+import { ArrowRight, Shop, Goods, View, Document } from '@element-plus/icons-vue'
 import { StatCard, QuickActionCard } from '@/components'
 import { merchantApi } from '@/api'
 import { useUserStore } from '@/stores'
 import type { MerchantStats, Store, AreaApplication } from '@/api/merchant.api'
-
-// ============================================================================
-// State
-// ============================================================================
 
 const router = useRouter()
 const userStore = useUserStore()
@@ -28,20 +36,12 @@ const stats = ref<MerchantStats>({
 const stores = ref<Store[]>([])
 const applications = ref<AreaApplication[]>([])
 
-// ============================================================================
-// Computed
-// ============================================================================
-
 const quickActions = [
-  { title: '店铺配置', desc: '管理店铺信息', route: '/merchant/store-config' },
-  { title: '区域申请', desc: '申请新区域', route: '/merchant/area-apply' },
-  { title: '店铺装修', desc: '3D场景编辑', route: '/merchant/builder' },
-  { title: '数据分析', desc: '查看经营数据', route: '/merchant/analytics' },
+  { title: '店铺配置', description: '管理店铺信息', path: '/merchant/store-config' },
+  { title: '区域申请', description: '申请新区域', path: '/merchant/area-apply' },
+  { title: '店铺装修', description: '3D场景编辑', path: '/merchant/builder' },
+  { title: '数据分析', description: '查看经营数据', path: '/merchant/analytics' },
 ]
-
-// ============================================================================
-// Methods
-// ============================================================================
 
 async function loadData() {
   isLoading.value = true
@@ -65,13 +65,13 @@ function navigateTo(route: string) {
   router.push(route)
 }
 
-function getStatusClass(status: string): string {
-  const map: Record<string, string> = {
-    ACTIVE: 'status-active',
-    INACTIVE: 'status-inactive',
-    PENDING: 'status-pending',
+function getStatusType(status: string) {
+  const map: Record<string, 'success' | 'info' | 'warning'> = {
+    ACTIVE: 'success',
+    INACTIVE: 'info',
+    PENDING: 'warning',
   }
-  return map[status] || ''
+  return map[status] || 'info'
 }
 
 function getStatusText(status: string): string {
@@ -83,432 +83,268 @@ function getStatusText(status: string): string {
   return map[status] || status
 }
 
-// ============================================================================
-// Lifecycle
-// ============================================================================
-
 onMounted(() => {
   loadData()
 })
 </script>
 
 <template>
-  <div class="merchant-dashboard">
-      <!-- 欢迎区域 -->
-      <div class="welcome-section">
-        <div class="welcome-bg">
-          <div class="bg-gradient"></div>
-          <div class="bg-glow"></div>
-        </div>
-        <div class="welcome-content">
-          <h2>欢迎回来，{{ userStore.currentUser?.username }}</h2>
-          <p>今日访客 {{ stats.todayVisitors }} 人，继续加油！</p>
-        </div>
-        <div class="welcome-actions">
-          <button class="btn-primary" @click="navigateTo('/merchant/builder')">
-            进入店铺装修
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-              <path d="M9 18l6-6-6-6" stroke-linecap="round" stroke-linejoin="round" />
-            </svg>
-          </button>
-        </div>
-      </div>
+  <article class="merchant-dashboard">
+    <!-- 欢迎区域 -->
+    <header class="welcome-section">
+      <div class="welcome-bg"></div>
+      <hgroup class="welcome-content">
+        <h2>欢迎回来，{{ userStore.currentUser?.username }}</h2>
+        <p>今日访客 {{ stats.todayVisitors }} 人，继续加油！</p>
+      </hgroup>
+      <nav class="welcome-actions">
+        <ElButton type="primary" class="btn-gradient" @click="navigateTo('/merchant/builder')">
+          进入店铺装修
+          <ElIcon class="ml-1"><ArrowRight /></ElIcon>
+        </ElButton>
+      </nav>
+    </header>
 
-      <!-- 统计卡片 -->
-      <div class="stats-grid">
-        <StatCard
-          label="我的店铺"
-          :value="stats.storeCount"
-        />
-        <StatCard
-          label="商品数量"
-          :value="stats.productCount"
-        />
-        <StatCard
-          label="今日访客"
-          :value="stats.todayVisitors"
-        />
-        <StatCard
-          label="待处理"
-          :value="stats.pendingTasks"
-        />
-      </div>
+    <!-- 统计卡片 -->
+    <section class="stats-section" aria-label="数据统计">
+      <ElRow :gutter="16">
+        <ElCol :xs="12" :sm="12" :md="6">
+          <ElCard shadow="hover" class="stat-card">
+            <ElStatistic title="我的店铺" :value="stats.storeCount">
+              <template #prefix><ElIcon :size="20"><Shop /></ElIcon></template>
+            </ElStatistic>
+          </ElCard>
+        </ElCol>
+        <ElCol :xs="12" :sm="12" :md="6">
+          <ElCard shadow="hover" class="stat-card">
+            <ElStatistic title="商品数量" :value="stats.productCount">
+              <template #prefix><ElIcon :size="20"><Goods /></ElIcon></template>
+            </ElStatistic>
+          </ElCard>
+        </ElCol>
+        <ElCol :xs="12" :sm="12" :md="6">
+          <ElCard shadow="hover" class="stat-card">
+            <ElStatistic title="今日访客" :value="stats.todayVisitors">
+              <template #prefix><ElIcon :size="20"><View /></ElIcon></template>
+            </ElStatistic>
+          </ElCard>
+        </ElCol>
+        <ElCol :xs="12" :sm="12" :md="6">
+          <ElCard shadow="hover" class="stat-card">
+            <ElStatistic title="待处理" :value="stats.pendingTasks">
+              <template #prefix><ElIcon :size="20"><Document /></ElIcon></template>
+            </ElStatistic>
+          </ElCard>
+        </ElCol>
+      </ElRow>
+    </section>
 
-      <div class="content-grid">
-        <!-- 我的店铺 -->
-        <div class="section-card">
-          <div class="section-header">
-            <h3>我的店铺</h3>
-            <button class="btn-link" @click="navigateTo('/merchant/store-config')">
-              管理全部
-            </button>
-          </div>
-          
-          <div v-if="isLoading" class="loading">加载中...</div>
-          
-          <div v-else-if="stores.length === 0" class="empty">
-            暂无店铺
-          </div>
-          
-          <div v-else class="store-list">
-            <div
+    <ElRow :gutter="20" class="content-grid">
+      <!-- 我的店铺 -->
+      <ElCol :xs="24" :md="12">
+        <ElCard shadow="never" class="section-card">
+          <template #header>
+            <header class="section-header">
+              <h3>我的店铺</h3>
+              <ElButton text type="primary" @click="navigateTo('/merchant/store-config')">
+                管理全部
+              </ElButton>
+            </header>
+          </template>
+
+          <ElSkeleton v-if="isLoading" :rows="3" animated />
+          <ElEmpty v-else-if="stores.length === 0" description="暂无店铺" />
+          <nav v-else class="store-list">
+            <article
               v-for="store in stores"
               :key="store.id"
               class="store-item"
               @click="navigateTo('/merchant/store-config')"
             >
-              <div class="store-avatar">
+              <ElAvatar :size="42" class="store-avatar">
                 {{ store.name.charAt(0) }}
-              </div>
-              <div class="store-info">
-                <span class="store-name">{{ store.name }}</span>
-                <span class="store-location">{{ store.floorName }} · {{ store.areaName }}</span>
-              </div>
-              <span :class="['status-badge', getStatusClass(store.status)]">
+              </ElAvatar>
+              <hgroup class="store-info">
+                <h4 class="store-name">{{ store.name }}</h4>
+                <p class="store-location">{{ store.floorName }} · {{ store.areaName }}</p>
+              </hgroup>
+              <ElTag :type="getStatusType(store.status)" size="small">
                 {{ getStatusText(store.status) }}
-              </span>
-            </div>
-          </div>
-        </div>
+              </ElTag>
+            </article>
+          </nav>
+        </ElCard>
+      </ElCol>
 
-        <!-- 申请状态 -->
-        <div class="section-card">
-          <div class="section-header">
-            <h3>待处理申请</h3>
-            <button class="btn-link" @click="navigateTo('/merchant/area-apply')">
-              查看全部
-            </button>
-          </div>
-          
-          <div v-if="isLoading" class="loading">加载中...</div>
-          
-          <div v-else-if="applications.length === 0" class="empty">
-            暂无待处理申请
-          </div>
-          
-          <div v-else class="application-list">
-            <div
-              v-for="app in applications"
-              :key="app.id"
-              class="application-item"
-            >
-              <div class="app-info">
-                <span class="app-area">{{ app.floorName }} · {{ app.areaName }}</span>
-                <span class="app-reason">{{ app.reason }}</span>
-              </div>
-              <span class="status-badge status-pending">待审批</span>
-            </div>
-          </div>
-        </div>
-      </div>
+      <!-- 申请状态 -->
+      <ElCol :xs="24" :md="12">
+        <ElCard shadow="never" class="section-card">
+          <template #header>
+            <header class="section-header">
+              <h3>待处理申请</h3>
+              <ElButton text type="primary" @click="navigateTo('/merchant/area-apply')">
+                查看全部
+              </ElButton>
+            </header>
+          </template>
 
-      <!-- 快捷操作 -->
-      <div class="quick-actions">
-        <h3 class="section-title">快捷操作</h3>
-        <div class="actions-grid">
+          <ElSkeleton v-if="isLoading" :rows="3" animated />
+          <ElEmpty v-else-if="applications.length === 0" description="暂无待处理申请" />
+          <nav v-else class="application-list">
+            <article v-for="app in applications" :key="app.id" class="application-item">
+              <hgroup class="app-info">
+                <h4 class="app-area">{{ app.floorName }} · {{ app.areaName }}</h4>
+                <p class="app-reason">{{ app.reason }}</p>
+              </hgroup>
+              <ElTag type="warning" size="small">待审批</ElTag>
+            </article>
+          </nav>
+        </ElCard>
+      </ElCol>
+    </ElRow>
+
+    <!-- 快捷操作 -->
+    <section class="quick-actions" aria-label="快捷操作">
+      <h3 class="section-title">快捷操作</h3>
+      <ElRow :gutter="16">
+        <ElCol v-for="action in quickActions" :key="action.title" :xs="24" :sm="12" :md="6">
           <QuickActionCard
-            v-for="action in quickActions"
-            :key="action.title"
             :title="action.title"
-            :description="action.desc"
-            :path="action.route"
+            :description="action.description"
+            :path="action.path"
           />
-    </div>
-  </div>
+        </ElCol>
+      </ElRow>
+    </section>
+  </article>
 </template>
 
-
-<style scoped>
+<style scoped lang="scss">
 .merchant-dashboard {
   display: flex;
   flex-direction: column;
   gap: 24px;
-}
 
-/* Welcome Section */
-.welcome-section {
-  position: relative;
-  border-radius: 16px;
-  padding: 32px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  overflow: hidden;
-}
+  .welcome-section {
+    position: relative;
+    border-radius: 16px;
+    padding: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    overflow: hidden;
+    background: linear-gradient(135deg, rgba(244, 114, 182, 0.1) 0%, rgba(251, 146, 60, 0.1) 100%);
 
-.welcome-bg {
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-}
+    .welcome-bg {
+      position: absolute;
+      width: 200px;
+      height: 200px;
+      top: -50px;
+      right: 10%;
+      background: linear-gradient(135deg, #f472b6 0%, #fb923c 100%);
+      opacity: 0.15;
+      border-radius: 50%;
+      filter: blur(60px);
+    }
 
-.welcome-bg .bg-gradient {
-  position: absolute;
-  inset: 0;
-  background: radial-gradient(ellipse 80% 50% at 20% 40%, rgba(236, 72, 153, 0.08) 0%, transparent 50%),
-              radial-gradient(ellipse 60% 40% at 80% 20%, rgba(249, 115, 22, 0.06) 0%, transparent 50%);
-}
+    .welcome-content {
+      position: relative;
+      z-index: 1;
 
-.welcome-bg .bg-glow {
-  position: absolute;
-  width: 200px;
-  height: 200px;
-  top: -50px;
-  right: 10%;
-  background: linear-gradient(135deg, #f472b6 0%, #fb923c 100%);
-  opacity: 0.15;
-  border-radius: 50%;
-  filter: blur(60px);
-}
+      h2 {
+        font-size: 24px;
+        font-weight: 500;
+        margin: 0 0 8px 0;
+      }
 
-.welcome-content {
-  position: relative;
-  z-index: 1;
-}
+      p {
+        font-size: 14px;
+        color: var(--el-text-color-secondary);
+        margin: 0;
+      }
+    }
 
-.welcome-content h2 {
-  font-size: 24px;
-  font-weight: 500;
-  color: #e8eaed;
-  margin: 0 0 8px 0;
-  letter-spacing: -0.02em;
-}
+    .welcome-actions {
+      position: relative;
+      z-index: 1;
 
-.welcome-content p {
-  font-size: 14px;
-  color: #9aa0a6;
-  margin: 0;
-}
+      .btn-gradient {
+        background: linear-gradient(135deg, #f472b6 0%, #fb923c 100%);
+        border: none;
+        border-radius: 10px;
 
-.welcome-actions {
-  position: relative;
-  z-index: 1;
-}
-
-.btn-primary {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 12px 24px;
-  border-radius: 10px;
-  background: linear-gradient(135deg, #f472b6 0%, #fb923c 100%);
-  color: #fff;
-  font-size: 14px;
-  font-weight: 500;
-  border: none;
-  cursor: pointer;
-  transition: all 0.15s;
-}
-
-.btn-primary:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 4px 20px rgba(244, 114, 182, 0.3);
-}
-
-.btn-primary svg {
-  width: 18px;
-  height: 18px;
-}
-
-/* Stats Grid */
-.stats-grid {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 16px;
-}
-
-/* Content Grid */
-.content-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 20px;
-}
-
-/* Section Card */
-.section-card {
-  background: rgba(255, 255, 255, 0.02);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 12px;
-  padding: 24px;
-}
-
-.section-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 20px;
-}
-
-.section-header h3 {
-  font-size: 15px;
-  font-weight: 500;
-  color: #e8eaed;
-  margin: 0;
-}
-
-.btn-link {
-  background: none;
-  border: none;
-  color: #8ab4f8;
-  font-size: 13px;
-  cursor: pointer;
-  padding: 0;
-  transition: color 0.15s;
-}
-
-.btn-link:hover {
-  color: #aecbfa;
-}
-
-.loading,
-.empty {
-  padding: 32px;
-  text-align: center;
-  color: #5f6368;
-  font-size: 14px;
-}
-
-/* Store List */
-.store-list {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-
-.store-item {
-  display: flex;
-  align-items: center;
-  gap: 14px;
-  padding: 16px;
-  background: rgba(255, 255, 255, 0.02);
-  border: 1px solid rgba(255, 255, 255, 0.06);
-  border-radius: 10px;
-  cursor: pointer;
-  transition: all 0.15s;
-}
-
-.store-item:hover {
-  background: rgba(255, 255, 255, 0.04);
-  border-color: rgba(255, 255, 255, 0.1);
-}
-
-.store-avatar {
-  width: 42px;
-  height: 42px;
-  border-radius: 10px;
-  background: linear-gradient(135deg, #f472b6 0%, #fb923c 100%);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 16px;
-  font-weight: 600;
-  color: white;
-}
-
-.store-info {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-
-.store-name {
-  font-size: 14px;
-  font-weight: 500;
-  color: #e8eaed;
-}
-
-.store-location {
-  font-size: 12px;
-  color: #9aa0a6;
-}
-
-/* Application List */
-.application-list {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-
-.application-item {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 16px;
-  background: rgba(255, 255, 255, 0.02);
-  border: 1px solid rgba(255, 255, 255, 0.06);
-  border-radius: 10px;
-}
-
-.app-info {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-
-.app-area {
-  font-size: 14px;
-  font-weight: 500;
-  color: #e8eaed;
-}
-
-.app-reason {
-  font-size: 12px;
-  color: #9aa0a6;
-  display: -webkit-box;
-  -webkit-line-clamp: 1;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
-}
-
-/* Status Badge */
-.status-badge {
-  display: inline-block;
-  padding: 4px 10px;
-  border-radius: 6px;
-  font-size: 12px;
-  font-weight: 500;
-}
-
-.status-active {
-  background: rgba(52, 211, 153, 0.1);
-  color: #34d399;
-}
-
-.status-inactive {
-  background: rgba(156, 163, 175, 0.1);
-  color: #9ca3af;
-}
-
-.status-pending {
-  background: rgba(251, 191, 36, 0.1);
-  color: #fbbf24;
-}
-
-/* Quick Actions */
-.section-title {
-  font-size: 14px;
-  font-weight: 500;
-  color: #9aa0a6;
-  margin: 0 0 16px 0;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-}
-
-.actions-grid {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 16px;
-}
-
-@media (max-width: 1200px) {
-  .stats-grid,
-  .actions-grid {
-    grid-template-columns: repeat(2, 1fr);
+        .ml-1 { margin-left: 4px; }
+      }
+    }
   }
-  
+
+  .stats-section {
+    .stat-card {
+      border-radius: 12px;
+      margin-bottom: 16px;
+    }
+  }
+
   .content-grid {
-    grid-template-columns: 1fr;
+    .section-card {
+      border-radius: 12px;
+      margin-bottom: 20px;
+
+      .section-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+
+        h3 {
+          font-size: 15px;
+          font-weight: 500;
+          margin: 0;
+        }
+      }
+
+      .store-list, .application-list {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+      }
+
+      .store-item, .application-item {
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        padding: 16px;
+        background: var(--el-fill-color-lighter);
+        border-radius: 10px;
+        cursor: pointer;
+        transition: background 0.15s;
+
+        &:hover { background: var(--el-fill-color-light); }
+      }
+
+      .store-avatar {
+        background: linear-gradient(135deg, #f472b6 0%, #fb923c 100%);
+        color: white;
+        font-weight: 600;
+      }
+
+      .store-info, .app-info {
+        flex: 1;
+
+        h4 { font-size: 14px; font-weight: 500; margin: 0 0 4px 0; }
+        p { font-size: 12px; color: var(--el-text-color-secondary); margin: 0; }
+      }
+    }
+  }
+
+  .quick-actions {
+    .section-title {
+      font-size: 14px;
+      font-weight: 500;
+      color: var(--el-text-color-secondary);
+      margin: 0 0 16px 0;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
   }
 }
 </style>

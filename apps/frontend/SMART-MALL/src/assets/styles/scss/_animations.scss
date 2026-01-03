@@ -1,0 +1,237 @@
+/**
+ * Smart Mall 设计系统 - 动画
+ */
+
+@use 'variables' as *;
+
+// ============================================================================
+// 关键帧动画
+// ============================================================================
+
+/// 淡入
+@keyframes fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+/// 淡出
+@keyframes fade-out {
+  from { opacity: 1; }
+  to { opacity: 0; }
+}
+
+/// 向上滑入
+@keyframes slide-up {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/// 向下滑入
+@keyframes slide-down {
+  from {
+    opacity: 0;
+    transform: translateY(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/// 向左滑入
+@keyframes slide-left {
+  from {
+    opacity: 0;
+    transform: translateX(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+/// 向右滑入
+@keyframes slide-right {
+  from {
+    opacity: 0;
+    transform: translateX(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+/// 缩放进入
+@keyframes scale-in {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+/// 缩放退出
+@keyframes scale-out {
+  from {
+    opacity: 1;
+    transform: scale(1);
+  }
+  to {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+}
+
+/// 旋转
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+/// 脉冲
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+/// 弹跳
+@keyframes bounce {
+  0%, 100% {
+    transform: translateY(0);
+    animation-timing-function: cubic-bezier(0.8, 0, 1, 1);
+  }
+  50% {
+    transform: translateY(-25%);
+    animation-timing-function: cubic-bezier(0, 0, 0.2, 1);
+  }
+}
+
+/// 摇晃
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  10%, 30%, 50%, 70%, 90% { transform: translateX(-4px); }
+  20%, 40%, 60%, 80% { transform: translateX(4px); }
+}
+
+/// 渐变位移（用于渐变文字动画）
+@keyframes gradient-shift {
+  0%, 100% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+}
+
+/// 骨架屏闪烁
+@keyframes skeleton-shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+/// 打字机光标闪烁
+@keyframes cursor-blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0; }
+}
+
+// ============================================================================
+// 动画工具类
+// ============================================================================
+
+.animate {
+  &-fade-in {
+    animation: fade-in $duration-normal $ease-out;
+  }
+  
+  &-fade-out {
+    animation: fade-out $duration-normal $ease-out;
+  }
+  
+  &-slide-up {
+    animation: slide-up $duration-slow $ease-out;
+  }
+  
+  &-slide-down {
+    animation: slide-down $duration-slow $ease-out;
+  }
+  
+  &-slide-left {
+    animation: slide-left $duration-slow $ease-out;
+  }
+  
+  &-slide-right {
+    animation: slide-right $duration-slow $ease-out;
+  }
+  
+  &-scale-in {
+    animation: scale-in $duration-normal $ease-out;
+  }
+  
+  &-scale-out {
+    animation: scale-out $duration-normal $ease-out;
+  }
+  
+  &-spin {
+    animation: spin 1s linear infinite;
+  }
+  
+  &-pulse {
+    animation: pulse 2s $ease-in-out infinite;
+  }
+  
+  &-bounce {
+    animation: bounce 1s infinite;
+  }
+  
+  &-shake {
+    animation: shake 0.5s $ease-in-out;
+  }
+}
+
+// ============================================================================
+// 过渡工具类
+// ============================================================================
+
+.transition {
+  &-none {
+    transition: none;
+  }
+  
+  &-all {
+    transition: all $duration-normal $ease-default;
+  }
+  
+  &-colors {
+    transition: color $duration-normal $ease-default,
+                background-color $duration-normal $ease-default,
+                border-color $duration-normal $ease-default;
+  }
+  
+  &-opacity {
+    transition: opacity $duration-normal $ease-default;
+  }
+  
+  &-transform {
+    transition: transform $duration-normal $ease-default;
+  }
+  
+  &-shadow {
+    transition: box-shadow $duration-normal $ease-default;
+  }
+  
+  // 时长变体
+  &-fast {
+    transition-duration: $duration-fast;
+  }
+  
+  &-slow {
+    transition-duration: $duration-slow;
+  }
+}

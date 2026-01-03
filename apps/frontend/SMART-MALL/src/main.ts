@@ -6,8 +6,8 @@ import 'element-plus/theme-chalk/dark/css-vars.css'
 import SmartMall from './SmartMall.vue'
 import router from './router'
 
-// 全局样式
-import './assets/styles/base.css'
+// 全局样式 (SCSS 设计系统)
+import './assets/styles/scss/main.scss'
 
 const app = createApp(SmartMall)
 const pinia = createPinia()

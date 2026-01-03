@@ -1,18 +1,16 @@
 <script setup lang="ts">
 /**
  * 认证表单按钮组件
- * 带加载状态和箭头动画的主按钮
+ * 使用 Element Plus 组件
  */
+import { ElButton, ElIcon } from 'element-plus'
+import { ArrowRight } from '@element-plus/icons-vue'
+
 defineProps<{
-  /** 按钮文字 */
   text: string
-  /** 加载中文字 */
   loadingText?: string
-  /** 是否加载中 */
   loading?: boolean
-  /** 是否禁用 */
   disabled?: boolean
-  /** 按钮类型 */
   type?: 'submit' | 'button'
 }>()
 
@@ -22,74 +20,56 @@ defineEmits<{
 </script>
 
 <template>
-  <button 
-    :type="type || 'submit'" 
-    class="btn-submit" 
-    :disabled="loading || disabled"
+  <ElButton
+    :native-type="type || 'submit'"
+    :loading="loading"
+    :disabled="disabled"
+    type="primary"
+    size="large"
+    class="auth-submit-btn"
     @click="$emit('click')"
   >
-    <span v-if="loading" class="loading-spinner"></span>
     <span>{{ loading ? (loadingText || '处理中...') : text }}</span>
-    <svg v-if="!loading" class="btn-arrow" viewBox="0 0 20 20" fill="none">
-      <path d="M4 10h12m0 0l-4-4m4 4l-4 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-    </svg>
-  </button>
+    <ElIcon v-if="!loading" class="btn-arrow">
+      <ArrowRight />
+    </ElIcon>
+  </ElButton>
 </template>
 
-<style scoped>
-.btn-submit {
+<style scoped lang="scss">
+.auth-submit-btn {
   width: 100%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
   margin-top: 24px;
-  padding: 14px 24px;
-  background: linear-gradient(135deg, #60a5fa 0%, #818cf8 100%);
-  border: none;
+  height: 48px;
   border-radius: 10px;
   font-size: 14px;
   font-weight: 500;
-  color: #fff;
-  cursor: pointer;
+  background: linear-gradient(135deg, #60a5fa 0%, #818cf8 100%);
+  border: none;
   transition: transform 0.15s, box-shadow 0.15s;
-}
 
-.btn-submit:hover:not(:disabled) {
-  transform: translateY(-1px);
-  box-shadow: 0 4px 20px rgba(96, 165, 250, 0.3);
-}
+  &:hover:not(:disabled) {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 20px rgba(96, 165, 250, 0.3);
+    background: linear-gradient(135deg, #60a5fa 0%, #818cf8 100%);
 
-.btn-submit:active:not(:disabled) {
-  transform: translateY(0);
-}
+    .btn-arrow {
+      transform: translateX(3px);
+    }
+  }
 
-.btn-submit:disabled {
-  background: #3c4043;
-  color: #5f6368;
-  cursor: not-allowed;
-}
+  &:active:not(:disabled) {
+    transform: translateY(0);
+  }
 
-.btn-arrow {
-  width: 18px;
-  height: 18px;
-  transition: transform 0.2s;
-}
+  &:disabled {
+    background: #3c4043;
+    color: #5f6368;
+  }
 
-.btn-submit:hover:not(:disabled) .btn-arrow {
-  transform: translateX(3px);
-}
-
-.loading-spinner {
-  width: 16px;
-  height: 16px;
-  border: 2px solid rgba(255, 255, 255, 0.3);
-  border-top-color: #fff;
-  border-radius: 50%;
-  animation: spin 0.6s linear infinite;
-}
-
-@keyframes spin {
-  to { transform: rotate(360deg); }
+  .btn-arrow {
+    margin-left: 8px;
+    transition: transform 0.2s;
+  }
 }
 </style>

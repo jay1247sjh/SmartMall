@@ -15,7 +15,6 @@
     "alwaysStrict": true, // 始终以严格模式解析
     "noUnusedLocals": true,
     "noUnusedParameters": true,
-    "erasableSyntaxOnly": true,
     "noFallthroughCasesInSwitch": true,
     "noUncheckedSideEffectImports": true,
 

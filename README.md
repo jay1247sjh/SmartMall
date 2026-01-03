@@ -11,6 +11,7 @@ Smart Mall 是一个现代化的商城管理系统，提供 3D 可视化商城�
 ### 前端
 - **框架**：Vue 3 + TypeScript + Vite
 - **UI 框架**：Element Plus
+- **样式系统**：SCSS（嵌套语法 + 设计令牌）
 - **状态管理**：Pinia
 - **路由**：Vue Router 4
 - **3D 引擎**：Three.js
@@ -31,6 +32,8 @@ Smart-Mall/
 │   ├── frontend/SMART-MALL/     # 前端项目
 │   │   ├── src/
 │   │   │   ├── api/             # API 接口
+│   │   │   ├── assets/
+│   │   │   │   └── styles/scss/ # SCSS 样式系统
 │   │   │   ├── components/      # 组件
 │   │   │   │   ├── auth/        # 认证组件
 │   │   │   │   ├── layouts/     # 布局组件
@@ -88,8 +91,8 @@ cd apps/backend/SMART-MALL
 
 ```bash
 cd apps/frontend/SMART-MALL
-npm install
-npm run dev
+pnpm install
+pnpm run dev
 ```
 
 ## 功能模块

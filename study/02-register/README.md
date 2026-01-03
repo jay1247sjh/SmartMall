@@ -720,18 +720,18 @@ watch(debouncedUsername, async (val) => {
 
 ## 组件化重构说明
 
-注册页面已使用可复用组件重构，大幅减少代码量：
+注册页面已使用 Element Plus 组件 + SCSS 嵌套语法重构，大幅减少代码量：
 
 ### 使用的组件
 
-| 组件 | 路径 | 说明 |
-|------|------|------|
-| `AuthLayout` | `@/components/auth/AuthLayout.vue` | 认证页面统一布局 |
-| `AuthFormCard` | `@/components/auth/AuthFormCard.vue` | 表单卡片容器 |
-| `AuthInput` | `@/components/auth/AuthInput.vue` | 带图标、验证状态、异步检查的输入框 |
-| `AuthButton` | `@/components/auth/AuthButton.vue` | 带加载状态和禁用状态的主按钮 |
-| `AlertMessage` | `@/components/auth/AlertMessage.vue` | 错误/成功提示 |
-| `FeatureList` | `@/components/auth/FeatureList.vue` | 功能特点列表 |
+| 组件 | 路径 | Element Plus 组件 |
+|------|------|------------------|
+| `AuthLayout` | `@/components/auth/AuthLayout.vue` | ElIcon |
+| `AuthFormCard` | `@/components/auth/AuthFormCard.vue` | ElCard |
+| `AuthInput` | `@/components/auth/AuthInput.vue` | ElInput, ElIcon, ElFormItem |
+| `AuthButton` | `@/components/auth/AuthButton.vue` | ElButton, ElIcon |
+| `AlertMessage` | `@/components/auth/AlertMessage.vue` | ElAlert |
+| `FeatureList` | `@/components/auth/FeatureList.vue` | ElIcon |
 
 ### 重构前后对比
 
@@ -779,6 +779,40 @@ const usernameError = computed(() => {
 const isFormValid = computed(() => {
   return hasRequiredFields && noFormatErrors && availabilityOk
 })
+```
+
+### SCSS 嵌套语法示例
+
+```scss
+// 注册页面样式使用 SCSS 嵌套
+.register-form {
+  .form-row {
+    display: flex;
+    gap: 16px;
+
+    .form-col {
+      flex: 1;
+    }
+  }
+
+  .terms-checkbox {
+    margin: 16px 0;
+
+    :deep(.el-checkbox__label) {
+      font-size: 13px;
+      color: #9aa0a6;
+    }
+
+    a {
+      color: #8ab4f8;
+      text-decoration: none;
+
+      &:hover {
+        text-decoration: underline;
+      }
+    }
+  }
+}
 ```
 
 ---

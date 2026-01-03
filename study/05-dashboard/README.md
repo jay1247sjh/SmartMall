@@ -847,4 +847,162 @@ const { showReloadPrompt, confirmReload, dismissPrompt } = usePermissionCheck({
 
 ---
 
+## Element Plus 仪表盘组件
+
+仪表盘页面已使用 Element Plus 组件重构：
+
+### 使用的组件
+
+| 组件 | 用途 |
+|------|------|
+| `ElRow`, `ElCol` | 栅格布局 |
+| `ElCard` | 卡片容器 |
+| `ElStatistic` | 统计数值展示 |
+| `ElTable`, `ElTableColumn` | 数据表格 |
+| `ElTag` | 状态标签 |
+| `ElSkeleton` | 加载骨架屏 |
+| `ElEmpty` | 空状态 |
+
+### 仪表盘组件示例
+
+```vue
+<script setup lang="ts">
+import {
+  ElRow,
+  ElCol,
+  ElCard,
+  ElStatistic,
+  ElTable,
+  ElTableColumn,
+  ElTag,
+  ElSkeleton,
+} from 'element-plus'
+</script>
+
+<template>
+  <main class="dashboard-page">
+    <!-- 统计卡片区域 -->
+    <section class="stats-section">
+      <ElRow :gutter="16">
+        <ElCol :xs="24" :sm="12" :lg="6">
+          <ElCard shadow="hover" class="stat-card">
+            <ElStatistic title="商家总数" :value="stats?.merchantCount ?? 0">
+              <template #suffix>
+                <ElTag type="success" size="small">+12%</ElTag>
+              </template>
+            </ElStatistic>
+          </ElCard>
+        </ElCol>
+        <!-- 更多统计卡片... -->
+      </ElRow>
+    </section>
+
+    <!-- 数据表格区域 -->
+    <section class="table-section">
+      <ElCard shadow="never">
+        <template #header>
+          <header class="card-header">
+            <h3>待审批列表</h3>
+          </header>
+        </template>
+
+        <ElTable :data="recentApprovals" stripe>
+          <ElTableColumn prop="merchantName" label="商家名称" />
+          <ElTableColumn prop="reason" label="申请原因" />
+          <ElTableColumn prop="status" label="状态">
+            <template #default="{ row }">
+              <ElTag :type="getStatusType(row.status)">
+                {{ row.status }}
+              </ElTag>
+            </template>
+          </ElTableColumn>
+          <ElTableColumn prop="createdAt" label="申请时间">
+            <template #default="{ row }">
+              {{ formatDate(row.createdAt) }}
+            </template>
+          </ElTableColumn>
+        </ElTable>
+      </ElCard>
+    </section>
+  </main>
+</template>
+```
+
+### SCSS 嵌套语法示例
+
+```scss
+.dashboard-page {
+  .stats-section {
+    margin-bottom: 24px;
+
+    .stat-card {
+      background: #1d1e1f;
+      border: 1px solid rgba(255, 255, 255, 0.06);
+
+      :deep(.el-statistic) {
+        .el-statistic__head {
+          color: #9aa0a6;
+          font-size: 14px;
+        }
+
+        .el-statistic__content {
+          color: #e8eaed;
+
+          .el-statistic__number {
+            font-size: 32px;
+            font-weight: 600;
+          }
+        }
+      }
+    }
+  }
+
+  .table-section {
+    :deep(.el-card) {
+      background: #1d1e1f;
+      border: 1px solid rgba(255, 255, 255, 0.06);
+
+      .el-card__header {
+        border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+        padding: 16px 20px;
+      }
+    }
+
+    :deep(.el-table) {
+      background: transparent;
+
+      th.el-table__cell {
+        background: rgba(255, 255, 255, 0.02);
+        color: #9aa0a6;
+      }
+
+      td.el-table__cell {
+        color: #e8eaed;
+      }
+
+      tr:hover > td.el-table__cell {
+        background: rgba(255, 255, 255, 0.04);
+      }
+    }
+  }
+}
+```
+
+### 响应式布局
+
+使用 Element Plus 栅格系统实现响应式：
+
+```vue
+<ElRow :gutter="16">
+  <!-- xs: 手机 (<768px) - 1列 -->
+  <!-- sm: 平板 (≥768px) - 2列 -->
+  <!-- lg: 桌面 (≥1200px) - 4列 -->
+  <ElCol :xs="24" :sm="12" :lg="6">
+    <StatCard />
+  </ElCol>
+</ElRow>
+```
+
+---
+
 *"认识你自己的权限边界。" —— 改编自德尔斐神谕*

@@ -542,24 +542,45 @@ export class ThreeEngine {
     window.removeEventListener('resize', this.handleResize)
 
     // 销毁相机控制器
-    this.orbitController?.dispose()
-    this.cameraController?.dispose()
+    try {
+      this.orbitController?.dispose()
+      this.cameraController?.dispose()
+    } catch (e) {
+      console.warn('[ThreeEngine] Error disposing camera controllers:', e)
+    }
+    this.orbitController = null
+    this.cameraController = null
 
-    // 销毁渲染器
-    this.renderer.dispose()
-    // 从 DOM 中移除画布
-    this.renderer.domElement.remove()
+    // 销毁射线检测器（如果有 dispose 方法）
+    if (this.raycasterManager && typeof (this.raycasterManager as unknown as { dispose?: () => void }).dispose === 'function') {
+      try {
+        (this.raycasterManager as unknown as { dispose: () => void }).dispose()
+      } catch (e) {
+        console.warn('[ThreeEngine] Error disposing raycaster:', e)
+      }
+    }
 
     // 遍历场景中的所有对象，释放几何体和材质
     this.scene.traverse((object) => {
       if (object instanceof THREE.Mesh) {
         // 释放几何体
-        object.geometry?.dispose()
+        try {
+          object.geometry?.dispose()
+        } catch (e) {
+          console.warn('[ThreeEngine] Error disposing geometry:', e)
+        }
+        
         // 释放材质（可能是数组）
-        if (Array.isArray(object.material)) {
-          object.material.forEach((m) => m.dispose())
-        } else {
-          object.material?.dispose()
+        try {
+          if (Array.isArray(object.material)) {
+            object.material.forEach((m) => {
+              this.disposeMaterial(m)
+            })
+          } else if (object.material) {
+            this.disposeMaterial(object.material)
+          }
+        } catch (e) {
+          console.warn('[ThreeEngine] Error disposing material:', e)
         }
       }
     })
@@ -567,8 +588,49 @@ export class ThreeEngine {
     // 清空场景
     this.scene.clear()
 
+    // 销毁渲染器
+    try {
+      this.renderer.dispose()
+      this.renderer.forceContextLoss()
+    } catch (e) {
+      console.warn('[ThreeEngine] Error disposing renderer:', e)
+    }
+    
+    // 从 DOM 中移除画布
+    try {
+      this.renderer.domElement.remove()
+    } catch (e) {
+      console.warn('[ThreeEngine] Error removing canvas:', e)
+    }
+
     // 清空回调列表
     this.onRenderCallbacks = []
+    
+    console.log('[ThreeEngine] Disposed successfully')
+  }
+
+  /**
+   * 释放材质及其纹理
+   */
+  private disposeMaterial(material: THREE.Material): void {
+    material.dispose()
+    
+    // 释放材质中的纹理
+    if ('map' in material && material.map) {
+      (material.map as THREE.Texture).dispose()
+    }
+    if ('normalMap' in material && material.normalMap) {
+      (material.normalMap as THREE.Texture).dispose()
+    }
+    if ('roughnessMap' in material && material.roughnessMap) {
+      (material.roughnessMap as THREE.Texture).dispose()
+    }
+    if ('metalnessMap' in material && material.metalnessMap) {
+      (material.metalnessMap as THREE.Texture).dispose()
+    }
+    if ('envMap' in material && material.envMap) {
+      (material.envMap as THREE.Texture).dispose()
+    }
   }
 
   // ==========================================================================

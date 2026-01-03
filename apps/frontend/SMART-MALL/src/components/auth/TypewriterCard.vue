@@ -1,16 +1,14 @@
 <script setup lang="ts">
 /**
  * 打字机效果卡片组件
- * 用于品牌面板展示动态文字效果
+ * 使用 Element Plus 组件 + HTML5 语义化标签
  */
 import { ref, onMounted, onUnmounted } from 'vue'
+import { ElCard } from 'element-plus'
 
 const props = defineProps<{
-  /** 要循环展示的文字列表 */
   texts: string[]
-  /** 打字速度（毫秒） */
   typeSpeed?: number
-  /** 停顿时间（毫秒） */
   pauseTime?: number
 }>()
 
@@ -55,46 +53,50 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <div class="typewriter-card">
-    <div class="typewriter-content">
+  <ElCard shadow="never" class="typewriter-card">
+    <p class="typewriter-content">
       <span class="typewriter-text">{{ displayedText }}</span>
       <span class="cursor" :class="{ typing: isTyping }"></span>
-    </div>
-  </div>
+    </p>
+  </ElCard>
 </template>
 
-<style scoped>
+<style scoped lang="scss">
 .typewriter-card {
   background: rgba(255, 255, 255, 0.03);
   border: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: 12px;
-  padding: 20px 24px;
-}
 
-.typewriter-content {
-  min-height: 24px;
-  line-height: 24px;
-}
+  :deep(.el-card__body) {
+    padding: 20px 24px;
+  }
 
-.typewriter-text {
-  font-size: 14px;
-  color: #bdc1c6;
-  line-height: 24px;
-  vertical-align: middle;
-}
+  .typewriter-content {
+    min-height: 24px;
+    line-height: 24px;
+    margin: 0;
 
-.cursor {
-  display: inline-block;
-  width: 2px;
-  height: 16px;
-  background: #8ab4f8;
-  margin-left: 1px;
-  vertical-align: middle;
-  animation: blink 1s step-end infinite;
-}
+    .typewriter-text {
+      font-size: 14px;
+      color: #bdc1c6;
+      line-height: 24px;
+      vertical-align: middle;
+    }
 
-.cursor.typing { 
-  animation: none; 
+    .cursor {
+      display: inline-block;
+      width: 2px;
+      height: 16px;
+      background: #8ab4f8;
+      margin-left: 1px;
+      vertical-align: middle;
+      animation: blink 1s step-end infinite;
+
+      &.typing {
+        animation: none;
+      }
+    }
+  }
 }
 
 @keyframes blink {

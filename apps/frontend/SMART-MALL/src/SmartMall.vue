@@ -1,18 +1,21 @@
-<script lang="ts">
-import { defineComponent } from 'vue'
-
-export default defineComponent({
-  name: 'SmartMall'
-})
+<script setup lang="ts">
+/**
+ * Smart Mall 根组件
+ * 使用 Element Plus 组件
+ */
+import { ElConfigProvider } from 'element-plus'
+import zhCn from 'element-plus/es/locale/lang/zh-cn'
 </script>
 
 <template>
-  <div class="smart-mall">
-    <router-view />
-  </div>
+  <ElConfigProvider :locale="zhCn">
+    <main class="smart-mall">
+      <router-view />
+    </main>
+  </ElConfigProvider>
 </template>
 
-<style scoped>
+<style scoped lang="scss">
 .smart-mall {
   width: 100vw;
   height: 100vh;

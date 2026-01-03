@@ -2,7 +2,7 @@
  * 商城管理 API 模块
  * 楼层、区域、版本管理相关接口
  */
-import http from './http'
+// import http from './http' // TODO: 启用真实后端时取消注释
 
 // ============================================================================
 // Types
@@ -128,9 +128,9 @@ export async function updateFloor(id: number, data: Partial<CreateFloorRequest>)
 /**
  * 删除楼层
  */
-export async function deleteFloor(id: number): Promise<void> {
+export async function deleteFloor(_id: number): Promise<void> {
   // TODO: 对接真实后端
-  // return http.delete(`/api/mall/floors/${id}`)
+  // return http.delete(`/api/mall/floors/${_id}`)
   
   return Promise.resolve()
 }
@@ -142,9 +142,9 @@ export async function deleteFloor(id: number): Promise<void> {
 /**
  * 创建区域
  */
-export async function createArea(floorId: number, data: CreateAreaRequest): Promise<Area> {
+export async function createArea(_floorId: number, data: CreateAreaRequest): Promise<Area> {
   // TODO: 对接真实后端
-  // return http.post(`/api/mall/floors/${floorId}/areas`, data)
+  // return http.post(`/api/mall/floors/${_floorId}/areas`, data)
   
   return Promise.resolve({
     id: Date.now(),
@@ -174,9 +174,9 @@ export async function updateArea(id: number, data: Partial<CreateAreaRequest>): 
 /**
  * 删除区域
  */
-export async function deleteArea(id: number): Promise<void> {
+export async function deleteArea(_id: number): Promise<void> {
   // TODO: 对接真实后端
-  // return http.delete(`/api/mall/areas/${id}`)
+  // return http.delete(`/api/mall/areas/${_id}`)
   
   return Promise.resolve()
 }
@@ -226,9 +226,9 @@ export async function getVersions(): Promise<LayoutVersion[]> {
 /**
  * 发布版本
  */
-export async function publishVersion(id: number): Promise<void> {
+export async function publishVersion(_id: number): Promise<void> {
   // TODO: 对接真实后端
-  // return http.post(`/api/mall/versions/${id}/publish`)
+  // return http.post(`/api/mall/versions/${_id}/publish`)
   
   return Promise.resolve()
 }
@@ -236,9 +236,9 @@ export async function publishVersion(id: number): Promise<void> {
 /**
  * 回滚版本
  */
-export async function rollbackVersion(id: number): Promise<void> {
+export async function rollbackVersion(_id: number): Promise<void> {
   // TODO: 对接真实后端
-  // return http.post(`/api/mall/versions/${id}/rollback`)
+  // return http.post(`/api/mall/versions/${_id}/rollback`)
   
   return Promise.resolve()
 }

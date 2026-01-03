@@ -1,15 +1,9 @@
-/// <reference types="vitest" />
 import { defineConfig } from 'vite'
 import vue from '@vitejs/plugin-vue'
 import path from 'path'
 
 // Vite 配置文档: https://vite.dev/config/
 export default defineConfig({
-  // Vitest 测试配置
-  test: {
-    globals: true,
-    environment: 'jsdom',
-  },
 
   // Vue 插件配置
   plugins: [vue()],

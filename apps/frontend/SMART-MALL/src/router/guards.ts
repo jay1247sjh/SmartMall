@@ -8,7 +8,7 @@
  * - 模式检查：CONFIG 模式页面需要特定权限
  */
 
-import type { Router, RouteLocationNormalized, NavigationGuardNext } from 'vue-router'
+import type { Router, RouteLocationNormalized } from 'vue-router'
 import { useUserStore } from '@/stores'
 import { setupDynamicRoutes, isDynamicRoutesLoaded, removeDynamicRoutes } from './dynamic'
 
@@ -79,67 +79,77 @@ function hasModePemission(
  */
 export function setupRouterGuards(router: Router): void {
   // 前置守卫
-  router.beforeEach(async (to, from, next) => {
+  router.beforeEach(async (to, _from, next) => {
     const userStore = useUserStore()
     
-    // 1. 尝试从 localStorage 恢复登录状态
-    if (!userStore.isAuthenticated) {
-      userStore.restoreFromStorage()
-    }
-    
-    const isAuthenticated = userStore.isAuthenticated
-    const userRole = userStore.role
-    
-    // 2. 白名单路由直接放行
-    if (isInWhiteList(to.path)) {
-      // 已登录用户访问登录页，重定向到商城首页
-      if (isAuthenticated && LOGIN_REDIRECT_LIST.includes(to.path)) {
-        return next({ path: '/mall' })
+    try {
+      // 1. 尝试从 localStorage 恢复登录状态
+      if (!userStore.isAuthenticated) {
+        userStore.restoreFromStorage()
       }
-      return next()
-    }
-    
-    // 3. 未登录，重定向到登录页
-    if (!isAuthenticated) {
-      return next({
-        path: '/login',
-        query: { redirect: to.fullPath },
-      })
-    }
-    
-    // 4. 已登录，检查动态路由是否已加载
-    if (!isDynamicRoutesLoaded()) {
-      try {
-        const success = await setupDynamicRoutes(router)
-        
-        if (success) {
-          // 路由加载成功，重新导航到目标路由
-          // 使用 replace 避免产生历史记录
-          return next({ ...to, replace: true })
-        } else {
-          // 路由加载失败，跳转到错误页
+      
+      const isAuthenticated = userStore.isAuthenticated
+      const userRole = userStore.role
+      
+      // 2. 白名单路由直接放行
+      if (isInWhiteList(to.path)) {
+        // 已登录用户访问登录页，重定向到商城首页
+        if (isAuthenticated && LOGIN_REDIRECT_LIST.includes(to.path)) {
+          return next({ path: '/mall' })
+        }
+        return next()
+      }
+      
+      // 3. 未登录，重定向到登录页
+      if (!isAuthenticated) {
+        console.log('[Guard] 未登录，重定向到登录页')
+        return next({
+          path: '/login',
+          query: { redirect: to.fullPath },
+        })
+      }
+      
+      // 4. 已登录，检查动态路由是否已加载
+      if (!isDynamicRoutesLoaded()) {
+        try {
+          const success = await setupDynamicRoutes(router)
+          
+          if (success) {
+            // 路由加载成功，重新导航到目标路由
+            // 使用 replace 避免产生历史记录
+            return next({ ...to, replace: true })
+          } else {
+            // 路由加载失败，跳转到错误页
+            console.error('[Guard] 动态路由加载失败')
+            return next({ path: '/403' })
+          }
+        } catch (error) {
+          console.error('[Guard] 动态路由加载异常:', error)
           return next({ path: '/403' })
         }
-      } catch (error) {
-        console.error('[Guard] 动态路由加载异常:', error)
+      }
+      
+      // 5. 检查角色权限
+      if (!hasRoutePermission(to, userRole)) {
+        console.warn(`[Guard] 用户角色 ${userRole} 无权访问 ${to.path}`)
         return next({ path: '/403' })
       }
+      
+      // 6. 检查模式权限
+      if (!hasModePemission(to, userRole)) {
+        console.warn(`[Guard] 用户角色 ${userRole} 无权访问 CONFIG 模式页面`)
+        return next({ path: '/403' })
+      }
+      
+      // 7. 全部通过，放行
+      next()
+    } catch (error) {
+      // 捕获所有未预期的错误，防止路由卡死
+      console.error('[Guard] 路由守卫异常:', error)
+      // 清除可能损坏的状态
+      userStore.clearUser()
+      return next({ path: '/login' })
     }
-    
-    // 5. 检查角色权限
-    if (!hasRoutePermission(to, userRole)) {
-      console.warn(`[Guard] 用户角色 ${userRole} 无权访问 ${to.path}`)
-      return next({ path: '/403' })
-    }
-    
-    // 6. 检查模式权限
-    if (!hasModePemission(to, userRole)) {
-      console.warn(`[Guard] 用户角色 ${userRole} 无权访问 CONFIG 模式页面`)
-      return next({ path: '/403' })
-    }
-    
-    // 7. 全部通过，放行
-    next()
   })
   
   // 后置守卫（可用于页面标题、进度条等）

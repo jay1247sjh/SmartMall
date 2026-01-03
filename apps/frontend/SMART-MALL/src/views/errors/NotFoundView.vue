@@ -1,8 +1,11 @@
 <script setup lang="ts">
 /**
  * 404 页面
+ * 使用 Element Plus 组件 + HTML5 语义化标签
  */
 import { useRouter } from 'vue-router'
+import { ElResult, ElButton, ElIcon } from 'element-plus'
+import { HomeFilled } from '@element-plus/icons-vue'
 
 const router = useRouter()
 
@@ -12,49 +15,68 @@ function goHome() {
 </script>
 
 <template>
-  <div class="error-view">
-    <div class="error-content">
-      <h1>404</h1>
-      <p>页面不存在</p>
-      <button @click="goHome">返回首页</button>
-    </div>
-  </div>
+  <main class="error-view">
+    <article class="error-content">
+      <ElResult
+        icon="warning"
+        title="404"
+        sub-title="页面不存在"
+        class="error-result"
+      >
+        <template #extra>
+          <ElButton type="primary" @click="goHome">
+            <ElIcon class="btn-icon"><HomeFilled /></ElIcon>
+            返回首页
+          </ElButton>
+        </template>
+      </ElResult>
+    </article>
+  </main>
 </template>
 
-<style scoped>
+<style scoped lang="scss">
 .error-view {
   min-height: 100vh;
   display: flex;
   align-items: center;
   justify-content: center;
-  background: #f5f5f5;
-}
+  background: #0a0a0a;
 
-.error-content {
-  text-align: center;
-}
+  .error-content {
+    text-align: center;
 
-h1 {
-  font-size: 6rem;
-  color: #ddd;
-  margin: 0;
-}
+    .error-result {
+      :deep(.el-result__icon) {
+        svg {
+          width: 120px;
+          height: 120px;
+          color: var(--el-color-warning);
+        }
+      }
 
-p {
-  color: #666;
-  margin: 1rem 0 2rem;
-}
+      :deep(.el-result__title) {
+        font-size: 72px;
+        font-weight: 600;
+        color: var(--el-text-color-secondary);
+        margin-top: 0;
+      }
 
-button {
-  padding: 0.75rem 2rem;
-  background: #667eea;
-  color: white;
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
-}
+      :deep(.el-result__subtitle) {
+        font-size: 16px;
+        color: var(--el-text-color-placeholder);
+      }
 
-button:hover {
-  background: #5a6fd6;
+      :deep(.el-button) {
+        background: linear-gradient(135deg, #60a5fa 0%, #818cf8 100%);
+        border: none;
+        border-radius: 10px;
+        padding: 12px 24px;
+
+        .btn-icon {
+          margin-right: 8px;
+        }
+      }
+    }
+  }
 }
 </style>

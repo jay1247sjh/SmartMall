@@ -1,248 +1,205 @@
 <script setup lang="ts">
 /**
- * 商家布局组件 - Gemini 风格
+ * 商家布局组件
+ * 使用 Element Plus 组件 + HTML5 语义化标签
  */
 import { useUserStore } from '@/stores'
 import { useRouter } from 'vue-router'
 import { cleanupOnLogout } from '@/router'
+import {
+  ElContainer,
+  ElAside,
+  ElHeader,
+  ElMain,
+  ElMenu,
+  ElMenuItem,
+  ElButton,
+  ElIcon,
+  ElTag,
+} from 'element-plus'
+import { Box, HomeFilled, Shop, Document, Tools, SwitchButton } from '@element-plus/icons-vue'
 
 const userStore = useUserStore()
 const router = useRouter()
 
 const menuItems = [
-  { path: '/merchant/dashboard', label: '工作台' },
-  { path: '/merchant/store-config', label: '店铺配置' },
-  { path: '/merchant/area-apply', label: '区域申请' },
-  { path: '/merchant/builder', label: '建模工具' },
+  { path: '/merchant/dashboard', label: '工作台', icon: HomeFilled },
+  { path: '/merchant/store-config', label: '店铺配置', icon: Shop },
+  { path: '/merchant/area-apply', label: '区域申请', icon: Document },
+  { path: '/merchant/builder', label: '建模工具', icon: Tools },
 ]
 
 function handleLogout() {
   userStore.clearUser()
   cleanupOnLogout(router)
 }
+
+function handleMenuSelect(path: string) {
+  router.push(path)
+}
 </script>
 
 <template>
-  <div class="merchant-layout">
-    <!-- 背景装饰 -->
-    <div class="layout-bg">
-      <div class="bg-gradient"></div>
-    </div>
+  <ElContainer class="merchant-layout">
+    <div class="layout-bg"></div>
 
-    <aside class="layout-sidebar">
-      <div class="sidebar-header">
-        <div class="logo-icon">
-          <svg viewBox="0 0 24 24" fill="none">
-            <path d="M12 2L2 7l10 5 10-5-10-5z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/>
-            <path d="M2 17l10 5 10-5" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/>
-            <path d="M2 12l10 5 10-5" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/>
-          </svg>
-        </div>
+    <ElAside width="220px" class="layout-sidebar">
+      <header class="sidebar-header">
+        <ElIcon :size="18" class="logo-icon"><Box /></ElIcon>
         <span class="header-text">商家中心</span>
-      </div>
-      <nav class="sidebar-menu">
-        <router-link
-          v-for="item in menuItems"
-          :key="item.path"
-          :to="item.path"
-          class="menu-item"
-        >
-          <span>{{ item.label }}</span>
-        </router-link>
-      </nav>
-      <div class="sidebar-footer">
-        <router-link to="/mall" class="menu-item back-link">
-          <span>返回首页</span>
-        </router-link>
-      </div>
-    </aside>
-    <div class="layout-main">
-      <header class="layout-header">
-        <div class="breadcrumb">商家中心</div>
-        <div class="user-actions">
-          <span class="role-badge">MERCHANT</span>
-          <span class="username">{{ userStore.currentUser?.username }}</span>
-          <button class="logout-btn" @click="handleLogout">退出</button>
-        </div>
       </header>
-      <main class="layout-content">
+
+      <ElMenu
+        :default-active="$route.path"
+        class="sidebar-menu"
+        @select="handleMenuSelect"
+      >
+        <ElMenuItem v-for="item in menuItems" :key="item.path" :index="item.path">
+          <ElIcon><component :is="item.icon" /></ElIcon>
+          <span>{{ item.label }}</span>
+        </ElMenuItem>
+      </ElMenu>
+
+      <footer class="sidebar-footer">
+        <ElButton text class="back-link" @click="router.push('/mall')">
+          <ElIcon class="mr-1"><HomeFilled /></ElIcon>
+          返回首页
+        </ElButton>
+      </footer>
+    </ElAside>
+
+    <ElContainer class="layout-main">
+      <ElHeader class="layout-header">
+        <span class="breadcrumb">商家中心</span>
+        <nav class="user-actions">
+          <ElTag effect="dark" size="small" class="role-badge">MERCHANT</ElTag>
+          <span class="username">{{ userStore.currentUser?.username }}</span>
+          <ElButton text @click="handleLogout">
+            <ElIcon class="mr-1"><SwitchButton /></ElIcon>
+            退出
+          </ElButton>
+        </nav>
+      </ElHeader>
+
+      <ElMain class="layout-content">
         <router-view />
-      </main>
-    </div>
-  </div>
+      </ElMain>
+    </ElContainer>
+  </ElContainer>
 </template>
 
-<style scoped>
+<style scoped lang="scss">
 .merchant-layout {
   min-height: 100vh;
-  display: flex;
   background: #0a0a0a;
   color: #e8eaed;
   position: relative;
-}
 
-.layout-bg {
-  position: fixed;
-  inset: 0;
-  pointer-events: none;
-  z-index: 0;
-}
+  .layout-bg {
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 0;
+    background: radial-gradient(ellipse 50% 30% at 70% 10%, rgba(236, 72, 153, 0.04) 0%, transparent 50%),
+                radial-gradient(ellipse 40% 30% at 30% 90%, rgba(249, 115, 22, 0.03) 0%, transparent 50%);
+  }
 
-.bg-gradient {
-  position: absolute;
-  inset: 0;
-  background: radial-gradient(ellipse 50% 30% at 70% 10%, rgba(236, 72, 153, 0.04) 0%, transparent 50%),
-              radial-gradient(ellipse 40% 30% at 30% 90%, rgba(249, 115, 22, 0.03) 0%, transparent 50%);
-}
+  .layout-sidebar {
+    background: rgba(17, 17, 19, 0.8);
+    backdrop-filter: blur(20px);
+    border-right: 1px solid rgba(255, 255, 255, 0.06);
+    display: flex;
+    flex-direction: column;
+    position: relative;
+    z-index: 10;
 
-.layout-sidebar {
-  width: 220px;
-  background: rgba(17, 17, 19, 0.8);
-  backdrop-filter: blur(20px);
-  border-right: 1px solid rgba(255, 255, 255, 0.06);
-  display: flex;
-  flex-direction: column;
-  position: relative;
-  z-index: 10;
-}
+    .sidebar-header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 20px 16px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.06);
 
-.sidebar-header {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 20px 16px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
-}
+      .logo-icon {
+        width: 36px;
+        height: 36px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: linear-gradient(135deg, rgba(236, 72, 153, 0.15) 0%, rgba(249, 115, 22, 0.15) 100%);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 10px;
+        color: #f472b6;
+      }
 
-.logo-icon {
-  width: 36px;
-  height: 36px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: linear-gradient(135deg, rgba(236, 72, 153, 0.15) 0%, rgba(249, 115, 22, 0.15) 100%);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 10px;
-  color: #f472b6;
-}
+      .header-text {
+        font-size: 15px;
+        font-weight: 600;
+        background: linear-gradient(135deg, #f472b6 0%, #fb923c 100%);
+        background-clip: text;
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+      }
+    }
 
-.logo-icon svg {
-  width: 18px;
-  height: 18px;
-}
+    .sidebar-menu {
+      flex: 1;
+      border: none;
+      background: transparent;
+      padding: 12px 8px;
 
-.header-text {
-  font-size: 15px;
-  font-weight: 600;
-  background: linear-gradient(135deg, #f472b6 0%, #fb923c 100%);
-  background-clip: text;
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-}
+      :deep(.el-menu-item) {
+        height: 44px;
+        line-height: 44px;
+        margin-bottom: 2px;
+        border-radius: 8px;
+        color: #9aa0a6;
 
-.sidebar-menu {
-  flex: 1;
-  padding: 12px 8px;
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
+        &:hover { background: rgba(255, 255, 255, 0.04); color: #e8eaed; }
+        &.is-active { background: rgba(244, 114, 182, 0.1); color: #f472b6; }
+      }
+    }
 
-.menu-item {
-  display: flex;
-  align-items: center;
-  padding: 12px 16px;
-  color: #9aa0a6;
-  text-decoration: none;
-  border-radius: 8px;
-  font-size: 14px;
-  transition: all 0.15s;
-}
+    .sidebar-footer {
+      padding: 12px 8px;
+      border-top: 1px solid rgba(255, 255, 255, 0.06);
 
-.menu-item:hover {
-  background: rgba(255, 255, 255, 0.04);
-  color: #e8eaed;
-}
+      .back-link { width: 100%; justify-content: flex-start; color: #9aa0a6; }
+      .mr-1 { margin-right: 8px; }
+    }
+  }
 
-.menu-item.router-link-active {
-  background: rgba(244, 114, 182, 0.1);
-  color: #f472b6;
-}
+  .layout-main {
+    flex-direction: column;
+    position: relative;
+    z-index: 1;
 
-.sidebar-footer {
-  padding: 12px 8px;
-  border-top: 1px solid rgba(255, 255, 255, 0.06);
-}
+    .layout-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      height: 60px;
+      background: rgba(17, 17, 19, 0.6);
+      backdrop-filter: blur(20px);
+      border-bottom: 1px solid rgba(255, 255, 255, 0.06);
 
-.back-link:hover {
-  background: rgba(255, 255, 255, 0.04);
-}
+      .breadcrumb { font-size: 14px; color: #9aa0a6; }
 
-.layout-main {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  position: relative;
-  z-index: 1;
-}
+      .user-actions {
+        display: flex;
+        align-items: center;
+        gap: 16px;
 
-.layout-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 0 32px;
-  height: 60px;
-  background: rgba(17, 17, 19, 0.6);
-  backdrop-filter: blur(20px);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
-}
+        .role-badge { background: linear-gradient(135deg, #f472b6 0%, #fb923c 100%); border: none; }
+        .username { font-size: 14px; color: #e8eaed; }
+        .mr-1 { margin-right: 4px; }
+      }
+    }
 
-.breadcrumb {
-  font-size: 14px;
-  color: #9aa0a6;
-}
-
-.user-actions {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-}
-
-.role-badge {
-  background: linear-gradient(135deg, #f472b6 0%, #fb923c 100%);
-  color: white;
-  padding: 4px 10px;
-  border-radius: 6px;
-  font-size: 11px;
-  font-weight: 600;
-  letter-spacing: 0.05em;
-}
-
-.username {
-  font-size: 14px;
-  color: #e8eaed;
-}
-
-.logout-btn {
-  padding: 8px 16px;
-  background: transparent;
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  color: #9aa0a6;
-  border-radius: 8px;
-  cursor: pointer;
-  font-size: 13px;
-  transition: all 0.15s;
-}
-
-.logout-btn:hover {
-  background: rgba(242, 139, 130, 0.1);
-  border-color: rgba(242, 139, 130, 0.3);
-  color: #f28b82;
-}
-
-.layout-content {
-  flex: 1;
-  padding: 32px;
-  overflow-y: auto;
+    .layout-content {
+      flex: 1;
+      overflow-y: auto;
+    }
+  }
 }
 </style>

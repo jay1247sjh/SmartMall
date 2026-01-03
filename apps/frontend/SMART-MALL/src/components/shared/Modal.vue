@@ -1,9 +1,9 @@
 <script setup lang="ts">
 /**
  * Modal - 模态框组件
- * 用于弹出对话框
+ * 使用 Element Plus 组件 + HTML5 语义化标签
  */
-import { watch } from 'vue'
+import { ElDialog, ElButton, ElSpace } from 'element-plus'
 
 interface Props {
   visible: boolean
@@ -28,146 +28,82 @@ function handleClose() {
     emit('close')
   }
 }
-
-function handleOverlayClick(e: MouseEvent) {
-  if (e.target === e.currentTarget) {
-    handleClose()
-  }
-}
-
-// 禁止背景滚动
-watch(
-  () => props.visible,
-  (visible) => {
-    if (visible) {
-      document.body.style.overflow = 'hidden'
-    } else {
-      document.body.style.overflow = ''
-    }
-  }
-)
 </script>
 
 <template>
-  <Teleport to="body">
-    <Transition name="modal">
-      <div v-if="visible" class="modal-overlay" @click="handleOverlayClick">
-        <div class="modal-container" :style="{ width }">
-          <div class="modal-header">
-            <h3 class="modal-title">{{ title }}</h3>
-            <button v-if="closable" class="modal-close" @click="handleClose">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M18 6L6 18M6 6l12 12" />
-              </svg>
-            </button>
-          </div>
-          <div class="modal-body">
-            <slot />
-          </div>
-          <div v-if="$slots.footer" class="modal-footer">
-            <slot name="footer" />
-          </div>
-        </div>
-      </div>
-    </Transition>
-  </Teleport>
+  <ElDialog
+    :model-value="visible"
+    :title="title"
+    :width="width"
+    :close-on-click-modal="closable"
+    :close-on-press-escape="closable"
+    :show-close="closable"
+    destroy-on-close
+    class="custom-modal"
+    @update:model-value="(val: boolean) => emit('update:visible', val)"
+    @close="handleClose"
+  >
+    <article class="modal-body">
+      <slot />
+    </article>
+
+    <template v-if="$slots.footer" #footer>
+      <footer class="modal-footer">
+        <ElSpace>
+          <slot name="footer" />
+        </ElSpace>
+      </footer>
+    </template>
+  </ElDialog>
 </template>
 
-<style scoped>
-.modal-overlay {
-  position: fixed;
-  inset: 0;
-  background: rgba(0, 0, 0, 0.75);
-  backdrop-filter: blur(4px);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 1000;
-  padding: 20px;
-}
+<style scoped lang="scss">
+.custom-modal {
+  :deep(.el-dialog) {
+    border-radius: 16px;
+    overflow: hidden;
 
-.modal-container {
-  background: #111113;
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 16px;
-  max-height: calc(100vh - 40px);
-  display: flex;
-  flex-direction: column;
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
-}
+    .el-dialog__header {
+      padding: 20px 24px;
+      margin-right: 0;
+      border-bottom: 1px solid var(--el-border-color-lighter);
 
-.modal-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 20px 24px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
-}
+      .el-dialog__title {
+        font-size: 18px;
+        font-weight: 500;
+      }
 
-.modal-title {
-  font-size: 18px;
-  font-weight: 500;
-  color: #e8eaed;
-  margin: 0;
-  letter-spacing: -0.01em;
-}
+      .el-dialog__headerbtn {
+        top: 20px;
+        right: 20px;
+        width: 32px;
+        height: 32px;
 
-.modal-close {
-  width: 32px;
-  height: 32px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: transparent;
-  border: none;
-  color: #5f6368;
-  cursor: pointer;
-  border-radius: 8px;
-  transition: all 0.15s;
-}
+        .el-dialog__close {
+          font-size: 18px;
+        }
+      }
+    }
 
-.modal-close:hover {
-  background: rgba(255, 255, 255, 0.06);
-  color: #9aa0a6;
-}
+    .el-dialog__body {
+      padding: 0;
+    }
 
-.modal-close svg {
-  width: 18px;
-  height: 18px;
-}
+    .el-dialog__footer {
+      padding: 16px 24px;
+      border-top: 1px solid var(--el-border-color-lighter);
+    }
+  }
 
-.modal-body {
-  padding: 24px;
-  overflow-y: auto;
-  flex: 1;
-}
+  .modal-body {
+    padding: 24px;
+    overflow-y: auto;
+    max-height: calc(80vh - 140px);
+  }
 
-.modal-footer {
-  padding: 16px 24px;
-  border-top: 1px solid rgba(255, 255, 255, 0.06);
-  display: flex;
-  justify-content: flex-end;
-  gap: 12px;
-}
-
-/* Transition */
-.modal-enter-active,
-.modal-leave-active {
-  transition: opacity 0.2s ease;
-}
-
-.modal-enter-active .modal-container,
-.modal-leave-active .modal-container {
-  transition: transform 0.2s ease;
-}
-
-.modal-enter-from,
-.modal-leave-to {
-  opacity: 0;
-}
-
-.modal-enter-from .modal-container,
-.modal-leave-to .modal-container {
-  transform: scale(0.95);
+  .modal-footer {
+    display: flex;
+    justify-content: flex-end;
+  }
 }
 </style>
