@@ -41,3 +41,7 @@ export { default as mallManageApi } from './mall-manage.api'
 // 路由 API
 export * from './route.api'
 export { default as routeApi } from './route.api'
+
+// 商城建模器 API
+export * from './mall-builder.api'
+export { default as mallBuilderApi } from './mall-builder.api'

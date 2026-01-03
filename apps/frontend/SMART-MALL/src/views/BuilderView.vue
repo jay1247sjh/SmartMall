@@ -21,11 +21,6 @@
       class="scene-container"
       @click="handleCanvasClick"
     ></div>
-
-    <!-- 调试信息（开发时显示，后续可删除） -->
-    <div class="debug-info">
-      点击地面创建方块 | 鼠标拖拽旋转视角 | 滚轮缩放
-    </div>
   </div>
 </template>
 

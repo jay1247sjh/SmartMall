@@ -373,7 +373,26 @@ Vue 3 对虚拟 DOM 进行了重写，引入了静态提升、补丁标记等编
 
 Vue 3 支持 Tree-shaking，未使用的功能不会被打包，减小了最终的包体积。
 
-#### 2.2.2 TypeScript 语言
+#### 2.2.2 Element Plus UI 框架
+
+Element Plus 是 Element UI 的 Vue 3 版本，是一套为开发者、设计师和产品经理准备的基于 Vue 3 的桌面端组件库。本系统选择 Element Plus 的原因包括：
+
+1. **完整的组件库**：提供 70+ 高质量组件，覆盖表单、数据展示、导航、反馈等场景
+2. **TypeScript 支持**：完整的类型定义，提供良好的开发体验
+3. **暗色主题**：内置暗色主题支持，通过 CSS 变量实现主题切换
+4. **国际化**：内置多语言支持，方便国际化开发
+5. **按需引入**：支持按需引入组件，减小打包体积
+
+```typescript
+// 全局引入 Element Plus
+import ElementPlus from 'element-plus'
+import 'element-plus/dist/index.css'
+import 'element-plus/theme-chalk/dark/css-vars.css'
+
+app.use(ElementPlus)
+```
+
+#### 2.2.3 TypeScript 语言
 
 TypeScript 是 JavaScript 的超集，添加了静态类型检查。使用 TypeScript 的优势包括：
 
@@ -401,7 +420,7 @@ function navigateToStore(store: Store): void {
 }
 ```
 
-#### 2.2.3 Vite 构建工具
+#### 2.2.4 Vite 构建工具
 
 Vite 是新一代前端构建工具，具有以下特点：
 
@@ -409,7 +428,7 @@ Vite 是新一代前端构建工具，具有以下特点：
 2. **即时的模块热更新（HMR）**：更新速度与模块数量无关，始终保持快速
 3. **优化的生产构建**：基于 Rollup，支持代码分割、Tree-shaking 等优化
 
-#### 2.2.4 Pinia 状态管理
+#### 2.2.5 Pinia 状态管理
 
 Pinia 是 Vue 3 官方推荐的状态管理库，相比 Vuex 具有以下优势：
 
@@ -1583,7 +1602,166 @@ const permissionRules: PermissionRule[] = [
 
 ### 5.4 后端核心模块实现
 
-#### 5.4.1 商城数据服务
+#### 5.4.1 商城建模器持久化服务
+
+商城建模器持久化服务负责将前端创建的商城项目保存到数据库，支持项目的完整生命周期管理。
+
+**数据库表设计**：
+
+```sql
+-- 商城项目表
+CREATE TABLE mall_project (
+    id VARCHAR(36) PRIMARY KEY,
+    name VARCHAR(100) NOT NULL,
+    description TEXT,
+    user_id VARCHAR(36) NOT NULL,
+    status VARCHAR(20) DEFAULT 'DRAFT',
+    config JSONB,
+    created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
+);
+
+-- 楼层表
+CREATE TABLE floor (
+    id VARCHAR(36) PRIMARY KEY,
+    project_id VARCHAR(36) NOT NULL REFERENCES mall_project(id) ON DELETE CASCADE,
+    name VARCHAR(100) NOT NULL,
+    level INTEGER NOT NULL,
+    height NUMERIC(10,2) DEFAULT 4.0,
+    position_y NUMERIC(10,2) DEFAULT 0,
+    config JSONB,
+    created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
+);
+
+-- 区域表
+CREATE TABLE area (
+    id VARCHAR(36) PRIMARY KEY,
+    floor_id VARCHAR(36) NOT NULL REFERENCES floor(id) ON DELETE CASCADE,
+    name VARCHAR(100) NOT NULL,
+    area_type VARCHAR(50),
+    position_x NUMERIC(10,2),
+    position_y NUMERIC(10,2),
+    position_z NUMERIC(10,2),
+    width NUMERIC(10,2),
+    depth NUMERIC(10,2),
+    color VARCHAR(20),
+    config JSONB,
+    created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
+);
+```
+
+**服务层实现**：
+
+```java
+@Service
+@Transactional
+public class MallBuilderService {
+    
+    @Autowired
+    private MallProjectMapper projectMapper;
+    
+    @Autowired
+    private FloorMapper floorMapper;
+    
+    @Autowired
+    private AreaMapper areaMapper;
+    
+    /**
+     * 获取用户的项目列表
+     */
+    public List<MallProjectDTO> getProjectsByUserId(String userId) {
+        List<MallProject> projects = projectMapper.selectList(
+            new LambdaQueryWrapper<MallProject>()
+                .eq(MallProject::getUserId, userId)
+                .orderByDesc(MallProject::getUpdatedAt)
+        );
+        return projects.stream()
+            .map(MallProjectMapper::toDTO)
+            .collect(Collectors.toList());
+    }
+    
+    /**
+     * 保存项目（包含楼层和区域）
+     */
+    public MallProjectDTO saveProject(SaveProjectRequest request, String userId) {
+        MallProject project;
+        
+        if (request.getId() != null) {
+            // 更新现有项目
+            project = projectMapper.selectById(request.getId());
+            if (project == null || !project.getUserId().equals(userId)) {
+                throw new BusinessException("项目不存在或无权限");
+            }
+            // 删除旧的楼层和区域
+            deleteProjectChildren(project.getId());
+        } else {
+            // 创建新项目
+            project = new MallProject();
+            project.setId(UUID.randomUUID().toString());
+            project.setUserId(userId);
+            project.setCreatedAt(LocalDateTime.now());
+        }
+        
+        project.setName(request.getName());
+        project.setDescription(request.getDescription());
+        project.setUpdatedAt(LocalDateTime.now());
+        
+        // 保存项目
+        if (request.getId() != null) {
+            projectMapper.updateById(project);
+        } else {
+            projectMapper.insert(project);
+        }
+        
+        // 保存楼层和区域
+        saveFloorsAndAreas(project.getId(), request.getFloors());
+        
+        return getProjectById(project.getId(), userId);
+    }
+}
+```
+
+**REST 接口**：
+
+```java
+@RestController
+@RequestMapping("/api/mall-builder")
+public class MallBuilderController {
+    
+    @Autowired
+    private MallBuilderService mallBuilderService;
+    
+    @GetMapping("/projects")
+    public Result<List<MallProjectDTO>> getProjects(
+            @RequestAttribute("userId") String userId) {
+        return Result.success(mallBuilderService.getProjectsByUserId(userId));
+    }
+    
+    @PostMapping("/projects")
+    public Result<MallProjectDTO> saveProject(
+            @RequestBody SaveProjectRequest request,
+            @RequestAttribute("userId") String userId) {
+        return Result.success(mallBuilderService.saveProject(request, userId));
+    }
+    
+    @GetMapping("/projects/{id}")
+    public Result<MallProjectDTO> getProject(
+            @PathVariable String id,
+            @RequestAttribute("userId") String userId) {
+        return Result.success(mallBuilderService.getProjectById(id, userId));
+    }
+    
+    @DeleteMapping("/projects/{id}")
+    public Result<Void> deleteProject(
+            @PathVariable String id,
+            @RequestAttribute("userId") String userId) {
+        mallBuilderService.deleteProject(id, userId);
+        return Result.success();
+    }
+}
+```
+
+#### 5.4.2 商城数据服务
 
 ```java
 @Service
@@ -1639,7 +1817,7 @@ public class MallService {
 }
 ```
 
-#### 5.4.2 区域权限服务
+#### 5.4.3 区域权限服务
 
 ```java
 @Service
@@ -1817,9 +1995,85 @@ enum IntentType {
 2. **权限约束**：AI 行为必须通过 RCAC 权限模型校验
 3. **确认约束**：所有可能改变系统状态的 Action 必须人工确认
 
-### 5.6 本章小结
+### 5.6 UI 组件化重构
 
-本章详细描述了系统各层的设计与实现。渲染引擎层提供了 Three.js 的封装和管理；领域场景层实现了语义对象建模和商城管理；业务协调层设计了 Action 协议和 RCAC 权限模型；UI 层采用 Vue 3 和 Pinia 实现了用户界面和状态管理；AI Agent 模块实现了自然语言到 Action 的转换。各层职责清晰，相互协作，共同构成了完整的系统。
+#### 5.6.1 Element Plus 集成
+
+系统引入 Element Plus 作为 UI 组件库，提供统一的视觉风格和丰富的基础组件。
+
+**全局注册配置**：
+
+```typescript
+// main.ts
+import ElementPlus from 'element-plus'
+import * as ElementPlusIconsVue from '@element-plus/icons-vue'
+import 'element-plus/dist/index.css'
+import 'element-plus/theme-chalk/dark/css-vars.css'
+
+const app = createApp(App)
+app.use(ElementPlus)
+
+// 注册所有图标
+for (const [key, component] of Object.entries(ElementPlusIconsVue)) {
+  app.component(key, component)
+}
+```
+
+#### 5.6.2 认证组件封装
+
+为提高代码复用性，系统封装了 8 个高可复用的认证组件：
+
+| 组件名称 | 功能描述 | 主要 Props |
+|---------|---------|-----------|
+| AuthLayout | 认证页面统一布局 | brandHeadline, brandSubtitle |
+| AuthFormCard | 表单卡片容器 | title, description |
+| AuthInput | 增强输入框 | icon, asyncCheck, validating |
+| AuthButton | 主按钮 | loading, loadingText |
+| AlertMessage | 提示消息 | type, message |
+| TypewriterCard | 打字机效果 | texts, typingSpeed |
+| SocialLogin | 第三方登录 | providers |
+| FeatureList | 功能列表 | features |
+
+**AuthInput 组件示例**：
+
+```vue
+<template>
+  <div class="auth-input-group">
+    <label :for="id" class="input-label">{{ label }}</label>
+    <div class="input-wrapper" :class="{ 'has-error': error, 'is-valid': isValid }">
+      <span class="input-icon">
+        <component :is="iconComponent" />
+      </span>
+      <input
+        :id="id"
+        :type="inputType"
+        :value="modelValue"
+        :placeholder="placeholder"
+        @input="$emit('update:modelValue', ($event.target as HTMLInputElement).value)"
+        @blur="handleBlur"
+      />
+      <span v-if="validating" class="status-icon validating">
+        <el-icon class="is-loading"><Loading /></el-icon>
+      </span>
+      <span v-else-if="isValid" class="status-icon valid">✓</span>
+    </div>
+    <span v-if="error" class="error-message">{{ error }}</span>
+  </div>
+</template>
+```
+
+**组件化重构效果**：
+
+| 页面 | 重构前行数 | 重构后行数 | 减少比例 |
+|-----|----------|----------|---------|
+| LoginView | ~400 | ~80 | 80% |
+| RegisterView | ~500 | ~150 | 70% |
+| ForgotPasswordView | ~250 | ~120 | 52% |
+| ResetPasswordView | ~350 | ~180 | 49% |
+
+### 5.7 本章小结
+
+本章详细描述了系统各层的设计与实现。渲染引擎层提供了 Three.js 的封装和管理；领域场景层实现了语义对象建模和商城管理；业务协调层设计了 Action 协议和 RCAC 权限模型；后端实现了商城建模器持久化服务和区域权限管理；UI 层采用 Vue 3、Pinia 和 Element Plus 实现了高度组件化的用户界面；AI Agent 模块实现了自然语言到 Action 的转换。各层职责清晰，相互协作，共同构成了完整的系统。
 
 ---
 
@@ -1969,7 +2223,11 @@ enum IntentType {
 1. **大规模场景性能**：当场景对象数量较多时，渲染性能有所下降。需要引入更多的性能优化技术，如 LOD、实例化渲染、遮挡剔除等。
 2. **AI 理解能力**：当前 AI Agent 对复杂或模糊指令的理解能力有限，需要进一步优化意图识别算法和扩充训练数据。
 3. **移动端适配**：系统主要针对桌面端设计，移动端的触控交互和性能优化有待完善。
-4. **后端功能**：当前系统主要实现了前端功能，后端服务（如用户认证、数据持久化、多人同步）尚未完全实现。
+
+#### 7.2.2 已完成的改进
+
+1. **UI 组件化重构**：引入 Element Plus UI 框架，封装了 8 个高可复用的认证组件，大幅减少了代码重复（登录页从 ~400 行减少到 ~80 行）。
+2. **商城建模器持久化**：实现了完整的后端 API，支持商城项目的创建、保存、加载和删除功能，数据持久化到 PostgreSQL 数据库。
 
 #### 7.2.2 未来展望
 
@@ -2025,6 +2283,8 @@ enum IntentType {
 
 ### 附录 A：系统核心代码清单
 
+#### 前端核心模块
+
 | 文件路径                                      | 功能描述          |
 | --------------------------------------------- | ----------------- |
 | src/engine/ThreeEngine.ts                     | 3D 渲染引擎核心类 |
@@ -2032,6 +2292,30 @@ enum IntentType {
 | src/domain/mall/MallManager.ts                | 商城管理器        |
 | src/protocol/action.protocol.ts               | Action 协议定义   |
 | src/orchestrator/index.ts                     | 业务协调层        |
+
+#### 前端可复用组件
+
+| 文件路径                          | 功能描述                           |
+| --------------------------------- | ---------------------------------- |
+| src/components/auth/AuthLayout.vue    | 认证页面统一布局（品牌面板+表单面板） |
+| src/components/auth/AuthFormCard.vue  | 表单卡片容器                       |
+| src/components/auth/AuthInput.vue     | 带图标、验证状态、异步检查的输入框 |
+| src/components/auth/AuthButton.vue    | 带加载状态的主按钮                 |
+| src/components/auth/AlertMessage.vue  | 错误/成功/警告提示组件             |
+| src/components/auth/TypewriterCard.vue| 打字机效果卡片                     |
+| src/components/auth/SocialLogin.vue   | 第三方登录按钮组                   |
+| src/components/auth/FeatureList.vue   | 功能特点列表                       |
+
+#### 后端核心模块
+
+| 文件路径                                                    | 功能描述              |
+| ----------------------------------------------------------- | --------------------- |
+| interfaces/controller/MallBuilderController.java            | 商城建模器 REST 接口  |
+| application/service/MallBuilderService.java                 | 建模器应用服务        |
+| domain/mallbuilder/entity/MallProject.java                  | 商城项目实体          |
+| domain/mallbuilder/entity/Floor.java                        | 楼层实体              |
+| domain/mallbuilder/entity/Area.java                         | 区域实体              |
+| infrastructure/persistence/mapper/MallProjectMapper.java    | 项目数据访问层        |
 
 ### 附录 B：系统配置说明
 

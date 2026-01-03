@@ -718,4 +718,69 @@ watch(debouncedUsername, async (val) => {
 
 ---
 
+## 组件化重构说明
+
+注册页面已使用可复用组件重构，大幅减少代码量：
+
+### 使用的组件
+
+| 组件 | 路径 | 说明 |
+|------|------|------|
+| `AuthLayout` | `@/components/auth/AuthLayout.vue` | 认证页面统一布局 |
+| `AuthFormCard` | `@/components/auth/AuthFormCard.vue` | 表单卡片容器 |
+| `AuthInput` | `@/components/auth/AuthInput.vue` | 带图标、验证状态、异步检查的输入框 |
+| `AuthButton` | `@/components/auth/AuthButton.vue` | 带加载状态和禁用状态的主按钮 |
+| `AlertMessage` | `@/components/auth/AlertMessage.vue` | 错误/成功提示 |
+| `FeatureList` | `@/components/auth/FeatureList.vue` | 功能特点列表 |
+
+### 重构前后对比
+
+```
+重构前：~500 行代码
+重构后：~150 行代码
+代码减少：70%
+```
+
+### AuthInput 组件的高级用法
+
+注册页面展示了 `AuthInput` 组件的完整功能：
+
+```vue
+<AuthInput
+  id="username"
+  v-model="username"
+  label="用户名"
+  icon="user"
+  placeholder="3-20个字符，字母数字下划线"
+  required
+  :error="usernameError"      <!-- 错误信息 -->
+  :checking="usernameChecking" <!-- 异步检查中 -->
+  :valid="usernameAvailable === true" <!-- 验证通过 -->
+/>
+```
+
+组件支持三种状态指示：
+- `checking` - 显示加载动画（正在检查可用性）
+- `valid` - 显示绿色 ✓（验证通过）
+- `error` - 显示红色错误信息
+
+### 表单验证模式
+
+注册页面使用 `computed` 进行声明式验证：
+
+```typescript
+const usernameError = computed(() => {
+  if (!username.value) return ''
+  if (username.value.length < 3) return '用户名至少3个字符'
+  if (usernameAvailable.value === false) return '用户名已被注册'
+  return ''
+})
+
+const isFormValid = computed(() => {
+  return hasRequiredFields && noFormatErrors && availabilityOk
+})
+```
+
+---
+
 *"真正的智慧是知道自己无知。" —— 苏格拉底*

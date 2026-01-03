@@ -883,7 +883,65 @@ public class ApiResponse<T> {
 | POST | /api/layout/proposal/{id}/review | 审核变更提案 |
 | POST | /api/layout/version/{versionId}/publish | 发布版本 |
 
-#### 8.2.6 管理端
+#### 8.2.6 商城建模器
+
+| 方法 | 路径 | 说明 |
+|------|------|------|
+| GET | /api/mall-builder/projects | 获取当前用户的项目列表 |
+| POST | /api/mall-builder/projects | 创建或更新项目（含楼层和区域） |
+| GET | /api/mall-builder/projects/{id} | 获取项目详情（含完整结构） |
+| DELETE | /api/mall-builder/projects/{id} | 删除项目 |
+
+**请求/响应示例：**
+
+```json
+// POST /api/mall-builder/projects 请求体
+{
+  "id": null,  // 新建时为 null，更新时传入项目 ID
+  "name": "我的商城项目",
+  "description": "测试项目",
+  "floors": [
+    {
+      "id": "floor-1",
+      "name": "一楼",
+      "level": 1,
+      "height": 4.0,
+      "positionY": 0,
+      "areas": [
+        {
+          "id": "area-1",
+          "name": "餐饮区",
+          "areaType": "FOOD",
+          "positionX": 0,
+          "positionY": 0,
+          "positionZ": 0,
+          "width": 20,
+          "depth": 15,
+          "color": "#4CAF50"
+        }
+      ]
+    }
+  ]
+}
+
+// 响应体
+{
+  "code": "0",
+  "message": "OK",
+  "data": {
+    "id": "proj-uuid-xxx",
+    "name": "我的商城项目",
+    "description": "测试项目",
+    "userId": "user-uuid-xxx",
+    "status": "DRAFT",
+    "floors": [...],
+    "createdAt": "2026-01-03T10:00:00Z",
+    "updatedAt": "2026-01-03T10:00:00Z"
+  }
+}
+```
+
+#### 8.2.7 管理端
 
 | 方法 | 路径 | 说明 |
 |------|------|------|

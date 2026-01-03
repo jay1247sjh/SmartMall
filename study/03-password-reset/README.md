@@ -801,4 +801,64 @@ onUnmounted(() => {
 
 ---
 
+## 组件化重构说明
+
+密码重置相关页面已使用可复用组件重构：
+
+### 使用的组件
+
+| 组件 | 路径 | 说明 |
+|------|------|------|
+| `AuthFormCard` | `@/components/auth/AuthFormCard.vue` | 表单卡片容器 |
+| `AuthInput` | `@/components/auth/AuthInput.vue` | 带图标的输入框 |
+| `AuthButton` | `@/components/auth/AuthButton.vue` | 带加载状态的主按钮 |
+| `AlertMessage` | `@/components/auth/AlertMessage.vue` | 错误提示 |
+
+### 重构前后对比
+
+```
+ForgotPasswordView:
+  重构前：~250 行代码
+  重构后：~120 行代码
+  
+ResetPasswordView:
+  重构前：~350 行代码
+  重构后：~180 行代码
+```
+
+### 页面状态管理模式
+
+密码重置页面展示了多状态页面的设计模式：
+
+```vue
+<template>
+  <!-- 加载状态 -->
+  <template v-if="verifying">
+    <div class="loading-content">...</div>
+  </template>
+
+  <!-- 令牌无效 -->
+  <template v-else-if="!tokenValid && !success">
+    <div class="status-content error">...</div>
+  </template>
+
+  <!-- 成功状态 -->
+  <template v-else-if="success">
+    <div class="status-content success">...</div>
+  </template>
+
+  <!-- 表单状态 -->
+  <template v-else>
+    <AuthFormCard title="重置密码">...</AuthFormCard>
+  </template>
+</template>
+```
+
+这种模式确保：
+- 用户不会在 token 验证完成前看到表单
+- 每种状态都有清晰的 UI 反馈
+- 状态转换逻辑清晰可维护
+
+---
+
 *"问题的提出往往比解决更重要。" —— 爱因斯坦（苏格拉底会同意的）*

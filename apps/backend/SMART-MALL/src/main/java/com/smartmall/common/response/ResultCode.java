@@ -44,11 +44,16 @@ public enum ResultCode {
     USER_FROZEN("A4003", "用户已被冻结"),
     PASSWORD_ERROR("A4004", "密码错误"),
     
+    NOT_FOUND("A5000", "资源不存在"),
     MALL_NOT_FOUND("A5001", "商城不存在"),
     FLOOR_NOT_FOUND("A5002", "楼层不存在"),
     AREA_NOT_FOUND("A5003", "区域不存在"),
     STORE_NOT_FOUND("A5004", "店铺不存在"),
     PRODUCT_NOT_FOUND("A5005", "商品不存在"),
+    PROJECT_NOT_FOUND("A5006", "项目不存在"),
+    
+    FORBIDDEN("A3003", "无权执行此操作"),
+    CONFLICT("A3004", "数据冲突，请刷新后重试"),
     
     AREA_NOT_AVAILABLE("A6001", "区域不可申请"),
     AREA_ALREADY_APPLIED("A6002", "已提交过申请"),

@@ -10,6 +10,19 @@
 ## [Unreleased]
 
 ### Added
+- 商城建模器持久化 API
+  - 创建项目：`POST /api/mall-builder/projects`
+  - 获取项目列表：`GET /api/mall-builder/projects`
+  - 获取项目详情：`GET /api/mall-builder/projects/{id}`
+  - 更新项目：`PUT /api/mall-builder/projects/{id}`
+  - 删除项目：`DELETE /api/mall-builder/projects/{id}`
+- 新增数据库表：`mall_project`、`floor`、`area`
+- 新增实体类：`MallProject`、`Floor`、`Area`
+- 新增 Mapper：`MallProjectMapper`、`FloorMapper`、`AreaMapper`
+- 新增 DTO：`CreateProjectRequest`、`UpdateProjectRequest`、`ProjectResponse`、`ProjectListItem`、`FloorDTO`、`AreaDTO`、`OutlineDTO`、`SettingsDTO`
+- 新增服务：`MallBuilderService`
+- 新增控制器：`MallBuilderController`
+
 - 用户注册功能
   - 用户注册：创建新用户账号 (`POST /auth/register`)
   - 检查用户名可用性 (`GET /auth/check-username`)

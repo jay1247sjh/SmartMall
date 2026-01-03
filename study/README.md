@@ -4,6 +4,15 @@
 > 
 > 假设你已掌握 Vue 3、TypeScript、Three.js 的基本语法。
 
+## 技术栈
+
+- **前端框架**：Vue 3 + TypeScript + Vite
+- **UI 框架**：Element Plus（已集成）
+- **状态管理**：Pinia
+- **3D 引擎**：Three.js
+- **后端框架**：Spring Boot 3.x + MyBatis-Plus
+- **数据库**：PostgreSQL + Redis
+
 ## 学习顺序建议
 
 ### 第一阶段：基础功能
@@ -24,6 +33,45 @@
 9. **09-mall-builder-basics** - 建模器基础（模板、楼层、区域）
 10. **10-3d-models** - 3D 模型创建（电梯、扶梯、家具）
 11. **11-roaming-mode** - 漫游模式（第三人称、碰撞检测）
+
+### 第五阶段：架构与进阶
+12. **12-backend-architecture** - 后端架构（DDD 分层、Spring Boot、MyBatis-Plus）
+13. **13-api-layer** - API 层（Axios 封装、拦截器、Token 管理）
+14. **14-state-management** - 状态管理（Pinia stores、持久化）
+15. **15-routing-system** - 路由系统（动态路由、路由守卫、权限控制）
+16. **16-domain-model** - 领域模型（语义对象、事件总线、权限模型）
+17. **17-protocol-layer** - 协议层（Action/Result 协议、数据契约）
+18. **18-element-plus** - Element Plus 组件（组件封装、表单验证）
+19. **19-mall-builder-persistence** - 建模器持久化（后端 API、数据库设计）
+
+---
+
+## 组件化架构
+
+项目采用高度组件化的架构，减少代码重复：
+
+### 认证组件 (`@/components/auth/`)
+
+| 组件 | 说明 |
+|------|------|
+| `AuthLayout` | 认证页面统一布局（左侧品牌面板 + 右侧表单面板） |
+| `AuthFormCard` | 表单卡片容器 |
+| `AuthInput` | 带图标、验证状态的输入框 |
+| `AuthButton` | 带加载状态的主按钮 |
+| `AlertMessage` | 错误/成功/警告提示 |
+| `TypewriterCard` | 打字机效果卡片 |
+| `SocialLogin` | 第三方登录按钮组 |
+| `FeatureList` | 功能特点列表 |
+
+### 共享组件 (`@/components/shared/`)
+
+| 组件 | 说明 |
+|------|------|
+| `StatCard` | 统计卡片 |
+| `QuickActionCard` | 快捷操作卡片 |
+| `DataTable` | 数据表格 |
+| `Modal` | 模态框 |
+| `CustomSelect` | 自定义选择器 |
 
 ---
 

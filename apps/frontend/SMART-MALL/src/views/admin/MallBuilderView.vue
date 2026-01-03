@@ -1435,6 +1435,105 @@ function restoreFromHistory() {
 // Export/Import
 // ============================================================================
 
+// 服务器项目ID（如果已保存到服务器）
+const serverProjectId = ref<string | null>(null)
+const isSaving = ref(false)
+const saveMessage = ref<string | null>(null)
+const showProjectListModal = ref(false)
+const projectList = ref<{ projectId: string; name: string; description?: string; floorCount: number; areaCount: number; createdAt: string; updatedAt: string }[]>([])
+const isLoadingProjects = ref(false)
+
+/**
+ * 保存项目到服务器
+ */
+async function saveToServer() {
+  if (!project.value || isSaving.value) return
+  
+  isSaving.value = true
+  saveMessage.value = null
+  
+  try {
+    const { mallBuilderApi, toCreateRequest, toUpdateRequest, toMallProject } = await import('@/api/mall-builder.api')
+    
+    let response
+    if (serverProjectId.value) {
+      // 更新现有项目
+      response = await mallBuilderApi.updateProject(serverProjectId.value, toUpdateRequest(project.value))
+    } else {
+      // 创建新项目
+      response = await mallBuilderApi.createProject(toCreateRequest(project.value))
+    }
+    
+    // 更新本地项目数据
+    const savedProject = toMallProject(response)
+    serverProjectId.value = response.projectId
+    project.value.version = savedProject.version
+    
+    saveMessage.value = '保存成功'
+    setTimeout(() => { saveMessage.value = null }, 2000)
+  } catch (err: unknown) {
+    console.error('保存失败:', err)
+    const errorMessage = err instanceof Error ? err.message : '保存失败，请重试'
+    saveMessage.value = errorMessage
+    setTimeout(() => { saveMessage.value = null }, 3000)
+  } finally {
+    isSaving.value = false
+  }
+}
+
+/**
+ * 加载项目列表
+ */
+async function loadProjectList() {
+  isLoadingProjects.value = true
+  try {
+    const { mallBuilderApi } = await import('@/api/mall-builder.api')
+    projectList.value = await mallBuilderApi.getProjectList()
+    showProjectListModal.value = true
+  } catch (err) {
+    console.error('加载项目列表失败:', err)
+  } finally {
+    isLoadingProjects.value = false
+  }
+}
+
+/**
+ * 从服务器加载项目
+ */
+async function loadFromServer(projectId: string) {
+  try {
+    const { mallBuilderApi, toMallProject } = await import('@/api/mall-builder.api')
+    const response = await mallBuilderApi.getProject(projectId)
+    const loadedProject = toMallProject(response)
+    
+    project.value = loadedProject
+    serverProjectId.value = response.projectId
+    currentFloorId.value = loadedProject.floors[0]?.id || null
+    showWizard.value = false
+    showProjectListModal.value = false
+    renderProject()
+    saveHistory()
+  } catch (err) {
+    console.error('加载项目失败:', err)
+  }
+}
+
+/**
+ * 删除服务器上的项目
+ */
+async function deleteFromServer(projectId: string) {
+  if (!confirm('确定要删除此项目吗？此操作不可恢复。')) return
+  
+  try {
+    const { mallBuilderApi } = await import('@/api/mall-builder.api')
+    await mallBuilderApi.deleteProject(projectId)
+    // 刷新列表
+    await loadProjectList()
+  } catch (err) {
+    console.error('删除项目失败:', err)
+  }
+}
+
 function exportData() {
   if (!project.value) return
   const json = exportProject(project.value)
@@ -1501,6 +1600,22 @@ function removeBackgroundImage() {
 // ============================================================================
 // Utility Methods
 // ============================================================================
+
+/**
+ * 格式化日期
+ */
+function formatDate(dateStr: string): string {
+  const date = new Date(dateStr)
+  const now = new Date()
+  const diff = now.getTime() - date.getTime()
+  
+  if (diff < 60000) return '刚刚'
+  if (diff < 3600000) return `${Math.floor(diff / 60000)} 分钟前`
+  if (diff < 86400000) return `${Math.floor(diff / 3600000)} 小时前`
+  if (diff < 604800000) return `${Math.floor(diff / 86400000)} 天前`
+  
+  return date.toLocaleDateString('zh-CN')
+}
 
 function setTool(tool: Tool) {
   if (isDrawing.value) cancelDraw()
@@ -2135,12 +2250,17 @@ watch(currentFloorId, () => {
           </svg>
           <input type="file" accept=".json" @change="handleImport" style="display: none" />
         </label>
-        <button class="btn-save" @click="exportData">
+        <button class="btn-save" @click="saveToServer" :disabled="isSaving">
           <svg viewBox="0 0 20 20" fill="none">
             <path d="M15 17H5a2 2 0 01-2-2V5a2 2 0 012-2h7l5 5v9a2 2 0 01-2 2z" stroke="currentColor" stroke-width="1.5"/>
             <path d="M12 3v5h5M7 13h6M7 16h4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
           </svg>
-          <span>保存</span>
+          <span>{{ isSaving ? '保存中...' : '保存' }}</span>
+        </button>
+        <button class="action-btn" @click="loadProjectList" title="打开项目">
+          <svg viewBox="0 0 20 20" fill="none">
+            <path d="M3 5a2 2 0 012-2h4l2 2h4a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2V5z" stroke="currentColor" stroke-width="1.5"/>
+          </svg>
         </button>
       </div>
     </header>
@@ -2716,6 +2836,51 @@ watch(currentFloorId, () => {
           </section>
         </div>
       </div>
+    </div>
+
+    <!-- 项目列表弹窗 -->
+    <div v-if="showProjectListModal" class="help-overlay" @click.self="showProjectListModal = false">
+      <div class="help-panel" style="width: 600px;">
+        <div class="help-header">
+          <h2>我的项目</h2>
+          <button class="btn-close" @click="showProjectListModal = false">
+            <svg viewBox="0 0 20 20" fill="none">
+              <path d="M5 5l10 10M15 5L5 15" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+            </svg>
+          </button>
+        </div>
+        
+        <div class="help-content">
+          <div v-if="isLoadingProjects" class="loading-text">加载中...</div>
+          <div v-else-if="projectList.length === 0" class="empty-text">暂无保存的项目</div>
+          <div v-else class="project-list">
+            <div 
+              v-for="item in projectList" 
+              :key="item.projectId" 
+              class="project-item"
+            >
+              <div class="project-info" @click="loadFromServer(item.projectId)">
+                <div class="project-name">{{ item.name }}</div>
+                <div class="project-meta">
+                  <span>{{ item.floorCount }} 楼层</span>
+                  <span>{{ item.areaCount }} 区域</span>
+                  <span>{{ formatDate(item.updatedAt) }}</span>
+                </div>
+              </div>
+              <button class="btn-mini danger" @click.stop="deleteFromServer(item.projectId)" title="删除">
+                <svg viewBox="0 0 20 20" fill="none">
+                  <path d="M5 6h10M8 6V4h4v2M6 6v10a1 1 0 001 1h6a1 1 0 001-1V6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+                </svg>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 保存提示 -->
+    <div v-if="saveMessage" class="save-toast" :class="{ error: saveMessage.includes('失败') }">
+      {{ saveMessage }}
     </div>
   </div>
 </template>
@@ -4558,5 +4723,86 @@ watch(currentFloorId, () => {
   width: 14px;
   height: 14px;
   color: #60a5fa;
+}
+
+/* Project List */
+.project-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.project-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 8px;
+  transition: all 0.15s;
+}
+
+.project-item:hover {
+  background: rgba(96, 165, 250, 0.1);
+  border-color: rgba(96, 165, 250, 0.3);
+}
+
+.project-info {
+  flex: 1;
+  cursor: pointer;
+}
+
+.project-name {
+  font-size: 14px;
+  font-weight: 500;
+  color: #e8eaed;
+  margin-bottom: 4px;
+}
+
+.project-meta {
+  display: flex;
+  gap: 12px;
+  font-size: 12px;
+  color: #9aa0a6;
+}
+
+.loading-text,
+.empty-text {
+  text-align: center;
+  padding: 40px 20px;
+  color: #9aa0a6;
+  font-size: 14px;
+}
+
+/* Save Toast */
+.save-toast {
+  position: fixed;
+  bottom: 24px;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 12px 24px;
+  background: rgba(16, 185, 129, 0.9);
+  backdrop-filter: blur(8px);
+  border-radius: 8px;
+  font-size: 14px;
+  color: white;
+  z-index: 1000;
+  animation: slideUp 0.3s ease;
+}
+
+.save-toast.error {
+  background: rgba(239, 68, 68, 0.9);
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateX(-50%) translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
 }
 </style>

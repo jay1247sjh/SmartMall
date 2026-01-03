@@ -568,4 +568,77 @@ onUnmounted(() => {
 
 ---
 
+## 组件化重构说明
+
+登录页面已使用可复用组件重构，大幅减少代码量：
+
+### 使用的组件
+
+| 组件 | 路径 | 说明 |
+|------|------|------|
+| `AuthLayout` | `@/components/auth/AuthLayout.vue` | 认证页面统一布局（左侧品牌面板 + 右侧表单面板） |
+| `AuthFormCard` | `@/components/auth/AuthFormCard.vue` | 表单卡片容器 |
+| `AuthInput` | `@/components/auth/AuthInput.vue` | 带图标、验证状态的输入框 |
+| `AuthButton` | `@/components/auth/AuthButton.vue` | 带加载状态的主按钮 |
+| `AlertMessage` | `@/components/auth/AlertMessage.vue` | 错误/成功/警告提示 |
+| `TypewriterCard` | `@/components/auth/TypewriterCard.vue` | 打字机效果卡片 |
+| `SocialLogin` | `@/components/auth/SocialLogin.vue` | 第三方登录按钮组 |
+
+### 重构前后对比
+
+```
+重构前：~400 行代码
+重构后：~80 行代码
+代码减少：80%
+```
+
+### 组件使用示例
+
+```vue
+<template>
+  <AuthLayout
+    brand-headline="重新定义商城管理的可能性"
+    brand-subtitle="融合 3D 可视化与 AI 智能，打造下一代商业空间管理平台"
+  >
+    <template #brand-extra>
+      <TypewriterCard :texts="featureTexts" />
+    </template>
+
+    <AuthFormCard title="欢迎回来" description="登录以继续使用 Smart Mall">
+      <form @submit.prevent="handleLogin">
+        <AuthInput
+          id="username"
+          v-model="username"
+          label="用户名"
+          icon="user"
+          placeholder="输入用户名"
+          required
+        />
+        <AuthInput
+          id="password"
+          v-model="password"
+          label="密码"
+          type="password"
+          icon="password"
+          placeholder="输入密码"
+          required
+        />
+        <AlertMessage v-if="errorMsg" type="error" :message="errorMsg" />
+        <AuthButton text="登录" :loading="loading" />
+      </form>
+      <SocialLogin />
+    </AuthFormCard>
+  </AuthLayout>
+</template>
+```
+
+### UI 框架
+
+项目已集成 Element Plus UI 框架：
+- 全局注册在 `main.ts`
+- 支持暗色主题
+- 可按需使用 Element Plus 组件
+
+---
+
 *"未经审视的代码不值得运行。" —— 改编自苏格拉底*
