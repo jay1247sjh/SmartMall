@@ -1,0 +1,43 @@
+# IDE
+.vscode/
+.idea/
+
+# Kiro
+.kiro/
+
+# Images
+*.png
+*.jpg
+*.jpeg
+*.gif
+*.bmp
+*.ico
+*.svg
+*.webp
+
+# Dependencies
+node_modules/
+target/
+
+# Build outputs
+dist/
+build/
+
+# Logs
+*.log
+npm-debug.log*
+
+# Environment files
+.env.local
+.env.*.local
+
+# Test files
+*.test.ts
+*.spec.ts
+*.test.js
+*.spec.js
+__tests__/
+
+# OS files
+.DS_Store
+Thumbs.db

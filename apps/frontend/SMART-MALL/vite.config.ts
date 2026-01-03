@@ -1,11 +1,31 @@
+/// <reference types="vitest" />
 import { defineConfig } from 'vite'
 import vue from '@vitejs/plugin-vue'
 import path from 'path'
 
 // Vite 配置文档: https://vite.dev/config/
 export default defineConfig({
+  // Vitest 测试配置
+  test: {
+    globals: true,
+    environment: 'jsdom',
+  },
+
   // Vue 插件配置
   plugins: [vue()],
+  
+  // 开发服务器配置
+  server: {
+    port: 5173,
+    // API 代理配置 - 后端运行在 8081 端口
+    proxy: {
+      '/api': {
+        target: 'http://localhost:8081',
+        changeOrigin: true,
+        // rewrite: (path) => path.replace(/^\/api/, '/api')
+      }
+    }
+  },
   
   // 模块解析配置
   resolve: {

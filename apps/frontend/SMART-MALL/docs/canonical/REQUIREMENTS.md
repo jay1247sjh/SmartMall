@@ -597,7 +597,116 @@
 
 ---
 
-## 需求优先级汇总（含 RAG 需求）
+### 需求 32：密码管理功能
+
+**User Story**: As a 用户, I want 能够重置忘记的密码和修改现有密码, so that 我可以安全地管理我的账户访问权限
+
+#### Acceptance Criteria
+
+**忘记密码功能：**
+1. WHEN 用户在登录页面点击"忘记密码" THEN THE Mall System SHALL 跳转到忘记密码页面
+2. WHEN 用户输入注册邮箱并提交 THEN THE Mall System SHALL 发送包含重置链接的邮件
+3. WHEN 邮件发送成功 THEN THE Mall System SHALL 显示成功提示并提供返回登录入口
+4. THE Mall System SHALL 验证邮箱格式的合法性
+5. THE Mall System SHALL 对未注册邮箱返回相同的成功提示（防止邮箱枚举攻击）
+
+**重置密码功能：**
+6. WHEN 用户点击邮件中的重置链接 THEN THE Mall System SHALL 跳转到重置密码页面
+7. WHEN 页面加载时 THEN THE Mall System SHALL 验证重置令牌的有效性
+8. IF 令牌无效或过期 THEN THE Mall System SHALL 显示错误提示并提供重新申请入口
+9. WHEN 用户输入新密码并确认 THEN THE Mall System SHALL 验证两次密码一致性
+10. WHEN 密码重置成功 THEN THE Mall System SHALL 显示成功提示并提供登录入口
+11. THE Mall System SHALL 要求新密码长度至少为6位
+
+**修改密码功能：**
+12. WHEN 已登录用户请求修改密码 THEN THE Mall System SHALL 要求输入当前密码和新密码
+13. WHEN 当前密码验证通过 THEN THE Mall System SHALL 更新用户密码
+14. IF 当前密码错误 THEN THE Mall System SHALL 返回明确的错误提示
+15. THE Mall System SHALL 在密码修改成功后保持用户登录状态
+
+**安全性要求：**
+16. THE Mall System SHALL 使用 BCrypt 算法加密存储密码
+17. THE Mall System SHALL 为重置令牌设置过期时间
+18. THE Mall System SHALL 在令牌使用后立即失效
+
+---
+
+### 需求 33：用户注册功能
+
+**User Story**: As a 访客, I want 注册新账号, so that 我可以使用商城系统的功能
+
+#### Acceptance Criteria
+
+**注册表单：**
+1. WHEN 用户在登录页面点击"创建账号" THEN THE Mall System SHALL 跳转到注册页面
+2. THE Mall System SHALL 提供用户名、邮箱、密码、确认密码、手机号（可选）输入字段
+3. THE Mall System SHALL 实时验证用户名格式（3-20字符，字母数字下划线）
+4. THE Mall System SHALL 实时验证邮箱格式
+5. THE Mall System SHALL 实时验证密码长度（至少6位）
+6. THE Mall System SHALL 实时验证两次密码一致性
+7. THE Mall System SHALL 实时验证手机号格式（如果填写）
+
+**可用性检查：**
+8. WHEN 用户输入用户名 THEN THE Mall System SHALL 防抖检查用户名可用性
+9. WHEN 用户输入邮箱 THEN THE Mall System SHALL 防抖检查邮箱可用性
+10. THE Mall System SHALL 显示可用性检查的加载状态
+11. THE Mall System SHALL 显示可用性检查的结果（可用/已被注册）
+
+**注册提交：**
+12. WHEN 所有验证通过 THEN THE Mall System SHALL 启用提交按钮
+13. WHEN 用户提交注册 THEN THE Mall System SHALL 显示加载状态
+14. WHEN 注册成功 THEN THE Mall System SHALL 显示成功提示
+15. WHEN 注册成功 THEN THE Mall System SHALL 2秒后自动跳转到登录页面
+16. IF 注册失败 THEN THE Mall System SHALL 显示错误信息
+
+**UI/UX：**
+17. THE Mall System SHALL 使用与登录页一致的深色主题设计
+18. THE Mall System SHALL 在左侧面板展示品牌信息和功能特点
+19. THE Mall System SHALL 支持响应式布局（移动端隐藏左侧面板）
+20. THE Mall System SHALL 提供返回登录页的链接
+
+---
+
+### 需求 34：主页/仪表盘
+
+**User Story**: As a 已登录用户, I want 看到个性化的仪表盘, so that 我可以快速了解系统状态并访问常用功能
+
+#### Acceptance Criteria
+
+**布局结构：**
+1. THE Mall System SHALL 提供侧边栏导航
+2. THE Mall System SHALL 支持侧边栏折叠/展开
+3. THE Mall System SHALL 在顶部栏显示当前页面标题和用户信息
+4. THE Mall System SHALL 根据用户角色动态显示导航菜单
+
+**欢迎区域：**
+5. THE Mall System SHALL 根据时间显示问候语（早上好/下午好/晚上好）
+6. THE Mall System SHALL 显示当前登录用户名
+
+**统计卡片：**
+7. WHEN 用户角色为 ADMIN THEN THE Mall System SHALL 显示商城总数、店铺总数、待审批、在线用户
+8. WHEN 用户角色为 MERCHANT THEN THE Mall System SHALL 显示我的店铺、商品数量、今日访客、待处理
+9. WHEN 用户角色为 USER THEN THE Mall System SHALL 显示收藏店铺、浏览记录、我的订单、优惠券
+
+**快捷入口：**
+10. THE Mall System SHALL 根据用户角色显示不同的快捷入口
+11. WHEN 用户点击快捷入口 THEN THE Mall System SHALL 导航到对应页面
+12. THE Mall System SHALL 为管理员显示商城管理、区域审批入口
+13. THE Mall System SHALL 为商家显示店铺配置、建模工具入口
+
+**用户操作：**
+14. THE Mall System SHALL 在顶部栏显示用户头像和角色
+15. THE Mall System SHALL 提供登出功能
+16. WHEN 用户点击登出 THEN THE Mall System SHALL 清除登录状态并跳转到登录页
+
+**UI/UX：**
+17. THE Mall System SHALL 使用深色主题设计
+18. THE Mall System SHALL 支持响应式布局
+19. THE Mall System SHALL 在移动端隐藏侧边栏或提供抽屉式导航
+
+---
+
+## 需求优先级汇总（最终版）
 
 ### P0（核心功能，必须实现）
 - 需求 1：三维场景渲染与生命周期管理
@@ -609,6 +718,7 @@
 - 需求 10：状态管理（SSOT）
 - 需求 21：区域建模权限申请与审批
 - 需求 22：商家建模沙盒约束
+- 需*需求 32：密码管理功能**
 
 ### P1（重要功能，应当实现）
 - 需求 5：AI Agent 集成与约束
@@ -621,8 +731,8 @@
 - 需求 24：Layout 版本管理
 - 需求 26：区域状态可视化
 - 需求 28：建模操作边界校验
-- **需求 29：AI Agent RAG 知识检索集成**
-- **需求 30：RAG 数据类型区分与用途隔离**
+- 需求 29：AI Agent RAG 知识检索集成
+- 需求 30：RAG 数据类型区分与用途隔离
 
 ### P2（增强功能，可选实现）
 - 需求 8：动态路由树
@@ -633,7 +743,7 @@
 - 需求 19：日志与调试支持
 - 需求 25：在线用户版本更新通知
 - 需求 27：建模权限撤销
-- **需求 31：RAG 检索结果展示与溯源**
+- 需求 31：RAG 检索结果展示与溯源
 
 ### P3（辅助功能，可选实现）
 - 需求 20：可访问性支持

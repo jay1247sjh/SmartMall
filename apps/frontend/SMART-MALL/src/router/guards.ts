@@ -17,10 +17,10 @@ import { setupDynamicRoutes, isDynamicRoutesLoaded, removeDynamicRoutes } from '
 // ============================================================================
 
 /** 无需登录即可访问的路由 */
-const WHITE_LIST = ['/login', '/404', '/403']
+const WHITE_LIST = ['/login', '/register', '/forgot-password', '/reset-password', '/404', '/403']
 
 /** 登录后不应访问的路由（如登录页） */
-const LOGIN_REDIRECT_LIST = ['/login']
+const LOGIN_REDIRECT_LIST = ['/login', '/register', '/forgot-password', '/reset-password']
 
 // ============================================================================
 // 守卫逻辑

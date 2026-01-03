@@ -56,6 +56,49 @@
 
 ---
 
+### 需求 1.5：密码管理
+
+**User Story**: As a 用户, I want 重置或修改我的密码, so that 我可以在忘记密码时恢复访问或定期更新密码
+
+#### Acceptance Criteria
+
+1. WHEN 用户请求忘记密码 THEN THE Backend System SHALL 发送密码重置链接到用户邮箱
+2. THE Backend System SHALL 生成唯一的重置令牌并存储在 Redis 中，有效期 30 分钟
+3. WHEN 同一邮箱在 5 分钟内重复请求 THEN THE Backend System SHALL 返回频率限制错误
+4. THE Backend System SHALL 无论邮箱是否存在都返回成功响应（防止邮箱枚举攻击）
+5. WHEN 用户使用有效令牌重置密码 THEN THE Backend System SHALL 更新密码并删除令牌
+6. WHEN 令牌无效或过期 THEN THE Backend System SHALL 返回令牌无效错误
+7. WHEN 已登录用户修改密码 THEN THE Backend System SHALL 验证旧密码正确性
+8. THE Backend System SHALL 验证新密码长度不少于 6 位
+9. THE Backend System SHALL 验证新密码与旧密码不同
+10. THE Backend System SHALL 使用 BCrypt 加密存储密码
+
+---
+
+### 需求 1.6：用户注册
+
+**User Story**: As a 访客, I want 注册新账号, so that 我可以使用系统的功能
+
+#### Acceptance Criteria
+
+1. WHEN 用户提交注册信息 THEN THE Backend System SHALL 验证用户名唯一性
+2. WHEN 用户提交注册信息 THEN THE Backend System SHALL 验证邮箱唯一性
+3. WHEN 用户名已存在 THEN THE Backend System SHALL 返回用户名已被注册错误
+4. WHEN 邮箱已存在 THEN THE Backend System SHALL 返回邮箱已被注册错误
+5. THE Backend System SHALL 验证用户名长度在 3-20 个字符之间
+6. THE Backend System SHALL 验证用户名只包含字母、数字和下划线
+7. THE Backend System SHALL 验证密码长度不少于 6 位
+8. THE Backend System SHALL 验证两次输入的密码一致
+9. THE Backend System SHALL 验证邮箱格式正确
+10. THE Backend System SHALL 验证手机号格式正确（如果提供）
+11. WHEN 注册成功 THEN THE Backend System SHALL 创建用户并设置默认角色为 USER
+12. WHEN 注册成功 THEN THE Backend System SHALL 设置用户状态为 ACTIVE
+13. THE Backend System SHALL 使用 BCrypt 加密存储密码
+14. THE Backend System SHALL 提供用户名可用性检查接口
+15. THE Backend System SHALL 提供邮箱可用性检查接口
+
+---
+
 ### 需求 2：用户与角色管理
 
 **User Story**: As a 系统管理员, I want 管理用户和角色, so that 不同用户具备不同的系统权限

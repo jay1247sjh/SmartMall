@@ -49,6 +49,17 @@ const adminRoutes: RouteConfig[] = [
       },
     ],
   },
+  // MallBuilder 作为独立全屏路由
+  {
+    path: '/admin/builder',
+    name: 'AdminMallBuilder',
+    component: 'AdminMallBuilder',
+    meta: {
+      title: '商城建模',
+      icon: 'tool',
+      roles: ['ADMIN'],
+    },
+  },
 ]
 
 /**

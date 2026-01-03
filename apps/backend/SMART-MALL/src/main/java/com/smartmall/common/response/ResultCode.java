@@ -22,9 +22,19 @@ public enum ResultCode {
     PARAM_INVALID("A1003", "参数格式错误"),
     
     AUTH_FAILED("A2001", "认证失败"),
+    TOKEN_EXPIRED("A2002", "Token已过期"),
     AUTH_TOKEN_EXPIRED("A2002", "Token已过期"),
     AUTH_TOKEN_INVALID("A2003", "Token无效"),
     AUTH_REFRESH_TOKEN_EXPIRED("A2004", "RefreshToken已过期"),
+    
+    // 密码管理相关错误码
+    PASSWORD_RESET_TOKEN_INVALID("A2010", "重置令牌无效"),
+    PASSWORD_RESET_TOKEN_EXPIRED("A2011", "重置令牌已过期"),
+    PASSWORD_RESET_TOKEN_USED("A2012", "重置令牌已使用"),
+    PASSWORD_RESET_RATE_LIMITED("A2013", "请求过于频繁，请稍后再试"),
+    PASSWORD_OLD_INCORRECT("A2014", "旧密码错误"),
+    PASSWORD_SAME_AS_OLD("A2015", "新密码不能与旧密码相同"),
+    PASSWORD_TOO_SHORT("A2016", "密码长度不能少于6位"),
     
     PERMISSION_DENIED("A3001", "权限不足"),
     AREA_PERMISSION_DENIED("A3002", "未获得该区域的建模权限"),

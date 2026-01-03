@@ -5,11 +5,506 @@
 > 
 > 本文档为 **变更日志（Changelog）**，用于记录版本变更历史，遵循 Keep a Changelog 格式规范。
 > 
-> 最后更新：2024-12-20
+> 最后更新：2026-01-03
 
 ---
 
-## [Unreleased] - 2024-12-20
+## [Unreleased] - 2026-01-03
+
+### Added - 新增功能
+
+#### P-0. 商场家具模型系统
+
+**家具模型 (`builder/objects/furniture-models.ts`)**
+- ✅ `createBenchModel()` - 商场长椅
+  - 多条木板座椅和靠背
+  - 金属支架和横梁
+  - 扶手
+  - 支持长度和高度缩放
+- ✅ `createLampPostModel()` - 路灯/装饰灯
+  - mall 风格（现代商场简约立柱灯）
+  - modern 风格（现代简约方形灯）
+  - classic 风格（经典灯笼形）
+  - 内置点光源
+- ✅ `createTrashBinModel()` - 垃圾桶
+  - single 风格（单个金属垃圾桶）
+  - recycling 风格（三色分类垃圾桶）
+- ✅ `createPlanterModel()` - 装饰花盆
+  - 三种尺寸（small/medium/large）
+  - 三种植物类型（tree/bush/flowers）
+  - 陶瓷花盆 + 土壤 + 植物
+- ✅ `createSignPostModel()` - 指示牌/导视牌
+  - standing 风格（立式指示牌）
+  - hanging 风格（悬挂式指示牌）
+  - wall 风格（墙面指示牌）
+- ✅ `createFountainModel()` - 中庭喷泉
+  - 石材外圈池
+  - 水面效果
+  - 中心柱和喷水口
+- ✅ `createKioskModel()` - 信息亭/服务台
+  - 柜台和台面
+  - 顶棚支架和顶棚
+  - 信息屏幕
+
+**漫游模式渲染器 (`builder/rendering/roaming-renderer.ts`)**
+- ✅ `createRoamingWalls()` - 创建商城墙壁
+  - 根据商城轮廓生成墙壁
+  - 带踢脚线
+  - PBR 墙面材质
+- ✅ `createRoamingFloor()` - 创建地板
+  - PBR 瓷砖材质
+  - 程序化纹理
+- ✅ `createRoamingCeiling()` - 创建天花板
+- ✅ `createRoamingLights()` - 创建室内照明
+  - 多点光源布置
+  - 环境光
+- ✅ `createMallFurniture()` - 自动布置商场家具
+  - 根据商城大小自动计算家具数量和位置
+  - 包含长椅、路灯、垃圾桶、花盆、指示牌
+
+### Changed - 变更
+
+#### Builder 资源优化重构
+- ✅ 将 `furniture-models.ts` 中的材质函数迁移到 `resource-manager.ts`
+- ✅ 新增 6 个家具材质函数（使用 MaterialManager 缓存）：
+  - `getFurnitureWoodMaterial()` - 木材材质 (0x8b4513)
+  - `getFurnitureMetalMaterial()` - 金属材质 (0x4a4a4a)
+  - `getFurnitureChromeMaterial()` - 铬材质 (0xcccccc)
+  - `getFurniturePlasticMaterial(color)` - 塑料材质
+  - `getFurnitureLeafMaterial()` - 叶子材质 (0x228b22)
+  - `getFurnitureCeramicMaterial(color)` - 陶瓷材质
+- ✅ 移除 `furniture-models.ts` 中的本地材质定义
+- ✅ 所有内联 `new THREE.MeshStandardMaterial()` 改用 `getMaterialManager().getStandardMaterial()`
+- ✅ 减少 GPU 内存占用，提高材质复用率
+
+---
+
+## [Previous] - 2026-01-02
+
+### Added - 新增功能
+
+#### P-0. 第三人称漫游模式与角色系统
+
+**角色模型 (`builder/objects/character-model.ts`)**
+- ✅ 小人角色 3D 模型
+  - 头部（圆柱 + 头发）
+  - 躯干（方块）
+  - 手臂（圆柱 x2）
+  - 腿部（圆柱 x2）
+  - 脚（方块 x2）
+  - 皮肤、衣服、鞋子材质
+- ✅ `CharacterController` 角色控制器类
+  - WASD 移动控制
+  - 角色旋转
+  - 速度阻尼
+  - 楼层高度管理
+  - 资源清理
+
+**第三人称漫游模式**
+- ✅ 相机跟随角色移动
+- ✅ 鼠标控制视角（Pointer Lock API）
+  - 水平旋转（yaw）同时旋转角色
+  - 垂直旋转（pitch）控制相机俯仰
+- ✅ 球面坐标计算相机位置
+- ✅ 平滑相机跟随（lerp 插值）
+- ✅ 楼层切换时更新角色位置
+
+### Changed - 变更
+
+#### 漫游模式重构
+- ✅ 从第一人称视角改为第三人称视角
+- ✅ 移除直接相机控制，改为角色控制
+- ✅ 相机自动跟随角色移动
+- ✅ 鼠标控制同时旋转角色和相机
+
+---
+
+#### P-0. 商城建模器性能优化与 3D 模型系统
+
+**3D 模型模块 (`builder/objects/`)**
+- ✅ 电梯 3D 模型 (`elevator-model.ts`)
+  - 电梯井外壳（四面墙，前面留门洞）
+  - 双开电梯门（金属质感）
+  - 顶部指示灯（选中时变绿）
+  - 支持高度缩放（编辑模式/漫游模式）
+- ✅ 扶梯 3D 模型 (`escalator-model.ts`)
+  - 底部/顶部平台
+  - 斜面底板和台阶
+  - 台阶凹槽线条
+  - 玻璃护栏和扶手
+  - 扶手支撑柱
+  - 梳齿板（黄色）
+- ✅ 楼梯 3D 模型 (`stairs-model.ts`)
+  - 踏板和踢面
+  - 扶手柱子
+  - 倾斜扶手管
+  - 木质材质
+- ✅ 服务台 3D 模型 (`service-desk-model.ts`)
+  - 服务台主体和台面
+  - 标识牌（发光效果）
+  - 电脑显示器和屏幕
+  - 地板
+- ✅ 洗手间 3D 模型 (`restroom-model.ts`)
+  - 墙壁和瓷砖地板
+  - 厕所隔间和门
+  - 马桶
+  - 洗手台和洗手盆
+  - 水龙头
+  - 镜子
+
+**资源管理模块 (`builder/resources/`)**
+- ✅ 资源管理器 (`resource-manager.ts`)
+  - 复用 engine 层的 MaterialManager 和 GeometryFactory
+  - 单例模式管理材质和几何体缓存
+  - 20+ 种预定义共享材质函数
+  - 几何体缓存（Box、Cylinder、TaperedCylinder）
+  - 动态材质创建（指示灯、标识牌、发光效果）
+  - 统一资源清理函数 `disposeBuilderResources()`
+  - 缓存统计函数 `getResourceStats()`
+
+**MallBuilderView.vue 功能增强**
+- ✅ 可折叠左侧面板
+  - 楼层面板和材质面板合并到左侧容器
+  - 折叠按钮（箭头图标）
+  - 平滑过渡动画（0.3s）
+  - 场景说明跟随折叠状态
+- ✅ 场景说明可隐藏
+  - 添加关闭按钮
+  - `showSceneLegend` 状态控制
+- ✅ 第一人称漫游模式
+  - WASD 键移动
+  - 鼠标控制视角（requestPointerLock API）
+  - 玩家高度 1.7m
+  - 移动速度 8
+  - 鼠标灵敏度 0.002
+  - ESC 解锁鼠标，点击画布重新锁定
+- ✅ 楼层切换优化
+  - 漫游模式只显示当前楼层
+  - 非当前楼层只显示轮廓线
+  - 切换楼层时更新相机 Y 位置
+- ✅ 楼梯连接限制
+  - 楼梯必须连接恰好两个相邻楼层
+  - 电梯和扶梯可连接任意楼层
+  - `canConfirmConnection` 计算属性验证
+- ✅ 区域选择优化
+  - 支持选择 3D 模型（Group 内的子对象）
+  - `raycastAreas()` 使用 `scene.traverse()` 递归查找
+  - 向上遍历父对象查找 `areaId`
+
+---
+
+#### P-0. 商城建模器（Mall Builder）
+
+**3D 建模器核心功能**
+- ✅ 项目创建向导（模板选择：矩形、L形、U形、T形、圆形）
+- ✅ 自定义商城轮廓绘制（多边形工具）
+- ✅ 楼层管理（添加、删除、切换、可见性控制）
+- ✅ 区域绘制（矩形工具、多边形工具）
+- ✅ 区域属性编辑（名称、类型、颜色）
+- ✅ 重叠检测和边界验证
+- ✅ 历史记录（撤销/重做，最多50步）
+- ✅ 项目导出/导入（JSON格式）
+- ✅ 背景图片导入（参考图辅助绘制）
+
+**3D 渲染与交互**
+- ✅ Three.js 场景初始化（深色主题 `#0a0a0a`）
+- ✅ 轨道控制器（OrbitControls）- 仅平移工具模式启用
+- ✅ 楼层 3D 渲染（透明方块，支持多层堆叠）
+- ✅ 商城轮廓渲染（蓝色边框）
+- ✅ 区域 3D 渲染（彩色方块，支持选中高亮）
+- ✅ 当前楼层高亮效果（蓝色，更高透明度）
+- ✅ 场景说明图例（左下角浮动面板）
+
+**模板系统**
+- ✅ 矩形商城模板（100x80，3层）
+- ✅ L形商城模板（120x100，3层）
+- ✅ U形商城模板（120x100，3层）
+- ✅ T形商城模板（120x100，3层）
+- ✅ 圆形商城模板（半径50，32边形近似，3层）
+- ✅ 所有模板轮廓居中生成（以原点为中心）
+
+**几何计算模块**
+- ✅ 多边形面积计算（Shoelace 公式）
+- ✅ 多边形周长计算
+- ✅ 点在多边形内检测（射线法）
+- ✅ 多边形包含检测
+- ✅ 多边形重叠检测（SAT 分离轴定理）
+- ✅ 网格对齐（snapToGrid）
+
+**工具栏**
+- ✅ 选择工具（V）- 点击选中区域
+- ✅ 平移工具 - 启用相机旋转/缩放/平移
+- ✅ 矩形绘制工具（R）
+- ✅ 多边形绘制工具（P）
+- ✅ 轮廓绘制工具
+- ✅ 重置轮廓工具
+- ✅ 重置视图按钮
+- ✅ 撤销/重做按钮
+
+**UI/UX 改进**
+- ✅ 深色主题设计（与登录页一致）
+- ✅ 毛玻璃效果面板
+- ✅ SVG 图标（无 emoji）
+- ✅ 快捷键支持（V/R/P/Del/Ctrl+Z/Ctrl+S/Esc）
+- ✅ 底部状态栏（当前楼层、区域数量、快捷键提示）
+- ✅ 帮助面板（使用指南）
+
+**属性测试（Property-Based Testing）**
+- ✅ 多边形面积计算属性测试
+- ✅ 多边形周长计算属性测试
+- ✅ 点在多边形内检测属性测试
+- ✅ 模板生成属性测试
+- ✅ 绘图工具状态机属性测试
+- ✅ 背景图片状态管理属性测试
+- ✅ 3D 渲染函数属性测试
+
+---
+
+### Fixed - 问题修复
+
+#### 商城建模器修复
+
+**3D 模型位置问题**
+- ✅ 修复 3D 模型位置错误
+  - `getAreaCenter()` 返回 `{x, z}`，不是 `{x, y}`
+  - 修正 `group.position.set(center.x, yPosition, center.z)`
+
+**第一人称移动方向问题**
+- ✅ 修复 A/D 键移动方向相反
+  - 修正 `velocity.x` 计算逻辑
+  - 修正 `cam.position.addScaledVector(right, velocity.x)`
+
+**区域选择问题**
+- ✅ 修复工具选择模式无法选中 3D 模型
+  - `raycastAreas()` 改用递归检测
+  - 添加父对象遍历查找 `areaId`
+
+**轮廓居中问题**
+- ✅ 修复 `createEmptyProject` 默认轮廓未居中问题
+  - 原：`(0,0)` 到 `(100,100)`
+  - 现：`(-50,-50)` 到 `(50,50)`
+- ✅ 修复所有模板生成函数，确保轮廓以原点为中心
+  - `generateRectangle()` - 使用 `-halfW/-halfH` 到 `halfW/halfH`
+  - `generateLShape()` - 居中计算
+  - `generateUShape()` - 居中计算
+  - `generateTShape()` - 居中计算
+  - `generateCircle()` - 移除中心偏移
+
+**相机控制问题**
+- ✅ 修复相机控制在所有工具模式下都启用的问题
+  - 现在只有平移工具模式才启用 OrbitControls
+  - 其他工具模式下禁用相机控制，避免干扰绘制操作
+
+**视图初始化问题**
+- ✅ 优化初始相机位置：`(0, 100, 60)` 看向 `(0, 6, 0)`
+- ✅ 缩小网格范围：60x60（原100x100）
+- ✅ 缩小地板范围：70x70（原100x100）
+
+**缩放与绘制问题**
+- ✅ 修复相机缩放限制过小问题
+  - `minDistance`: 20 → 10（允许更近距离观察）
+  - `maxDistance`: 200 → 500（允许更远距离查看全貌）
+- ✅ 修复轮廓绘制预览线 Y 坐标
+  - 预览线 Y 位置：0.1 → 0.05（更贴近地面，减少视觉偏差）
+
+---
+
+### Changed - 变更
+
+#### Builder 模块重构
+- ✅ 3D 模型代码从 MallBuilderView.vue 提取到独立文件
+  - `builder/objects/` 目录存放所有 3D 模型
+  - 每个模型一个文件，职责清晰
+- ✅ 资源管理代码提取到独立模块
+  - `builder/resources/` 目录存放资源管理功能
+  - 复用 engine 层的 MaterialManager 和 GeometryFactory
+  - 避免重复创建材质和几何体
+
+#### 楼层渲染改进
+- ✅ 当前选中楼层使用蓝色高亮（`0x60a5fa`）
+- ✅ 当前楼层透明度提高（0.4 vs 0.2）
+- ✅ 非当前楼层使用默认灰色，透明度降低
+
+---
+
+## [Previous] - 2026-01-01
+
+### Added - 新增功能
+
+#### P-0. UI 风格统一化（Gemini/Linear 风格）
+
+**全局设计系统更新**
+- ✅ 移除所有 emoji 图标，采用纯 SVG 图标
+- ✅ 统一深色主题背景色 `#0a0a0a`
+- ✅ 添加渐变光晕背景效果
+- ✅ 实现毛玻璃效果（backdrop-blur）
+- ✅ 卡片样式：`rgba(255, 255, 255, 0.02)` 背景 + `rgba(255, 255, 255, 0.08)` 边框
+- ✅ 主强调色：`#8ab4f8`（蓝色）
+
+**组件更新**
+- ✅ `StatCard.vue` - 移除 icon prop，纯数字展示
+- ✅ `QuickActionCard.vue` - 移除 icon/color props，文字+箭头样式
+- ✅ `DataTable.vue` - 空状态使用 SVG 图标替代 emoji
+- ✅ `Modal.vue` - 添加毛玻璃效果，优化样式
+
+**布局组件更新**
+- ✅ `DashboardLayout.vue` - SVG logo，移除 emoji 菜单图标，毛玻璃效果
+- ✅ `AdminLayout.vue` - 完整深色主题，渐变强调色，SVG logo
+- ✅ `MerchantLayout.vue` - 粉橙渐变主题，SVG logo
+- ✅ `MainLayout.vue` - 统一头部样式，SVG logo
+
+**页面更新**
+- ✅ `MallView.vue` - 渐变背景，移除 emoji
+- ✅ `admin/DashboardView.vue` - 移除 emoji 图标
+- ✅ `merchant/DashboardView.vue` - 移除 emoji，渐变欢迎区
+- ✅ `user/ProfileView.vue` - emoji 替换为 SVG 图标
+
+---
+
+#### P-0. 布局嵌套问题修复
+
+**问题描述**
+- 子视图内部使用 `DashboardLayout` 组件，而父路由已使用布局组件
+- 导致双重导航栏和重复 UI 元素
+
+**修复内容**
+- ✅ `admin/DashboardView.vue` - 移除 DashboardLayout 包装
+- ✅ `admin/LayoutVersionView.vue` - 移除 DashboardLayout 包装
+- ✅ `admin/MallManageView.vue` - 移除 DashboardLayout 包装
+- ✅ `admin/AreaApprovalView.vue` - 移除 DashboardLayout 包装
+- ✅ `merchant/DashboardView.vue` - 移除 DashboardLayout 包装
+- ✅ `merchant/StoreConfigView.vue` - 移除 DashboardLayout 包装
+- ✅ `merchant/AreaApplyView.vue` - 移除 DashboardLayout 包装
+- ✅ `user/ProfileView.vue` - 移除 DashboardLayout 包装
+
+---
+
+#### P-0. 主页/仪表盘页面
+
+**MallView.vue 重构**
+- ✅ 完整的仪表盘布局（侧边栏 + 顶部栏 + 内容区）
+- ✅ 可折叠侧边栏导航
+- ✅ 根据用户角色动态显示菜单项
+- ✅ 欢迎区域（时间问候语 + 用户名）
+- ✅ 统计卡片（根据角色显示不同数据）
+- ✅ 快捷入口（根据角色显示不同功能）
+- ✅ 用户信息展示（头像、用户名、角色）
+- ✅ 登出功能
+- ✅ 深色主题 UI 设计
+- ✅ 响应式布局支持
+
+**功能特性**
+- 管理员视图：商城总数、店铺总数、待审批、在线用户
+- 商家视图：我的店铺、商品数量、今日访客、待处理
+- 用户视图：收藏店铺、浏览记录、我的订单、优惠券
+- 快捷入口根据角色动态配置
+
+---
+
+#### P-1. 用户注册功能
+
+**注册 API 模块**
+- ✅ 创建 `register.api.ts` 注册 API 封装
+  - `register()`: 用户注册
+  - `checkUsername()`: 检查用户名可用性
+  - `checkEmail()`: 检查邮箱可用性
+- ✅ 更新 `api/index.ts` 导出注册 API
+
+**注册页面 (RegisterView.vue)**
+- ✅ 实现注册表单（用户名、邮箱、密码、确认密码、手机号）
+- ✅ 实时表单验证
+  - 用户名：3-20字符，字母数字下划线
+  - 邮箱：格式验证
+  - 密码：至少6位
+  - 确认密码：一致性验证
+  - 手机号：可选，格式验证
+- ✅ 防抖检查用户名/邮箱可用性（500ms）
+- ✅ 可用性检查加载状态和结果显示
+- ✅ 注册成功后 2 秒自动跳转登录页
+- ✅ 深色主题 UI 设计（与登录页一致）
+- ✅ 左侧品牌面板展示功能特点
+- ✅ 响应式布局支持
+
+**路由配置**
+- ✅ 添加 `/register` 路由
+- ✅ 更新登录页面"创建账号"链接为 router-link
+
+---
+
+#### P-1. 密码管理功能
+
+**密码管理 API 模块**
+- ✅ 创建 `password.api.ts` 密码管理 API 封装
+  - `forgotPassword()`: 忘记密码，发送重置链接
+  - `verifyResetToken()`: 验证重置令牌有效性
+  - `resetPassword()`: 重置密码
+  - `changePassword()`: 修改密码（需登录）
+- ✅ 更新 `api/index.ts` 导出密码管理 API
+
+**忘记密码页面 (ForgotPasswordView.vue)**
+- ✅ 实现邮箱输入表单
+- ✅ 邮箱格式验证
+- ✅ 提交状态管理（loading/success/error）
+- ✅ 成功状态展示（邮件已发送提示）
+- ✅ 返回登录链接
+- ✅ 深色主题 UI 设计（与登录页一致）
+- ✅ 响应式布局支持
+
+**重置密码页面 (ResetPasswordView.vue)**
+- ✅ URL 参数获取重置令牌
+- ✅ 页面加载时自动验证令牌
+- ✅ 令牌验证中加载状态
+- ✅ 令牌无效错误状态（含重新申请入口）
+- ✅ 新密码输入表单（密码 + 确认密码）
+- ✅ 密码长度验证（最少6位）
+- ✅ 密码一致性验证
+- ✅ 重置成功状态展示（含前往登录入口）
+- ✅ 深色主题 UI 设计
+- ✅ 响应式布局支持
+
+**路由配置**
+- ✅ 添加 `/forgot-password` 路由
+- ✅ 添加 `/reset-password` 路由（支持 token 查询参数）
+- ✅ 更新登录页面忘记密码链接为 router-link
+
+**UI/UX 特性**
+- ✅ 统一的深色主题设计
+- ✅ 渐变色按钮（蓝紫渐变）
+- ✅ 输入框图标前缀
+- ✅ 聚焦状态高亮
+- ✅ 加载状态 spinner
+- ✅ 成功/错误状态图标
+- ✅ 移动端响应式适配
+
+---
+
+## [Previous] - 2024-12-29
+
+### Added - 新增功能
+
+#### P-0. 主页/仪表盘页面
+
+**MallView.vue 重构**
+- ✅ 完整的仪表盘布局（侧边栏 + 顶部栏 + 内容区）
+- ✅ 可折叠侧边栏导航
+- ✅ 根据用户角色动态显示菜单项
+- ✅ 欢迎区域（时间问候语 + 用户名）
+- ✅ 统计卡片（根据角色显示不同数据）
+- ✅ 快捷入口（根据角色显示不同功能）
+- ✅ 用户信息展示（头像、用户名、角色）
+- ✅ 登出功能
+- ✅ 深色主题 UI 设计
+- ✅ 响应式布局支持
+
+**功能特性**
+- 管理员视图：商城总数、店铺总数、待审批、在线用户
+- 商家视图：我的店铺、商品数量、今日访客、待处理
+- 用户视图：收藏店铺、浏览记录、我的订单、优惠券
+- 快捷入口根据角色动态配置
+
+---
+
+## [Previous] - 2024-12-20
 
 ### Added - 新增功能
 

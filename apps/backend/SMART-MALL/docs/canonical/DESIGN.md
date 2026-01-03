@@ -834,6 +834,10 @@ public class ApiResponse<T> {
 | POST | /api/auth/login | 用户登录 |
 | POST | /api/auth/refresh | 刷新 Token |
 | POST | /api/auth/logout | 用户登出 |
+| POST | /api/auth/forgot-password | 忘记密码（发送重置链接） |
+| POST | /api/auth/verify-reset-token | 验证重置令牌 |
+| POST | /api/auth/reset-password | 重置密码 |
+| POST | /api/auth/change-password | 修改密码（需登录） |
 | GET | /api/user/me | 获取当前用户信息 |
 | PUT | /api/user/me | 更新当前用户信息 |
 

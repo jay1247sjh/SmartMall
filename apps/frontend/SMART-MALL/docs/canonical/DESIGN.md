@@ -1915,6 +1915,273 @@ E2E 测试（可选）
 | 15. 正确性属性 | All Requirements |
 | 16. 测试策略 | All Requirements |
 | 21. 区域建模权限与空间治理机制 | Requirements 21, 22, 23, 24, 25, 26, 27, 28 |
+| 22. 密码管理功能设计 | Requirements 32 |
+
+---
+
+## 22. 密码管理功能设计
+
+### 22.1 设计动机
+
+为提供完整的用户账户安全管理能力，系统实现密码管理功能，包括：
+
+- **忘记密码**：用户忘记密码时可通过邮箱重置
+- **重置密码**：通过邮件链接设置新密码
+- **修改密码**：已登录用户可修改当前密码
+
+### 22.2 功能架构
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                    密码管理功能架构                          │
+├─────────────────────────────────────────────────────────────┤
+│  页面层 (Views)                                              │
+│  ├── ForgotPasswordView.vue    忘记密码页面                  │
+│  ├── ResetPasswordView.vue     重置密码页面                  │
+│  └── LoginView.vue             登录页面（含忘记密码入口）     │
+├─────────────────────────────────────────────────────────────┤
+│  API 层 (API)                                                │
+│  └── password.api.ts           密码管理 API 封装             │
+├─────────────────────────────────────────────────────────────┤
+│  路由层 (Router)                                             │
+│  ├── /forgot-password          忘记密码路由                  │
+│  └── /reset-password           重置密码路由（带 token 参数） │
+└─────────────────────────────────────────────────────────────┘
+```
+
+### 22.3 页面设计
+
+#### 22.3.1 忘记密码页面 (ForgotPasswordView)
+
+**功能描述：**
+- 用户输入注册邮箱
+- 系统发送包含重置链接的邮件
+- 显示发送成功/失败状态
+
+**页面状态：**
+```typescript
+interface ForgotPasswordState {
+  email: string;           // 用户输入的邮箱
+  loading: boolean;        // 提交中状态
+  errorMsg: string;        // 错误信息
+  success: boolean;        // 发送成功状态
+}
+```
+
+**UI 组件：**
+- 邮箱输入框（带图标）
+- 提交按钮（带加载状态）
+- 错误提示区域
+- 成功状态展示（含返回登录按钮）
+- 返回登录链接
+
+**交互流程：**
+```
+用户输入邮箱 → 格式验证 → 提交请求 → 显示结果
+                ↓ 失败
+            显示错误提示
+```
+
+#### 22.3.2 重置密码页面 (ResetPasswordView)
+
+**功能描述：**
+- 验证 URL 中的重置令牌
+- 用户输入新密码并确认
+- 完成密码重置
+
+**页面状态：**
+```typescript
+interface ResetPasswordState {
+  token: string;           // URL 中的重置令牌
+  newPassword: string;     // 新密码
+  confirmPassword: string; // 确认密码
+  loading: boolean;        // 提交中状态
+  verifying: boolean;      // 令牌验证中状态
+  errorMsg: string;        // 错误信息
+  tokenValid: boolean;     // 令牌是否有效
+  success: boolean;        // 重置成功状态
+}
+```
+
+**UI 组件：**
+- 加载状态（验证令牌中）
+- 令牌无效状态（含重新申请按钮）
+- 密码输入表单（新密码 + 确认密码）
+- 提交按钮（带加载状态）
+- 成功状态展示（含前往登录按钮）
+
+**交互流程：**
+```
+页面加载 → 验证令牌 → 令牌有效？
+              ↓ 是              ↓ 否
+         显示密码表单      显示错误状态
+              ↓
+         用户输入密码
+              ↓
+         验证密码一致性
+              ↓
+         提交重置请求
+              ↓
+         显示成功/失败
+```
+
+### 22.4 API 设计
+
+#### 22.4.1 API 接口定义
+
+```typescript
+// password.api.ts
+
+/** 忘记密码请求参数 */
+interface ForgotPasswordRequest {
+  email: string;
+}
+
+/** 验证令牌请求参数 */
+interface VerifyTokenRequest {
+  token: string;
+}
+
+/** 重置密码请求参数 */
+interface ResetPasswordRequest {
+  token: string;
+  newPassword: string;
+}
+
+/** 修改密码请求参数 */
+interface ChangePasswordRequest {
+  oldPassword: string;
+  newPassword: string;
+}
+
+const passwordApi = {
+  /** 忘记密码 - 发送重置链接到邮箱 */
+  forgotPassword(data: ForgotPasswordRequest): Promise<void>;
+  
+  /** 验证重置令牌是否有效 */
+  verifyResetToken(data: VerifyTokenRequest): Promise<boolean>;
+  
+  /** 重置密码 */
+  resetPassword(data: ResetPasswordRequest): Promise<void>;
+  
+  /** 修改密码（需要登录） */
+  changePassword(data: ChangePasswordRequest): Promise<void>;
+}
+```
+
+#### 22.4.2 API 端点映射
+
+| 方法 | 端点 | 认证要求 | 说明 |
+|------|------|----------|------|
+| POST | /auth/forgot-password | 无需认证 | 发送重置邮件 |
+| POST | /auth/verify-reset-token | 无需认证 | 验证令牌有效性 |
+| POST | /auth/reset-password | 无需认证 | 重置密码 |
+| POST | /auth/change-password | 需要认证 | 修改密码 |
+
+### 22.5 路由配置
+
+```typescript
+// router/index.ts
+
+const routes = [
+  {
+    path: '/forgot-password',
+    name: 'ForgotPassword',
+    component: () => import('@/views/ForgotPasswordView.vue'),
+    meta: { requiresAuth: false }
+  },
+  {
+    path: '/reset-password',
+    name: 'ResetPassword',
+    component: () => import('@/views/ResetPasswordView.vue'),
+    meta: { requiresAuth: false }
+  }
+]
+```
+
+### 22.6 UI/UX 设计规范
+
+#### 22.6.1 视觉风格
+
+- **主题**：深色模式（与登录页面一致）
+- **背景色**：#0a0a0a
+- **主色调**：蓝紫渐变 (#60a5fa → #818cf8)
+- **成功色**：#34d399
+- **错误色**：#f28b82
+- **文字色**：#e8eaed（主要）、#9aa0a6（次要）
+
+#### 22.6.2 组件样式
+
+**输入框：**
+- 带图标前缀
+- 聚焦时边框高亮
+- 错误状态红色边框
+
+**按钮：**
+- 渐变背景
+- 悬停时上浮效果
+- 禁用时灰色
+- 加载时显示 spinner
+
+**状态图标：**
+- 成功：绿色圆形勾选图标
+- 错误：红色圆形叉号图标
+- 加载：旋转 spinner
+
+#### 22.6.3 响应式设计
+
+- 移动端（≤768px）：减少内边距，全宽表单
+- 桌面端：居中显示，最大宽度 380px
+
+### 22.7 安全性设计
+
+#### 22.7.1 前端安全措施
+
+- **邮箱格式验证**：提交前验证邮箱格式
+- **密码强度提示**：最少6位要求
+- **密码一致性验证**：确认密码必须匹配
+- **防重复提交**：提交时禁用按钮
+
+#### 22.7.2 安全性约束
+
+- 忘记密码接口对未注册邮箱返回相同响应（防止邮箱枚举）
+- 重置令牌一次性使用
+- 重置令牌有过期时间
+- 修改密码需要验证当前密码
+
+### 22.8 错误处理
+
+#### 22.8.1 错误类型
+
+| 错误场景 | 错误提示 |
+|---------|---------|
+| 邮箱格式错误 | 请输入有效的邮箱地址 |
+| 邮箱为空 | 请输入邮箱地址 |
+| 令牌无效 | 重置链接已过期或无效 |
+| 密码太短 | 密码长度不能少于6位 |
+| 密码不一致 | 两次输入的密码不一致 |
+| 当前密码错误 | 当前密码错误 |
+| 网络错误 | 发送失败，请重试 |
+
+#### 22.8.2 错误展示
+
+- 使用红色背景的错误提示框
+- 带警告图标
+- 清晰的错误文案
+
+### 22.9 正确性属性
+
+**Property 35: 密码重置令牌一次性**
+*对于任意* 密码重置令牌，使用后必须立即失效，不可重复使用
+**验证需求: Requirements 32**
+
+**Property 36: 密码修改需验证身份**
+*对于任意* 密码修改请求，必须验证当前密码正确后才能执行
+**验证需求: Requirements 32**
+
+**Property 37: 邮箱枚举防护**
+*对于任意* 忘记密码请求，无论邮箱是否注册，返回的响应必须相同
+**验证需求: Requirements 32**
 
 
 ---

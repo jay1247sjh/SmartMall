@@ -22,6 +22,7 @@ export const componentMap: Record<string, () => Promise<Component>> = {
 
   // ===== 公共页面 =====
   'MallView': () => import('@/views/MallView.vue'),
+  'Mall3DView': () => import('@/views/Mall3DView.vue'),
   'LoginView': () => import('@/views/LoginView.vue'),
 
   // ===== 管理员页面 =====
@@ -29,6 +30,7 @@ export const componentMap: Record<string, () => Promise<Component>> = {
   'AdminMallManage': () => import('@/views/admin/MallManageView.vue'),
   'AdminAreaApproval': () => import('@/views/admin/AreaApprovalView.vue'),
   'AdminLayoutVersion': () => import('@/views/admin/LayoutVersionView.vue'),
+  'AdminMallBuilder': () => import('@/views/admin/MallBuilderView.vue'),
 
   // ===== 商家页面 =====
   'MerchantDashboard': () => import('@/views/merchant/DashboardView.vue'),

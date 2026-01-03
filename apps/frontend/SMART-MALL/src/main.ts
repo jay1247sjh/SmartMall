@@ -3,6 +3,9 @@ import { createPinia } from 'pinia'
 import SmartMall from './SmartMall.vue'
 import router from './router'
 
+// 全局样式
+import './assets/styles/base.css'
+
 const app = createApp(SmartMall)
 const pinia = createPinia()
 

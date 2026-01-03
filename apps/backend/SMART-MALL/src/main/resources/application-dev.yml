@@ -1,9 +1,9 @@
 # 开发环境配置
 spring:
   datasource:
-    url: jdbc:postgresql://localhost:5432/smartmall_dev
+    url: jdbc:postgresql://localhost:5433/smartmall
     username: smartmall
-    password: smartmall
+    password: smartmall123
 
   data:
     redis:

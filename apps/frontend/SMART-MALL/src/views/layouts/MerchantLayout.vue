@@ -1,6 +1,6 @@
 <script setup lang="ts">
 /**
- * 商家布局组件
+ * 商家布局组件 - Gemini 风格
  */
 import { useUserStore } from '@/stores'
 import { useRouter } from 'vue-router'
@@ -10,10 +10,10 @@ const userStore = useUserStore()
 const router = useRouter()
 
 const menuItems = [
-  { path: '/merchant/dashboard', label: '工作台', icon: '📊' },
-  { path: '/merchant/store-config', label: '店铺配置', icon: '⚙️' },
-  { path: '/merchant/area-apply', label: '区域申请', icon: '📝' },
-  { path: '/merchant/builder', label: '建模工具', icon: '🔧' },
+  { path: '/merchant/dashboard', label: '工作台' },
+  { path: '/merchant/store-config', label: '店铺配置' },
+  { path: '/merchant/area-apply', label: '区域申请' },
+  { path: '/merchant/builder', label: '建模工具' },
 ]
 
 function handleLogout() {
@@ -24,9 +24,21 @@ function handleLogout() {
 
 <template>
   <div class="merchant-layout">
+    <!-- 背景装饰 -->
+    <div class="layout-bg">
+      <div class="bg-gradient"></div>
+    </div>
+
     <aside class="layout-sidebar">
       <div class="sidebar-header">
-        <span>🏪 商家中心</span>
+        <div class="logo-icon">
+          <svg viewBox="0 0 24 24" fill="none">
+            <path d="M12 2L2 7l10 5 10-5-10-5z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/>
+            <path d="M2 17l10 5 10-5" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/>
+            <path d="M2 12l10 5 10-5" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/>
+          </svg>
+        </div>
+        <span class="header-text">商家中心</span>
       </div>
       <nav class="sidebar-menu">
         <router-link
@@ -35,18 +47,22 @@ function handleLogout() {
           :to="item.path"
           class="menu-item"
         >
-          <span class="icon">{{ item.icon }}</span>
           <span>{{ item.label }}</span>
         </router-link>
       </nav>
+      <div class="sidebar-footer">
+        <router-link to="/mall" class="menu-item back-link">
+          <span>返回首页</span>
+        </router-link>
+      </div>
     </aside>
     <div class="layout-main">
       <header class="layout-header">
         <div class="breadcrumb">商家中心</div>
         <div class="user-actions">
-          <span class="role-badge merchant">MERCHANT</span>
-          <span>{{ userStore.currentUser?.username }}</span>
-          <button @click="handleLogout">退出</button>
+          <span class="role-badge">MERCHANT</span>
+          <span class="username">{{ userStore.currentUser?.username }}</span>
+          <button class="logout-btn" @click="handleLogout">退出</button>
         </div>
       </header>
       <main class="layout-content">
@@ -60,81 +76,173 @@ function handleLogout() {
 .merchant-layout {
   min-height: 100vh;
   display: flex;
+  background: #0a0a0a;
+  color: #e8eaed;
+  position: relative;
+}
+
+.layout-bg {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.bg-gradient {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(ellipse 50% 30% at 70% 10%, rgba(236, 72, 153, 0.04) 0%, transparent 50%),
+              radial-gradient(ellipse 40% 30% at 30% 90%, rgba(249, 115, 22, 0.03) 0%, transparent 50%);
 }
 
 .layout-sidebar {
   width: 220px;
-  background: #16213e;
-  color: white;
+  background: rgba(17, 17, 19, 0.8);
+  backdrop-filter: blur(20px);
+  border-right: 1px solid rgba(255, 255, 255, 0.06);
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  z-index: 10;
 }
 
 .sidebar-header {
-  padding: 1.5rem;
-  font-size: 1.1rem;
-  font-weight: bold;
-  border-bottom: 1px solid #1f4068;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 20px 16px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.logo-icon {
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, rgba(236, 72, 153, 0.15) 0%, rgba(249, 115, 22, 0.15) 100%);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 10px;
+  color: #f472b6;
+}
+
+.logo-icon svg {
+  width: 18px;
+  height: 18px;
+}
+
+.header-text {
+  font-size: 15px;
+  font-weight: 600;
+  background: linear-gradient(135deg, #f472b6 0%, #fb923c 100%);
+  background-clip: text;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
 }
 
 .sidebar-menu {
-  padding: 1rem 0;
+  flex: 1;
+  padding: 12px 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
 }
 
 .menu-item {
   display: flex;
   align-items: center;
-  gap: 0.75rem;
-  padding: 0.75rem 1.5rem;
-  color: #aaa;
+  padding: 12px 16px;
+  color: #9aa0a6;
   text-decoration: none;
+  border-radius: 8px;
+  font-size: 14px;
+  transition: all 0.15s;
 }
 
-.menu-item:hover,
+.menu-item:hover {
+  background: rgba(255, 255, 255, 0.04);
+  color: #e8eaed;
+}
+
 .menu-item.router-link-active {
-  background: #1f4068;
-  color: white;
+  background: rgba(244, 114, 182, 0.1);
+  color: #f472b6;
+}
+
+.sidebar-footer {
+  padding: 12px 8px;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.back-link:hover {
+  background: rgba(255, 255, 255, 0.04);
 }
 
 .layout-main {
   flex: 1;
   display: flex;
   flex-direction: column;
+  position: relative;
+  z-index: 1;
 }
 
 .layout-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 0 2rem;
+  padding: 0 32px;
   height: 60px;
-  background: white;
-  border-bottom: 1px solid #eee;
+  background: rgba(17, 17, 19, 0.6);
+  backdrop-filter: blur(20px);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.breadcrumb {
+  font-size: 14px;
+  color: #9aa0a6;
 }
 
 .user-actions {
   display: flex;
   align-items: center;
-  gap: 1rem;
+  gap: 16px;
 }
 
-.role-badge.merchant {
-  background: #e94560;
+.role-badge {
+  background: linear-gradient(135deg, #f472b6 0%, #fb923c 100%);
   color: white;
-  padding: 0.25rem 0.5rem;
-  border-radius: 4px;
-  font-size: 0.75rem;
+  padding: 4px 10px;
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.05em;
 }
 
-.user-actions button {
-  padding: 0.5rem 1rem;
-  background: #f5f5f5;
-  border: none;
-  border-radius: 4px;
+.username {
+  font-size: 14px;
+  color: #e8eaed;
+}
+
+.logout-btn {
+  padding: 8px 16px;
+  background: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: #9aa0a6;
+  border-radius: 8px;
   cursor: pointer;
+  font-size: 13px;
+  transition: all 0.15s;
+}
+
+.logout-btn:hover {
+  background: rgba(242, 139, 130, 0.1);
+  border-color: rgba(242, 139, 130, 0.3);
+  color: #f28b82;
 }
 
 .layout-content {
   flex: 1;
-  padding: 1.5rem;
-  background: #f5f5f5;
+  padding: 32px;
+  overflow-y: auto;
 }
 </style>

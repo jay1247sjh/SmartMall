@@ -1,5 +1,5 @@
 server:
-  port: 8080
+  port: 8081
   servlet:
     context-path: /api
 
@@ -9,11 +9,11 @@ spring:
   profiles:
     active: dev
 
-  # 数据源配置
+  # 数据源配置（连接 Docker 中的 PostgreSQL）
   datasource:
-    url: jdbc:postgresql://localhost:5432/smartmall
+    url: jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5433}/${DB_NAME:smartmall}
     username: ${DB_USERNAME:smartmall}
-    password: ${DB_PASSWORD:smartmall}
+    password: ${DB_PASSWORD:smartmall123}
     driver-class-name: org.postgresql.Driver
     hikari:
       minimum-idle: 5

@@ -15,33 +15,45 @@ import java.util.Optional;
 @Repository
 @RequiredArgsConstructor
 public class UserRepositoryImpl implements UserRepository {
-
+    
     private final UserMapper userMapper;
-
+    
+    @Override
+    public Optional<User> findByUsername(String username) {
+        LambdaQueryWrapper<User> wrapper = new LambdaQueryWrapper<>();
+        wrapper.eq(User::getUsername, username);
+        return Optional.ofNullable(userMapper.selectOne(wrapper));
+    }
+    
     @Override
     public Optional<User> findById(String userId) {
         return Optional.ofNullable(userMapper.selectById(userId));
     }
-
+    
     @Override
-    public Optional<User> findByUsername(String username) {
-        return userMapper.findByUsername(username);
-    }
-
-    @Override
-    public void save(User user) {
-        userMapper.insert(user);
-    }
-
-    @Override
-    public void updateById(User user) {
-        userMapper.updateById(user);
-    }
-
-    @Override
-    public boolean existsByUsername(String username) {
+    public Optional<User> findByEmail(String email) {
         LambdaQueryWrapper<User> wrapper = new LambdaQueryWrapper<>();
-        wrapper.eq(User::getUsername, username);
-        return userMapper.selectCount(wrapper) > 0;
+        wrapper.eq(User::getEmail, email);
+        return Optional.ofNullable(userMapper.selectOne(wrapper));
+    }
+    
+    @Override
+    public User save(User user) {
+        if (user.getUserId() == null) {
+            userMapper.insert(user);
+        } else {
+            userMapper.updateById(user);
+        }
+        return user;
+    }
+    
+    @Override
+    public void updateLastLoginTime(String userId) {
+        userMapper.updateLastLoginTime(userId);
+    }
+    
+    @Override
+    public void updatePassword(String userId, String passwordHash) {
+        userMapper.updatePassword(userId, passwordHash);
     }
 }

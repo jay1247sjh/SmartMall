@@ -8,7 +8,7 @@
  */
 
 import { http, type RequestConfig } from './http'
-import type { UserInfo, MerchantInfo } from '@/stores'
+import type { UserType, UserStatus, MerchantInfo } from '@/stores'
 
 // ============================================================================
 // 类型定义
@@ -20,12 +20,22 @@ export interface LoginRequest {
   password: string
 }
 
-/** 登录响应 */
+/** 登录响应中的用户信息（与后端 LoginResponse.UserInfo 对应） */
+export interface LoginUserInfo {
+  userId: string
+  username: string
+  userType: UserType
+  status: UserStatus
+  email?: string
+  phone?: string
+}
+
+/** 登录响应（与后端 LoginResponse 对应） */
 export interface LoginResponse {
   accessToken: string
   refreshToken: string
-  user: UserInfo
-  merchant?: MerchantInfo
+  user: LoginUserInfo
+  merchant?: MerchantInfo  // 后端暂未实现，预留
 }
 
 /** 刷新 Token 请求参数 */
@@ -40,7 +50,7 @@ export interface RefreshTokenResponse {
 
 /** 当前用户信息响应 */
 export interface CurrentUserResponse {
-  user: UserInfo
+  user: LoginUserInfo
   merchant?: MerchantInfo
 }
 

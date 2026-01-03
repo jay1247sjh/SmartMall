@@ -1,0 +1,20 @@
+# Docker 环境配置
+spring:
+  datasource:
+    url: jdbc:postgresql://${DB_HOST:postgres}:${DB_PORT:5432}/${DB_NAME:smartmall}
+    username: ${DB_USERNAME:smartmall}
+    password: ${DB_PASSWORD:smartmall123}
+
+  data:
+    redis:
+      host: ${REDIS_HOST:redis}
+      port: ${REDIS_PORT:6379}
+      password: ${REDIS_PASSWORD:}
+
+jwt:
+  secret: ${JWT_SECRET:your-256-bit-secret-key-for-smart-mall-system-2024}
+
+logging:
+  level:
+    root: INFO
+    com.smartmall: INFO

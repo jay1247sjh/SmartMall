@@ -9,27 +9,32 @@ import java.util.Optional;
 public interface UserRepository {
     
     /**
-     * 根据ID查找用户
-     */
-    Optional<User> findById(String userId);
-    
-    /**
      * 根据用户名查找用户
      */
     Optional<User> findByUsername(String username);
     
     /**
+     * 根据用户ID查找用户
+     */
+    Optional<User> findById(String userId);
+    
+    /**
+     * 根据邮箱查找用户
+     */
+    Optional<User> findByEmail(String email);
+    
+    /**
      * 保存用户
      */
-    void save(User user);
+    User save(User user);
     
     /**
-     * 更新用户
+     * 更新用户最后登录时间
      */
-    void updateById(User user);
+    void updateLastLoginTime(String userId);
     
     /**
-     * 检查用户名是否存在
+     * 更新用户密码
      */
-    boolean existsByUsername(String username);
+    void updatePassword(String userId, String passwordHash);
 }
