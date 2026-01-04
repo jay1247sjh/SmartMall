@@ -919,9 +919,24 @@ characterController.registerFloorTransition({
 
 ## 关键文件
 
-- `apps/frontend/SMART-MALL/src/builder/objects/character-model.ts` - 角色模型与控制器
-- `apps/frontend/SMART-MALL/src/builder/geometry/polygon.ts` - 多边形碰撞检测
-- `apps/frontend/SMART-MALL/src/builder/cameras/follow-camera.ts` - 跟随相机
+| 文件 | 说明 | 跳转 |
+|------|------|------|
+| character-model.ts | 角色模型与控制器 | [查看](../../apps/frontend/SMART-MALL/src/builder/objects/character-model.ts) |
+| polygon.ts | 多边形碰撞检测 | [查看](../../apps/frontend/SMART-MALL/src/builder/geometry/polygon.ts) |
+| types.ts | 几何类型定义 | [查看](../../apps/frontend/SMART-MALL/src/builder/geometry/types.ts) |
+
+### 相机控制
+
+| 文件 | 说明 | 跳转 |
+|------|------|------|
+| CameraController.ts | 跟随相机控制器 | [查看](../../apps/frontend/SMART-MALL/src/engine/camera/CameraController.ts) |
+
+### 渲染
+
+| 文件 | 说明 | 跳转 |
+|------|------|------|
+| roaming-renderer.ts | 漫游模式渲染器 | [查看](../../apps/frontend/SMART-MALL/src/builder/rendering/roaming-renderer.ts) |
+| polygon-to-three.ts | 多边形转 Three.js 对象 | [查看](../../apps/frontend/SMART-MALL/src/builder/rendering/polygon-to-three.ts) |
 
 ---
 

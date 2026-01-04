@@ -197,14 +197,15 @@ export const useBuilderStore = defineStore('builder', () => {
 
 ---
 
-## Store 一览
+## 关键文件
 
-| Store | 文件 | 职责 |
-|-------|------|------|
-| user | `user.store.ts` | 用户信息、登录状态 |
-| mall | `mall.store.ts` | 商城数据、楼层选择 |
-| builder | `builder.store.ts` | 建模器状态、历史记录 |
-| system | `system.store.ts` | 系统配置、主题 |
+| 文件 | 说明 | 跳转 |
+|------|------|------|
+| user.store.ts | 用户信息、登录状态 | [查看](../../apps/frontend/SMART-MALL/src/stores/user.store.ts) |
+| mall.store.ts | 商城数据、楼层选择 | [查看](../../apps/frontend/SMART-MALL/src/stores/mall.store.ts) |
+| builder.store.ts | 建模器状态、历史记录 | [查看](../../apps/frontend/SMART-MALL/src/stores/builder.store.ts) |
+| system.store.ts | 系统配置、主题 | [查看](../../apps/frontend/SMART-MALL/src/stores/system.store.ts) |
+| index.ts | Store 模块导出 | [查看](../../apps/frontend/SMART-MALL/src/stores/index.ts) |
 
 ---
 

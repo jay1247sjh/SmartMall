@@ -925,10 +925,22 @@ animate()
 
 ## 关键文件
 
-- `apps/frontend/SMART-MALL/src/builder/objects/elevator-model.ts` - 电梯模型
-- `apps/frontend/SMART-MALL/src/builder/objects/escalator-model.ts` - 扶梯模型
-- `apps/frontend/SMART-MALL/src/builder/objects/character-model.ts` - 角色模型
-- `apps/frontend/SMART-MALL/src/builder/objects/furniture-models.ts` - 家具模型
+| 文件 | 说明 | 跳转 |
+|------|------|------|
+| elevator-model.ts | 电梯模型（厢体、门、按钮） | [查看](../../apps/frontend/SMART-MALL/src/builder/objects/elevator-model.ts) |
+| escalator-model.ts | 扶梯模型（台阶、扶手） | [查看](../../apps/frontend/SMART-MALL/src/builder/objects/escalator-model.ts) |
+| character-model.ts | 角色模型（GLTF 加载、动画） | [查看](../../apps/frontend/SMART-MALL/src/builder/objects/character-model.ts) |
+| furniture-models.ts | 家具模型（桌椅、货架） | [查看](../../apps/frontend/SMART-MALL/src/builder/objects/furniture-models.ts) |
+| stairs-model.ts | 楼梯模型 | [查看](../../apps/frontend/SMART-MALL/src/builder/objects/stairs-model.ts) |
+| restroom-model.ts | 卫生间模型 | [查看](../../apps/frontend/SMART-MALL/src/builder/objects/restroom-model.ts) |
+| service-desk-model.ts | 服务台模型 | [查看](../../apps/frontend/SMART-MALL/src/builder/objects/service-desk-model.ts) |
+
+### 资源管理
+
+| 文件 | 说明 | 跳转 |
+|------|------|------|
+| resource-manager.ts | 资源管理器 | [查看](../../apps/frontend/SMART-MALL/src/builder/resources/resource-manager.ts) |
+| GeometryFactory.ts | 几何体工厂 | [查看](../../apps/frontend/SMART-MALL/src/engine/objects/GeometryFactory.ts) |
 
 ---
 

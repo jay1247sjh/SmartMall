@@ -713,8 +713,23 @@ watch(debouncedUsername, async (val) => {
 
 ## 关键文件
 
-- `apps/frontend/SMART-MALL/src/views/RegisterView.vue` - 注册页面
-- `apps/frontend/SMART-MALL/src/api/register.api.ts` - 注册 API
+| 文件 | 说明 | 跳转 |
+|------|------|------|
+| 注册页面 | 主要的注册视图组件 | [RegisterView.vue](../../apps/frontend/SMART-MALL/src/views/RegisterView.vue) |
+| 注册 API | 注册、用户名检查等接口 | [register.api.ts](../../apps/frontend/SMART-MALL/src/api/register.api.ts) |
+| 认证布局 | 统一的认证页面布局 | [AuthLayout.vue](../../apps/frontend/SMART-MALL/src/components/auth/AuthLayout.vue) |
+| 表单输入 | 带验证状态的输入组件 | [AuthInput.vue](../../apps/frontend/SMART-MALL/src/components/auth/AuthInput.vue) |
+
+### 认证组件
+
+| 组件 | 说明 | 跳转 |
+|------|------|------|
+| AuthLayout | 认证页面统一布局 | [AuthLayout.vue](../../apps/frontend/SMART-MALL/src/components/auth/AuthLayout.vue) |
+| AuthFormCard | 表单卡片容器 | [AuthFormCard.vue](../../apps/frontend/SMART-MALL/src/components/auth/AuthFormCard.vue) |
+| AuthInput | 带图标、验证状态的输入框 | [AuthInput.vue](../../apps/frontend/SMART-MALL/src/components/auth/AuthInput.vue) |
+| AuthButton | 带加载状态的按钮 | [AuthButton.vue](../../apps/frontend/SMART-MALL/src/components/auth/AuthButton.vue) |
+| AlertMessage | 错误/成功提示 | [AlertMessage.vue](../../apps/frontend/SMART-MALL/src/components/auth/AlertMessage.vue) |
+| FeatureList | 功能特点列表 | [FeatureList.vue](../../apps/frontend/SMART-MALL/src/components/auth/FeatureList.vue) |
 
 ---
 

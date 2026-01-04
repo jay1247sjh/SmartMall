@@ -839,11 +839,31 @@ const { showReloadPrompt, confirmReload, dismissPrompt } = usePermissionCheck({
 
 ## 关键文件
 
-- `apps/frontend/SMART-MALL/src/views/admin/DashboardView.vue` - 仪表盘页面
-- `apps/frontend/SMART-MALL/src/router/index.ts` - 路由入口
-- `apps/frontend/SMART-MALL/src/router/dynamic.ts` - 动态路由管理
-- `apps/frontend/SMART-MALL/src/router/guards.ts` - 路由守卫
-- `apps/frontend/SMART-MALL/src/api/admin.api.ts` - 管理员 API
+| 文件 | 说明 | 跳转 |
+|------|------|------|
+| 管理员仪表盘 | 管理员控制台页面 | [DashboardView.vue](../../apps/frontend/SMART-MALL/src/views/admin/DashboardView.vue) |
+| 商户仪表盘 | 商户控制台页面 | [DashboardView.vue](../../apps/frontend/SMART-MALL/src/views/merchant/DashboardView.vue) |
+| 路由入口 | 路由配置主文件 | [index.ts](../../apps/frontend/SMART-MALL/src/router/index.ts) |
+| 动态路由 | 动态路由加载与管理 | [dynamic.ts](../../apps/frontend/SMART-MALL/src/router/dynamic.ts) |
+| 路由守卫 | 权限检查、登录验证 | [guards.ts](../../apps/frontend/SMART-MALL/src/router/guards.ts) |
+| 管理员 API | 管理员相关接口 | [admin.api.ts](../../apps/frontend/SMART-MALL/src/api/admin.api.ts) |
+
+### 共享组件
+
+| 组件 | 说明 | 跳转 |
+|------|------|------|
+| StatCard | 统计卡片组件 | [StatCard.vue](../../apps/frontend/SMART-MALL/src/components/shared/StatCard.vue) |
+| QuickActionCard | 快捷操作卡片 | [QuickActionCard.vue](../../apps/frontend/SMART-MALL/src/components/shared/QuickActionCard.vue) |
+| DataTable | 数据表格组件 | [DataTable.vue](../../apps/frontend/SMART-MALL/src/components/shared/DataTable.vue) |
+| Modal | 模态框组件 | [Modal.vue](../../apps/frontend/SMART-MALL/src/components/shared/Modal.vue) |
+
+### 布局组件
+
+| 组件 | 说明 | 跳转 |
+|------|------|------|
+| AdminLayout | 管理员后台布局 | [AdminLayout.vue](../../apps/frontend/SMART-MALL/src/views/layouts/AdminLayout.vue) |
+| MerchantLayout | 商户中心布局 | [MerchantLayout.vue](../../apps/frontend/SMART-MALL/src/views/layouts/MerchantLayout.vue) |
+| DashboardLayout | 仪表盘通用布局 | [DashboardLayout.vue](../../apps/frontend/SMART-MALL/src/components/layouts/DashboardLayout.vue) |
 
 ---
 

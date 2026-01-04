@@ -160,6 +160,18 @@ export interface SemanticObjectDTO {
 
 ---
 
+## 关键文件
+
+| 文件 | 说明 | 跳转 |
+|------|------|------|
+| action.protocol.ts | Action 协议定义 | [查看](../../apps/frontend/SMART-MALL/src/protocol/action.protocol.ts) |
+| action.enums.ts | Action 枚举定义 | [查看](../../apps/frontend/SMART-MALL/src/protocol/action.enums.ts) |
+| result.protocol.ts | Result 协议定义 | [查看](../../apps/frontend/SMART-MALL/src/protocol/result.protocol.ts) |
+| result.enums.ts | Result 枚举定义 | [查看](../../apps/frontend/SMART-MALL/src/protocol/result.enums.ts) |
+| index.ts | 协议模块导出 | [查看](../../apps/frontend/SMART-MALL/src/protocol/index.ts) |
+
+---
+
 ## 延伸阅读
 
 - [API 设计最佳实践](https://swagger.io/resources/articles/best-practices-in-api-design/)

@@ -208,15 +208,22 @@ export const mallBuilderApi = {
 
 ---
 
-## API 模块一览
+## 关键文件
 
-| 模块 | 文件 | 主要功能 |
-|------|------|----------|
-| HTTP 客户端 | `http.ts` | Axios 封装、拦截器 |
-| 认证 API | `auth.api.ts` | 登录、登出、刷新 Token |
-| 注册 API | `register.api.ts` | 注册、用户名检查 |
-| 密码 API | `password.api.ts` | 忘记密码、重置密码 |
-| 建模器 API | `mall-builder.api.ts` | 项目 CRUD |
+| 文件 | 说明 | 跳转 |
+|------|------|------|
+| http.ts | Axios 封装、拦截器 | [查看](../../apps/frontend/SMART-MALL/src/api/http.ts) |
+| auth.api.ts | 登录、登出、刷新 Token | [查看](../../apps/frontend/SMART-MALL/src/api/auth.api.ts) |
+| register.api.ts | 注册、用户名检查 | [查看](../../apps/frontend/SMART-MALL/src/api/register.api.ts) |
+| password.api.ts | 忘记密码、重置密码 | [查看](../../apps/frontend/SMART-MALL/src/api/password.api.ts) |
+| mall-builder.api.ts | 建模器项目 CRUD | [查看](../../apps/frontend/SMART-MALL/src/api/mall-builder.api.ts) |
+| mall.api.ts | 商城数据 API | [查看](../../apps/frontend/SMART-MALL/src/api/mall.api.ts) |
+| mall-manage.api.ts | 商城管理 API | [查看](../../apps/frontend/SMART-MALL/src/api/mall-manage.api.ts) |
+| user.api.ts | 用户信息 API | [查看](../../apps/frontend/SMART-MALL/src/api/user.api.ts) |
+| admin.api.ts | 管理员 API | [查看](../../apps/frontend/SMART-MALL/src/api/admin.api.ts) |
+| merchant.api.ts | 商户 API | [查看](../../apps/frontend/SMART-MALL/src/api/merchant.api.ts) |
+| route.api.ts | 路由 API | [查看](../../apps/frontend/SMART-MALL/src/api/route.api.ts) |
+| index.ts | API 模块导出 | [查看](../../apps/frontend/SMART-MALL/src/api/index.ts) |
 
 ---
 

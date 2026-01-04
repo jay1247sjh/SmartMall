@@ -955,9 +955,19 @@ statsPanel.destroy()
 
 ## 关键文件
 
-- `apps/frontend/SMART-MALL/src/builder/resources/resource-manager.ts` - 资源管理器
-- `apps/frontend/SMART-MALL/src/engine/materials/MaterialManager.ts` - 材质管理器
-- `apps/frontend/SMART-MALL/src/engine/objects/GeometryFactory.ts` - 几何体工厂
+| 文件 | 说明 | 跳转 |
+|------|------|------|
+| resource-manager.ts | 资源管理器（材质/几何体缓存） | [查看](../../apps/frontend/SMART-MALL/src/builder/resources/resource-manager.ts) |
+| MaterialManager.ts | 材质缓存管理器 | [查看](../../apps/frontend/SMART-MALL/src/engine/materials/MaterialManager.ts) |
+| GeometryFactory.ts | 几何体工厂 | [查看](../../apps/frontend/SMART-MALL/src/engine/objects/GeometryFactory.ts) |
+| ObjectPool.ts | 对象池 | [查看](../../apps/frontend/SMART-MALL/src/engine/objects/ObjectPool.ts) |
+
+### 材质预设
+
+| 文件 | 说明 | 跳转 |
+|------|------|------|
+| presets.ts | 材质预设定义 | [查看](../../apps/frontend/SMART-MALL/src/builder/materials/presets.ts) |
+| types.ts | 材质类型定义 | [查看](../../apps/frontend/SMART-MALL/src/builder/materials/types.ts) |
 
 ---
 

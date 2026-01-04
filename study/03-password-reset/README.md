@@ -795,9 +795,21 @@ onUnmounted(() => {
 
 ## 关键文件
 
-- `apps/frontend/SMART-MALL/src/views/ForgotPasswordView.vue` - 忘记密码页面
-- `apps/frontend/SMART-MALL/src/views/ResetPasswordView.vue` - 重置密码页面
-- `apps/frontend/SMART-MALL/src/api/password.api.ts` - 密码相关 API
+| 文件 | 说明 | 跳转 |
+|------|------|------|
+| 忘记密码页面 | 输入邮箱申请重置 | [ForgotPasswordView.vue](../../apps/frontend/SMART-MALL/src/views/ForgotPasswordView.vue) |
+| 重置密码页面 | 输入新密码完成重置 | [ResetPasswordView.vue](../../apps/frontend/SMART-MALL/src/views/ResetPasswordView.vue) |
+| 密码 API | 忘记密码、重置密码接口 | [password.api.ts](../../apps/frontend/SMART-MALL/src/api/password.api.ts) |
+| 认证布局 | 统一的认证页面布局 | [AuthLayout.vue](../../apps/frontend/SMART-MALL/src/components/auth/AuthLayout.vue) |
+
+### 认证组件
+
+| 组件 | 说明 | 跳转 |
+|------|------|------|
+| AuthFormCard | 表单卡片容器 | [AuthFormCard.vue](../../apps/frontend/SMART-MALL/src/components/auth/AuthFormCard.vue) |
+| AuthInput | 带图标的输入框 | [AuthInput.vue](../../apps/frontend/SMART-MALL/src/components/auth/AuthInput.vue) |
+| AuthButton | 带加载状态的按钮 | [AuthButton.vue](../../apps/frontend/SMART-MALL/src/components/auth/AuthButton.vue) |
+| AlertMessage | 错误/成功提示 | [AlertMessage.vue](../../apps/frontend/SMART-MALL/src/components/auth/AlertMessage.vue) |
 
 ---
 

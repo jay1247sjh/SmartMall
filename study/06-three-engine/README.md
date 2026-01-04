@@ -872,9 +872,38 @@ engine.createPerformancePanel()
 
 ## 关键文件
 
-- `apps/frontend/SMART-MALL/src/engine/ThreeEngine.ts` - 引擎主类
-- `apps/frontend/SMART-MALL/src/engine/camera/` - 相机控制器
-- `apps/frontend/SMART-MALL/src/engine/interaction/` - 交互管理
+| 文件 | 说明 | 跳转 |
+|------|------|------|
+| ThreeEngine.ts | 引擎主类，场景/相机/渲染器管理 | [查看](../../apps/frontend/SMART-MALL/src/engine/ThreeEngine.ts) |
+| index.ts | 引擎模块导出 | [查看](../../apps/frontend/SMART-MALL/src/engine/index.ts) |
+
+### 相机控制
+
+| 文件 | 说明 | 跳转 |
+|------|------|------|
+| CameraController.ts | 跟随相机控制器 | [查看](../../apps/frontend/SMART-MALL/src/engine/camera/CameraController.ts) |
+| OrbitController.ts | 轨道相机控制器 | [查看](../../apps/frontend/SMART-MALL/src/engine/camera/OrbitController.ts) |
+
+### 交互管理
+
+| 文件 | 说明 | 跳转 |
+|------|------|------|
+| RaycasterManager.ts | 射线检测管理器 | [查看](../../apps/frontend/SMART-MALL/src/engine/interaction/RaycasterManager.ts) |
+| SceneEventEmitter.ts | 场景事件发射器 | [查看](../../apps/frontend/SMART-MALL/src/engine/interaction/SceneEventEmitter.ts) |
+
+### 材质与几何体
+
+| 文件 | 说明 | 跳转 |
+|------|------|------|
+| MaterialManager.ts | 材质缓存管理器 | [查看](../../apps/frontend/SMART-MALL/src/engine/materials/MaterialManager.ts) |
+| GeometryFactory.ts | 几何体工厂 | [查看](../../apps/frontend/SMART-MALL/src/engine/objects/GeometryFactory.ts) |
+| ObjectPool.ts | 对象池 | [查看](../../apps/frontend/SMART-MALL/src/engine/objects/ObjectPool.ts) |
+
+### 特效
+
+| 文件 | 说明 | 跳转 |
+|------|------|------|
+| HighlightEffect.ts | 高亮特效 | [查看](../../apps/frontend/SMART-MALL/src/engine/effects/HighlightEffect.ts) |
 
 ---
 

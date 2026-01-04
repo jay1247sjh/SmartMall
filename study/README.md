@@ -75,34 +75,34 @@
 
 ### 认证组件 (`@/components/auth/`)
 
-| 组件 | 说明 | Element Plus 组件 |
-|------|------|------------------|
-| `AuthLayout` | 认证页面统一布局（左侧品牌面板 + 右侧表单面板） | ElIcon |
-| `AuthFormCard` | 表单卡片容器 | ElCard |
-| `AuthInput` | 带图标、验证状态的输入框 | ElInput, ElIcon, ElFormItem |
-| `AuthButton` | 带加载状态的主按钮 | ElButton, ElIcon |
-| `AlertMessage` | 错误/成功/警告提示 | ElAlert |
-| `TypewriterCard` | 打字机效果卡片 | ElCard |
-| `SocialLogin` | 第三方登录按钮组 | ElButton, ElDivider, ElSpace, ElIcon |
-| `FeatureList` | 功能特点列表 | ElIcon |
+| 组件 | 说明 | Element Plus 组件 | 跳转 |
+|------|------|------------------|------|
+| `AuthLayout` | 认证页面统一布局 | ElIcon | [查看](../apps/frontend/SMART-MALL/src/components/auth/AuthLayout.vue) |
+| `AuthFormCard` | 表单卡片容器 | ElCard | [查看](../apps/frontend/SMART-MALL/src/components/auth/AuthFormCard.vue) |
+| `AuthInput` | 带图标、验证状态的输入框 | ElInput, ElIcon, ElFormItem | [查看](../apps/frontend/SMART-MALL/src/components/auth/AuthInput.vue) |
+| `AuthButton` | 带加载状态的主按钮 | ElButton, ElIcon | [查看](../apps/frontend/SMART-MALL/src/components/auth/AuthButton.vue) |
+| `AlertMessage` | 错误/成功/警告提示 | ElAlert | [查看](../apps/frontend/SMART-MALL/src/components/auth/AlertMessage.vue) |
+| `TypewriterCard` | 打字机效果卡片 | ElCard | [查看](../apps/frontend/SMART-MALL/src/components/auth/TypewriterCard.vue) |
+| `SocialLogin` | 第三方登录按钮组 | ElButton, ElDivider, ElSpace, ElIcon | [查看](../apps/frontend/SMART-MALL/src/components/auth/SocialLogin.vue) |
+| `FeatureList` | 功能特点列表 | ElIcon | [查看](../apps/frontend/SMART-MALL/src/components/auth/FeatureList.vue) |
 
 ### 共享组件 (`@/components/shared/`)
 
-| 组件 | 说明 | Element Plus 组件 |
-|------|------|------------------|
-| `StatCard` | 统计卡片 | ElCard, ElStatistic, ElTag, ElIcon |
-| `QuickActionCard` | 快捷操作卡片 | ElCard, ElIcon |
-| `DataTable` | 数据表格 | ElTable, ElTableColumn, ElEmpty, ElIcon |
-| `Modal` | 模态框 | ElDialog, ElButton, ElSpace |
-| `CustomSelect` | 自定义选择器 | ElSelect, ElOption, ElIcon |
+| 组件 | 说明 | Element Plus 组件 | 跳转 |
+|------|------|------------------|------|
+| `StatCard` | 统计卡片 | ElCard, ElStatistic, ElTag, ElIcon | [查看](../apps/frontend/SMART-MALL/src/components/shared/StatCard.vue) |
+| `QuickActionCard` | 快捷操作卡片 | ElCard, ElIcon | [查看](../apps/frontend/SMART-MALL/src/components/shared/QuickActionCard.vue) |
+| `DataTable` | 数据表格 | ElTable, ElTableColumn, ElEmpty, ElIcon | [查看](../apps/frontend/SMART-MALL/src/components/shared/DataTable.vue) |
+| `Modal` | 模态框 | ElDialog, ElButton, ElSpace | [查看](../apps/frontend/SMART-MALL/src/components/shared/Modal.vue) |
+| `CustomSelect` | 自定义选择器 | ElSelect, ElOption, ElIcon | [查看](../apps/frontend/SMART-MALL/src/components/common/CustomSelect.vue) |
 
 ### 布局组件 (`@/views/layouts/`)
 
-| 组件 | 说明 | Element Plus 组件 |
-|------|------|------------------|
-| `AdminLayout` | 管理员布局 | ElContainer, ElAside, ElHeader, ElMain, ElMenu, ElMenuItem, ElButton, ElIcon, ElTag |
-| `MerchantLayout` | 商户布局 | ElContainer, ElAside, ElHeader, ElMain, ElMenu, ElMenuItem, ElButton, ElIcon, ElTag |
-| `MainLayout` | 主布局 | ElContainer, ElHeader, ElMain, ElMenu, ElMenuItem, ElButton, ElIcon |
+| 组件 | 说明 | Element Plus 组件 | 跳转 |
+|------|------|------------------|------|
+| `AdminLayout` | 管理员布局 | ElContainer, ElAside, ElHeader, ElMain, ElMenu, ElMenuItem, ElButton, ElIcon, ElTag | [查看](../apps/frontend/SMART-MALL/src/views/layouts/AdminLayout.vue) |
+| `MerchantLayout` | 商户布局 | ElContainer, ElAside, ElHeader, ElMain, ElMenu, ElMenuItem, ElButton, ElIcon, ElTag | [查看](../apps/frontend/SMART-MALL/src/views/layouts/MerchantLayout.vue) |
+| `MainLayout` | 主布局 | ElContainer, ElHeader, ElMain, ElMenu, ElMenuItem, ElButton, ElIcon | [查看](../apps/frontend/SMART-MALL/src/views/layouts/MainLayout.vue) |
 
 ---
 

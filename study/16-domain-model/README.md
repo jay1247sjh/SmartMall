@@ -180,6 +180,40 @@ export function hasPermission(role: Role, permission: Permission): boolean {
 
 ---
 
+## 关键文件
+
+### 商城领域
+
+| 文件 | 说明 | 跳转 |
+|------|------|------|
+| mall.types.ts | 商城类型定义 | [查看](../../apps/frontend/SMART-MALL/src/domain/mall/mall.types.ts) |
+| mall.enums.ts | 商城枚举定义 | [查看](../../apps/frontend/SMART-MALL/src/domain/mall/mall.enums.ts) |
+| MallManager.ts | 商城管理器 | [查看](../../apps/frontend/SMART-MALL/src/domain/mall/MallManager.ts) |
+| FloorManager.ts | 楼层管理器 | [查看](../../apps/frontend/SMART-MALL/src/domain/mall/FloorManager.ts) |
+| StoreManager.ts | 店铺管理器 | [查看](../../apps/frontend/SMART-MALL/src/domain/mall/StoreManager.ts) |
+
+### 事件系统
+
+| 文件 | 说明 | 跳转 |
+|------|------|------|
+| DomainEventBus.ts | 领域事件总线 | [查看](../../apps/frontend/SMART-MALL/src/domain/events/DomainEventBus.ts) |
+| DomainEventHandler.ts | 领域事件处理器 | [查看](../../apps/frontend/SMART-MALL/src/domain/events/DomainEventHandler.ts) |
+
+### 权限模型
+
+| 文件 | 说明 | 跳转 |
+|------|------|------|
+| permission.types.ts | 权限类型定义 | [查看](../../apps/frontend/SMART-MALL/src/domain/permission/permission.types.ts) |
+| permission.enums.ts | 权限枚举定义 | [查看](../../apps/frontend/SMART-MALL/src/domain/permission/permission.enums.ts) |
+
+### 模块导出
+
+| 文件 | 说明 | 跳转 |
+|------|------|------|
+| index.ts | 领域模块导出 | [查看](../../apps/frontend/SMART-MALL/src/domain/index.ts) |
+
+---
+
 ## 延伸阅读
 
 - [领域驱动设计](https://www.domainlanguage.com/ddd/)

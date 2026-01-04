@@ -875,10 +875,29 @@ onDeactivated(() => {
 
 ## 关键文件
 
-- `apps/frontend/SMART-MALL/src/router/index.ts` - 路由配置入口
-- `apps/frontend/SMART-MALL/src/router/guards.ts` - 路由守卫
-- `apps/frontend/SMART-MALL/src/router/dynamic.ts` - 动态路由管理
-- `apps/frontend/SMART-MALL/src/views/layouts/` - 布局组件
+| 文件 | 说明 | 跳转 |
+|------|------|------|
+| 路由入口 | 路由配置主文件 | [index.ts](../../apps/frontend/SMART-MALL/src/router/index.ts) |
+| 路由守卫 | 权限检查、登录验证 | [guards.ts](../../apps/frontend/SMART-MALL/src/router/guards.ts) |
+| 动态路由 | 动态路由加载与管理 | [dynamic.ts](../../apps/frontend/SMART-MALL/src/router/dynamic.ts) |
+| 组件映射 | 路由组件名称映射 | [componentMap.ts](../../apps/frontend/SMART-MALL/src/router/componentMap.ts) |
+| 路由类型 | 路由相关类型定义 | [types.ts](../../apps/frontend/SMART-MALL/src/router/types.ts) |
+
+### 布局组件
+
+| 组件 | 说明 | 跳转 |
+|------|------|------|
+| AdminLayout | 管理员后台布局 | [AdminLayout.vue](../../apps/frontend/SMART-MALL/src/views/layouts/AdminLayout.vue) |
+| MerchantLayout | 商户中心布局 | [MerchantLayout.vue](../../apps/frontend/SMART-MALL/src/views/layouts/MerchantLayout.vue) |
+| MainLayout | 主布局（普通用户） | [MainLayout.vue](../../apps/frontend/SMART-MALL/src/views/layouts/MainLayout.vue) |
+| DashboardLayout | 仪表盘通用布局 | [DashboardLayout.vue](../../apps/frontend/SMART-MALL/src/components/layouts/DashboardLayout.vue) |
+
+### 路由 API
+
+| 文件 | 说明 | 跳转 |
+|------|------|------|
+| 路由 API | 获取用户路由配置 | [route.api.ts](../../apps/frontend/SMART-MALL/src/api/route.api.ts) |
+| 路由 Mock | 路由配置模拟数据 | [route.mock.ts](../../apps/frontend/SMART-MALL/src/api/mock/route.mock.ts) |
 
 ---
 

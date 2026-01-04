@@ -961,8 +961,11 @@ controller.clearBounds()
 
 ## 关键文件
 
-- `apps/frontend/SMART-MALL/src/engine/camera/CameraController.ts` - 跟随相机控制器
-- `apps/frontend/SMART-MALL/src/engine/camera/OrbitController.ts` - 轨道相机控制器
+| 文件 | 说明 | 跳转 |
+|------|------|------|
+| CameraController.ts | 跟随相机控制器（第三人称） | [查看](../../apps/frontend/SMART-MALL/src/engine/camera/CameraController.ts) |
+| OrbitController.ts | 轨道相机控制器（围绕目标旋转） | [查看](../../apps/frontend/SMART-MALL/src/engine/camera/OrbitController.ts) |
+| index.ts | 相机模块导出 | [查看](../../apps/frontend/SMART-MALL/src/engine/camera/index.ts) |
 
 ---
 

@@ -229,15 +229,33 @@ ApiResponse.success()
 
 ---
 
-## 相关文件
+## 关键文件
 
-| 文件路径 | 说明 |
-|---------|------|
-| `common/response/ApiResponse.java` | 统一响应格式 |
-| `common/response/ResultCode.java` | 响应码枚举 |
-| `common/exception/GlobalExceptionHandler.java` | 全局异常处理 |
-| `infrastructure/config/MybatisPlusConfig.java` | MyBatis-Plus 配置 |
-| `domain/entity/User.java` | 用户实体 |
+### 公共模块
+
+| 文件 | 说明 | 跳转 |
+|------|------|------|
+| ApiResponse.java | 统一响应格式 | [查看](../../apps/backend/SMART-MALL/src/main/java/com/smartmall/common/response/ApiResponse.java) |
+| ResultCode.java | 响应码枚举 | [查看](../../apps/backend/SMART-MALL/src/main/java/com/smartmall/common/response/ResultCode.java) |
+| GlobalExceptionHandler.java | 全局异常处理 | [查看](../../apps/backend/SMART-MALL/src/main/java/com/smartmall/common/exception/GlobalExceptionHandler.java) |
+| BusinessException.java | 业务异常类 | [查看](../../apps/backend/SMART-MALL/src/main/java/com/smartmall/common/exception/BusinessException.java) |
+
+### 领域实体
+
+| 文件 | 说明 | 跳转 |
+|------|------|------|
+| User.java | 用户实体 | [查看](../../apps/backend/SMART-MALL/src/main/java/com/smartmall/domain/entity/User.java) |
+| Mall.java | 商城实体 | [查看](../../apps/backend/SMART-MALL/src/main/java/com/smartmall/domain/entity/Mall.java) |
+| Floor.java | 楼层实体 | [查看](../../apps/backend/SMART-MALL/src/main/java/com/smartmall/domain/entity/Floor.java) |
+| Area.java | 区域实体 | [查看](../../apps/backend/SMART-MALL/src/main/java/com/smartmall/domain/entity/Area.java) |
+| MallProject.java | 商城项目实体 | [查看](../../apps/backend/SMART-MALL/src/main/java/com/smartmall/domain/entity/MallProject.java) |
+| BaseEntity.java | 基础实体类 | [查看](../../apps/backend/SMART-MALL/src/main/java/com/smartmall/domain/entity/BaseEntity.java) |
+
+### 应用入口
+
+| 文件 | 说明 | 跳转 |
+|------|------|------|
+| SmartMallApplication.java | Spring Boot 启动类 | [查看](../../apps/backend/SMART-MALL/src/main/java/com/smartmall/SmartMallApplication.java) |
 
 ---
 

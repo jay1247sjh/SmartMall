@@ -562,9 +562,24 @@ onUnmounted(() => {
 
 ## 关键文件
 
-- `apps/frontend/SMART-MALL/src/views/LoginView.vue` - 登录页面
-- `apps/frontend/SMART-MALL/src/api/auth.api.ts` - 认证 API
-- `apps/frontend/SMART-MALL/src/stores/user.ts` - 用户状态管理
+| 文件 | 说明 | 跳转 |
+|------|------|------|
+| 登录页面 | 主要的登录视图组件 | [LoginView.vue](../../apps/frontend/SMART-MALL/src/views/LoginView.vue) |
+| 认证 API | 登录、登出等认证接口 | [auth.api.ts](../../apps/frontend/SMART-MALL/src/api/auth.api.ts) |
+| 用户状态 | Pinia 用户状态管理 | [user.store.ts](../../apps/frontend/SMART-MALL/src/stores/user.store.ts) |
+| 路由守卫 | 登录状态检查、重定向逻辑 | [guards.ts](../../apps/frontend/SMART-MALL/src/router/guards.ts) |
+
+### 认证组件
+
+| 组件 | 说明 | 跳转 |
+|------|------|------|
+| AuthLayout | 认证页面统一布局 | [AuthLayout.vue](../../apps/frontend/SMART-MALL/src/components/auth/AuthLayout.vue) |
+| AuthFormCard | 表单卡片容器 | [AuthFormCard.vue](../../apps/frontend/SMART-MALL/src/components/auth/AuthFormCard.vue) |
+| AuthInput | 带图标的输入框 | [AuthInput.vue](../../apps/frontend/SMART-MALL/src/components/auth/AuthInput.vue) |
+| AuthButton | 带加载状态的按钮 | [AuthButton.vue](../../apps/frontend/SMART-MALL/src/components/auth/AuthButton.vue) |
+| AlertMessage | 错误/成功提示 | [AlertMessage.vue](../../apps/frontend/SMART-MALL/src/components/auth/AlertMessage.vue) |
+| TypewriterCard | 打字机效果卡片 | [TypewriterCard.vue](../../apps/frontend/SMART-MALL/src/components/auth/TypewriterCard.vue) |
+| SocialLogin | 第三方登录按钮组 | [SocialLogin.vue](../../apps/frontend/SMART-MALL/src/components/auth/SocialLogin.vue) |
 
 ---
 
