@@ -79,8 +79,12 @@ public class AuthService {
      */
     public LoginResponse refreshToken(String refreshToken) {
         // 1. 验证 RefreshToken
-        if (!jwtTokenProvider.validateToken(refreshToken)) {
-            throw new BusinessException(ResultCode.TOKEN_EXPIRED, "RefreshToken 已过期");
+        var validationResult = jwtTokenProvider.validateToken(refreshToken);
+        if (!validationResult.isValid()) {
+            if (validationResult.isExpired()) {
+                throw new BusinessException(ResultCode.TOKEN_EXPIRED, "RefreshToken 已过期");
+            }
+            throw new BusinessException(ResultCode.AUTH_FAILED, "无效的 RefreshToken");
         }
         
         if (!jwtTokenProvider.isRefreshToken(refreshToken)) {
@@ -88,7 +92,7 @@ public class AuthService {
         }
         
         // 2. 获取用户信息
-        String userId = jwtTokenProvider.getUserIdFromToken(refreshToken);
+        String userId = jwtTokenProvider.getUserIdFromToken(refreshToken).orElse(null);
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new BusinessException(ResultCode.AUTH_FAILED, "用户不存在"));
         

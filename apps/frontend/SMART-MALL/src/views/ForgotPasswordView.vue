@@ -1,28 +1,82 @@
 <script setup lang="ts">
 /**
- * 忘记密码页面
- * 使用 Element Plus 组件 + HTML5 语义化标签
+ * ============================================================================
+ * 忘记密码页面 (ForgotPasswordView)
+ * ============================================================================
+ *
+ * 【业务职责】
+ * 用户忘记密码时的自助找回入口。
+ * 通过邮箱发送密码重置链接，用户点击链接后可设置新密码。
+ *
+ * 【密码重置流程】
+ * 1. 用户输入注册时使用的邮箱地址
+ * 2. 点击"发送重置链接"
+ * 3. 后端验证邮箱是否存在
+ * 4. 如果存在，发送包含重置链接的邮件
+ * 5. 前端显示成功状态（无论邮箱是否存在，都显示成功，防止邮箱枚举攻击）
+ * 6. 用户查收邮件，点击链接跳转到重置密码页面
+ * 7. 用户设置新密码
+ *
+ * 【安全设计】
+ * - 无论邮箱是否存在，都返回相同的成功消息
+ *   这是为了防止攻击者通过此接口枚举系统中的有效邮箱
+ * - 重置链接包含一次性 Token，有效期通常为 24 小时
+ * - Token 使用后立即失效，防止重复使用
+ *
+ * 【页面状态】
+ * 页面有两种状态：
+ * 1. 表单状态（success=false）：显示邮箱输入表单
+ * 2. 成功状态（success=true）：显示发送成功的提示
+ *
+ * 【设计特点】
+ * - 简洁布局：只有一个输入框，降低用户认知负担
+ * - 明确引导：成功后提示用户检查收件箱
+ * - 便捷返回：提供"返回登录"按钮
+ *
+ * 【与其他页面的关系】
+ * - 从 LoginView 的"忘记密码"链接进入
+ * - 成功后可返回 LoginView
+ * - 邮件中的链接指向 ResetPasswordView（待实现）
+ * ============================================================================
  */
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { passwordApi } from '@/api'
-import { ElForm, ElButton, ElIcon, ElResult } from 'element-plus'
+import { ElResult } from 'element-plus'
 import { Box, CircleCheck } from '@element-plus/icons-vue'
 import { AuthFormCard, AuthInput, AuthButton, AlertMessage } from '@/components'
 
 const router = useRouter()
 
+// ============================================================================
+// 表单状态
+// ============================================================================
+
+/** 邮箱输入值 */
 const email = ref('')
+/** 是否正在提交请求 */
 const loading = ref(false)
+/** 错误消息 */
 const errorMsg = ref('')
+/** 是否发送成功（切换到成功状态） */
 const success = ref(false)
 
+// ============================================================================
+// 事件处理
+// ============================================================================
+
+/**
+ * 处理表单提交
+ * 验证邮箱格式后调用密码重置 API
+ */
 async function handleSubmit() {
+  // 验证邮箱不为空
   if (!email.value.trim()) {
     errorMsg.value = '请输入邮箱地址'
     return
   }
   
+  // 验证邮箱格式
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
   if (!emailRegex.test(email.value)) {
     errorMsg.value = '请输入有效的邮箱地址'
@@ -33,7 +87,10 @@ async function handleSubmit() {
   errorMsg.value = ''
   
   try {
+    // 调用忘记密码 API
+    // 注意：无论邮箱是否存在，API 都应返回成功，防止邮箱枚举
     await passwordApi.forgotPassword({ email: email.value })
+    // 切换到成功状态
     success.value = true
   } catch (error: any) {
     errorMsg.value = error?.message || '发送失败，请重试'
@@ -42,6 +99,9 @@ async function handleSubmit() {
   }
 }
 
+/**
+ * 返回登录页面
+ */
 function goBack() {
   router.push('/login')
 }

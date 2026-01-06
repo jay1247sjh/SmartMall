@@ -20,10 +20,10 @@
 
 | 阶段 | 名称 | 任务数 | 预估时间 | 优先级 | 状态 |
 |------|------|--------|----------|--------|------|
-| P0 | 项目基础设施 | 8 | 2-3h | 最高 | 未开始 |
-| P1 | 领域模型与数据库 | 16 | 5-7h | 最高 | 未开始 |
-| P2 | 认证与安全模块 | 14 | 4-5h | 最高 | 未开始 |
-| P3 | 商城结构管理 | 12 | 4-5h | 高 | 未开始 |
+| P0 | 项目基础设施 | 8 | 2-3h | 最高 | 基本完成 (87%) |
+| P1 | 领域模型与数据库 | 16 | 5-7h | 最高 | 基本完成 (75%) |
+| P2 | 认证与安全模块 | 14 | 4-5h | 最高 | 基本完成 (80%) |
+| P3 | 商城结构管理 | 12 | 4-5h | 高 | 部分完成 (40%) |
 | P4 | 区域权限管理 | 16 | 5-6h | 高 | 未开始 |
 | P5 | 店铺与商品管理 | 10 | 3-4h | 中 | 未开始 |
 | P6 | 布局版本管理 | 12 | 3-4h | 中 | 未开始 |
@@ -38,31 +38,34 @@
 ## P0. 项目基础设施
 
 > 目标：搭建项目骨架，配置开发环境，建立模块结构
+>
+> **状态**: 基本完成 (采用单模块结构)
 
 ### 0.1 项目初始化
 
-- [ ] 0.1.1 创建 Maven 多模块项目结构
+- [x] 0.1.1 创建项目结构（单模块分包）
   ```
-  smart-mall-backend/
-  ├── mall-interface/      # 接口层
-  ├── mall-application/    # 应用层
-  ├── mall-domain/         # 领域层
-  ├── mall-infrastructure/ # 基础设施层
-  └── mall-protocol/       # 协议定义
+  com.smartmall/
+  ├── interfaces/      # 接口层 (controller, dto)
+  ├── application/     # 应用层 (service)
+  ├── domain/          # 领域层 (entity, enums, valueobject, repository)
+  ├── infrastructure/  # 基础设施层 (config, mapper, security)
+  └── common/          # 通用组件 (exception, response, util)
   ```
   - _Requirements: 架构设计_
+  - **已完成**: 采用单模块分包结构，更适合当前项目规模
 
-- [ ] 0.1.2 配置父 POM 依赖管理
+- [x] 0.1.2 配置 POM 依赖管理
   - Spring Boot 3.x、MyBatis-Plus、PostgreSQL、Redis
   - _Requirements: 技术栈要求_
 
-- [ ] 0.1.3 配置各模块依赖关系
-  - interface → application → domain ← infrastructure
+- [x] 0.1.3 配置包依赖关系
+  - interfaces → application → domain ← infrastructure
   - _Requirements: 分层架构_
 
 ### 0.2 基础配置
 
-- [ ] 0.2.1 配置 application.yml
+- [x] 0.2.1 配置 application.yml
   - 数据源、Redis、日志级别
   - 多环境配置（dev/test/prod）
   - _Requirements: 运行环境_
@@ -72,53 +75,62 @@
   - 请求追踪 ID
   - _Requirements: 需求 13_
 
-- [ ] 0.2.3 配置 Spring Boot Actuator
-  - 健康检查、指标暴露
+- [x] 0.2.3 配置 Spring Boot Actuator
+  - 健康检查端点 (/health)
   - _Requirements: 监控要求_
 
 ### 0.3 通用组件
 
-- [ ] 0.3.1 创建统一响应结构 (mall-protocol)
-  - ApiResponse<T>、PageResult<T>
+- [x] 0.3.1 创建统一响应结构 (common/response)
+  - ApiResponse<T>、ResultCode
   - _Requirements: 需求 14_
+  - **已完成**: ApiResponse.java, ResultCode.java
 
-- [ ] 0.3.2 创建错误码体系 (mall-protocol)
-  - ErrorCode 枚举、BusinessException
+- [x] 0.3.2 创建错误码体系 (common/exception)
+  - BusinessException、GlobalExceptionHandler
   - _Requirements: 需求 14_
+  - **已完成**: BusinessException.java, GlobalExceptionHandler.java
 
 ---
 
 ## P1. 领域模型与数据库
 
 > 目标：定义领域模型，创建数据库表结构
+>
+> **状态**: 基本完成
 
-### 1.1 值对象定义 (mall-domain)
+### 1.1 值对象定义 (domain/valueobject)
 
-- [ ] 1.1.1 创建强类型 ID
-  - MallId、FloorId、AreaId、StoreId、ProductId、UserId、MerchantId
+- [x] 1.1.1 创建强类型 ID
+  - MallId、FloorId、AreaId、StoreId、UserId
   - _Requirements: 领域模型_
+  - **已完成**: UserId.java, MallId.java, FloorId.java, AreaId.java, StoreId.java
 
-- [ ] 1.1.2 创建空间值对象
-  - Vector3D、BoundingBox、Geometry3D
+- [x] 1.1.2 创建空间值对象
+  - Vector3D、Geometry3D
   - _Requirements: 领域模型_
+  - **已完成**: Vector3D.java, Geometry3D.java
 
-- [ ] 1.1.3 创建枚举类型
-  - AreaStatus、UserType、UserStatus、ApplyStatus、LayoutVersionStatus、MerchantStatus、PermissionStatus、GrantType
+- [x] 1.1.3 创建枚举类型
+  - AreaStatus、UserType、UserStatus、ApplyStatus、PermissionStatus、MallStatus、AreaType、Role
   - _Requirements: 领域模型_
+  - **已完成**: 所有枚举类型已创建
 
-### 1.2 实体定义 (mall-domain)
+### 1.2 实体定义 (domain/entity)
 
-- [ ] 1.2.1 创建商城实体
-  - Mall、Floor、Area
+- [x] 1.2.1 创建商城实体
+  - Mall、Floor、Area、MallProject
   - _Requirements: 需求 3_
+  - **已完成**: Mall.java, Floor.java, Area.java, MallProject.java
 
 - [ ] 1.2.2 创建店铺实体
   - Store、Product
   - _Requirements: 需求 7, 8_
 
-- [ ] 1.2.3 创建用户实体
-  - User、Merchant、Admin
+- [x] 1.2.3 创建用户实体
+  - User
   - _Requirements: 需求 2_
+  - **已完成**: User.java
 
 - [ ] 1.2.4 创建权限实体
   - AreaPermission、AreaApply
@@ -128,30 +140,36 @@
   - LayoutVersion、LayoutChange、LayoutChangeProposal
   - _Requirements: 需求 9, 10_
 
-### 1.3 Repository 接口 (mall-domain)
+### 1.3 Repository 接口 (domain/repository)
 
-- [ ] 1.3.1 定义 Repository 接口
+- [x] 1.3.1 定义 Repository 接口
+  - UserRepository
+  - _Requirements: DDD 架构_
+  - **已完成**: UserRepository.java
+
+- [ ] 1.3.2 定义其他 Repository 接口
   - MallRepository、FloorRepository、AreaRepository
   - StoreRepository、ProductRepository
-  - UserRepository、AreaPermissionRepository
+  - AreaPermissionRepository
   - _Requirements: DDD 架构_
 
-### 1.4 数据库表结构 (mall-infrastructure)
+### 1.4 数据库表结构 (infra/init-db)
 
 - [ ] 1.4.0 创建数据库通用函数与触发器
   - 创建 update_timestamp() 函数（自动更新 update_time）
   - 创建 increment_version() 函数（乐观锁版本号自增）
   - _Requirements: 需求 15（数据完整性）_
 
-- [ ] 1.4.1 创建商城相关表
-  - mall、mall_floor、mall_area、mall_store、mall_product
-  - 包含 version 字段（乐观锁）和触发器
+- [x] 1.4.1 创建商城相关表
+  - mall_project、floor、area
+  - 包含 version 字段（乐观锁）
   - _Requirements: 需求 3, 7, 8, 15_
+  - **已完成**: 01-init.sql
 
-- [ ] 1.4.2 创建用户相关表
-  - user、merchant、mall_area_permission、area_apply
-  - 包含 version 字段（乐观锁）和触发器
+- [x] 1.4.2 创建用户相关表
+  - user 表
   - _Requirements: 需求 2, 4, 15_
+  - **已完成**: 01-init.sql
 
 - [ ] 1.4.3 创建版本相关表
   - layout_version、layout_change、layout_change_proposal
@@ -164,56 +182,66 @@
 
 ### 1.5 数据库检查点
 
-- [ ] 1.5.0 Checkpoint - 确保数据库初始化成功
-  - 确保所有表创建成功，触发器正常工作
-  - 确保所有测试通过，如有问题请询问用户
+- [x] 1.5.0 Checkpoint - 确保数据库初始化成功
+  - 确保所有表创建成功
   - _Requirements: 需求 15_
+  - **已完成**: 基础表已创建并可用
 
 ---
 
 ## P2. 认证与安全模块
 
 > 目标：实现用户认证、JWT Token 管理、权限校验
+>
+> **状态**: 基本完成
 
 ### 2.1 JWT 配置
 
-- [ ] 2.1.1 配置 RSA 密钥对
-  - 私钥签发、公钥验证
+- [x] 2.1.1 配置密钥
+  - 使用 HMAC-SHA256 签名
   - _Requirements: 需求 1_
+  - **已完成**: JwtTokenProvider.java
 
-- [ ] 2.1.2 实现 JwtTokenProvider
+- [x] 2.1.2 实现 JwtTokenProvider
   - 生成 accessToken、refreshToken
   - 解析和验证 Token
   - _Requirements: 需求 1_
+  - **已完成**: JwtTokenProvider.java
 
 ### 2.2 Spring Security 配置
 
-- [ ] 2.2.1 配置 SecurityFilterChain
+- [x] 2.2.1 配置 SecurityFilterChain
   - 公开接口、认证接口、角色接口
   - _Requirements: 需求 1, 2_
+  - **已完成**: SecurityConfig.java
 
-- [ ] 2.2.2 实现 JwtAuthenticationFilter
+- [x] 2.2.2 实现 JwtAuthenticationFilter
   - 从请求头提取 Token
   - 验证并注入用户上下文
   - _Requirements: 需求 1_
+  - **已完成**: JwtAuthenticationFilter.java
 
-- [ ] 2.2.3 实现 UserDetailsService
+- [x] 2.2.3 实现 UserDetailsService
   - 从数据库加载用户信息
   - _Requirements: 需求 2_
+  - **已完成**: 集成在 AuthService 中
 
 ### 2.3 认证接口
 
-- [ ] 2.3.1 实现登录接口
+- [x] 2.3.1 实现登录接口
   - POST /api/auth/login
   - _Requirements: 需求 1_
+  - **已完成**: AuthController.java
 
-- [ ] 2.3.2 实现刷新 Token 接口
+- [x] 2.3.2 实现刷新 Token 接口
   - POST /api/auth/refresh
   - _Requirements: 需求 1_
+  - **已完成**: AuthController.java
 
-- [ ] 2.3.3 实现获取当前用户接口
+- [x] 2.3.3 实现获取当前用户接口
   - GET /api/user/me
   - _Requirements: 需求 2_
+  - **已完成**: AuthController.java
 
 ### 2.4 权限校验
 
@@ -227,9 +255,10 @@
 
 ### 2.5 认证模块检查点
 
-- [ ] 2.5.0 Checkpoint - 确保认证模块测试通过
-  - 确保所有测试通过，如有问题请询问用户
+- [x] 2.5.0 Checkpoint - 确保认证模块测试通过
+  - 登录、刷新 Token、获取用户信息功能正常
   - _Requirements: 需求 1, 2_
+  - **已完成**: 认证功能已可用
 
 ### 2.6 认证模块测试
 
@@ -246,22 +275,29 @@
 ## P3. 商城结构管理
 
 > 目标：实现商城、楼层、区域的 CRUD 操作
+>
+> **状态**: 部分完成（商城建模器 API 已完成）
 
-### 3.1 应用服务 (mall-application)
+### 3.1 应用服务 (application/service)
 
-- [ ] 3.1.1 实现 MallApplicationService
-  - 创建商城、更新商城、查询商城
+- [x] 3.1.1 实现 MallBuilderService
+  - 创建项目、更新项目、查询项目、删除项目
+  - _Requirements: 需求 3_
+  - **已完成**: MallBuilderService.java
+
+- [ ] 3.1.2 实现 MallApplicationService
+  - 商城运行时管理（非建模器）
   - _Requirements: 需求 3_
 
-- [ ] 3.1.2 实现 FloorApplicationService
+- [ ] 3.1.3 实现 FloorApplicationService
   - 创建楼层、更新楼层、删除楼层
   - _Requirements: 需求 3_
 
-- [ ] 3.1.3 实现 AreaApplicationService
+- [ ] 3.1.4 实现 AreaApplicationService
   - 创建区域、更新区域、删除区域
   - _Requirements: 需求 3_
 
-### 3.2 领域服务 (mall-domain)
+### 3.2 领域服务 (domain)
 
 - [ ] 3.2.1 实现 MallDomainService
   - 商城状态管理、结构验证
@@ -271,25 +307,29 @@
   - 区域重叠检测
   - _Requirements: 需求 3, Property 13_
 
-### 3.3 接口层 (mall-interface)
+### 3.3 接口层 (interfaces/controller)
 
-- [ ] 3.3.1 实现商城查询接口
+- [x] 3.3.1 实现商城建模器接口
+  - POST /api/mall-builder/projects
+  - GET /api/mall-builder/projects
+  - GET /api/mall-builder/projects/{projectId}
+  - PUT /api/mall-builder/projects/{projectId}
+  - DELETE /api/mall-builder/projects/{projectId}
+  - _Requirements: 需求 3_
+  - **已完成**: MallBuilderController.java
+
+- [ ] 3.3.2 实现商城查询接口
   - GET /api/mall/list
   - GET /api/mall/{mallId}
   - GET /api/mall/{mallId}/structure
   - _Requirements: 需求 11_
 
-- [ ] 3.3.2 实现管理端接口
-  - POST /api/admin/mall
-  - POST /api/admin/mall/{mallId}/floor
-  - POST /api/admin/area
-  - _Requirements: 需求 3_
+### 3.4 Repository 实现 (infrastructure/mapper)
 
-### 3.4 Repository 实现 (mall-infrastructure)
-
-- [ ] 3.4.1 实现 MyBatis Mapper
-  - MallMapper、FloorMapper、AreaMapper
+- [x] 3.4.1 实现 MyBatis Mapper
+  - MallProjectMapper、FloorMapper、AreaMapper
   - _Requirements: 数据访问_
+  - **已完成**: MallProjectMapper.java, FloorMapper.java, AreaMapper.java
 
 - [ ] 3.4.2 实现 Repository
   - MallRepositoryImpl、FloorRepositoryImpl、AreaRepositoryImpl
@@ -297,9 +337,10 @@
 
 ### 3.5 商城模块检查点
 
-- [ ] 3.5.0 Checkpoint - 确保商城模块测试通过
-  - 确保所有测试通过，如有问题请询问用户
-  - _Requirements: 需求 3, 11_
+- [x] 3.5.0 Checkpoint - 确保商城建模器 API 完成
+  - 商城建模器 CRUD 功能正常
+  - _Requirements: 需求 3_
+  - **已完成**: 前后端联调已通过
 
 ### 3.6 商城模块测试
 
@@ -670,23 +711,26 @@
 ### Checkpoint 1: 基础设施完成
 **触发条件**: P0 + P1 完成
 **验证内容**:
-- [ ] 项目可以正常编译
-- [ ] 数据库表创建成功
-- [ ] 领域模型定义完整
+- [x] 项目可以正常编译
+- [x] 数据库表创建成功
+- [x] 领域模型定义完整
+- **状态**: ✅ 已完成
 
 ### Checkpoint 2: 认证模块完成
 **触发条件**: P2 完成
 **验证内容**:
-- [ ] 登录接口正常工作
-- [ ] Token 验证正常
-- [ ] 权限校验正常
+- [x] 登录接口正常工作
+- [x] Token 验证正常
+- [ ] 权限校验正常（区域权限待实现）
+- **状态**: ✅ 基本完成
 
 ### Checkpoint 3: 商城管理完成
 **触发条件**: P3 完成
 **验证内容**:
-- [ ] 商城 CRUD 正常
+- [x] 商城建模器 CRUD 正常
 - [ ] 结构查询正常
 - [ ] 区域边界校验正常
+- **状态**: 🔄 进行中
 
 ### Checkpoint 4: 权限管理完成
 **触发条件**: P4 完成

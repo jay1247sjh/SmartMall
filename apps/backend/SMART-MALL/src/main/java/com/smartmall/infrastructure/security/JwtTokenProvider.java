@@ -207,26 +207,37 @@ public class JwtTokenProvider {
 
     /**
      * Token 验证结果
+     * 
+     * 【Java Record 说明】
+     * Record 会自动生成与组件同名的访问器方法：
+     * - valid() 返回 valid 字段
+     * - expired() 返回 expired 字段
+     * - message() 返回 message 字段
+     * 
+     * 为了避免与静态工厂方法 valid() 冲突，
+     * 将字段名改为 isValid 和 isExpired
      */
-    public record TokenValidationResult(boolean valid, boolean expired, String message) {
+    public record TokenValidationResult(boolean isValid, boolean isExpired, String message) {
+        
+        /**
+         * 创建有效的验证结果
+         */
         public static TokenValidationResult valid() {
             return new TokenValidationResult(true, false, null);
         }
         
+        /**
+         * 创建已过期的验证结果
+         */
         public static TokenValidationResult expired() {
             return new TokenValidationResult(false, true, "Token expired");
         }
         
+        /**
+         * 创建无效的验证结果
+         */
         public static TokenValidationResult invalid(String message) {
             return new TokenValidationResult(false, false, message);
-        }
-        
-        public boolean isValid() {
-            return valid;
-        }
-        
-        public boolean isExpired() {
-            return expired;
         }
     }
 }

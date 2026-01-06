@@ -1,10 +1,57 @@
 <script setup lang="ts">
 /**
- * 第三方登录组件
- * 使用 Element Plus 组件 + HTML5 语义化标签
+ * ============================================================================
+ * 第三方社交登录组件 (SocialLogin)
+ * ============================================================================
+ *
+ * 【业务职责】
+ * 提供第三方账号快捷登录入口，降低用户注册/登录门槛。
+ * 支持国内外主流社交平台，覆盖不同用户群体。
+ *
+ * 【支持的登录方式】
+ * 1. 微信登录 - 面向国内用户，最常用的社交登录方式
+ * 2. GitHub 登录 - 面向开发者用户，技术社区常用
+ * 3. Google 登录 - 面向国际用户，全球通用
+ *
+ * 【设计原则】
+ * 1. Element Plus 优先 - 使用 ElButton、ElDivider、ElSpace
+ * 2. HTML5 语义化 - section 包裹区块，nav 标识导航区域
+ * 3. 无障碍支持 - aria-label 和 title 属性辅助屏幕阅读器
+ *
+ * 【OAuth 2.0 流程说明】
+ * 点击按钮后，父组件负责：
+ * 1. 跳转到第三方授权页面
+ * 2. 用户授权后获取 authorization code
+ * 3. 后端用 code 换取 access_token
+ * 4. 获取用户信息并完成登录/注册
+ *
+ * 【视觉设计】
+ * - 圆形按钮：区别于主要操作按钮，暗示"快捷入口"
+ * - 统一尺寸：48x48px，便于触摸操作
+ * - 品牌色图标：Google 使用官方四色，其他使用单色
+ * - 分隔线"或"：明确这是替代登录方式
+ *
+ * 【当前状态】
+ * 组件已完成 UI 实现，OAuth 集成待后续开发。
+ * 点击按钮目前仅触发事件，实际跳转逻辑由父组件实现。
+ * ============================================================================
  */
-import { ElButton, ElDivider, ElSpace, ElIcon } from 'element-plus'
 
+/**
+ * 组件事件定义
+ *
+ * @event wechat - 微信登录按钮点击
+ *   - 触发微信 OAuth 授权流程
+ *   - 需要在微信开放平台注册应用
+ *
+ * @event github - GitHub 登录按钮点击
+ *   - 触发 GitHub OAuth 授权流程
+ *   - 需要在 GitHub Developer Settings 注册 OAuth App
+ *
+ * @event google - Google 登录按钮点击
+ *   - 触发 Google OAuth 授权流程
+ *   - 需要在 Google Cloud Console 配置 OAuth 2.0
+ */
 defineEmits<{
   wechat: []
   github: []

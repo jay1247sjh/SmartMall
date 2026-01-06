@@ -1,7 +1,25 @@
 <script setup lang="ts">
 /**
- * 403 无权限页面
- * 使用 Element Plus 组件 + HTML5 语义化标签
+ * 403 无权限视图
+ *
+ * 当用户访问没有权限的页面时显示此页面。
+ *
+ * 业务职责：
+ * - 友好地告知用户没有访问权限
+ * - 提供返回上页和返回首页的快捷入口
+ * - 保持与整体设计风格一致
+ *
+ * 设计原则：
+ * - 使用 Element Plus 的 ElResult 组件
+ * - 使用 HTML5 语义化标签（main、article）
+ * - 红色主题表示错误/禁止
+ * - 深色主题，与整体设计风格一致
+ *
+ * 触发场景：
+ * - 普通用户访问管理员页面
+ * - 商家访问其他商家的店铺配置
+ * - 未登录用户访问需要登录的页面（通常会重定向到登录页）
+ * - 路由守卫检测到权限不足
  */
 import { useRouter } from 'vue-router'
 import { ElResult, ElButton, ElIcon, ElSpace } from 'element-plus'

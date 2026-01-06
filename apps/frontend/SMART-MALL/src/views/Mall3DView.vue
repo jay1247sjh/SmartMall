@@ -1,7 +1,50 @@
 <script setup lang="ts">
 /**
- * 3D 商城入口页面
- * 集成 ThreeEngine 渲染 3D 商城场景
+ * ============================================================================
+ * 3D 商城入口页面 (Mall3DView)
+ * ============================================================================
+ *
+ * 【业务职责】
+ * Smart Mall 的核心页面，展示 3D 可视化的商城空间。
+ * 用户可以在这里浏览商城、切换楼层、搜索店铺、查看店铺详情。
+ *
+ * 【页面功能】
+ * 1. 3D 场景渲染 - 使用 Three.js 引擎渲染商城模型
+ * 2. 楼层切换 - 在不同楼层间导航
+ * 3. 店铺搜索 - 按名称搜索店铺
+ * 4. 店铺详情 - 点击店铺查看详细信息
+ * 5. 迷你地图 - 显示当前楼层的俯视图
+ * 6. 操作提示 - 指导用户如何操作 3D 场景
+ *
+ * 【3D 交互说明】
+ * - 鼠标拖拽：旋转视角
+ * - 滚轮：缩放场景
+ * - 右键拖拽：平移视角
+ * - 点击店铺：显示店铺详情面板
+ *
+ * 【加载流程】
+ * 1. 初始化 Three.js 引擎
+ * 2. 创建 3D 场景
+ * 3. 加载商城模型和资源
+ * 4. 初始化交互控制
+ * 5. 启动渲染循环
+ * 6. 隐藏加载界面
+ *
+ * 【UI 层级】
+ * - 底层：Three.js 渲染的 3D 场景
+ * - 顶层：UI 覆盖层（顶部栏、楼层选择器、迷你地图、店铺面板等）
+ * UI 覆盖层使用 pointer-events: none 让鼠标事件穿透到 3D 场景，
+ * 只有具体的 UI 元素设置 pointer-events: auto 接收点击。
+ *
+ * 【当前状态】
+ * 目前使用简单的方块模拟店铺，实际项目中会加载真实的 3D 模型。
+ * 楼层数据和店铺数据也是 Mock 的，后续需要从 API 获取。
+ *
+ * 【与其他模块的关系】
+ * - ThreeEngine：3D 渲染引擎，封装 Three.js
+ * - mall.store：商城数据状态管理
+ * - system.store：系统模式（RUNTIME/CONFIG）管理
+ * ============================================================================
  */
 import { ref, onMounted, onUnmounted, computed } from 'vue'
 import { useRouter } from 'vue-router'
@@ -9,66 +52,99 @@ import { ThreeEngine } from '@/engine'
 import { useUserStore } from '@/stores'
 
 // ============================================================================
-// State
+// 状态定义
 // ============================================================================
 
 const router = useRouter()
 const userStore = useUserStore()
 
+/** Three.js 渲染容器的 DOM 引用 */
 const containerRef = ref<HTMLElement | null>(null)
+/** Three.js 引擎实例 */
 const engine = ref<ThreeEngine | null>(null)
 
+// ----------------------------------------------------------------------------
 // 加载状态
+// ----------------------------------------------------------------------------
+
+/** 是否正在加载 */
 const isLoading = ref(true)
+/** 加载进度（0-100） */
 const loadProgress = ref(0)
+/** 加载提示文字 */
 const loadingText = ref('初始化引擎...')
 
+// ----------------------------------------------------------------------------
 // UI 状态
+// ----------------------------------------------------------------------------
+
+/** 是否显示楼层选择器下拉菜单 */
 const showFloorSelector = ref(false)
+/** 当前选中的楼层 ID */
 const currentFloor = ref(1)
+/** 是否显示店铺详情面板 */
 const showStorePanel = ref(false)
+/** 当前选中的店铺信息 */
 const selectedStore = ref<any>(null)
+/** 是否显示迷你地图 */
 const showMinimap = ref(true)
 
-// 楼层数据
+// ----------------------------------------------------------------------------
+// 楼层数据（Mock）
+// ----------------------------------------------------------------------------
+
+/**
+ * 楼层列表
+ * 实际项目中应从 mall.store 获取
+ */
 const floors = [
   { id: 1, name: '1F', label: '一楼 - 餐饮美食' },
   { id: 2, name: '2F', label: '二楼 - 服装服饰' },
   { id: 3, name: '3F', label: '三楼 - 娱乐休闲' },
 ]
 
-// 搜索
+// ----------------------------------------------------------------------------
+// 搜索状态
+// ----------------------------------------------------------------------------
+
+/** 搜索关键词 */
 const searchQuery = ref('')
+/** 是否显示搜索结果下拉 */
 const showSearchResults = ref(false)
+/** 搜索结果列表 */
 const searchResults = ref<any[]>([])
 
 // ============================================================================
-// Methods
+// 方法定义
 // ============================================================================
 
+/**
+ * 初始化 Three.js 引擎
+ * 创建 3D 场景并加载商城模型
+ */
 async function initEngine() {
   if (!containerRef.value) return
 
   loadingText.value = '创建 3D 场景...'
   loadProgress.value = 20
 
-  // 创建引擎实例
+  // 创建引擎实例，配置渲染参数
   engine.value = new ThreeEngine(containerRef.value, {
-    backgroundColor: 0x0a0a0a,
-    antialias: true,
-    cameraMode: 'orbit',
+    backgroundColor: 0x0a0a0a,  // 深色背景
+    antialias: true,            // 开启抗锯齿
+    cameraMode: 'orbit',        // 轨道相机模式
   })
 
   loadProgress.value = 40
   loadingText.value = '加载场景资源...'
 
-  // 添加网格辅助线
+  // 添加网格辅助线（开发调试用）
   engine.value.addGridHelper(100, 100)
 
   loadProgress.value = 60
   loadingText.value = '构建商城模型...'
 
-  // 模拟加载商城模型（实际项目中会加载真实模型）
+  // 加载商城模型（目前是模拟数据）
   await simulateLoadMall()
 
   loadProgress.value = 80
@@ -80,45 +156,50 @@ async function initEngine() {
   loadProgress.value = 100
   loadingText.value = '加载完成'
 
-  // 延迟隐藏加载界面
+  // 延迟隐藏加载界面，让用户看到 100% 完成
   setTimeout(() => {
     isLoading.value = false
   }, 500)
 }
 
+/**
+ * 模拟加载商城模型
+ * 实际项目中会加载真实的 GLTF/GLB 模型
+ */
 async function simulateLoadMall() {
-  // 模拟加载延迟
+  // 模拟网络加载延迟
   await new Promise(resolve => setTimeout(resolve, 800))
 
   if (!engine.value) return
 
-  // 添加一些示例方块代表店铺
   const scene = engine.value.getScene()
   
-  // 地板
+  // 创建地板
   const floorGeometry = new (await import('three')).PlaneGeometry(80, 80)
   const floorMaterial = new (await import('three')).MeshStandardMaterial({ 
     color: 0x1a1a1a,
     roughness: 0.8,
   })
   const floor = new (await import('three')).Mesh(floorGeometry, floorMaterial)
-  floor.rotation.x = -Math.PI / 2
+  floor.rotation.x = -Math.PI / 2  // 旋转为水平
   floor.receiveShadow = true
   scene.add(floor)
 
-  // 示例店铺方块
+  // 创建示例店铺方块
+  // 实际项目中这些会是从后端加载的店铺模型
   const THREE = await import('three')
   const storePositions = [
-    { x: -15, z: -15, color: 0x60a5fa },
-    { x: 0, z: -15, color: 0x34d399 },
-    { x: 15, z: -15, color: 0xa78bfa },
-    { x: -15, z: 0, color: 0xfbbf24 },
-    { x: 15, z: 0, color: 0xf28b82 },
+    { x: -15, z: -15, color: 0x60a5fa },  // 蓝色
+    { x: 0, z: -15, color: 0x34d399 },    // 绿色
+    { x: 15, z: -15, color: 0xa78bfa },   // 紫色
+    { x: -15, z: 0, color: 0xfbbf24 },    // 黄色
+    { x: 15, z: 0, color: 0xf28b82 },     // 红色
     { x: -15, z: 15, color: 0x60a5fa },
     { x: 0, z: 15, color: 0x34d399 },
     { x: 15, z: 15, color: 0xa78bfa },
   ]
 
+  // 为每个位置创建一个方块代表店铺
   storePositions.forEach(pos => {
     engine.value!.addBox(
       new THREE.Vector3(pos.x, 0, pos.z),
@@ -127,26 +208,38 @@ async function simulateLoadMall() {
     )
   })
 
+  // 请求重新渲染
   engine.value.requestRender()
 }
 
+/**
+ * 返回上一页（商城首页）
+ */
 function goBack() {
   router.push('/mall')
 }
 
+/**
+ * 切换楼层
+ * @param floorId - 目标楼层 ID
+ */
 function selectFloor(floorId: number) {
   currentFloor.value = floorId
   showFloorSelector.value = false
-  // TODO: 切换楼层场景
+  // TODO: 切换楼层场景，加载对应楼层的模型
 }
 
+/**
+ * 处理搜索输入
+ * 根据关键词过滤店铺列表
+ */
 function handleSearch() {
   if (!searchQuery.value.trim()) {
     showSearchResults.value = false
     return
   }
   
-  // 模拟搜索结果
+  // 模拟搜索结果（实际项目中应调用 API 或从 store 过滤）
   searchResults.value = [
     { id: 1, name: '星巴克咖啡', floor: '1F', area: 'A-101' },
     { id: 2, name: '优衣库', floor: '2F', area: 'B-201' },
@@ -155,31 +248,47 @@ function handleSearch() {
   showSearchResults.value = true
 }
 
+/**
+ * 选择搜索结果中的店铺
+ * @param store - 选中的店铺信息
+ */
 function selectSearchResult(store: any) {
   selectedStore.value = store
   showStorePanel.value = true
   showSearchResults.value = false
   searchQuery.value = ''
-  // TODO: 相机飞向店铺位置
+  // TODO: 相机飞向店铺位置（动画过渡）
 }
 
+/**
+ * 关闭店铺详情面板
+ */
 function closeStorePanel() {
   showStorePanel.value = false
   selectedStore.value = null
 }
 
+/**
+ * 切换迷你地图显示状态
+ */
 function toggleMinimap() {
   showMinimap.value = !showMinimap.value
 }
 
 // ============================================================================
-// Lifecycle
+// 生命周期
 // ============================================================================
 
+/**
+ * 组件挂载时初始化 3D 引擎
+ */
 onMounted(() => {
   initEngine()
 })
 
+/**
+ * 组件卸载时销毁 3D 引擎，释放资源
+ */
 onUnmounted(() => {
   engine.value?.dispose()
 })

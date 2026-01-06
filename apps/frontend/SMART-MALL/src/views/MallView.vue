@@ -1,7 +1,45 @@
 <script setup lang="ts">
 /**
- * 商城主页/仪表盘
- * 使用 Element Plus 组件 + HTML5 语义化标签
+ * ============================================================================
+ * 商城主页/仪表盘 (MallView)
+ * ============================================================================
+ *
+ * 【业务职责】
+ * 用户登录后的首页，展示个性化的仪表盘内容。
+ * 根据用户角色（管理员/商家/普通用户）显示不同的统计数据和快捷入口。
+ *
+ * 【页面结构】
+ * 1. 欢迎区域 - 根据时间显示问候语，展示用户名
+ * 2. 统计卡片 - 展示与用户角色相关的关键指标
+ * 3. 快捷入口 - 提供常用功能的快速访问
+ *
+ * 【角色差异化展示】
+ *
+ * 管理员（ADMIN）看到：
+ * - 统计：商城总数、店铺总数、待审批、在线用户
+ * - 入口：进入商城、个人中心、商城管理、区域审批
+ *
+ * 商家（MERCHANT）看到：
+ * - 统计：我的店铺、商品数量、今日访客、待处理
+ * - 入口：进入商城、个人中心、店铺配置、建模工具
+ *
+ * 普通用户（USER）看到：
+ * - 统计：收藏店铺、浏览记录、我的订单、优惠券
+ * - 入口：进入商城、个人中心
+ *
+ * 【设计原则】
+ * 1. Element Plus 优先 - ElRow、ElCol、ElCard、ElStatistic 等
+ * 2. HTML5 语义化 - header、section、article、hgroup 等
+ * 3. 响应式布局 - 使用 ElCol 的断点属性适配不同屏幕
+ *
+ * 【问候语逻辑】
+ * 根据当前小时数显示不同问候：
+ * - 0-5点：夜深了
+ * - 6-11点：早上好
+ * - 12-13点：中午好
+ * - 14-17点：下午好
+ * - 18-23点：晚上好
+ * ============================================================================
  */
 import { computed } from 'vue'
 import { useRouter } from 'vue-router'
@@ -12,9 +50,6 @@ import {
   ElCol,
   ElCard,
   ElStatistic,
-  ElButton,
-  ElIcon,
-  ElSpace,
 } from 'element-plus'
 import {
   Shop,
@@ -33,6 +68,14 @@ import {
 const router = useRouter()
 const userStore = useUserStore()
 
+// ============================================================================
+// 计算属性
+// ============================================================================
+
+/**
+ * 根据当前时间生成问候语
+ * 让用户感受到个性化的欢迎
+ */
 const greeting = computed(() => {
   const hour = new Date().getHours()
   if (hour < 6) return '夜深了'
@@ -42,6 +85,9 @@ const greeting = computed(() => {
   return '晚上好'
 })
 
+/**
+ * 快捷入口类型定义
+ */
 interface QuickAction {
   title: string
   description: string
@@ -49,12 +95,18 @@ interface QuickAction {
   icon: typeof Shop
 }
 
+/**
+ * 根据用户角色生成快捷入口列表
+ * 不同角色看到不同的功能入口
+ */
 const quickActions = computed<QuickAction[]>(() => {
+  // 所有用户都能看到的基础入口
   const actions: QuickAction[] = [
     { title: '进入商城', description: '浏览 3D 商城空间', path: '/mall/3d', icon: Shop },
     { title: '个人中心', description: '查看和编辑个人信息', path: '/user/profile', icon: User },
   ]
 
+  // 管理员专属入口
   if (userStore.isAdmin) {
     actions.push(
       { title: '商城管理', description: '管理商城结构和配置', path: '/admin/mall', icon: Setting },
@@ -62,6 +114,7 @@ const quickActions = computed<QuickAction[]>(() => {
     )
   }
 
+  // 商家专属入口
   if (userStore.isMerchant) {
     actions.push(
       { title: '店铺配置', description: '管理店铺信息和商品', path: '/merchant/store-config', icon: Edit },
@@ -72,13 +125,23 @@ const quickActions = computed<QuickAction[]>(() => {
   return actions
 })
 
+/**
+ * 统计项类型定义
+ */
 interface StatItem {
   label: string
   value: number
   icon: typeof Shop
 }
 
+/**
+ * 根据用户角色生成统计数据
+ * 展示与用户相关的关键指标
+ *
+ * 【注意】当前使用静态数据，实际项目中应从 API 获取
+ */
 const stats = computed<StatItem[]>(() => {
+  // 管理员看到系统运营数据
   if (userStore.isAdmin) {
     return [
       { label: '商城总数', value: 3, icon: Shop },
@@ -87,6 +150,8 @@ const stats = computed<StatItem[]>(() => {
       { label: '在线用户', value: 42, icon: User },
     ]
   }
+  
+  // 商家看到自己的经营数据
   if (userStore.isMerchant) {
     return [
       { label: '我的店铺', value: 2, icon: Shop },
@@ -95,6 +160,8 @@ const stats = computed<StatItem[]>(() => {
       { label: '待处理', value: 3, icon: Document },
     ]
   }
+  
+  // 普通用户看到个人相关数据
   return [
     { label: '收藏店铺', value: 8, icon: Star },
     { label: '浏览记录', value: 24, icon: View },
@@ -103,6 +170,14 @@ const stats = computed<StatItem[]>(() => {
   ]
 })
 
+// ============================================================================
+// 事件处理
+// ============================================================================
+
+/**
+ * 导航到指定路径
+ * @param path - 目标路由路径
+ */
 function navigateTo(path: string) {
   router.push(path)
 }

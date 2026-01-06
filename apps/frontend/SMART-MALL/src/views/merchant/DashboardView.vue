@@ -1,7 +1,33 @@
 <script setup lang="ts">
 /**
- * 商家工作台
- * 使用 Element Plus 组件 + HTML5 语义化标签
+ * 商家工作台视图
+ *
+ * 这是商家登录后看到的首页，提供店铺概览和快捷入口。
+ *
+ * 业务职责：
+ * - 展示商家关键指标（店铺数、商品数、今日访客、待处理任务）
+ * - 显示商家的店铺列表和状态
+ * - 显示待处理的区域申请
+ * - 提供快捷入口到各管理功能
+ *
+ * 设计原则：
+ * - 使用 Element Plus 组件构建一致的 UI
+ * - 使用 HTML5 语义化标签（article、section、header、nav、hgroup）
+ * - 粉橙色主题，与管理员后台区分
+ * - 响应式布局，适配不同屏幕尺寸
+ *
+ * 数据流：
+ * - 页面加载时并行请求统计数据、店铺列表和申请列表
+ * - 点击店铺跳转到店铺配置页
+ * - 点击快捷入口跳转到对应功能页面
+ *
+ * 店铺状态说明：
+ * - ACTIVE：营业中
+ * - INACTIVE：已关闭
+ * - PENDING：待审核
+ *
+ * 用户角色：
+ * - 仅商家（MERCHANT）可访问
  */
 import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
