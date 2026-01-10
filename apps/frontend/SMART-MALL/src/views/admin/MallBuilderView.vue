@@ -53,7 +53,6 @@ import {
   // 漫游渲染
   createRoamingEnvironment,
   clearRoamingEnvironment,
-  createMallFurniture,
   // IO
   exportProject,
   importProject,
@@ -75,6 +74,19 @@ import {
   createStairsModel,
   createServiceDeskModel,
   createRestroomModel,
+  // 基础设施模型
+  createBenchModel,
+  createLampPostModel,
+  createTrashBinModel,
+  createPlanterModel,
+  createSignPostModel,
+  createFountainModel,
+  createKioskModel,
+  createATMModel,
+  createVendingMachineModel,
+  createInfoBoardModel,
+  createClockModel,
+  createFireExtinguisherModel,
   // 角色控制器
   CharacterController,
   // 资源管理
@@ -144,6 +156,14 @@ const cameraPitch = ref(0.3)  // 相机俯仰角（上下看）- 稍微向下看
 const cameraYaw = ref(0)      // 相机偏航角（左右看）
 // 指针是否已锁定
 const isPointerLocked = ref(false)
+// 移动速度预设
+const walkSpeedPreset = ref<'slow' | 'normal' | 'fast'>('normal')
+const speedPresets: ('slow' | 'normal' | 'fast')[] = ['slow', 'normal', 'fast']
+const speedPresetLabels: Record<'slow' | 'normal' | 'fast', string> = {
+  slow: '慢速',
+  normal: '正常',
+  fast: '快速',
+}
 
 // 选中状态
 const selectedAreaId = ref<string | null>(null)
@@ -160,7 +180,7 @@ const showSceneLegend = ref(true)  // 场景说明显示状态
 
 // 材质面板状态
 const selectedMaterialId = ref<string | null>(null)
-const expandedCategories = ref<MaterialCategory[]>(['circulation', 'service', 'common'])
+const expandedCategories = ref<MaterialCategory[]>(['circulation', 'service', 'common', 'infrastructure'])
 const materialPresets = computed(() => getAllMaterialPresets())
 const categories = computed(() => getAllCategories())
 
@@ -440,24 +460,8 @@ function renderProject(renderAllFloors: boolean = false) {
     })
     scene.value.add(roamingEnv)
     
-    // 添加商场基础设施（长椅、路灯、垃圾桶等）
-    const currentFloor = project.value.floors.find(f => f.id === currentFloorId.value)
-    if (currentFloor) {
-      const floorIndex = project.value.floors.findIndex(f => f.id === currentFloorId.value)
-      const floorHeightsArr = project.value.floors.map(f => f.height)
-      const yPos = calculateFloorYPosition(floorIndex, floorHeightsArr)
-      const outline = currentFloor.shape || project.value.outline
-      
-      const furniture = createMallFurniture(outline, yPos, {
-        benches: true,
-        lamps: true,
-        trashBins: true,
-        planters: true,
-        signs: true,
-        heightScale: 1.0,
-      })
-      scene.value.add(furniture)
-    }
+    // 注意：基础设施（长椅、路灯等）现在由用户手动放置
+    // 不再自动添加，用户可以从材质面板的"基础设施"分类中选择放置
   } else {
     // 编辑模式：渲染商城轮廓线
     const outlineMesh = createPolygonOutline(project.value.outline, 0x60a5fa, 2)
@@ -525,15 +529,33 @@ function renderArea(area: AreaDefinition, yPosition: number, fullHeight: boolean
   const isSelected = area.id === selectedAreaId.value
   const isOverlapping = overlappingAreas.value.includes(area.id)
 
+  // 检查是否为基础设施
+  const isInfrastructure = area.properties?.isInfrastructure === true
   // 检查是否为垂直连接类型（电梯、扶梯、楼梯）
   const isVerticalConnection = ['elevator', 'escalator', 'stairs'].includes(area.type)
   // 检查是否为需要特殊建模的设施类型
   const isFacility = ['restroom', 'service'].includes(area.type)
   
   // 调试日志
-  console.log(`[renderArea] 区域: ${area.name}, 类型: ${area.type}, fullHeight: ${fullHeight}, isVerticalConnection: ${isVerticalConnection}, isFacility: ${isFacility}`)
+  console.log(`[renderArea] 区域: ${area.name}, 类型: ${area.type}, fullHeight: ${fullHeight}, isInfrastructure: ${isInfrastructure}`)
   
-  if (isVerticalConnection) {
+  if (isInfrastructure && area.properties?.infrastructureType) {
+    // 基础设施使用专门的模型
+    const infrastructureType = area.properties.infrastructureType as string
+    const model = createInfrastructureModel(infrastructureType)
+    if (model) {
+      const center = getAreaCenter(area.shape.vertices)
+      model.position.set(center.x, yPosition, center.z)
+      model.name = `infrastructure-${area.id}`
+      model.userData = {
+        isArea: true,
+        areaId: area.id,
+        isInfrastructure: true,
+        infrastructureType: infrastructureType,
+      }
+      scene.value.add(model)
+    }
+  } else if (isVerticalConnection) {
     // 垂直连接始终使用真实3D建模（编辑模式和漫游模式都显示）
     console.log(`[renderArea] 渲染垂直连接3D模型: ${area.type}`)
     renderVerticalConnectionModel(area, yPosition, isSelected, fullHeight)
@@ -763,6 +785,19 @@ function handleClick(e: MouseEvent) {
   if (viewMode.value === 'orbit') return
   
   if (currentTool.value === 'select') {
+    // 检查是否选中了基础设施材质
+    const selectedMaterial = getSelectedMaterial()
+    if (selectedMaterial?.isInfrastructure) {
+      // 放置基础设施
+      const point = screenToWorld(e.clientX, e.clientY)
+      if (point) {
+        const snapped = snapEnabled.value ? snapToGrid(point, gridSize.value) : point
+        placeInfrastructure(selectedMaterial, snapped)
+      }
+      return
+    }
+    
+    // 普通选择逻辑
     const intersect = raycastAreas(e.clientX, e.clientY)
     if (intersect) {
       selectArea(intersect.object.userData.areaId)
@@ -1150,8 +1185,15 @@ function toggleCategory(category: MaterialCategory) {
 
 function selectMaterial(preset: MaterialPreset) {
   selectedMaterialId.value = preset.id
-  // 选择材质后自动切换到绘制模式
-  setTool('draw-rect')
+  
+  // 基础设施使用点击放置模式
+  if (preset.isInfrastructure) {
+    setTool('select')  // 使用选择工具，点击放置
+    console.log(`[selectMaterial] 选择基础设施: ${preset.name}，点击场景放置`)
+  } else {
+    // 其他材质使用绘制模式
+    setTool('draw-rect')
+  }
 }
 
 function clearMaterialSelection() {
@@ -1161,6 +1203,110 @@ function clearMaterialSelection() {
 function getSelectedMaterial(): MaterialPreset | null {
   if (!selectedMaterialId.value) return null
   return materialPresets.value.find(p => p.id === selectedMaterialId.value) || null
+}
+
+// ============================================================================
+// Infrastructure Placement Methods
+// ============================================================================
+
+/**
+ * 放置基础设施
+ */
+function placeInfrastructure(preset: MaterialPreset, point: { x: number; y: number }) {
+  if (!currentFloor.value || !project.value || !scene.value) return
+  
+  const infrastructureType = preset.infrastructureType
+  if (!infrastructureType) return
+  
+  // 计算当前楼层的 Y 位置
+  const floorIndex = project.value.floors.findIndex(f => f.id === currentFloorId.value)
+  const floorHeights = project.value.floors.map(f => f.height)
+  const yPos = calculateFloorYPosition(floorIndex, floorHeights) + 0.1
+  
+  // 创建基础设施 3D 模型
+  const model = createInfrastructureModel(infrastructureType)
+  if (!model) return
+  
+  // 设置位置（注意 Z 坐标取反）
+  model.position.set(point.x, yPos, -point.y)
+  
+  // 生成唯一 ID
+  const id = generateId()
+  model.name = `infrastructure-${id}`
+  model.userData = {
+    isInfrastructure: true,
+    infrastructureId: id,
+    infrastructureType: infrastructureType,
+    floorId: currentFloorId.value,
+  }
+  
+  // 添加到场景
+  scene.value.add(model)
+  
+  // 保存到楼层数据（作为特殊区域）
+  const infrastructureArea: AreaDefinition = {
+    id: id,
+    name: `${preset.name}-${currentFloor.value.areas.length + 1}`,
+    type: 'other',
+    shape: {
+      vertices: [
+        { x: point.x - 0.5, y: point.y - 0.5 },
+        { x: point.x + 0.5, y: point.y - 0.5 },
+        { x: point.x + 0.5, y: point.y + 0.5 },
+        { x: point.x - 0.5, y: point.y + 0.5 },
+      ],
+      isClosed: true,
+    },
+    color: preset.color,
+    properties: {
+      infrastructureType: infrastructureType,
+      isInfrastructure: true,
+    },
+    visible: true,
+    locked: false,
+  }
+  
+  currentFloor.value.areas.push(infrastructureArea)
+  saveHistory()
+  
+  console.log(`[placeInfrastructure] 放置 ${preset.name} 在 (${point.x}, ${point.y})`)
+}
+
+/**
+ * 根据类型创建基础设施模型
+ */
+function createInfrastructureModel(type: string): THREE.Group | null {
+  const heightScale = viewMode.value === 'orbit' ? 1.0 : 0.5
+  
+  switch (type) {
+    case 'bench':
+      return createBenchModel(2, heightScale)
+    case 'lamp':
+      return createLampPostModel(3 * heightScale, 'mall')
+    case 'trashBin':
+      return createTrashBinModel('recycling', heightScale)
+    case 'planter':
+      return createPlanterModel('large', 'tree')
+    case 'sign':
+      return createSignPostModel('指示牌', 'standing', heightScale)
+    case 'fountain':
+      return createFountainModel(heightScale)
+    case 'kiosk':
+      return createKioskModel(heightScale)
+    case 'atm':
+      return createATMModel(heightScale)
+    case 'vendingMachine':
+      return createVendingMachineModel(heightScale)
+    case 'infoBoard':
+      return createInfoBoardModel(heightScale)
+    case 'clock':
+      return createClockModel(heightScale)
+    case 'fireExtinguisher':
+      return createFireExtinguisherModel(heightScale)
+    default:
+      console.warn(`[createInfrastructureModel] 未知的基础设施类型: ${type}`)
+      return null
+  }
 }
 
 // ============================================================================
@@ -1663,6 +1809,7 @@ function toggleOrbitMode() {
     characterController = new CharacterController()
     characterController.setPosition(0, floorY, 0)
     characterController.setFloorHeight(floorY)
+    characterController.setMoveSpeed(walkSpeedPreset.value)  // 应用当前速度设置
     
     // 设置边界碰撞检测
     if (project.value?.outline?.vertices && project.value.outline.vertices.length >= 3) {
@@ -1846,6 +1993,30 @@ function exitRoamMode() {
   
   // 重新渲染场景
   renderProject(false)
+}
+
+/**
+ * 切换移动速度预设
+ */
+function cycleWalkSpeed() {
+  const presets: ('slow' | 'normal' | 'fast')[] = ['slow', 'normal', 'fast']
+  const currentIndex = presets.indexOf(walkSpeedPreset.value)
+  const nextIndex = (currentIndex + 1) % presets.length
+  walkSpeedPreset.value = presets[nextIndex]!
+  
+  if (characterController) {
+    characterController.setMoveSpeed(walkSpeedPreset.value)
+  }
+}
+
+/**
+ * 设置移动速度预设
+ */
+function setWalkSpeed(preset: 'slow' | 'normal' | 'fast') {
+  walkSpeedPreset.value = preset
+  if (characterController) {
+    characterController.setMoveSpeed(preset)
+  }
 }
 
 /**
@@ -2364,7 +2535,7 @@ watch(currentFloorId, () => {
             <path d="M10 6v4M10 14h.01" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
             <circle cx="10" cy="10" r="8" stroke="currentColor" stroke-width="1.5"/>
           </svg>
-          <span>已选择材质，使用绘制工具放置</span>
+          <span>{{ getSelectedMaterial()?.isInfrastructure ? '点击场景放置' : '已选择材质，使用绘制工具放置' }}</span>
         </div>
         
         <div 
@@ -2496,6 +2667,20 @@ watch(currentFloorId, () => {
       <span>漫游模式</span>
       <span v-if="isPointerLocked" class="orbit-hint">WASD 移动 / 鼠标转向 / ESC 退出</span>
       <span v-else class="orbit-hint pointer-lock-hint">点击画布锁定鼠标以控制视角</span>
+      
+      <!-- 速度选择器 -->
+      <div class="speed-selector">
+        <span class="speed-label">速度:</span>
+        <button 
+          v-for="preset in speedPresets" 
+          :key="preset"
+          :class="['speed-btn', { active: walkSpeedPreset === preset }]"
+          @click="setWalkSpeed(preset)"
+        >
+          {{ speedPresetLabels[preset] }}
+        </button>
+      </div>
+      
       <button class="exit-btn" @click="exitRoamMode">退出漫游</button>
     </div>
 
@@ -3960,6 +4145,43 @@ watch(currentFloorId, () => {
 .orbit-mode-indicator .exit-btn:hover {
   background: rgba(239, 68, 68, 0.3);
   border-color: rgba(239, 68, 68, 0.6);
+}
+
+/* Speed Selector */
+.orbit-mode-indicator .speed-selector {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-left: 8px;
+  padding-left: 12px;
+  border-left: 1px solid rgba(96, 165, 250, 0.3);
+}
+
+.orbit-mode-indicator .speed-label {
+  font-size: 12px;
+  color: #93c5fd;
+}
+
+.orbit-mode-indicator .speed-btn {
+  padding: 4px 8px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 4px;
+  color: #9aa0a6;
+  font-size: 11px;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.orbit-mode-indicator .speed-btn:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: #e8eaed;
+}
+
+.orbit-mode-indicator .speed-btn.active {
+  background: rgba(52, 211, 153, 0.2);
+  border-color: rgba(52, 211, 153, 0.4);
+  color: #34d399;
 }
 
 /* Active Action Button */

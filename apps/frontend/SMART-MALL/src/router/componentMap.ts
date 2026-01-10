@@ -29,13 +29,18 @@ export const componentMap: Record<string, () => Promise<Component>> = {
   'AdminDashboard': () => import('@/views/admin/DashboardView.vue'),
   'AdminMallManage': () => import('@/views/admin/MallManageView.vue'),
   'AdminAreaApproval': () => import('@/views/admin/AreaApprovalView.vue'),
+  'AdminAreaPermission': () => import('@/views/admin/AreaPermissionManageView.vue'),
+  'AdminStoreManage': () => import('@/views/admin/AdminStoreManageView.vue'),
   'AdminLayoutVersion': () => import('@/views/admin/LayoutVersionView.vue'),
   'AdminMallBuilder': () => import('@/views/admin/MallBuilderView.vue'),
+  'AdminUserManage': () => import('@/views/admin/UserManageView.vue'),
 
   // ===== 商家页面 =====
   'MerchantDashboard': () => import('@/views/merchant/DashboardView.vue'),
   'MerchantStoreConfig': () => import('@/views/merchant/StoreConfigView.vue'),
   'MerchantAreaApply': () => import('@/views/merchant/AreaApplyView.vue'),
+  'MerchantAreaPermission': () => import('@/views/merchant/AreaPermissionView.vue'),
+  'MerchantProduct': () => import('@/views/merchant/ProductManageView.vue'),
   'MerchantBuilder': () => import('@/views/merchant/BuilderView.vue'),
 
   // ===== 用户页面 =====

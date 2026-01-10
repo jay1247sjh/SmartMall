@@ -431,6 +431,8 @@ onMounted(() => {
 
   .floor-panel {
     height: 100%;
+    background: rgba(17, 17, 19, 0.8);
+    border: 1px solid rgba(255, 255, 255, 0.06);
 
     .panel-header {
       display: flex;
@@ -441,6 +443,7 @@ onMounted(() => {
         font-size: 15px;
         font-weight: 600;
         margin: 0;
+        color: #e8eaed;
       }
     }
 
@@ -457,12 +460,12 @@ onMounted(() => {
         transition: all 0.15s;
 
         &:hover {
-          background: var(--el-fill-color-light);
+          background: rgba(255, 255, 255, 0.04);
         }
 
         &.active {
-          background: var(--el-color-primary-light-9);
-          border-color: var(--el-color-primary-light-5);
+          background: rgba(138, 180, 248, 0.1);
+          border-color: rgba(138, 180, 248, 0.3);
         }
 
         .floor-info {
@@ -470,17 +473,18 @@ onMounted(() => {
             font-size: 15px;
             font-weight: 600;
             margin: 0 0 4px 0;
+            color: #e8eaed;
           }
 
           .floor-desc {
             font-size: 13px;
-            color: var(--el-text-color-secondary);
+            color: #9aa0a6;
             margin: 0 0 4px 0;
           }
 
           .floor-count {
             font-size: 12px;
-            color: var(--el-text-color-placeholder);
+            color: #71717a;
           }
         }
 
@@ -493,6 +497,8 @@ onMounted(() => {
 
   .area-panel {
     height: 100%;
+    background: rgba(17, 17, 19, 0.8);
+    border: 1px solid rgba(255, 255, 255, 0.06);
 
     .panel-header {
       display: flex;
@@ -503,6 +509,7 @@ onMounted(() => {
         font-size: 15px;
         font-weight: 600;
         margin: 0;
+        color: #e8eaed;
       }
 
       .mr-1 {
@@ -514,7 +521,7 @@ onMounted(() => {
       border-radius: 8px;
 
       .text-muted {
-        color: var(--el-text-color-placeholder);
+        color: #71717a;
       }
     }
   }

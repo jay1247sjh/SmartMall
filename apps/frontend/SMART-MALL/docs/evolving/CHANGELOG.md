@@ -5,7 +5,243 @@
 > 
 > 本文档为 **变更日志（Changelog）**，用于记录版本变更历史，遵循 Keep a Changelog 格式规范。
 > 
-> 最后更新：2026-01-03
+> 最后更新：2026-01-07
+
+---
+
+## [Unreleased] - 2026-01-10
+
+### Added - 新增功能
+
+#### 用户管理功能 ⭐ 新增
+
+**API 模块 (`api/admin.api.ts`)** 扩展
+- ✅ 新增用户管理相关类型定义
+  - `UserListParams` - 用户列表查询参数
+  - `UserListResponse` - 用户列表响应
+  - `UserDetail` - 用户详情
+- ✅ 新增用户管理 API 方法
+  - `getUserList()` - 获取用户列表（支持搜索、筛选、分页）
+  - `getUserDetail()` - 获取用户详情
+  - `freezeUser()` - 冻结用户
+  - `activateUser()` - 激活用户
+- ✅ Mock 数据：8 个测试用户（管理员、商家、普通用户）
+
+**用户管理视图 (`views/admin/UserManageView.vue`)** ⭐ 新增
+- ✅ 用户列表展示（表格视图）
+- ✅ 搜索筛选功能
+  - 关键词搜索（用户名/邮箱）
+  - 用户类型筛选（全部/管理员/商家/普通用户）
+  - 状态筛选（全部/正常/冻结/已删除）
+- ✅ 分页功能
+- ✅ 冻结/激活用户操作（带确认对话框）
+- ✅ 骨架屏加载效果
+- ✅ 错误处理和重试按钮
+- ✅ 深色主题 UI 设计
+
+**用户详情抽屉 (`components/admin/UserDetailDrawer.vue`)** ⭐ 新增
+- ✅ 抽屉式详情展示
+- ✅ 显示完整用户信息
+  - 用户 ID、用户名、邮箱、手机号
+  - 用户类型、状态
+  - 注册时间、最后登录时间
+- ✅ 加载状态和错误处理
+
+**路由配置更新**
+- ✅ 添加用户管理路由 `/admin/users`
+- ✅ 更新组件映射表 `componentMap.ts`（AdminUserManage）
+- ✅ 更新 Mock 路由配置 `route.mock.ts`
+
+**测试覆盖** ⭐ 新增
+- ✅ 9 个单元测试
+  - getUserList 参数传递测试
+  - getUserDetail 正常/异常测试
+  - freezeUser/activateUser 状态变更测试
+- ✅ 3 个属性测试（fast-check，每个 100 次迭代）
+  - Property 1: 搜索过滤正确性
+  - Property 2: 状态转换正确性
+  - Property 3: 详情数据完整性
+
+---
+
+## [Unreleased] - 2026-01-07
+
+### Added - 新增功能
+
+#### 商品管理功能
+
+**API 模块 (`api/product.api.ts`)** ⭐ 新增
+- ✅ 创建商品管理 API 模块，对接后端商品管理接口
+- ✅ 商家端 API：
+  - `createProduct()` - 创建商品
+  - `getProduct()` - 获取商品详情
+  - `updateProduct()` - 更新商品
+  - `deleteProduct()` - 删除商品
+  - `getStoreProducts()` - 获取店铺商品列表
+  - `updateProductStatus()` - 更新商品状态
+  - `updateProductStock()` - 更新库存
+- ✅ 公开端 API：
+  - `getPublicStoreProducts()` - 获取店铺公开商品
+  - `getPublicProduct()` - 获取商品公开详情
+
+**商品管理视图 (`views/merchant/ProductManageView.vue`)** ⭐ 新增
+- ✅ 商品列表展示（表格视图）
+- ✅ 分页和状态筛选
+- ✅ 创建/编辑/删除商品
+- ✅ 上架/下架切换
+- ✅ 库存编辑
+- ✅ 深色主题 UI 设计
+
+---
+
+## [Previous] - 2026-01-06
+
+### Added - 新增功能
+
+#### 店铺管理功能
+
+**API 模块 (`api/store.api.ts`)** ⭐ 新增
+- ✅ 创建店铺管理 API 模块，对接后端店铺管理接口
+- ✅ 商家端 API：
+  - `createStore()` - 创建店铺（需要有该区域的 ACTIVE 权限）
+  - `getMyStores()` - 获取我的店铺列表
+  - `getStoreById()` - 获取店铺详情
+  - `updateStore()` - 更新店铺信息
+  - `activateStore()` - 激活店铺（PENDING/INACTIVE → ACTIVE）
+  - `deactivateStore()` - 暂停营业（ACTIVE → INACTIVE）
+- ✅ 管理员端 API：
+  - `getAllStores()` - 获取所有店铺（分页、筛选）
+  - `approveStore()` - 审批店铺（PENDING → ACTIVE）
+  - `closeStore()` - 关闭店铺（任意状态 → CLOSED）
+
+**API 模块 (`api/product.api.ts`)** ⭐ 新增
+- ✅ 创建商品管理 API 模块，对接后端商品管理接口
+- ✅ 商家端 API：
+  - `createProduct()` - 创建商品
+  - `getProduct()` - 获取商品详情
+  - `updateProduct()` - 更新商品
+  - `deleteProduct()` - 删除商品
+  - `getStoreProducts()` - 获取店铺商品列表
+  - `updateProductStatus()` - 更新商品状态
+  - `updateProductStock()` - 更新库存
+- ✅ 公开端 API：
+  - `getPublicStoreProducts()` - 获取店铺公开商品
+  - `getPublicProduct()` - 获取商品公开详情
+
+**商家视图更新**
+- ✅ `StoreConfigView.vue` - 更新为使用真实后端 API
+  - 移除 Mock 数据，对接 `storeApi`
+  - 添加创建店铺对话框（选择已授权区域）
+  - 添加激活/暂停店铺功能
+  - 添加错误处理逻辑
+  - 显示店铺状态标签（待审批/营业中/暂停营业/已关闭）
+
+**管理员视图新增**
+- ✅ `AdminStoreManageView.vue` - 新增管理员店铺管理视图
+  - 展示所有店铺列表（分页）
+  - 支持状态筛选（全部/待审批/营业中/暂停营业/已关闭）
+  - 支持分类筛选
+  - 审批店铺功能
+  - 关闭店铺功能（带理由输入）
+  - 深色主题 UI 设计
+
+**路由配置更新**
+- ✅ 添加管理员店铺管理路由 `/admin/store-manage`
+- ✅ 添加商家商品管理路由 `/merchant/product` ⭐ 新增
+- ✅ 更新组件映射表 `componentMap.ts`
+- ✅ 更新 Mock 路由配置 `route.mock.ts`
+
+---
+
+#### 区域权限管理 UI
+
+**API 模块 (`api/area-permission.api.ts`)** ⭐ 新增
+- ✅ 创建区域权限 API 模块，对接后端区域权限管理接口
+- ✅ 商家端 API：
+  - `getAvailableAreas()` - 获取可申请区域列表
+  - `submitApplication()` - 提交区域申请
+  - `getMyApplications()` - 获取我的申请列表
+  - `getMyPermissions()` - 获取我的权限列表
+- ✅ 管理员端 API：
+  - `getPendingApplications()` - 获取待审批申请列表
+  - `approveApplication()` - 审批通过
+  - `rejectApplication()` - 审批驳回
+  - `revokePermission()` - 撤销权限
+
+**商家视图更新**
+- ✅ `AreaApplyView.vue` - 更新为使用真实后端 API
+  - 移除 Mock 数据，对接 `areaPermissionApi`
+  - 更新类型定义匹配后端 DTO
+  - 添加错误处理逻辑
+  - 更新区域状态映射（AVAILABLE/OCCUPIED/LOCKED）
+- ✅ `AreaPermissionView.vue` - 新增商家权限视图
+  - 展示商家已获得的区域权限列表
+  - 显示权限详情（区域名称、楼层、授权时间）
+  - 显示权限状态标签（有效/已撤销）
+- ✅ `ProductManageView.vue` - 新增商品管理视图 ⭐ 新增
+  - 展示店铺商品列表（表格视图）
+  - 支持分页和状态筛选
+  - 创建/编辑/删除商品
+  - 上架/下架切换
+  - 库存编辑
+  - 深色主题 UI 设计
+
+**管理员视图更新**
+- ✅ `AreaApprovalView.vue` - 更新为使用真实后端 API
+  - 移除 Mock 数据，对接 `areaPermissionApi`
+  - 更新类型定义匹配后端 DTO
+  - 添加错误处理逻辑
+- ✅ `AreaPermissionManageView.vue` - 新增管理员权限管理视图
+  - 展示所有区域权限列表
+  - 支持撤销权限操作（带理由输入）
+  - 状态筛选功能
+
+**路由配置更新**
+- ✅ 添加商家权限视图路由 `/merchant/area-permission`
+- ✅ 添加管理员权限管理路由 `/admin/area-permission`
+- ✅ 更新组件映射表 `componentMap.ts`
+- ✅ 更新 Mock 路由配置 `route.mock.ts`
+
+### Fixed - 问题修复
+
+#### 深色主题样式统一化
+
+**问题描述**
+- 首页（/mall）显示白色背景
+- 管理中心（/admin/dashboard）显示深色背景
+- 部分页面出现"半黑半白"的样式不一致问题
+
+**根本原因**
+- `index.html` 的 `<html>` 标签缺少 `class="dark"`，导致 Element Plus 使用默认浅色主题
+- 部分组件使用 Element Plus CSS 变量（如 `var(--el-bg-color)`），而非硬编码深色值
+- 不同组件样式实现方式不一致
+
+**修复内容**
+- ✅ `index.html` - 添加 `class="dark"` 到 `<html>` 标签，启用 Element Plus 深色主题
+- ✅ `DashboardLayout.vue` - 统一使用深色主题硬编码样式
+  - 背景色：`#0a0a0a`
+  - 侧边栏：`rgba(17, 17, 19, 0.8)` + 毛玻璃效果
+  - 边框：`rgba(255, 255, 255, 0.06)`
+  - 文字色：`#e8eaed`（主）、`#9aa0a6`（次）
+- ✅ `MallView.vue` - 统一深色主题样式
+  - 欢迎区域渐变背景
+  - 卡片背景和边框
+- ✅ `ProfileView.vue` - 统一深色主题样式
+- ✅ `DashboardView.vue`（管理员）- 统一深色主题样式
+- ✅ `DashboardView.vue`（商家）- 统一深色主题样式
+- ✅ `MallManageView.vue` - 统一深色主题样式
+- ✅ `QuickActionCard.vue` - 统一深色主题样式
+- ✅ `StatCard.vue` - 统一深色主题样式
+
+**设计规范**
+- 主背景色：`#0a0a0a`
+- 卡片/面板背景：`rgba(17, 17, 19, 0.8)`
+- 边框色：`rgba(255, 255, 255, 0.06)`
+- 主文字色：`#e8eaed`
+- 次文字色：`#9aa0a6`
+- 占位文字色：`#71717a`
+- 强调色：`#8ab4f8`（蓝色）
+- 悬停边框：`rgba(138, 180, 248, 0.3)`
 
 ---
 

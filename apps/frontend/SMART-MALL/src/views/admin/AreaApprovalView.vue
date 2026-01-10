@@ -5,20 +5,20 @@
  */
 import { ref, computed, onMounted } from 'vue'
 import { DataTable, Modal, CustomSelect } from '@/components'
-import { adminApi } from '@/api'
-import type { ApprovalRequest } from '@/api/admin.api'
+import { areaPermissionApi } from '@/api'
+import type { AreaApplyDTO } from '@/api/area-permission.api'
 
 // ============================================================================
 // State
 // ============================================================================
 
 const isLoading = ref(true)
-const approvals = ref<ApprovalRequest[]>([])
+const approvals = ref<AreaApplyDTO[]>([])
 const filter = ref({ status: 'ALL' })
 
 // 详情弹窗
 const showDetailModal = ref(false)
-const selectedApproval = ref<ApprovalRequest | null>(null)
+const selectedApproval = ref<AreaApplyDTO | null>(null)
 
 // 拒绝弹窗
 const showRejectModal = ref(false)
@@ -47,13 +47,13 @@ const statusOptions = [
 ]
 
 const columns = [
-  { key: 'merchantName', title: '商家', width: '18%' },
-  { key: 'areaName', title: '区域', width: '12%' },
-  { key: 'floorName', title: '楼层', width: '10%' },
-  { key: 'reason', title: '申请理由', width: '25%' },
-  { key: 'status', title: '状态', width: '12%' },
-  { key: 'createdAt', title: '申请时间', width: '13%' },
-  { key: 'actions', title: '操作', width: '10%' },
+  { key: 'merchantName', title: '商家', minWidth: '100' },
+  { key: 'areaName', title: '区域', minWidth: '80' },
+  { key: 'floorName', title: '楼层', minWidth: '80' },
+  { key: 'applyReason', title: '申请理由', minWidth: '150' },
+  { key: 'status', title: '状态', minWidth: '80' },
+  { key: 'createdAt', title: '申请时间', minWidth: '120' },
+  { key: 'actions', title: '操作', minWidth: '100' },
 ]
 
 // ============================================================================
@@ -64,15 +64,18 @@ async function loadData() {
   isLoading.value = true
   
   try {
-    approvals.value = await adminApi.getApprovalList()
-  } catch (e) {
+    approvals.value = await areaPermissionApi.getPendingApplications()
+  } catch (e: any) {
     console.error('加载数据失败:', e)
+    message.value = { type: 'error', text: e.message || '加载数据失败' }
+    setTimeout(() => { message.value = null }, 3000)
   } finally {
     isLoading.value = false
   }
 }
 
 function formatDate(dateStr: string): string {
+  if (!dateStr) return '-'
   const date = new Date(dateStr)
   return date.toLocaleDateString('zh-CN', {
     month: '2-digit',
@@ -100,20 +103,20 @@ function getStatusText(status: string): string {
   return map[status] || status
 }
 
-function viewDetail(row: ApprovalRequest) {
+function viewDetail(row: AreaApplyDTO) {
   selectedApproval.value = row
   showDetailModal.value = true
 }
 
-async function handleApprove(approval: ApprovalRequest) {
+async function handleApprove(approval: AreaApplyDTO) {
   isProcessing.value = true
   message.value = null
   
   try {
-    await adminApi.approveRequest(approval.id)
+    await areaPermissionApi.approveApplication(approval.applyId)
     
     // 更新本地状态
-    const index = approvals.value.findIndex(a => a.id === approval.id)
+    const index = approvals.value.findIndex(a => a.applyId === approval.applyId)
     if (index !== -1) {
       approvals.value[index].status = 'APPROVED'
     }
@@ -129,7 +132,7 @@ async function handleApprove(approval: ApprovalRequest) {
   }
 }
 
-function openRejectModal(approval: ApprovalRequest) {
+function openRejectModal(approval: AreaApplyDTO) {
   selectedApproval.value = approval
   rejectReason.value = ''
   showRejectModal.value = true
@@ -142,10 +145,10 @@ async function handleReject() {
   message.value = null
   
   try {
-    await adminApi.rejectRequest(selectedApproval.value.id, rejectReason.value)
+    await areaPermissionApi.rejectApplication(selectedApproval.value.applyId, rejectReason.value)
     
     // 更新本地状态
-    const index = approvals.value.findIndex(a => a.id === selectedApproval.value!.id)
+    const index = approvals.value.findIndex(a => a.applyId === selectedApproval.value!.applyId)
     if (index !== -1) {
       approvals.value[index].status = 'REJECTED'
       approvals.value[index].rejectReason = rejectReason.value
@@ -210,8 +213,8 @@ onMounted(() => {
         <template #createdAt="{ value }">
           {{ formatDate(value) }}
         </template>
-        <template #reason="{ value }">
-          <span class="reason-text">{{ value }}</span>
+        <template #applyReason="{ value }">
+          <span class="reason-text">{{ value || '-' }}</span>
         </template>
         <template #actions="{ row }">
           <div class="action-btns" @click.stop>
@@ -257,7 +260,7 @@ onMounted(() => {
           </div>
           <div class="detail-item">
             <label>申请理由</label>
-            <p class="reason-full">{{ selectedApproval.reason }}</p>
+            <p class="reason-full">{{ selectedApproval.applyReason || '无' }}</p>
           </div>
           <div class="detail-item">
             <label>申请时间</label>

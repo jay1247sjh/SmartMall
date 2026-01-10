@@ -41,10 +41,13 @@ defineProps<Props>()
 <style scoped lang="scss">
 .stat-card {
   border-radius: 12px;
-  transition: transform 0.2s;
+  background: rgba(17, 17, 19, 0.8);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  transition: transform 0.2s, border-color 0.2s;
 
   &:hover {
     transform: translateY(-2px);
+    border-color: rgba(138, 180, 248, 0.3);
   }
 
   :deep(.el-card__body) {
@@ -59,14 +62,14 @@ defineProps<Props>()
     .stat-statistic {
       :deep(.el-statistic__head) {
         font-size: 13px;
-        color: var(--el-text-color-secondary);
+        color: #9aa0a6;
         margin-bottom: 8px;
       }
 
       :deep(.el-statistic__content) {
         font-size: 28px;
         font-weight: 500;
-        color: var(--el-text-color-primary);
+        color: #e8eaed;
       }
     }
 

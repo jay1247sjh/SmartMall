@@ -1,4 +1,4 @@
-![1767208439136](image/LayoutVersionView/1767208439136.png)![1767208441069](image/LayoutVersionView/1767208441069.png)![1767208443969](image/LayoutVersionView/1767208443969.png)![1767208452319](image/LayoutVersionView/1767208452319.png)![1767208453574](image/LayoutVersionView/1767208453574.png)![1767208453789](image/LayoutVersionView/1767208453789.png)<script setup lang="ts">
+<script setup lang="ts">
 /**
  * 布局版本管理页面
  * 管理商城布局的版本发布和回滚
@@ -28,13 +28,13 @@ const message = ref<{ type: 'success' | 'error'; text: string } | null>(null)
 // ============================================================================
 
 const columns = [
-  { key: 'version', title: '版本号', width: '15%' },
-  { key: 'status', title: '状态', width: '12%' },
-  { key: 'description', title: '描述', width: '25%' },
-  { key: 'changeCount', title: '变更数', width: '10%' },
-  { key: 'createdBy', title: '创建者', width: '12%' },
-  { key: 'createdAt', title: '创建时间', width: '14%' },
-  { key: 'actions', title: '操作', width: '12%' },
+  { key: 'version', title: '版本号', minWidth: '100' },
+  { key: 'status', title: '状态', minWidth: '80' },
+  { key: 'description', title: '描述', minWidth: '150' },
+  { key: 'changeCount', title: '变更数', minWidth: '80' },
+  { key: 'createdBy', title: '创建者', minWidth: '100' },
+  { key: 'createdAt', title: '创建时间', minWidth: '140' },
+  { key: 'actions', title: '操作', minWidth: '120' },
 ]
 
 const activeVersion = computed(() => versions.value.find(v => v.status === 'ACTIVE'))

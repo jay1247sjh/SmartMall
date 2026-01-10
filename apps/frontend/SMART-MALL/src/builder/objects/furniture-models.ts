@@ -758,3 +758,389 @@ export function createKioskModel(
   
   return group
 }
+
+
+// ============================================================================
+// ATM 机
+// ============================================================================
+
+/**
+ * 创建 ATM 机模型
+ */
+export function createATMModel(
+  heightScale: number = 1.0
+): THREE.Group {
+  const group = new THREE.Group()
+  group.name = 'atm'
+  
+  const metalMaterial = getFurnitureMetalMaterial()
+  
+  const width = 0.6
+  const depth = 0.5
+  const height = 1.5 * heightScale
+  
+  // 主体
+  const body = new THREE.Mesh(
+    new THREE.BoxGeometry(width, height, depth),
+    getMaterialManager().getStandardMaterial({
+      color: 0x1565c0,
+      roughness: 0.3,
+      metalness: 0.6,
+    })
+  )
+  body.position.y = height / 2
+  body.castShadow = true
+  group.add(body)
+  
+  // 屏幕
+  const screen = new THREE.Mesh(
+    new THREE.BoxGeometry(width * 0.7, height * 0.25, 0.02),
+    getMaterialManager().getStandardMaterial({
+      color: 0x000000,
+      emissive: 0x4fc3f7,
+      emissiveIntensity: 0.6,
+    })
+  )
+  screen.position.set(0, height * 0.7, depth / 2 + 0.01)
+  group.add(screen)
+  
+  // 键盘区域
+  const keyboard = new THREE.Mesh(
+    new THREE.BoxGeometry(width * 0.6, height * 0.15, 0.05),
+    metalMaterial
+  )
+  keyboard.position.set(0, height * 0.4, depth / 2 + 0.03)
+  keyboard.rotation.x = -0.3
+  group.add(keyboard)
+  
+  // 出钞口
+  const cashSlot = new THREE.Mesh(
+    new THREE.BoxGeometry(width * 0.5, 0.03, 0.08),
+    getMaterialManager().getStandardMaterial({
+      color: 0x212121,
+      roughness: 0.8,
+    })
+  )
+  cashSlot.position.set(0, height * 0.2, depth / 2 + 0.04)
+  group.add(cashSlot)
+  
+  // 银行标志
+  const logo = new THREE.Mesh(
+    new THREE.BoxGeometry(width * 0.4, 0.08, 0.01),
+    getMaterialManager().getStandardMaterial({
+      color: 0xffffff,
+      emissive: 0xffffff,
+      emissiveIntensity: 0.3,
+    })
+  )
+  logo.position.set(0, height * 0.9, depth / 2 + 0.01)
+  group.add(logo)
+  
+  return group
+}
+
+// ============================================================================
+// 自动售货机
+// ============================================================================
+
+/**
+ * 创建自动售货机模型
+ */
+export function createVendingMachineModel(
+  heightScale: number = 1.0
+): THREE.Group {
+  const group = new THREE.Group()
+  group.name = 'vending-machine'
+  
+  const width = 0.9
+  const depth = 0.7
+  const height = 1.8 * heightScale
+  
+  // 主体
+  const body = new THREE.Mesh(
+    new THREE.BoxGeometry(width, height, depth),
+    getMaterialManager().getStandardMaterial({
+      color: 0xd32f2f,
+      roughness: 0.4,
+      metalness: 0.3,
+    })
+  )
+  body.position.y = height / 2
+  body.castShadow = true
+  group.add(body)
+  
+  // 玻璃展示窗
+  const glassWindow = new THREE.Mesh(
+    new THREE.BoxGeometry(width * 0.85, height * 0.55, 0.02),
+    getMaterialManager().getStandardMaterial({
+      color: 0x90caf9,
+      transparent: true,
+      opacity: 0.4,
+      roughness: 0.1,
+    })
+  )
+  glassWindow.position.set(0, height * 0.6, depth / 2 + 0.01)
+  group.add(glassWindow)
+  
+  // 商品架（简化显示）
+  for (let row = 0; row < 3; row++) {
+    for (let col = 0; col < 4; col++) {
+      const item = new THREE.Mesh(
+        new THREE.CylinderGeometry(0.04, 0.04, 0.12, 8),
+        getMaterialManager().getStandardMaterial({
+          color: [0xff5722, 0x4caf50, 0x2196f3, 0xffeb3b][col % 4],
+          roughness: 0.5,
+        })
+      )
+      item.position.set(
+        -width * 0.3 + col * 0.18,
+        height * 0.45 + row * 0.18,
+        depth / 2 - 0.1
+      )
+      group.add(item)
+    }
+  }
+  
+  // 操作面板
+  const panel = new THREE.Mesh(
+    new THREE.BoxGeometry(width * 0.3, height * 0.15, 0.05),
+    getFurnitureMetalMaterial()
+  )
+  panel.position.set(width * 0.25, height * 0.2, depth / 2 + 0.03)
+  group.add(panel)
+  
+  // 取货口
+  const pickupSlot = new THREE.Mesh(
+    new THREE.BoxGeometry(width * 0.5, 0.15, 0.1),
+    getMaterialManager().getStandardMaterial({
+      color: 0x212121,
+      roughness: 0.9,
+    })
+  )
+  pickupSlot.position.set(-width * 0.1, 0.1, depth / 2 + 0.05)
+  group.add(pickupSlot)
+  
+  return group
+}
+
+// ============================================================================
+// 信息显示屏
+// ============================================================================
+
+/**
+ * 创建信息显示屏模型
+ */
+export function createInfoBoardModel(
+  heightScale: number = 1.0
+): THREE.Group {
+  const group = new THREE.Group()
+  group.name = 'info-board'
+  
+  const metalMaterial = getFurnitureMetalMaterial()
+  
+  const screenWidth = 1.2
+  const screenHeight = 0.8 * heightScale
+  const standHeight = 1.5 * heightScale
+  
+  // 支架
+  const stand = new THREE.Mesh(
+    new THREE.CylinderGeometry(0.04, 0.06, standHeight, 8),
+    metalMaterial
+  )
+  stand.position.y = standHeight / 2
+  stand.castShadow = true
+  group.add(stand)
+  
+  // 底座
+  const base = new THREE.Mesh(
+    new THREE.CylinderGeometry(0.25, 0.3, 0.05, 16),
+    metalMaterial
+  )
+  base.position.y = 0.025
+  group.add(base)
+  
+  // 屏幕框架
+  const frame = new THREE.Mesh(
+    new THREE.BoxGeometry(screenWidth + 0.1, screenHeight + 0.1, 0.08),
+    metalMaterial
+  )
+  frame.position.y = standHeight + screenHeight / 2
+  frame.castShadow = true
+  group.add(frame)
+  
+  // 屏幕
+  const screen = new THREE.Mesh(
+    new THREE.BoxGeometry(screenWidth, screenHeight, 0.02),
+    getMaterialManager().getStandardMaterial({
+      color: 0x000000,
+      emissive: 0x2196f3,
+      emissiveIntensity: 0.5,
+    })
+  )
+  screen.position.set(0, standHeight + screenHeight / 2, 0.04)
+  group.add(screen)
+  
+  return group
+}
+
+// ============================================================================
+// 装饰时钟
+// ============================================================================
+
+/**
+ * 创建装饰时钟模型
+ */
+export function createClockModel(
+  heightScale: number = 1.0
+): THREE.Group {
+  const group = new THREE.Group()
+  group.name = 'clock'
+  
+  const metalMaterial = getFurnitureMetalMaterial()
+  const chromeMaterial = getFurnitureChromeMaterial()
+  
+  const radius = 0.4 * heightScale
+  const standHeight = 2.0 * heightScale
+  
+  // 支架
+  const stand = new THREE.Mesh(
+    new THREE.CylinderGeometry(0.05, 0.08, standHeight, 8),
+    metalMaterial
+  )
+  stand.position.y = standHeight / 2
+  stand.castShadow = true
+  group.add(stand)
+  
+  // 底座
+  const base = new THREE.Mesh(
+    new THREE.CylinderGeometry(0.2, 0.25, 0.08, 16),
+    metalMaterial
+  )
+  base.position.y = 0.04
+  group.add(base)
+  
+  // 钟面框架
+  const clockFrame = new THREE.Mesh(
+    new THREE.TorusGeometry(radius, 0.05, 8, 32),
+    chromeMaterial
+  )
+  clockFrame.position.y = standHeight + radius
+  clockFrame.rotation.x = Math.PI / 2
+  group.add(clockFrame)
+  
+  // 钟面
+  const clockFace = new THREE.Mesh(
+    new THREE.CircleGeometry(radius - 0.02, 32),
+    getMaterialManager().getStandardMaterial({
+      color: 0xffffff,
+      roughness: 0.3,
+    })
+  )
+  clockFace.position.set(0, standHeight + radius, 0.03)
+  group.add(clockFace)
+  
+  // 时针
+  const hourHand = new THREE.Mesh(
+    new THREE.BoxGeometry(0.03, radius * 0.5, 0.02),
+    getMaterialManager().getStandardMaterial({ color: 0x212121 })
+  )
+  hourHand.position.set(0, standHeight + radius + radius * 0.15, 0.04)
+  hourHand.rotation.z = Math.PI / 6  // 指向2点钟方向
+  group.add(hourHand)
+  
+  // 分针
+  const minuteHand = new THREE.Mesh(
+    new THREE.BoxGeometry(0.02, radius * 0.7, 0.02),
+    getMaterialManager().getStandardMaterial({ color: 0x212121 })
+  )
+  minuteHand.position.set(0, standHeight + radius + radius * 0.2, 0.05)
+  minuteHand.rotation.z = -Math.PI / 3  // 指向10点钟方向
+  group.add(minuteHand)
+  
+  // 中心点
+  const center = new THREE.Mesh(
+    new THREE.SphereGeometry(0.03, 8, 8),
+    chromeMaterial
+  )
+  center.position.set(0, standHeight + radius, 0.05)
+  group.add(center)
+  
+  return group
+}
+
+// ============================================================================
+// 消防栓
+// ============================================================================
+
+/**
+ * 创建消防栓模型
+ */
+export function createFireExtinguisherModel(
+  heightScale: number = 1.0
+): THREE.Group {
+  const group = new THREE.Group()
+  group.name = 'fire-extinguisher'
+  
+  const height = 1.2 * heightScale
+  
+  // 消防柜
+  const cabinet = new THREE.Mesh(
+    new THREE.BoxGeometry(0.4, height, 0.25),
+    getMaterialManager().getStandardMaterial({
+      color: 0xd32f2f,
+      roughness: 0.4,
+    })
+  )
+  cabinet.position.y = height / 2
+  cabinet.castShadow = true
+  group.add(cabinet)
+  
+  // 玻璃门
+  const glass = new THREE.Mesh(
+    new THREE.BoxGeometry(0.35, height * 0.8, 0.02),
+    getMaterialManager().getStandardMaterial({
+      color: 0xffffff,
+      transparent: true,
+      opacity: 0.3,
+      roughness: 0.1,
+    })
+  )
+  glass.position.set(0, height / 2, 0.13)
+  group.add(glass)
+  
+  // 灭火器（内部可见）
+  const extinguisher = new THREE.Mesh(
+    new THREE.CylinderGeometry(0.06, 0.06, height * 0.5, 12),
+    getMaterialManager().getStandardMaterial({
+      color: 0xb71c1c,
+      roughness: 0.5,
+    })
+  )
+  extinguisher.position.set(0, height * 0.35, 0)
+  group.add(extinguisher)
+  
+  // 灭火器顶部
+  const extTop = new THREE.Mesh(
+    new THREE.CylinderGeometry(0.03, 0.06, 0.08, 12),
+    getMaterialManager().getStandardMaterial({
+      color: 0x212121,
+      roughness: 0.3,
+    })
+  )
+  extTop.position.set(0, height * 0.65, 0)
+  group.add(extTop)
+  
+  // 消防标志
+  const sign = new THREE.Mesh(
+    new THREE.BoxGeometry(0.15, 0.15, 0.01),
+    getMaterialManager().getStandardMaterial({
+      color: 0xffffff,
+      emissive: 0xff0000,
+      emissiveIntensity: 0.3,
+    })
+  )
+  sign.position.set(0, height * 0.9, 0.13)
+  group.add(sign)
+  
+  return group
+}

@@ -24,4 +24,9 @@ export {
   createSignPostModel,
   createFountainModel,
   createKioskModel,
+  createATMModel,
+  createVendingMachineModel,
+  createInfoBoardModel,
+  createClockModel,
+  createFireExtinguisherModel,
 } from './furniture-models'

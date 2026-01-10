@@ -224,6 +224,8 @@ onMounted(() => {
     .stat-card {
       border-radius: 12px;
       margin-bottom: 16px;
+      background: rgba(17, 17, 19, 0.8);
+      border: 1px solid rgba(255, 255, 255, 0.06);
     }
   }
 
@@ -231,7 +233,7 @@ onMounted(() => {
     .section-title {
       font-size: 14px;
       font-weight: 500;
-      color: var(--el-text-color-secondary);
+      color: #9aa0a6;
       margin: 0 0 16px 0;
       text-transform: uppercase;
       letter-spacing: 0.05em;
@@ -248,7 +250,7 @@ onMounted(() => {
       .section-title {
         font-size: 14px;
         font-weight: 500;
-        color: var(--el-text-color-secondary);
+        color: #9aa0a6;
         margin: 0;
         text-transform: uppercase;
         letter-spacing: 0.05em;
@@ -262,6 +264,8 @@ onMounted(() => {
     .approval-table {
       border-radius: 12px;
       overflow: hidden;
+      background: rgba(17, 17, 19, 0.8);
+      border: 1px solid rgba(255, 255, 255, 0.06);
 
       :deep(.el-table__row) {
         cursor: pointer;
@@ -277,7 +281,7 @@ onMounted(() => {
     .section-title {
       font-size: 14px;
       font-weight: 500;
-      color: var(--el-text-color-secondary);
+      color: #9aa0a6;
       margin: 0 0 16px 0;
       text-transform: uppercase;
       letter-spacing: 0.05em;
@@ -285,6 +289,8 @@ onMounted(() => {
 
     .notice-card {
       border-radius: 12px;
+      background: rgba(17, 17, 19, 0.8);
+      border: 1px solid rgba(255, 255, 255, 0.06);
 
       .notice-item {
         display: flex;
@@ -292,7 +298,7 @@ onMounted(() => {
         justify-content: space-between;
         gap: 16px;
         padding: 16px 0;
-        border-bottom: 1px solid var(--el-border-color-lighter);
+        border-bottom: 1px solid rgba(255, 255, 255, 0.06);
 
         &:last-child {
           border-bottom: none;
@@ -310,13 +316,13 @@ onMounted(() => {
           .notice-title {
             font-size: 14px;
             font-weight: 500;
-            color: var(--el-text-color-primary);
+            color: #e8eaed;
             margin: 0 0 6px 0;
           }
 
           .notice-desc {
             font-size: 13px;
-            color: var(--el-text-color-secondary);
+            color: #9aa0a6;
             margin: 0;
           }
         }

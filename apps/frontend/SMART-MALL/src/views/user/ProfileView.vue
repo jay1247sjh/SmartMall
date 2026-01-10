@@ -358,6 +358,8 @@ onMounted(() => {
 
   .profile-card {
     border-radius: 12px;
+    background: rgba(17, 17, 19, 0.8);
+    border: 1px solid rgba(255, 255, 255, 0.06);
 
     .profile-header {
       display: flex;
@@ -365,8 +367,9 @@ onMounted(() => {
       gap: 20px;
 
       .profile-avatar {
-        background: linear-gradient(135deg, var(--el-color-primary-light-3), var(--el-color-primary));
-        color: #fff;
+        background: linear-gradient(135deg, rgba(96, 165, 250, 0.15) 0%, rgba(167, 139, 250, 0.15) 100%);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        color: #8ab4f8;
         font-size: 32px;
         font-weight: 600;
       }
@@ -380,6 +383,7 @@ onMounted(() => {
           margin: 0;
           font-size: 24px;
           font-weight: 500;
+          color: #e8eaed;
         }
       }
     }

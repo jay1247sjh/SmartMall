@@ -10,9 +10,10 @@ import type { AreaType } from '../types/mall-project'
  * 材质分类
  */
 export type MaterialCategory = 
-  | 'circulation'  // 交通流线（走廊、扶梯、电梯、楼梯）
-  | 'service'      // 服务设施（洗手间、服务台）
-  | 'common'       // 公共区域
+  | 'circulation'     // 交通流线（走廊、扶梯、电梯、楼梯）
+  | 'service'         // 服务设施（洗手间、服务台）
+  | 'common'          // 公共区域
+  | 'infrastructure'  // 基础设施（长椅、路灯、垃圾桶等）
 
 /**
  * 放置规则
@@ -48,6 +49,10 @@ export interface MaterialPreset {
   placementRules: PlacementRule
   /** 是否为垂直连接（扶梯、电梯、楼梯） */
   isVerticalConnection: boolean
+  /** 是否为基础设施（点状放置，不是区域） */
+  isInfrastructure?: boolean
+  /** 基础设施子类型 */
+  infrastructureType?: 'bench' | 'lamp' | 'trashBin' | 'planter' | 'sign' | 'fountain' | 'kiosk' | 'atm' | 'vendingMachine' | 'infoBoard' | 'clock' | 'fireExtinguisher'
 }
 
 /**

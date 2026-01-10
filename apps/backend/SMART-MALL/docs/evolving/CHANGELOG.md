@@ -4,12 +4,97 @@
 > 范围：后端变更日志
 > 
 > 本文档为 **变更日志（Changelog）**，用于记录版本变更历史，遵循 Keep a Changelog 格式规范。
+> 
+> 最后更新：2026-01-07
 
 ---
 
-## [Unreleased]
+## [Unreleased] - 2026-01-07
 
 ### Added
+- 商品管理功能
+  - 商家端 API
+    - 创建商品：`POST /api/product`
+    - 获取商品详情：`GET /api/product/{productId}`
+    - 更新商品：`PUT /api/product/{productId}`
+    - 删除商品：`DELETE /api/product/{productId}`
+    - 获取店铺商品列表：`GET /api/product/store/{storeId}`
+    - 更新商品状态：`POST /api/product/{productId}/status`
+    - 更新库存：`POST /api/product/{productId}/stock`
+  - 公开端 API
+    - 获取店铺公开商品：`GET /api/public/store/{storeId}/products`
+    - 获取商品公开详情：`GET /api/public/product/{productId}`
+  - 新增数据库表：`product`
+  - 新增实体类：`Product`
+  - 新增枚举：`ProductStatus`（ON_SALE/OFF_SALE/SOLD_OUT）
+  - 新增 Mapper：`ProductMapper`
+  - 新增 DTO：`CreateProductRequest`、`UpdateProductRequest`、`ProductDTO`、`ProductQueryRequest`、`UpdateStatusRequest`、`UpdateStockRequest`
+  - 新增服务：`ProductService`
+  - 新增控制器：`ProductController`、`PublicProductController`
+  - 新增错误码：`PRODUCT_NOT_FOUND`、`PRODUCT_NOT_OWNER`、`PRODUCT_NAME_INVALID`、`PRODUCT_PRICE_INVALID`、`PRODUCT_STOCK_INVALID`、`PRODUCT_INVALID_STATUS_TRANSITION`、`STORE_NOT_ACTIVE`
+  - 业务规则：
+    - 商品创建需要店铺状态为 ACTIVE
+    - 库存为 0 时自动设置状态为 SOLD_OUT
+    - 库存从 0 增加时，如果状态是 SOLD_OUT，自动恢复为 ON_SALE
+    - 公开查询只返回 ON_SALE 和 SOLD_OUT 状态的商品
+    - 公开查询非 ACTIVE 店铺返回空结果
+
+- 店铺管理功能
+  - 商家端 API
+    - 创建店铺：`POST /api/store`（需要有该区域的 ACTIVE 权限）
+    - 获取我的店铺：`GET /api/store/my`
+    - 获取店铺详情：`GET /api/store/{storeId}`
+    - 更新店铺信息：`PUT /api/store/{storeId}`
+    - 激活店铺：`POST /api/store/{storeId}/activate`
+    - 暂停营业：`POST /api/store/{storeId}/deactivate`
+  - 管理员端 API
+    - 获取所有店铺：`GET /api/admin/store`（支持分页、状态筛选、分类筛选）
+    - 审批店铺：`POST /api/admin/store/{storeId}/approve`
+    - 关闭店铺：`POST /api/admin/store/{storeId}/close`
+  - 新增数据库表：`store`
+  - 新增实体类：`Store`
+  - 新增枚举：`StoreStatus`（PENDING/ACTIVE/INACTIVE/CLOSED）
+  - 新增 Mapper：`StoreMapper`
+  - 新增 DTO：`CreateStoreRequest`、`UpdateStoreRequest`、`StoreDTO`、`StoreQueryRequest`、`CloseStoreRequest`
+  - 新增服务：`StoreService`
+  - 新增控制器：`StoreController`、`AdminStoreController`
+  - 新增错误码：`STORE_AREA_NO_PERMISSION`、`STORE_AREA_ALREADY_HAS_STORE`、`STORE_NOT_FOUND`、`STORE_NOT_OWNER`、`STORE_INVALID_STATUS_TRANSITION`、`STORE_NAME_REQUIRED`、`STORE_CATEGORY_REQUIRED`
+
+- 区域权限管理功能
+  - 商家端 API
+    - 获取可申请区域：`GET /api/area/available`
+    - 提交区域申请：`POST /api/area/apply`
+    - 查询我的申请：`GET /api/area/apply/my`
+    - 查询我的权限：`GET /api/area/permission/my`
+  - 管理员端 API
+    - 获取待审批列表：`GET /api/admin/area/apply/pending`
+    - 审批通过：`POST /api/admin/area/apply/{applyId}/approve`
+    - 审批驳回：`POST /api/admin/area/apply/{applyId}/reject`
+    - 撤销权限：`POST /api/admin/area/permission/{permissionId}/revoke`
+  - 新增数据库表：`area_apply`、`area_permission`
+  - 新增实体类：`AreaApply`、`AreaPermission`
+  - 新增枚举：`ApplyStatus`、`PermissionStatus`、`AreaStatus`
+  - 新增 Mapper：`AreaApplyMapper`、`AreaPermissionMapper`
+  - 新增 DTO：`AreaApplyRequest`、`AreaApplyDTO`、`AreaPermissionDTO`、`AvailableAreaDTO`、`RejectRequest`、`RevokeRequest`
+  - 新增服务：`AreaApplyService`、`AreaPermissionService`
+  - 新增控制器：`AreaApplyController`、`AreaPermissionController`
+  - 新增权限校验：`PermissionChecker` 接口及 `PermissionCheckerImpl` 实现
+
+### Integration
+- 前端店铺管理 UI 对接完成
+  - 前端 API 模块：`store.api.ts`
+  - 商家视图：`StoreConfigView.vue`
+  - 管理员视图：`AdminStoreManageView.vue`
+
+- 前端商品管理 UI 对接完成
+  - 前端 API 模块：`product.api.ts`
+  - 商家视图：`ProductManageView.vue`
+
+- 前端区域权限 UI 对接完成
+  - 前端 API 模块：`area-permission.api.ts`
+  - 商家视图：`AreaApplyView.vue`、`AreaPermissionView.vue`
+  - 管理员视图：`AreaApprovalView.vue`、`AreaPermissionManageView.vue`
+
 - 商城建模器持久化 API
   - 创建项目：`POST /api/mall-builder/projects`
   - 获取项目列表：`GET /api/mall-builder/projects`

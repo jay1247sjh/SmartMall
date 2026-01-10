@@ -59,6 +59,27 @@ public enum ResultCode {
     AREA_ALREADY_APPLIED("A6002", "已提交过申请"),
     APPLY_NOT_FOUND("A6003", "申请不存在"),
     APPLY_ALREADY_PROCESSED("A6004", "申请已处理"),
+    DUPLICATE_APPLICATION("A6005", "该区域已有待审批申请"),
+    APPLICATION_NOT_FOUND("A6006", "申请记录不存在"),
+    APPLICATION_ALREADY_PROCESSED("A6007", "申请已处理，不可重复操作"),
+    PERMISSION_NOT_FOUND("A6008", "权限记录不存在"),
+    PERMISSION_ALREADY_REVOKED("A6009", "权限已被撤销"),
+    
+    // 店铺管理相关错误码
+    STORE_AREA_NO_PERMISSION("A7001", "无该区域权限"),
+    STORE_AREA_ALREADY_HAS_STORE("A7002", "该区域已有店铺"),
+    STORE_NOT_OWNER("A7003", "非店铺所有者"),
+    STORE_INVALID_STATUS_TRANSITION("A7004", "无效的状态变更"),
+    STORE_NAME_REQUIRED("A7005", "店铺名称不能为空"),
+    STORE_CATEGORY_REQUIRED("A7006", "店铺分类不能为空"),
+    STORE_NOT_ACTIVE("A7007", "店铺未激活"),
+    
+    // 商品管理相关错误码
+    PRODUCT_NOT_OWNER("A7010", "非商品所有者"),
+    PRODUCT_NAME_INVALID("A7011", "商品名称无效"),
+    PRODUCT_PRICE_INVALID("A7012", "商品价格无效"),
+    PRODUCT_STOCK_INVALID("A7013", "库存数量无效"),
+    PRODUCT_INVALID_STATUS_TRANSITION("A7014", "无效的状态变更"),
 
     // B - 系统内部错误
     SYSTEM_ERROR("B1001", "系统内部错误"),

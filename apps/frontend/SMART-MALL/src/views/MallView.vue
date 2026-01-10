@@ -241,21 +241,21 @@ function navigateTo(path: string) {
   margin-bottom: 24px;
   border-radius: 12px;
   background: linear-gradient(135deg, 
-    var(--el-color-primary-light-9) 0%, 
-    var(--el-bg-color) 100%
+    rgba(59, 130, 246, 0.1) 0%, 
+    rgba(17, 17, 19, 0.8) 100%
   );
-  border: 1px solid var(--el-border-color-lighter);
+  border: 1px solid rgba(255, 255, 255, 0.06);
 
   .welcome-title {
     font-size: 28px;
     font-weight: 500;
     margin: 0 0 8px 0;
-    color: var(--el-text-color-primary);
+    color: #e8eaed;
   }
 
   .welcome-subtitle {
     font-size: 15px;
-    color: var(--el-text-color-secondary);
+    color: #9aa0a6;
     margin: 0;
   }
 
@@ -274,9 +274,11 @@ function navigateTo(path: string) {
   .stat-card {
     border-radius: 12px;
     margin-bottom: 16px;
+    background: rgba(17, 17, 19, 0.8);
+    border: 1px solid rgba(255, 255, 255, 0.06);
 
     .stat-icon {
-      color: var(--el-color-primary);
+      color: #8ab4f8;
       margin-right: 8px;
     }
   }
@@ -287,7 +289,7 @@ function navigateTo(path: string) {
     font-size: 14px;
     font-weight: 500;
     margin: 0 0 16px 0;
-    color: var(--el-text-color-secondary);
+    color: #9aa0a6;
     text-transform: uppercase;
     letter-spacing: 0.05em;
   }
@@ -296,10 +298,13 @@ function navigateTo(path: string) {
     cursor: pointer;
     border-radius: 12px;
     margin-bottom: 16px;
-    transition: transform 0.2s, box-shadow 0.2s;
+    background: rgba(17, 17, 19, 0.8);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    transition: transform 0.2s, box-shadow 0.2s, border-color 0.2s;
 
     &:hover {
       transform: translateY(-2px);
+      border-color: rgba(138, 180, 248, 0.3);
     }
 
     .action-content {
@@ -308,7 +313,7 @@ function navigateTo(path: string) {
       gap: 16px;
 
       .action-icon {
-        color: var(--el-color-primary);
+        color: #8ab4f8;
         flex-shrink: 0;
       }
 
@@ -320,18 +325,18 @@ function navigateTo(path: string) {
           font-size: 16px;
           font-weight: 500;
           margin: 0 0 4px 0;
-          color: var(--el-text-color-primary);
+          color: #e8eaed;
         }
 
         .action-desc {
           font-size: 13px;
-          color: var(--el-text-color-secondary);
+          color: #9aa0a6;
           margin: 0;
         }
       }
 
       .action-arrow {
-        color: var(--el-text-color-placeholder);
+        color: #71717a;
         flex-shrink: 0;
       }
     }

@@ -166,3 +166,27 @@ export { default as routeApi } from './route.api'
 /** 商城建模器 API - 布局保存/加载、版本管理 */
 export * from './mall-builder.api'
 export { default as mallBuilderApi } from './mall-builder.api'
+
+// ============================================================================
+// 区域权限 API
+// ============================================================================
+
+/** 区域权限 API - 区域申请、审批、权限管理 */
+export * from './area-permission.api'
+export { default as areaPermissionApi } from './area-permission.api'
+
+// ============================================================================
+// 店铺管理 API
+// ============================================================================
+
+/** 店铺管理 API - 店铺创建、编辑、审批、状态管理 */
+export * from './store.api'
+export { default as storeApi } from './store.api'
+
+// ============================================================================
+// 商品管理 API
+// ============================================================================
+
+/** 商品管理 API - 商品创建、编辑、上下架、库存管理 */
+export * from './product.api'
+export { default as productApi } from './product.api'

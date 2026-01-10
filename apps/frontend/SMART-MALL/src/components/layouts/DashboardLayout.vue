@@ -197,22 +197,38 @@ function handleLogout() {
 <style scoped lang="scss">
 .dashboard-layout {
   min-height: 100vh;
-  background: var(--el-bg-color);
+  background: #0a0a0a;
+  color: #e8eaed;
+  position: relative;
+
+  // 背景装饰
+  &::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 0;
+    background: radial-gradient(ellipse 50% 30% at 70% 10%, rgba(59, 130, 246, 0.04) 0%, transparent 50%),
+                radial-gradient(ellipse 40% 30% at 30% 90%, rgba(168, 85, 247, 0.03) 0%, transparent 50%);
+  }
 }
 
 .sidebar {
-  background: var(--el-bg-color-overlay);
-  border-right: 1px solid var(--el-border-color-lighter);
+  background: rgba(17, 17, 19, 0.8);
+  backdrop-filter: blur(20px);
+  border-right: 1px solid rgba(255, 255, 255, 0.06);
   display: flex;
   flex-direction: column;
   transition: width 0.2s;
+  position: relative;
+  z-index: 10;
 
   .sidebar-header {
     display: flex;
     align-items: center;
     justify-content: space-between;
     padding: 16px;
-    border-bottom: 1px solid var(--el-border-color-lighter);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
 
     .logo {
       display: flex;
@@ -224,24 +240,36 @@ function handleLogout() {
       transition: background 0.2s;
 
       &:hover {
-        background: var(--el-fill-color-light);
+        background: rgba(255, 255, 255, 0.04);
       }
 
       .logo-icon {
-        background: linear-gradient(135deg, var(--el-color-primary-light-3), var(--el-color-primary));
+        background: linear-gradient(135deg, rgba(96, 165, 250, 0.15) 0%, rgba(167, 139, 250, 0.15) 100%);
+        border: 1px solid rgba(255, 255, 255, 0.1);
         flex-shrink: 0;
       }
 
       .logo-text {
         font-size: 15px;
         font-weight: 600;
-        color: var(--el-color-primary);
+        background: linear-gradient(135deg, #60a5fa 0%, #a78bfa 100%);
+        background-clip: text;
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
         white-space: nowrap;
       }
     }
 
     .collapse-btn {
       flex-shrink: 0;
+      color: #9aa0a6;
+      border-color: rgba(255, 255, 255, 0.1);
+      background: transparent;
+
+      &:hover {
+        background: rgba(255, 255, 255, 0.04);
+        color: #e8eaed;
+      }
     }
   }
 
@@ -252,25 +280,29 @@ function handleLogout() {
 
     :deep(.el-menu) {
       border-right: none;
+      background: transparent;
     }
 
     :deep(.el-menu-item) {
       border-radius: 8px;
       margin-bottom: 4px;
+      color: #9aa0a6;
 
       &:hover {
-        background: var(--el-fill-color-light);
+        background: rgba(255, 255, 255, 0.04);
+        color: #e8eaed;
       }
 
       &.is-active {
-        background: var(--el-color-primary-light-9);
+        background: rgba(138, 180, 248, 0.1);
+        color: #8ab4f8;
       }
     }
   }
 
   .sidebar-footer {
     padding: 12px;
-    border-top: 1px solid var(--el-border-color-lighter);
+    border-top: 1px solid rgba(255, 255, 255, 0.06);
 
     .logout-btn {
       width: 100%;
@@ -281,14 +313,17 @@ function handleLogout() {
 
 .main-container {
   min-width: 0;
+  position: relative;
+  z-index: 1;
 
   .topbar {
     display: flex;
     align-items: center;
     justify-content: space-between;
     padding: 0 24px;
-    background: var(--el-bg-color-overlay);
-    border-bottom: 1px solid var(--el-border-color-lighter);
+    background: rgba(17, 17, 19, 0.6);
+    backdrop-filter: blur(20px);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
 
     .topbar-left {
       display: flex;
@@ -299,7 +334,7 @@ function handleLogout() {
         font-size: 18px;
         font-weight: 500;
         margin: 0;
-        color: var(--el-text-color-primary);
+        color: #e8eaed;
       }
     }
 
@@ -309,8 +344,9 @@ function handleLogout() {
       gap: 12px;
 
       .user-avatar {
-        background: linear-gradient(135deg, var(--el-color-primary-light-3), var(--el-color-primary));
-        color: #fff;
+        background: linear-gradient(135deg, rgba(96, 165, 250, 0.15) 0%, rgba(167, 139, 250, 0.15) 100%);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        color: #8ab4f8;
         font-weight: 600;
       }
 
@@ -320,12 +356,12 @@ function handleLogout() {
 
         .user-name {
           font-size: 14px;
-          color: var(--el-text-color-primary);
+          color: #e8eaed;
         }
 
         .user-role {
           font-size: 12px;
-          color: var(--el-text-color-secondary);
+          color: #9aa0a6;
         }
       }
     }

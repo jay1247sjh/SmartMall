@@ -4,6 +4,7 @@ import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
 import com.baomidou.mybatisplus.extension.handlers.JacksonTypeHandler;
+import com.smartmall.domain.enums.AreaStatus;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 
@@ -42,4 +43,9 @@ public class Area extends BaseEntity {
     private Boolean visible;
     
     private Boolean locked;
+    
+    /**
+     * 区域状态: AVAILABLE(可申请), OCCUPIED(已占用), LOCKED(锁定)
+     */
+    private AreaStatus status;
 }

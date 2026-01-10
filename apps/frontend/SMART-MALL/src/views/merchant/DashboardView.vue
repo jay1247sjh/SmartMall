@@ -260,6 +260,7 @@ onMounted(() => {
     justify-content: space-between;
     overflow: hidden;
     background: linear-gradient(135deg, rgba(244, 114, 182, 0.1) 0%, rgba(251, 146, 60, 0.1) 100%);
+    border: 1px solid rgba(255, 255, 255, 0.06);
 
     .welcome-bg {
       position: absolute;
@@ -281,11 +282,12 @@ onMounted(() => {
         font-size: 24px;
         font-weight: 500;
         margin: 0 0 8px 0;
+        color: #e8eaed;
       }
 
       p {
         font-size: 14px;
-        color: var(--el-text-color-secondary);
+        color: #9aa0a6;
         margin: 0;
       }
     }
@@ -308,6 +310,8 @@ onMounted(() => {
     .stat-card {
       border-radius: 12px;
       margin-bottom: 16px;
+      background: rgba(17, 17, 19, 0.8);
+      border: 1px solid rgba(255, 255, 255, 0.06);
     }
   }
 
@@ -315,6 +319,8 @@ onMounted(() => {
     .section-card {
       border-radius: 12px;
       margin-bottom: 20px;
+      background: rgba(17, 17, 19, 0.8);
+      border: 1px solid rgba(255, 255, 255, 0.06);
 
       .section-header {
         display: flex;
@@ -325,6 +331,7 @@ onMounted(() => {
           font-size: 15px;
           font-weight: 500;
           margin: 0;
+          color: #e8eaed;
         }
       }
 
@@ -339,12 +346,16 @@ onMounted(() => {
         align-items: center;
         gap: 14px;
         padding: 16px;
-        background: var(--el-fill-color-lighter);
+        background: rgba(255, 255, 255, 0.03);
+        border: 1px solid rgba(255, 255, 255, 0.04);
         border-radius: 10px;
         cursor: pointer;
-        transition: background 0.15s;
+        transition: background 0.15s, border-color 0.15s;
 
-        &:hover { background: var(--el-fill-color-light); }
+        &:hover {
+          background: rgba(255, 255, 255, 0.06);
+          border-color: rgba(244, 114, 182, 0.2);
+        }
       }
 
       .store-avatar {
@@ -356,8 +367,8 @@ onMounted(() => {
       .store-info, .app-info {
         flex: 1;
 
-        h4 { font-size: 14px; font-weight: 500; margin: 0 0 4px 0; }
-        p { font-size: 12px; color: var(--el-text-color-secondary); margin: 0; }
+        h4 { font-size: 14px; font-weight: 500; margin: 0 0 4px 0; color: #e8eaed; }
+        p { font-size: 12px; color: #9aa0a6; margin: 0; }
       }
     }
   }
@@ -366,7 +377,7 @@ onMounted(() => {
     .section-title {
       font-size: 14px;
       font-weight: 500;
-      color: var(--el-text-color-secondary);
+      color: #9aa0a6;
       margin: 0 0 16px 0;
       text-transform: uppercase;
       letter-spacing: 0.05em;

@@ -93,6 +93,64 @@ export interface ApprovalListParams {
 }
 
 // ============================================================================
+// 用户管理类型定义
+// ============================================================================
+
+/**
+ * 用户列表查询参数
+ */
+export interface UserListParams {
+  /** 搜索关键词（用户名或邮箱） */
+  keyword?: string
+  /** 用户类型筛选 */
+  userType?: 'ALL' | 'ADMIN' | 'MERCHANT' | 'USER'
+  /** 用户状态筛选 */
+  status?: 'ALL' | 'ACTIVE' | 'FROZEN' | 'DELETED'
+  /** 页码（从 1 开始） */
+  page?: number
+  /** 每页数量 */
+  pageSize?: number
+}
+
+/**
+ * 用户信息（列表项）
+ */
+export interface UserInfo {
+  /** 用户 ID */
+  userId: string
+  /** 用户名 */
+  username: string
+  /** 邮箱 */
+  email: string
+  /** 用户类型 */
+  userType: 'ADMIN' | 'MERCHANT' | 'USER'
+  /** 用户状态 */
+  status: 'ACTIVE' | 'FROZEN' | 'DELETED'
+  /** 注册时间 */
+  createdAt: string
+}
+
+/**
+ * 用户列表响应
+ */
+export interface UserListResponse {
+  /** 用户列表 */
+  list: UserInfo[]
+  /** 总数 */
+  total: number
+}
+
+/**
+ * 用户详情
+ */
+export interface UserDetail extends UserInfo {
+  /** 手机号 */
+  phone?: string
+  /** 最后登录时间 */
+  lastLoginTime?: string
+}
+
+// ============================================================================
 // API 方法
 // ============================================================================
 
@@ -207,6 +265,190 @@ export async function rejectRequest(id: number, reason: string): Promise<void> {
 }
 
 // ============================================================================
+// 用户管理 API 方法
+// ============================================================================
+
+/** Mock 用户数据 */
+const mockUsers: UserDetail[] = [
+  {
+    userId: 'u001',
+    username: 'admin',
+    email: 'admin@smartmall.com',
+    phone: '13800138000',
+    userType: 'ADMIN',
+    status: 'ACTIVE',
+    createdAt: '2024-01-01T00:00:00Z',
+    lastLoginTime: '2024-12-28T10:30:00Z',
+  },
+  {
+    userId: 'u002',
+    username: 'merchant_starbucks',
+    email: 'starbucks@example.com',
+    phone: '13900139001',
+    userType: 'MERCHANT',
+    status: 'ACTIVE',
+    createdAt: '2024-03-15T08:00:00Z',
+    lastLoginTime: '2024-12-27T14:20:00Z',
+  },
+  {
+    userId: 'u003',
+    username: 'merchant_uniqlo',
+    email: 'uniqlo@example.com',
+    phone: '13900139002',
+    userType: 'MERCHANT',
+    status: 'ACTIVE',
+    createdAt: '2024-04-20T10:00:00Z',
+    lastLoginTime: '2024-12-26T09:15:00Z',
+  },
+  {
+    userId: 'u004',
+    username: 'user_zhangsan',
+    email: 'zhangsan@example.com',
+    phone: '13700137001',
+    userType: 'USER',
+    status: 'ACTIVE',
+    createdAt: '2024-06-10T12:00:00Z',
+    lastLoginTime: '2024-12-25T16:45:00Z',
+  },
+  {
+    userId: 'u005',
+    username: 'user_lisi',
+    email: 'lisi@example.com',
+    userType: 'USER',
+    status: 'FROZEN',
+    createdAt: '2024-07-05T14:00:00Z',
+    lastLoginTime: '2024-11-20T08:30:00Z',
+  },
+  {
+    userId: 'u006',
+    username: 'merchant_haidilao',
+    email: 'haidilao@example.com',
+    phone: '13900139003',
+    userType: 'MERCHANT',
+    status: 'ACTIVE',
+    createdAt: '2024-05-01T09:00:00Z',
+    lastLoginTime: '2024-12-28T11:00:00Z',
+  },
+  {
+    userId: 'u007',
+    username: 'user_wangwu',
+    email: 'wangwu@example.com',
+    phone: '13700137002',
+    userType: 'USER',
+    status: 'ACTIVE',
+    createdAt: '2024-08-15T16:00:00Z',
+    lastLoginTime: '2024-12-27T20:15:00Z',
+  },
+  {
+    userId: 'u008',
+    username: 'user_deleted',
+    email: 'deleted@example.com',
+    userType: 'USER',
+    status: 'DELETED',
+    createdAt: '2024-02-20T10:00:00Z',
+  },
+]
+
+/**
+ * 获取用户列表
+ *
+ * 支持按关键词搜索、用户类型和状态筛选，以及分页。
+ *
+ * @param params - 查询参数
+ * @returns 用户列表响应
+ */
+export async function getUserList(params?: UserListParams): Promise<UserListResponse> {
+  // TODO: 对接真实后端
+  // return http.get('/api/admin/users', { params })
+  
+  let filtered = [...mockUsers]
+  
+  // 关键词搜索（用户名或邮箱）
+  if (params?.keyword) {
+    const keyword = params.keyword.toLowerCase()
+    filtered = filtered.filter(
+      user => user.username.toLowerCase().includes(keyword) ||
+              user.email.toLowerCase().includes(keyword)
+    )
+  }
+  
+  // 用户类型筛选
+  if (params?.userType && params.userType !== 'ALL') {
+    filtered = filtered.filter(user => user.userType === params.userType)
+  }
+  
+  // 状态筛选
+  if (params?.status && params.status !== 'ALL') {
+    filtered = filtered.filter(user => user.status === params.status)
+  }
+  
+  // 分页
+  const page = params?.page || 1
+  const pageSize = params?.pageSize || 10
+  const start = (page - 1) * pageSize
+  const end = start + pageSize
+  const list = filtered.slice(start, end)
+  
+  return Promise.resolve({
+    list,
+    total: filtered.length,
+  })
+}
+
+/**
+ * 获取用户详情
+ *
+ * @param userId - 用户 ID
+ * @returns 用户详情
+ */
+export async function getUserDetail(userId: string): Promise<UserDetail> {
+  // TODO: 对接真实后端
+  // return http.get(`/api/admin/users/${userId}`)
+  
+  const user = mockUsers.find(u => u.userId === userId)
+  if (!user) {
+    throw new Error('用户不存在')
+  }
+  return Promise.resolve(user)
+}
+
+/**
+ * 冻结用户
+ *
+ * 将用户状态设置为 FROZEN，用户将无法登录系统。
+ *
+ * @param userId - 用户 ID
+ */
+export async function freezeUser(userId: string): Promise<void> {
+  // TODO: 对接真实后端
+  // return http.post(`/api/admin/users/${userId}/freeze`)
+  
+  const user = mockUsers.find(u => u.userId === userId)
+  if (user) {
+    user.status = 'FROZEN'
+  }
+  return Promise.resolve()
+}
+
+/**
+ * 激活用户
+ *
+ * 将用户状态设置为 ACTIVE，恢复用户的登录权限。
+ *
+ * @param userId - 用户 ID
+ */
+export async function activateUser(userId: string): Promise<void> {
+  // TODO: 对接真实后端
+  // return http.post(`/api/admin/users/${userId}/activate`)
+  
+  const user = mockUsers.find(u => u.userId === userId)
+  if (user) {
+    user.status = 'ACTIVE'
+  }
+  return Promise.resolve()
+}
+
+// ============================================================================
 // 导出
 // ============================================================================
 
@@ -215,6 +457,10 @@ export const adminApi = {
   getApprovalList,
   approveRequest,
   rejectRequest,
+  getUserList,
+  getUserDetail,
+  freezeUser,
+  activateUser,
 }
 
 export default adminApi

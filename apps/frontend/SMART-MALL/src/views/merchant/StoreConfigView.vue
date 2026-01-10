@@ -8,43 +8,36 @@
  * - 展示商家的所有店铺列表
  * - 查看和编辑店铺详细信息（名称、描述、分类、营业时间）
  * - 显示店铺状态和位置信息
- *
- * 设计原则：
- * - 左右分栏布局：左侧店铺列表，右侧店铺详情
- * - 深色主题，与整体设计风格一致
- * - 编辑模式切换：查看模式和编辑模式
- * - 操作反馈：保存成功/失败提示
- *
- * 数据流：
- * - 页面加载时获取商家的所有店铺
- * - 选择店铺后显示详情
- * - 编辑后通过 API 保存到后端
- *
- * 店铺状态说明：
- * - ACTIVE：营业中（绿色）
- * - INACTIVE：已关闭（灰色）
- * - PENDING：待审核（黄色）
- *
- * 用户角色：
- * - 仅商家（MERCHANT）可访问
- * - 只能管理自己的店铺
+ * - 创建新店铺（需要先有区域权限）
+ * - 激活/暂停店铺营业
  */
 import { ref, computed, onMounted } from 'vue'
-import { Modal } from '@/components'
-import { merchantApi } from '@/api'
-import type { Store, UpdateStoreRequest } from '@/api/merchant.api'
+import { storeApi, areaPermissionApi } from '@/api'
+import type { StoreDTO, UpdateStoreRequest, CreateStoreRequest } from '@/api/store.api'
+import type { AreaPermissionDTO } from '@/api/area-permission.api'
 
 // ============================================================================
 // State
 // ============================================================================
 
 const isLoading = ref(true)
-const stores = ref<Store[]>([])
-const selectedStore = ref<Store | null>(null)
+const stores = ref<StoreDTO[]>([])
+const selectedStore = ref<StoreDTO | null>(null)
+const permissions = ref<AreaPermissionDTO[]>([])
 
 // 编辑状态
 const isEditing = ref(false)
 const editForm = ref<UpdateStoreRequest>({
+  name: '',
+  description: '',
+  category: '',
+  businessHours: '',
+})
+
+// 创建店铺对话框
+const showCreateDialog = ref(false)
+const createForm = ref<CreateStoreRequest>({
+  areaId: '',
   name: '',
   description: '',
   category: '',
@@ -61,6 +54,14 @@ const message = ref<{ type: 'success' | 'error'; text: string } | null>(null)
 
 const categories = ['餐饮', '零售', '服装', '娱乐', '服务', '其他']
 
+// 可用于创建店铺的区域（有权限但还没有店铺的区域）
+const availableAreasForCreate = computed(() => {
+  const storeAreaIds = stores.value.map(s => s.areaId)
+  return permissions.value.filter(p => 
+    p.status === 'ACTIVE' && !storeAreaIds.includes(p.areaId)
+  )
+})
+
 // ============================================================================
 // Methods
 // ============================================================================
@@ -68,25 +69,32 @@ const categories = ['餐饮', '零售', '服装', '娱乐', '服务', '其他']
 async function loadData() {
   isLoading.value = true
   try {
-    stores.value = await merchantApi.getMyStores()
+    const [storeList, permissionList] = await Promise.all([
+      storeApi.getMyStores(),
+      areaPermissionApi.getMyPermissions()
+    ])
+    stores.value = storeList
+    permissions.value = permissionList
+    
     if (stores.value.length > 0 && !selectedStore.value) {
       selectStore(stores.value[0])
     }
   } catch (e) {
     console.error('加载数据失败:', e)
+    showMessage('error', '加载数据失败')
   } finally {
     isLoading.value = false
   }
 }
 
-function selectStore(store: Store) {
+function selectStore(store: StoreDTO) {
   selectedStore.value = store
   isEditing.value = false
   editForm.value = {
     name: store.name,
-    description: store.description,
+    description: store.description || '',
     category: store.category,
-    businessHours: store.businessHours,
+    businessHours: store.businessHours || '',
   }
 }
 
@@ -100,9 +108,9 @@ function cancelEdit() {
   isEditing.value = false
   editForm.value = {
     name: selectedStore.value.name,
-    description: selectedStore.value.description,
+    description: selectedStore.value.description || '',
     category: selectedStore.value.category,
-    businessHours: selectedStore.value.businessHours,
+    businessHours: selectedStore.value.businessHours || '',
   }
 }
 
@@ -113,23 +121,85 @@ async function saveStore() {
   message.value = null
 
   try {
-    const updated = await merchantApi.updateStore(selectedStore.value.id, editForm.value)
+    const updated = await storeApi.updateStore(selectedStore.value.storeId, editForm.value)
     
     // 更新本地状态
-    const index = stores.value.findIndex(s => s.id === selectedStore.value!.id)
+    const index = stores.value.findIndex(s => s.storeId === selectedStore.value!.storeId)
     if (index !== -1) {
-      stores.value[index] = { ...stores.value[index], ...editForm.value }
-      selectedStore.value = stores.value[index]
+      stores.value[index] = updated
+      selectedStore.value = updated
     }
     
     isEditing.value = false
-    message.value = { type: 'success', text: '店铺信息保存成功' }
-    setTimeout(() => { message.value = null }, 3000)
+    showMessage('success', '店铺信息保存成功')
   } catch (e: any) {
-    message.value = { type: 'error', text: e.message || '保存失败' }
+    showMessage('error', e.message || '保存失败')
   } finally {
     isProcessing.value = false
   }
+}
+
+function openCreateDialog() {
+  createForm.value = {
+    areaId: '',
+    name: '',
+    description: '',
+    category: '',
+    businessHours: '',
+  }
+  showCreateDialog.value = true
+}
+
+async function createStore() {
+  if (!createForm.value.areaId || !createForm.value.name || !createForm.value.category) {
+    showMessage('error', '请填写必填项')
+    return
+  }
+  
+  isProcessing.value = true
+  try {
+    const newStore = await storeApi.createStore(createForm.value)
+    stores.value.unshift(newStore)
+    selectStore(newStore)
+    showCreateDialog.value = false
+    showMessage('success', '店铺创建成功，等待管理员审批')
+  } catch (e: any) {
+    showMessage('error', e.message || '创建失败')
+  } finally {
+    isProcessing.value = false
+  }
+}
+
+async function toggleStoreStatus() {
+  if (!selectedStore.value) return
+  
+  const store = selectedStore.value
+  if (store.status !== 'ACTIVE' && store.status !== 'INACTIVE') {
+    showMessage('error', '当前状态不支持此操作')
+    return
+  }
+  
+  isProcessing.value = true
+  try {
+    if (store.status === 'ACTIVE') {
+      await storeApi.deactivateStore(store.storeId)
+      store.status = 'INACTIVE'
+      showMessage('success', '店铺已暂停营业')
+    } else {
+      await storeApi.activateStore(store.storeId)
+      store.status = 'ACTIVE'
+      showMessage('success', '店铺已恢复营业')
+    }
+  } catch (e: any) {
+    showMessage('error', e.message || '操作失败')
+  } finally {
+    isProcessing.value = false
+  }
+}
+
+function showMessage(type: 'success' | 'error', text: string) {
+  message.value = { type, text }
+  setTimeout(() => { message.value = null }, 3000)
 }
 
 function getStatusClass(status: string): string {
@@ -137,6 +207,7 @@ function getStatusClass(status: string): string {
     ACTIVE: 'status-active',
     INACTIVE: 'status-inactive',
     PENDING: 'status-pending',
+    CLOSED: 'status-closed',
   }
   return map[status] || ''
 }
@@ -144,8 +215,9 @@ function getStatusClass(status: string): string {
 function getStatusText(status: string): string {
   const map: Record<string, string> = {
     ACTIVE: '营业中',
-    INACTIVE: '已关闭',
-    PENDING: '待审核',
+    INACTIVE: '暂停营业',
+    PENDING: '待审批',
+    CLOSED: '已关闭',
   }
   return map[status] || status
 }
@@ -161,146 +233,220 @@ onMounted(() => {
 
 <template>
   <div class="store-config-page">
-      <!-- 消息提示 -->
-      <div v-if="message" :class="['message', message.type]">
-        <span>{{ message.type === 'success' ? '✅' : '❌' }}</span>
-        {{ message.text }}
-      </div>
+    <!-- 消息提示 -->
+    <div v-if="message" :class="['message', message.type]">
+      <span>{{ message.type === 'success' ? '✅' : '❌' }}</span>
+      {{ message.text }}
+    </div>
 
-      <div class="content-grid">
-        <!-- 左侧：店铺列表 -->
-        <div class="store-list-panel">
-          <div class="panel-header">
-            <h3>我的店铺</h3>
+    <div class="content-grid">
+      <!-- 左侧：店铺列表 -->
+      <div class="store-list-panel">
+        <div class="panel-header">
+          <h3>我的店铺</h3>
+          <div class="header-actions">
             <span class="store-count">{{ stores.length }} 家</span>
-          </div>
-
-          <div v-if="isLoading" class="loading">加载中...</div>
-
-          <div v-else-if="stores.length === 0" class="empty">
-            暂无店铺
-          </div>
-
-          <div v-else class="store-list">
-            <div
-              v-for="store in stores"
-              :key="store.id"
-              :class="['store-item', { active: selectedStore?.id === store.id }]"
-              @click="selectStore(store)"
-            >
-              <div class="store-avatar">
-                {{ store.name.charAt(0) }}
-              </div>
-              <div class="store-info">
-                <span class="store-name">{{ store.name }}</span>
-                <span class="store-location">{{ store.floorName }} · {{ store.areaName }}</span>
-              </div>
-              <span :class="['status-dot', getStatusClass(store.status)]"></span>
-            </div>
+            <button 
+              v-if="availableAreasForCreate.length > 0"
+              class="btn-add" 
+              @click="openCreateDialog"
+              title="创建新店铺"
+            >+</button>
           </div>
         </div>
 
-        <!-- 右侧：店铺详情 -->
-        <div class="store-detail-panel">
-          <template v-if="selectedStore">
-            <div class="detail-header">
-              <div class="header-left">
-                <div class="store-avatar-large">
-                  {{ selectedStore.name.charAt(0) }}
-                </div>
-                <div class="header-info">
-                  <h2>{{ selectedStore.name }}</h2>
-                  <span class="location">{{ selectedStore.floorName }} · {{ selectedStore.areaName }}</span>
-                </div>
+        <div v-if="isLoading" class="loading">加载中...</div>
+
+        <div v-else-if="stores.length === 0" class="empty">
+          <p>暂无店铺</p>
+          <button 
+            v-if="availableAreasForCreate.length > 0"
+            class="btn btn-primary btn-sm"
+            @click="openCreateDialog"
+          >创建店铺</button>
+        </div>
+
+        <div v-else class="store-list">
+          <div
+            v-for="store in stores"
+            :key="store.storeId"
+            :class="['store-item', { active: selectedStore?.storeId === store.storeId }]"
+            @click="selectStore(store)"
+          >
+            <div class="store-avatar">
+              {{ store.name.charAt(0) }}
+            </div>
+            <div class="store-info">
+              <span class="store-name">{{ store.name }}</span>
+              <span class="store-location">{{ store.floorName }} · {{ store.areaName }}</span>
+            </div>
+            <span :class="['status-dot', getStatusClass(store.status)]"></span>
+          </div>
+        </div>
+      </div>
+
+      <!-- 右侧：店铺详情 -->
+      <div class="store-detail-panel">
+        <template v-if="selectedStore">
+          <div class="detail-header">
+            <div class="header-left">
+              <div class="store-avatar-large">
+                {{ selectedStore.name.charAt(0) }}
               </div>
-              <span :class="['status-badge', getStatusClass(selectedStore.status)]">
-                {{ getStatusText(selectedStore.status) }}
-              </span>
+              <div class="header-info">
+                <h2>{{ selectedStore.name }}</h2>
+                <span class="location">{{ selectedStore.floorName }} · {{ selectedStore.areaName }}</span>
+              </div>
+            </div>
+            <span :class="['status-badge', getStatusClass(selectedStore.status)]">
+              {{ getStatusText(selectedStore.status) }}
+            </span>
+          </div>
+
+          <div class="detail-form">
+            <div class="form-item">
+              <label>店铺名称</label>
+              <input
+                v-if="isEditing"
+                v-model="editForm.name"
+                type="text"
+                class="input"
+                placeholder="请输入店铺名称"
+              />
+              <span v-else class="value">{{ selectedStore.name }}</span>
             </div>
 
-            <div class="detail-form">
+            <div class="form-item">
+              <label>店铺描述</label>
+              <textarea
+                v-if="isEditing"
+                v-model="editForm.description"
+                class="textarea"
+                rows="3"
+                placeholder="请输入店铺描述"
+              ></textarea>
+              <span v-else class="value">{{ selectedStore.description || '-' }}</span>
+            </div>
+
+            <div class="form-row">
               <div class="form-item">
-                <label>店铺名称</label>
+                <label>店铺分类</label>
+                <select
+                  v-if="isEditing"
+                  v-model="editForm.category"
+                  class="select"
+                >
+                  <option v-for="cat in categories" :key="cat" :value="cat">
+                    {{ cat }}
+                  </option>
+                </select>
+                <span v-else class="value">{{ selectedStore.category }}</span>
+              </div>
+
+              <div class="form-item">
+                <label>营业时间</label>
                 <input
                   v-if="isEditing"
-                  v-model="editForm.name"
+                  v-model="editForm.businessHours"
                   type="text"
                   class="input"
-                  placeholder="请输入店铺名称"
+                  placeholder="如：08:00-22:00"
                 />
-                <span v-else class="value">{{ selectedStore.name }}</span>
-              </div>
-
-              <div class="form-item">
-                <label>店铺描述</label>
-                <textarea
-                  v-if="isEditing"
-                  v-model="editForm.description"
-                  class="textarea"
-                  rows="3"
-                  placeholder="请输入店铺描述"
-                ></textarea>
-                <span v-else class="value">{{ selectedStore.description || '-' }}</span>
-              </div>
-
-              <div class="form-row">
-                <div class="form-item">
-                  <label>店铺分类</label>
-                  <select
-                    v-if="isEditing"
-                    v-model="editForm.category"
-                    class="select"
-                  >
-                    <option v-for="cat in categories" :key="cat" :value="cat">
-                      {{ cat }}
-                    </option>
-                  </select>
-                  <span v-else class="value">{{ selectedStore.category }}</span>
-                </div>
-
-                <div class="form-item">
-                  <label>营业时间</label>
-                  <input
-                    v-if="isEditing"
-                    v-model="editForm.businessHours"
-                    type="text"
-                    class="input"
-                    placeholder="如：08:00-22:00"
-                  />
-                  <span v-else class="value">{{ selectedStore.businessHours }}</span>
-                </div>
-              </div>
-
-              <div class="form-actions">
-                <template v-if="isEditing">
-                  <button class="btn btn-secondary" @click="cancelEdit">
-                    取消
-                  </button>
-                  <button
-                    class="btn btn-primary"
-                    :disabled="isProcessing"
-                    @click="saveStore"
-                  >
-                    {{ isProcessing ? '保存中...' : '保存' }}
-                  </button>
-                </template>
-                <template v-else>
-                  <button class="btn btn-primary" @click="startEdit">
-                    编辑信息
-                  </button>
-                </template>
+                <span v-else class="value">{{ selectedStore.businessHours || '-' }}</span>
               </div>
             </div>
-          </template>
 
-          <div v-else class="empty-state">
-            <p>请从左侧选择一个店铺</p>
+            <div class="form-actions">
+              <template v-if="isEditing">
+                <button class="btn btn-secondary" @click="cancelEdit">
+                  取消
+                </button>
+                <button
+                  class="btn btn-primary"
+                  :disabled="isProcessing"
+                  @click="saveStore"
+                >
+                  {{ isProcessing ? '保存中...' : '保存' }}
+                </button>
+              </template>
+              <template v-else>
+                <button 
+                  v-if="selectedStore.status === 'ACTIVE' || selectedStore.status === 'INACTIVE'"
+                  class="btn btn-secondary" 
+                  :disabled="isProcessing"
+                  @click="toggleStoreStatus"
+                >
+                  {{ selectedStore.status === 'ACTIVE' ? '暂停营业' : '恢复营业' }}
+                </button>
+                <button 
+                  v-if="selectedStore.status !== 'CLOSED'"
+                  class="btn btn-primary" 
+                  @click="startEdit"
+                >
+                  编辑信息
+                </button>
+              </template>
+            </div>
           </div>
+        </template>
+
+        <div v-else class="empty-state">
+          <p>请从左侧选择一个店铺</p>
         </div>
       </div>
+    </div>
+
+    <!-- 创建店铺对话框 -->
+    <div v-if="showCreateDialog" class="dialog-overlay" @click.self="showCreateDialog = false">
+      <div class="dialog">
+        <div class="dialog-header">
+          <h3>创建新店铺</h3>
+          <button class="dialog-close" @click="showCreateDialog = false">×</button>
+        </div>
+        <div class="dialog-body">
+          <div class="form-item">
+            <label>选择区域 *</label>
+            <select v-model="createForm.areaId" class="select">
+              <option value="">请选择区域</option>
+              <option 
+                v-for="area in availableAreasForCreate" 
+                :key="area.areaId" 
+                :value="area.areaId"
+              >
+                {{ area.floorName }} - {{ area.areaName }}
+              </option>
+            </select>
+          </div>
+          <div class="form-item">
+            <label>店铺名称 *</label>
+            <input v-model="createForm.name" type="text" class="input" placeholder="请输入店铺名称" />
+          </div>
+          <div class="form-item">
+            <label>店铺分类 *</label>
+            <select v-model="createForm.category" class="select">
+              <option value="">请选择分类</option>
+              <option v-for="cat in categories" :key="cat" :value="cat">{{ cat }}</option>
+            </select>
+          </div>
+          <div class="form-item">
+            <label>营业时间</label>
+            <input v-model="createForm.businessHours" type="text" class="input" placeholder="如：08:00-22:00" />
+          </div>
+          <div class="form-item">
+            <label>店铺描述</label>
+            <textarea v-model="createForm.description" class="textarea" rows="3" placeholder="请输入店铺描述"></textarea>
+          </div>
+        </div>
+        <div class="dialog-footer">
+          <button class="btn btn-secondary" @click="showCreateDialog = false">取消</button>
+          <button class="btn btn-primary" :disabled="isProcessing" @click="createStore">
+            {{ isProcessing ? '创建中...' : '创建' }}
+          </button>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
-
 
 <style scoped>
 .store-config-page {
@@ -366,9 +512,33 @@ onMounted(() => {
   margin: 0;
 }
 
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
 .store-count {
   font-size: 13px;
   color: #9aa0a6;
+}
+
+.btn-add {
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  background: #60a5fa;
+  color: white;
+  border: none;
+  font-size: 18px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.btn-add:hover {
+  background: #93c5fd;
 }
 
 .loading,
@@ -454,11 +624,15 @@ onMounted(() => {
 }
 
 .status-dot.status-inactive {
-  background: #9ca3af;
+  background: #fbbf24;
 }
 
 .status-dot.status-pending {
-  background: #fbbf24;
+  background: #60a5fa;
+}
+
+.status-dot.status-closed {
+  background: #9ca3af;
 }
 
 /* Store Detail Panel */
@@ -535,13 +709,18 @@ onMounted(() => {
 }
 
 .status-badge.status-inactive {
-  background: rgba(156, 163, 175, 0.15);
-  color: #9ca3af;
+  background: rgba(251, 191, 36, 0.15);
+  color: #fbbf24;
 }
 
 .status-badge.status-pending {
-  background: rgba(251, 191, 36, 0.15);
-  color: #fbbf24;
+  background: rgba(96, 165, 250, 0.15);
+  color: #60a5fa;
+}
+
+.status-badge.status-closed {
+  background: rgba(156, 163, 175, 0.15);
+  color: #9ca3af;
 }
 
 /* Detail Form */
@@ -627,6 +806,11 @@ onMounted(() => {
   cursor: not-allowed;
 }
 
+.btn-sm {
+  padding: 8px 16px;
+  font-size: 13px;
+}
+
 .btn-secondary {
   background: transparent;
   color: #9aa0a6;
@@ -644,5 +828,74 @@ onMounted(() => {
 
 .btn-primary:hover:not(:disabled) {
   background: #93c5fd;
+}
+
+/* Dialog */
+.dialog-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.dialog {
+  background: #1a1a1c;
+  border-radius: 12px;
+  width: 480px;
+  max-width: 90vw;
+  max-height: 90vh;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.dialog-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 20px 24px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.dialog-header h3 {
+  margin: 0;
+  font-size: 18px;
+  color: #e8eaed;
+}
+
+.dialog-close {
+  background: none;
+  border: none;
+  color: #9aa0a6;
+  font-size: 24px;
+  cursor: pointer;
+  padding: 0;
+  line-height: 1;
+}
+
+.dialog-close:hover {
+  color: #e8eaed;
+}
+
+.dialog-body {
+  padding: 24px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.dialog-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  padding: 16px 24px;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
 }
 </style>

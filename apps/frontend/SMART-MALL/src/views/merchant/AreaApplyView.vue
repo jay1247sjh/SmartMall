@@ -5,7 +5,7 @@
  * 商家申请商城区域的页面。
  *
  * 业务职责：
- * - 展示可申请的区域列表（状态为 LOCKED 的区域）
+ * - 展示可申请的区域列表（状态为 AVAILABLE 的区域）
  * - 提交区域申请（填写申请理由）
  * - 查看自己的申请历史和状态
  * - 统计可申请区域数、待审批数、已通过数
@@ -22,10 +22,9 @@
  * - 申请状态由管理员审批后更新
  *
  * 区域状态说明：
- * - LOCKED：可申请（蓝色）
- * - PENDING：审批中（黄色）
- * - AUTHORIZED：已授权（紫色）
+ * - AVAILABLE：可申请（蓝色）
  * - OCCUPIED：已入驻（灰色）
+ * - LOCKED：已锁定（黄色）
  *
  * 申请状态说明：
  * - PENDING：待审批（黄色）
@@ -37,21 +36,21 @@
  */
 import { ref, computed, onMounted } from 'vue'
 import { DataTable, Modal } from '@/components'
-import { merchantApi } from '@/api'
-import type { AvailableArea, AreaApplication } from '@/api/merchant.api'
+import { areaPermissionApi } from '@/api'
+import type { AvailableAreaDTO, AreaApplyDTO } from '@/api/area-permission.api'
 
 // ============================================================================
 // State
 // ============================================================================
 
 const isLoading = ref(true)
-const availableAreas = ref<AvailableArea[]>([])
-const myApplications = ref<AreaApplication[]>([])
+const availableAreas = ref<AvailableAreaDTO[]>([])
+const myApplications = ref<AreaApplyDTO[]>([])
 const activeTab = ref<'available' | 'history'>('available')
 
 // 申请弹窗
 const showApplyModal = ref(false)
-const selectedArea = ref<AvailableArea | null>(null)
+const selectedArea = ref<AvailableAreaDTO | null>(null)
 const applyReason = ref('')
 
 // 操作状态
@@ -63,23 +62,23 @@ const message = ref<{ type: 'success' | 'error'; text: string } | null>(null)
 // ============================================================================
 
 const availableColumns = [
-  { key: 'floorName', title: '楼层', width: '12%' },
-  { key: 'name', title: '区域编号', width: '15%' },
-  { key: 'size', title: '面积(㎡)', width: '12%' },
-  { key: 'status', title: '状态', width: '15%' },
-  { key: 'actions', title: '操作', width: '15%' },
+  { key: 'floorName', title: '楼层', minWidth: '80' },
+  { key: 'name', title: '区域编号', minWidth: '100' },
+  { key: 'type', title: '类型', minWidth: '80' },
+  { key: 'status', title: '状态', minWidth: '80' },
+  { key: 'actions', title: '操作', minWidth: '100' },
 ]
 
 const historyColumns = [
-  { key: 'floorName', title: '楼层', width: '12%' },
-  { key: 'areaName', title: '区域编号', width: '15%' },
-  { key: 'reason', title: '申请理由', width: '25%' },
-  { key: 'status', title: '状态', width: '15%' },
-  { key: 'createdAt', title: '申请时间', width: '18%' },
+  { key: 'floorName', title: '楼层', minWidth: '80' },
+  { key: 'areaName', title: '区域编号', minWidth: '100' },
+  { key: 'applyReason', title: '申请理由', minWidth: '150' },
+  { key: 'status', title: '状态', minWidth: '80' },
+  { key: 'createdAt', title: '申请时间', minWidth: '120' },
 ]
 
 const applyableAreas = computed(() => 
-  availableAreas.value.filter(a => a.status === 'LOCKED')
+  availableAreas.value.filter(a => a.status === 'AVAILABLE')
 )
 
 // ============================================================================
@@ -90,19 +89,22 @@ async function loadData() {
   isLoading.value = true
   try {
     const [areas, apps] = await Promise.all([
-      merchantApi.getAvailableAreas(),
-      merchantApi.getMyApplications(),
+      areaPermissionApi.getAvailableAreas(),
+      areaPermissionApi.getMyApplications(),
     ])
     availableAreas.value = areas
     myApplications.value = apps
-  } catch (e) {
+  } catch (e: any) {
     console.error('加载数据失败:', e)
+    message.value = { type: 'error', text: e.message || '加载数据失败' }
+    setTimeout(() => { message.value = null }, 3000)
   } finally {
     isLoading.value = false
   }
 }
 
 function formatDate(dateStr: string): string {
+  if (!dateStr) return '-'
   const date = new Date(dateStr)
   return date.toLocaleDateString('zh-CN', {
     month: '2-digit',
@@ -114,20 +116,18 @@ function formatDate(dateStr: string): string {
 
 function getAreaStatusClass(status: string): string {
   const map: Record<string, string> = {
-    LOCKED: 'status-locked',
-    PENDING: 'status-pending',
-    AUTHORIZED: 'status-authorized',
+    AVAILABLE: 'status-available',
     OCCUPIED: 'status-occupied',
+    LOCKED: 'status-locked',
   }
   return map[status] || ''
 }
 
 function getAreaStatusText(status: string): string {
   const map: Record<string, string> = {
-    LOCKED: '可申请',
-    PENDING: '审批中',
-    AUTHORIZED: '已授权',
+    AVAILABLE: '可申请',
     OCCUPIED: '已入驻',
+    LOCKED: '已锁定',
   }
   return map[status] || status
 }
@@ -150,26 +150,29 @@ function getAppStatusText(status: string): string {
   return map[status] || status
 }
 
-function openApplyModal(area: AvailableArea) {
+function openApplyModal(area: AvailableAreaDTO) {
   selectedArea.value = area
   applyReason.value = ''
   showApplyModal.value = true
 }
 
 async function submitApplication() {
-  if (!selectedArea.value || !applyReason.value.trim()) return
+  if (!selectedArea.value) return
   
   isProcessing.value = true
   message.value = null
 
   try {
-    const newApp = await merchantApi.applyForArea(selectedArea.value.id, applyReason.value)
+    const newApp = await areaPermissionApi.submitApplication({
+      areaId: selectedArea.value.areaId,
+      applyReason: applyReason.value || undefined,
+    })
     myApplications.value.unshift(newApp)
     
     // 更新区域状态
-    const areaIndex = availableAreas.value.findIndex(a => a.id === selectedArea.value!.id)
+    const areaIndex = availableAreas.value.findIndex(a => a.areaId === selectedArea.value!.areaId)
     if (areaIndex !== -1) {
-      availableAreas.value[areaIndex].status = 'PENDING'
+      availableAreas.value[areaIndex].status = 'LOCKED'
     }
     
     showApplyModal.value = false
@@ -246,7 +249,7 @@ onMounted(() => {
           </template>
           <template #actions="{ row }">
             <button
-              v-if="row.status === 'LOCKED'"
+              v-if="row.status === 'AVAILABLE'"
               class="action-btn apply"
               @click="openApplyModal(row)"
             >
@@ -275,8 +278,8 @@ onMounted(() => {
               </span>
             </div>
           </template>
-          <template #reason="{ value }">
-            <span class="reason-text">{{ value }}</span>
+          <template #applyReason="{ value }">
+            <span class="reason-text">{{ value || '-' }}</span>
           </template>
           <template #createdAt="{ value }">
             {{ formatDate(value) }}
@@ -297,18 +300,18 @@ onMounted(() => {
               <span>{{ selectedArea.floorName }} · {{ selectedArea.name }}</span>
             </div>
             <div class="info-row">
-              <label>区域面积</label>
-              <span>{{ selectedArea.size }} ㎡</span>
+              <label>区域类型</label>
+              <span>{{ selectedArea.type || '-' }}</span>
             </div>
           </div>
           
           <div class="form-item">
-            <label>申请理由 <span class="required">*</span></label>
+            <label>申请理由</label>
             <textarea
               v-model="applyReason"
               class="textarea"
               rows="4"
-              placeholder="请说明您申请该区域的理由..."
+              placeholder="请说明您申请该区域的理由（可选）..."
             ></textarea>
           </div>
         </div>
@@ -319,7 +322,7 @@ onMounted(() => {
           </button>
           <button
             class="btn btn-primary"
-            :disabled="!applyReason.trim() || isProcessing"
+            :disabled="isProcessing"
             @click="submitApplication"
           >
             {{ isProcessing ? '提交中...' : '提交申请' }}
@@ -435,24 +438,24 @@ onMounted(() => {
   font-weight: 500;
 }
 
-.status-locked {
+.status-available {
   background: rgba(96, 165, 250, 0.15);
   color: #60a5fa;
 }
 
-.status-pending {
+.status-locked {
   background: rgba(251, 191, 36, 0.15);
   color: #fbbf24;
-}
-
-.status-authorized {
-  background: rgba(167, 139, 250, 0.15);
-  color: #a78bfa;
 }
 
 .status-occupied {
   background: rgba(156, 163, 175, 0.15);
   color: #9ca3af;
+}
+
+.status-pending {
+  background: rgba(251, 191, 36, 0.15);
+  color: #fbbf24;
 }
 
 .status-approved {
@@ -550,10 +553,6 @@ onMounted(() => {
 .form-item label {
   font-size: 14px;
   color: #9aa0a6;
-}
-
-.required {
-  color: #f28b82;
 }
 
 .textarea {

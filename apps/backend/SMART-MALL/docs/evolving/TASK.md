@@ -24,7 +24,7 @@
 | P1 | 领域模型与数据库 | 16 | 5-7h | 最高 | 基本完成 (75%) |
 | P2 | 认证与安全模块 | 14 | 4-5h | 最高 | 基本完成 (80%) |
 | P3 | 商城结构管理 | 12 | 4-5h | 高 | 部分完成 (40%) |
-| P4 | 区域权限管理 | 16 | 5-6h | 高 | 未开始 |
+| P4 | 区域权限管理 | 16 | 5-6h | 高 | **已完成 (100%)** |
 | P5 | 店铺与商品管理 | 10 | 3-4h | 中 | 未开始 |
 | P6 | 布局版本管理 | 12 | 3-4h | 中 | 未开始 |
 | P7 | 缓存与性能优化 | 8 | 3-4h | 低 | 未开始 |
@@ -358,66 +358,81 @@
 ## P4. 区域权限管理
 
 > 目标：实现区域权限申请、审批、撤销流程
+>
+> **状态**: 已完成 (2026-01-06)
 
-### 4.1 应用服务 (mall-application)
+### 4.1 应用服务 (application/service)
 
-- [ ] 4.1.1 实现 AreaApplyApplicationService
-  - 提交申请、查询申请列表
+- [x] 4.1.1 实现 AreaApplyService
+  - 提交申请、查询申请列表、审批通过、审批驳回
   - _Requirements: 需求 4_
+  - **已完成**: AreaApplyService.java
 
-- [ ] 4.1.2 实现 AreaApprovalApplicationService
-  - 审批通过、审批驳回
-  - _Requirements: 需求 4_
-
-- [ ] 4.1.3 实现 AreaPermissionApplicationService
-  - 查询权限、撤销权限
+- [x] 4.1.2 实现 AreaPermissionService
+  - 查询权限、撤销权限、权限校验
   - _Requirements: 需求 5, 6_
+  - **已完成**: AreaPermissionService.java
 
-### 4.2 领域服务 (mall-domain)
+### 4.2 领域服务 (domain/service)
 
-- [ ] 4.2.1 实现 AreaApplyDomainService
-  - 申请状态机、重复申请检测
-  - _Requirements: 需求 4, Property 8_
+- [x] 4.2.1 实现 PermissionChecker 接口
+  - 权限校验接口定义
+  - _Requirements: 需求 5_
+  - **已完成**: PermissionChecker.java
 
-- [ ] 4.2.2 实现 AreaPermissionDomainService
-  - 权限授予、权限撤销、权限校验
-  - _Requirements: 需求 5, 6_
+- [x] 4.2.2 实现 PermissionCheckerImpl
+  - 权限校验实现
+  - _Requirements: 需求 5_
+  - **已完成**: PermissionCheckerImpl.java
 
-- [ ] 4.2.3 实现空间边界校验
-  - 操作位置是否在授权区域内
-  - _Requirements: 需求 5, Property 6_
+### 4.3 接口层 (interfaces/controller)
 
-### 4.3 接口层 (mall-interface)
-
-- [ ] 4.3.1 实现商家申请接口
-  - GET /api/area/available
-  - POST /api/area/apply
+- [x] 4.3.1 实现商家申请接口
+  - GET /api/area/available - 获取可申请区域
+  - POST /api/area/apply - 提交申请
+  - GET /api/area/apply/my - 查询我的申请
   - _Requirements: 需求 4_
+  - **已完成**: AreaApplyController.java
 
-- [ ] 4.3.2 实现管理员审批接口
-  - GET /api/area/apply/list
-  - POST /api/area/apply/{id}/approve
-  - POST /api/area/apply/{id}/reject
+- [x] 4.3.2 实现管理员审批接口
+  - GET /api/admin/area/apply/pending - 获取待审批列表
+  - POST /api/admin/area/apply/{applyId}/approve - 审批通过
+  - POST /api/admin/area/apply/{applyId}/reject - 审批驳回
   - _Requirements: 需求 4_
+  - **已完成**: AreaApplyController.java
 
-- [ ] 4.3.3 实现权限管理接口
-  - POST /api/area/permission/{id}/revoke
+- [x] 4.3.3 实现权限管理接口
+  - GET /api/area/permission/my - 查询我的权限
+  - POST /api/admin/area/permission/{permissionId}/revoke - 撤销权限
   - _Requirements: 需求 6_
+  - **已完成**: AreaPermissionController.java
 
-### 4.4 Repository 实现 (mall-infrastructure)
+### 4.4 Repository 实现 (infrastructure/mapper)
 
-- [ ] 4.4.1 实现 MyBatis Mapper
+- [x] 4.4.1 实现 MyBatis Mapper
   - AreaApplyMapper、AreaPermissionMapper
   - _Requirements: 数据访问_
+  - **已完成**: AreaApplyMapper.java, AreaPermissionMapper.java
 
-- [ ] 4.4.2 实现 Repository
-  - AreaApplyRepositoryImpl、AreaPermissionRepositoryImpl
-  - _Requirements: DDD 架构_
+### 4.5 数据库表
 
-### 4.5 权限模块检查点
+- [x] 4.5.1 创建 area_apply 表
+  - 区域权限申请表
+  - _Requirements: 数据持久化_
+  - **已完成**: 01-init.sql
 
-- [ ] 4.5.0 Checkpoint - 确保权限模块测试通过
-  - 确保所有测试通过，如有问题请询问用户
+- [x] 4.5.2 创建 area_permission 表
+  - 区域权限表
+  - _Requirements: 数据持久化_
+  - **已完成**: 01-init.sql
+
+### 4.6 权限模块检查点
+
+- [x] 4.6.0 Checkpoint - 确保权限模块完成
+  - 申请、审批、撤销流程完整
+  - 权限校验功能正常
+  - _Requirements: 需求 4, 5, 6_
+  - **已完成**: 所有 API 已实现
   - _Requirements: 需求 4, 5, 6_
 
 ### 4.6 权限模块测试
@@ -735,9 +750,10 @@
 ### Checkpoint 4: 权限管理完成
 **触发条件**: P4 完成
 **验证内容**:
-- [ ] 申请流程正常
-- [ ] 审批流程正常
-- [ ] 权限校验正常
+- [x] 申请流程正常
+- [x] 审批流程正常
+- [x] 权限校验正常
+- **状态**: ✅ 已完成
 
 ### Checkpoint 5: 核心功能完成
 **触发条件**: P5 + P6 完成

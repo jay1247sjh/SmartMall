@@ -42,10 +42,28 @@ const adminRoutes: RouteConfig[] = [
         meta: { title: '区域审批', icon: 'audit' },
       },
       {
+        path: 'area-permission',
+        name: 'AdminAreaPermission',
+        component: 'AdminAreaPermission',
+        meta: { title: '权限管理', icon: 'key' },
+      },
+      {
+        path: 'store-manage',
+        name: 'AdminStoreManage',
+        component: 'AdminStoreManage',
+        meta: { title: '店铺管理', icon: 'shop' },
+      },
+      {
         path: 'layout-version',
         name: 'AdminLayoutVersion',
         component: 'AdminLayoutVersion',
         meta: { title: '版本管理', icon: 'history' },
+      },
+      {
+        path: 'users',
+        name: 'AdminUserManage',
+        component: 'AdminUserManage',
+        meta: { title: '用户管理', icon: 'user' },
       },
     ],
   },
@@ -94,6 +112,18 @@ const merchantRoutes: RouteConfig[] = [
         name: 'MerchantAreaApply',
         component: 'MerchantAreaApply',
         meta: { title: '区域申请', icon: 'form' },
+      },
+      {
+        path: 'area-permission',
+        name: 'MerchantAreaPermission',
+        component: 'MerchantAreaPermission',
+        meta: { title: '我的权限', icon: 'key' },
+      },
+      {
+        path: 'product',
+        name: 'MerchantProduct',
+        component: 'MerchantProduct',
+        meta: { title: '商品管理', icon: 'goods' },
       },
       {
         path: 'builder',

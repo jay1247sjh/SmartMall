@@ -127,6 +127,37 @@ export class CharacterController {
   public rotationSpeed: number = 0.1
   public damping: number = 10
   
+  // 速度预设
+  public static readonly SPEED_PRESETS = {
+    slow: 3,
+    normal: 5,
+    fast: 10,
+  } as const
+  
+  /**
+   * 设置移动速度
+   * @param speed 速度值或预设名称
+   */
+  setMoveSpeed(speed: number | 'slow' | 'normal' | 'fast'): void {
+    if (typeof speed === 'string') {
+      this.moveSpeed = CharacterController.SPEED_PRESETS[speed]
+    } else {
+      this.moveSpeed = speed
+    }
+    console.log(`[CharacterController] 移动速度设置为: ${this.moveSpeed}`)
+  }
+  
+  /**
+   * 获取当前速度预设名称
+   */
+  getSpeedPresetName(): 'slow' | 'normal' | 'fast' | 'custom' {
+    const presets = CharacterController.SPEED_PRESETS
+    if (this.moveSpeed === presets.slow) return 'slow'
+    if (this.moveSpeed === presets.normal) return 'normal'
+    if (this.moveSpeed === presets.fast) return 'fast'
+    return 'custom'
+  }
+  
   // 当前楼层高度
   public currentFloorY: number = 0
   

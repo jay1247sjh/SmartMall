@@ -10,6 +10,7 @@ interface Column {
   key: string
   title: string
   width?: string
+  minWidth?: string
 }
 
 interface Props {
@@ -50,6 +51,7 @@ function handleRowClick(row: any) {
         :prop="col.key"
         :label="col.title"
         :width="col.width"
+        :min-width="col.minWidth"
       >
         <template #default="{ row }">
           <slot :name="col.key" :row="row" :value="row[col.key]">
@@ -73,9 +75,13 @@ function handleRowClick(row: any) {
 
 <style scoped lang="scss">
 .data-table-wrapper {
+  width: 100%;
+  overflow-x: auto;
+  
   .data-table {
     border-radius: 12px;
     overflow: hidden;
+    width: 100%;
 
     :deep(.el-table__header) {
       th {

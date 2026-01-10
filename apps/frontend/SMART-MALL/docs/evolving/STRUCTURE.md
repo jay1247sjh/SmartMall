@@ -5,7 +5,7 @@
 > 
 > 本文档为 **目录结构说明文档（Structure Document）**，用于定义代码组织规范与模块职责。
 > 
-> 最后更新：2026-01-02
+> 最后更新：2026-01-07
 
 ---
 
@@ -278,11 +278,16 @@ views/
 │   ├── LayoutVersionView.vue # 版本管理
 │   ├── MallManageView.vue   # 商城管理
 │   ├── MallBuilderView.vue  # 商城建模器 ⭐ 新增
-│   └── AreaApprovalView.vue # 区域审批
+│   ├── AreaApprovalView.vue # 区域审批
+│   ├── AreaPermissionManageView.vue # 权限管理 ⭐ 新增
+│   ├── AdminStoreManageView.vue # 店铺管理 ⭐ 新增
+│   └── UserManageView.vue   # 用户管理 ⭐ 新增
 ├── merchant/                # 商家页面
 │   ├── DashboardView.vue    # 商家仪表盘
 │   ├── StoreConfigView.vue  # 店铺配置
-│   └── AreaApplyView.vue    # 区域申请
+│   ├── AreaApplyView.vue    # 区域申请
+│   ├── AreaPermissionView.vue # 我的权限 ⭐ 新增
+│   └── ProductManageView.vue # 商品管理 ⭐ 新增
 └── user/                    # 用户页面
     └── ProfileView.vue      # 用户资料
 ```
@@ -307,7 +312,17 @@ api/
 ├── http.ts                  # HTTP 客户端封装
 ├── auth.api.ts              # 认证相关 API
 ├── register.api.ts          # 注册相关 API
-└── password.api.ts          # 密码管理 API
+├── password.api.ts          # 密码管理 API
+├── admin.api.ts             # 管理员 API
+├── merchant.api.ts          # 商家 API
+├── user.api.ts              # 用户 API
+├── mall.api.ts              # 商城 API
+├── mall-manage.api.ts       # 商城管理 API
+├── mall-builder.api.ts      # 商城建模器 API
+├── route.api.ts             # 路由配置 API
+├── area-permission.api.ts   # 区域权限 API ⭐ 新增
+├── store.api.ts             # 店铺管理 API ⭐ 新增
+└── product.api.ts           # 商品管理 API ⭐ 新增
 ```
 
 **register.api.ts 职责：**
@@ -320,6 +335,44 @@ api/
 - 验证重置令牌
 - 重置密码
 - 修改密码
+
+**area-permission.api.ts 职责：** ⭐ 新增
+- 商家端：
+  - `getAvailableAreas()` - 获取可申请区域
+  - `submitApplication()` - 提交区域申请
+  - `getMyApplications()` - 获取我的申请列表
+  - `getMyPermissions()` - 获取我的权限列表
+- 管理员端：
+  - `getPendingApplications()` - 获取待审批申请
+  - `approveApplication()` - 审批通过
+  - `rejectApplication()` - 审批驳回
+  - `revokePermission()` - 撤销权限
+
+**store.api.ts 职责：** ⭐ 新增
+- 商家端：
+  - `createStore()` - 创建店铺
+  - `getMyStores()` - 获取我的店铺列表
+  - `getStoreById()` - 获取店铺详情
+  - `updateStore()` - 更新店铺信息
+  - `activateStore()` - 激活店铺
+  - `deactivateStore()` - 暂停营业
+- 管理员端：
+  - `getAllStores()` - 获取所有店铺（分页）
+  - `approveStore()` - 审批店铺
+  - `closeStore()` - 关闭店铺
+
+**product.api.ts 职责：** ⭐ 新增
+- 商家端：
+  - `createProduct()` - 创建商品
+  - `getProduct()` - 获取商品详情
+  - `updateProduct()` - 更新商品
+  - `deleteProduct()` - 删除商品
+  - `getStoreProducts()` - 获取店铺商品列表
+  - `updateProductStatus()` - 更新商品状态
+  - `updateProductStock()` - 更新库存
+- 公开端：
+  - `getPublicStoreProducts()` - 获取店铺公开商品
+  - `getPublicProduct()` - 获取商品公开详情
 
 ### 3.8 router/ - 路由配置
 
@@ -347,7 +400,16 @@ router/
   - `/admin/mall-manage` - 商城管理
   - `/admin/layout-version` - 版本管理
   - `/admin/area-approval` - 区域审批
+  - `/admin/area-permission` - 权限管理 ⭐ 新增
+  - `/admin/store-manage` - 店铺管理 ⭐ 新增
+  - `/admin/users` - 用户管理 ⭐ 新增
 - `/merchant/*` - 商家页面（使用 MerchantLayout）
+  - `/merchant/dashboard` - 商家仪表盘
+  - `/merchant/store-config` - 店铺配置
+  - `/merchant/area-apply` - 区域申请
+  - `/merchant/area-permission` - 我的权限 ⭐ 新增
+  - `/merchant/product` - 商品管理 ⭐ 新增
+  - `/merchant/builder` - 建模工具
 - `/user/*` - 用户页面
 
 ### 3.9 components/ - 通用组件
@@ -356,6 +418,9 @@ router/
 
 ```
 components/
+├── admin/                   # 管理员组件 ⭐ 新增
+│   ├── index.ts             # 管理员组件导出
+│   └── UserDetailDrawer.vue # 用户详情抽屉
 ├── layouts/                 # 布局组件
 │   └── DashboardLayout.vue  # 仪表盘布局（已弃用，使用 views/layouts/）
 └── shared/                  # 共享组件
@@ -477,8 +542,8 @@ components/
 | `views/layouts/MerchantLayout.vue` | ✅ 完成 | 商家布局 |
 | `views/layouts/MainLayout.vue` | ✅ 完成 | 主布局 |
 | `views/admin/MallBuilderView.vue` | ✅ 完成 | 商城建模器（完整功能） |
-| `views/admin/*` | ✅ 完成 | 管理员页面（仪表盘、版本管理、商城管理、区域审批） |
-| `views/merchant/*` | ✅ 完成 | 商家页面（仪表盘、店铺配置、区域申请） |
+| `views/admin/*` | ✅ 完成 | 管理员页面（仪表盘、版本管理、商城管理、区域审批、权限管理） |
+| `views/merchant/*` | ✅ 完成 | 商家页面（仪表盘、店铺配置、区域申请、我的权限） |
 | `views/user/ProfileView.vue` | ✅ 完成 | 用户资料页面 |
 | `components/shared/*` | ✅ 完成 | 共享组件（StatCard、QuickActionCard、DataTable、Modal） |
 | `components/common/CustomSelect.vue` | ✅ 完成 | 自定义下拉选择组件 |
@@ -488,6 +553,8 @@ components/
 | `api/merchant.api.ts` | ✅ 完成 | 商家 API |
 | `api/user.api.ts` | ✅ 完成 | 用户 API |
 | `api/mall-manage.api.ts` | ✅ 完成 | 商城管理 API |
+| `api/area-permission.api.ts` | ✅ 完成 | 区域权限 API ⭐ 新增 |
+| `api/store.api.ts` | ✅ 完成 | 店铺管理 API ⭐ 新增 |
 | `router/index.ts` | ✅ 完成 | 路由配置（含所有页面路由） |
 
 ### 7.2 待实现模块
@@ -495,15 +562,66 @@ components/
 | 模块 | 状态 | 说明 |
 |------|------|------|
 | `orchestrator/` | ⏳ 待开始 | Action 分发、权限校验 |
-| `stores/` | ⏳ 待开始 | Pinia 状态管理 |
 | `components/scene/` | ⏳ 待开始 | 3D 场景 UI 组件 |
 | `components/mall/` | ⏳ 待开始 | 商城信息组件 |
 | `components/interaction/` | ⏳ 待开始 | 交互组件（搜索、聊天） |
 | `agent/` | ⏳ 待开始 | AI Agent 集成 |
 
+### 7.3 最新完成模块 (2026-01-10)
+
+| 模块 | 状态 | 说明 |
+|------|------|------|
+| `api/admin.api.ts` (扩展) | ✅ 完成 | 用户管理 API |
+| `views/admin/UserManageView.vue` | ✅ 完成 | 用户管理页面 |
+| `components/admin/UserDetailDrawer.vue` | ✅ 完成 | 用户详情抽屉 |
+| `api/__tests__/admin.api.test.ts` | ✅ 完成 | 单元测试 + 属性测试 |
+
+### 7.4 之前完成模块 (2026-01-07)
+
+| 模块 | 状态 | 说明 |
+|------|------|------|
+| `api/store.api.ts` | ✅ 完成 | 店铺管理 API |
+| `api/product.api.ts` | ✅ 完成 | 商品管理 API |
+| `views/merchant/ProductManageView.vue` | ✅ 完成 | 商品管理页面 |
+| `views/admin/AdminStoreManageView.vue` | ✅ 完成 | 管理员店铺管理 |
+| `stores/` | ✅ 完成 | Pinia 状态管理（user, mall, builder, system） |
+
 ---
 
 ## 8. 最近更新
+
+### 2026-01-10 更新
+
+**用户管理功能完成：**
+- 新增 `views/admin/UserManageView.vue` - 用户管理主页面
+- 新增 `components/admin/UserDetailDrawer.vue` - 用户详情抽屉组件
+- 扩展 `api/admin.api.ts` - 添加用户管理 API（getUserList, getUserDetail, freezeUser, activateUser）
+- 新增 `api/__tests__/admin.api.test.ts` - 12 个测试（9 单元测试 + 3 属性测试）
+- 用户状态管理：ACTIVE ↔ FROZEN
+
+**路由配置更新：**
+- 添加 `/admin/users` 路由
+- 更新组件映射表（AdminUserManage）
+- 更新 Mock 路由配置
+
+### 2026-01-07 更新
+
+**店铺管理功能完成：**
+- 新增 `api/store.api.ts` - 店铺管理 API 封装
+- 新增 `views/admin/AdminStoreManageView.vue` - 管理员店铺管理页面
+- 更新 `views/merchant/StoreConfigView.vue` - 对接真实后端 API
+- 店铺状态管理：PENDING → ACTIVE ↔ INACTIVE → CLOSED
+
+**商品管理功能完成：**
+- 新增 `api/product.api.ts` - 商品管理 API 封装
+- 新增 `views/merchant/ProductManageView.vue` - 商品管理页面
+- 商品状态管理：ON_SALE / OFF_SALE / SOLD_OUT
+- 库存与状态联动（库存为0自动售罄）
+
+**路由配置更新：**
+- 添加 `/admin/store-manage` 路由
+- 添加 `/merchant/product` 路由
+- 更新组件映射表和 Mock 路由配置
 
 ### 2026-01-03 更新
 

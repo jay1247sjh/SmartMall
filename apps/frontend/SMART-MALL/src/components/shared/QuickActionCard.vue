@@ -39,14 +39,17 @@ function handleClick() {
 .action-card {
   cursor: pointer;
   border-radius: 12px;
-  transition: transform 0.2s;
+  background: rgba(17, 17, 19, 0.8);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  transition: transform 0.2s, border-color 0.2s;
 
   &:hover {
     transform: translateY(-2px);
+    border-color: rgba(138, 180, 248, 0.3);
 
     .action-arrow {
       transform: translateX(4px);
-      color: var(--el-color-primary);
+      color: #8ab4f8;
     }
   }
 
@@ -68,19 +71,19 @@ function handleClick() {
         font-size: 15px;
         font-weight: 500;
         margin: 0 0 4px 0;
-        color: var(--el-text-color-primary);
+        color: #e8eaed;
       }
 
       .action-desc {
         font-size: 13px;
         margin: 0;
-        color: var(--el-text-color-secondary);
+        color: #9aa0a6;
       }
     }
 
     .action-arrow {
       flex-shrink: 0;
-      color: var(--el-text-color-placeholder);
+      color: #71717a;
       transition: all 0.2s;
     }
   }
