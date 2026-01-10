@@ -176,7 +176,7 @@ const router = createRouter({
    * - 如果有保存的滚动位置（浏览器前进/后退），恢复到该位置
    * - 否则滚动到页面顶部
    */
-  scrollBehavior(to, from, savedPosition) {
+  scrollBehavior(_to, _from, savedPosition) {
     if (savedPosition) {
       return savedPosition
     }

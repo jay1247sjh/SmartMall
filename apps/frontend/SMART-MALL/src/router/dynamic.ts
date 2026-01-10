@@ -11,6 +11,7 @@ import type { Router, RouteRecordRaw } from 'vue-router'
 import type { RouteConfig } from './types'
 import { getComponent, isComponentAllowed } from './componentMap'
 import { routeApi } from '@/api'
+import { notFoundRoute } from './index'
 
 // ============================================================================
 // 状态管理
@@ -78,12 +79,10 @@ export async function setupDynamicRoutes(router: Router): Promise<boolean> {
     })
 
     // 最后添加兜底路由（确保在所有动态路由之后）
-    router.addRoute({
-      path: '/:pathMatch(.*)*',
-      name: 'NotFoundCatchAll',
-      redirect: '/404',
-    })
-    registeredRouteNames.push('NotFoundCatchAll')
+    router.addRoute(notFoundRoute)
+    if (notFoundRoute.name) {
+      registeredRouteNames.push(notFoundRoute.name as string)
+    }
 
     isRoutesLoaded = true
     console.log(`[Router] 动态路由加载完成，共 ${routeConfigs.length} 个顶级路由`)

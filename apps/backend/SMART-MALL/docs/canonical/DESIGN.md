@@ -2370,15 +2370,179 @@ CREATE INDEX idx_sync_log_status ON vector_sync_log(sync_status);
 
 ---
 
-## 18. 后续演进计划
+## 18. AI 服务集成设计
 
-### 17.1 短期计划
+> 详细规范请参考 [AI_INTEGRATION.md](./AI_INTEGRATION.md)
+
+### 18.1 架构概述
+
+本系统采用 **Java 业务系统 + Python AI 服务** 的分离架构：
+
+```
+┌─────────────────────────────────────────────────────────┐
+│                      前端 (Vue 3 + Three.js)             │
+├─────────────────────────────────────────────────────────┤
+│  ┌─────────────────────┐    ┌─────────────────────────┐ │
+│  │   Java 业务系统      │◄──►│   Python AI 服务         │ │
+│  │   (Spring Boot 3.x) │    │   (FastAPI)             │ │
+│  │                     │    │                         │ │
+│  │  • 用户认证与权限    │    │  • 大模型调用 (LLM)      │ │
+│  │  • 商城结构管理      │    │  • Prompt 工程          │ │
+│  │  • 区域权限审批      │    │  • Agent / Skills       │ │
+│  │  • 店铺商品管理      │    │  • RAG 检索             │ │
+│  │  • 布局版本控制      │    │  • Embedding 生成       │ │
+│  │  • 审计日志          │    │  • 意图理解             │ │
+│  │                     │    │                         │ │
+│  │  【确定性、稳定】     │    │  【非确定性、可替换】    │ │
+│  └─────────────────────┘    └─────────────────────────┘ │
+└─────────────────────────────────────────────────────────┘
+```
+
+### 18.2 核心设计原则
+
+1. **Java 系统不依赖 Prompt 逻辑**
+   - Java 不解析 AI 返回的自然语言
+   - Java 只处理结构化的 Action 协议
+
+2. **Python 失败不导致 Java 失败**
+   - AI 服务不可用时，Java 系统降级运行
+   - 所有 AI 调用有超时和重试机制
+
+3. **AI 能力可版本化、可替换**
+   - Prompt、Agent、Skills 作为工程资产管理
+   - 支持 OpenAI / DeepSeek / 自建模型切换
+
+### 18.3 Java 端 AI 服务客户端
+
+```java
+/**
+ * AI 服务客户端接口
+ * 定义在 domain 层，实现在 infrastructure 层
+ */
+public interface AIServiceClient {
+    
+    /**
+     * 处理自然语言输入，返回结构化 Action
+     */
+    AIResponse processNaturalLanguage(AIRequest request);
+    
+    /**
+     * 检查 AI 服务健康状态
+     */
+    boolean isHealthy();
+    
+    /**
+     * 获取服务降级状态
+     */
+    DegradationStatus getDegradationStatus();
+}
+```
+
+### 18.4 降级策略
+
+```java
+@Component
+public class AIServiceFallbackHandler {
+    
+    /**
+     * 当 AI 服务不可用时的降级处理
+     */
+    public AIResponse handleFallback(AIRequest request, Throwable cause) {
+        // 1. 记录降级日志
+        log.warn("AI service fallback triggered: {}", cause.getMessage());
+        
+        // 2. 尝试关键词匹配
+        Optional<Store> store = keywordSearchService.search(request.getText());
+        if (store.isPresent()) {
+            return buildNavigationResponse(store.get());
+        }
+        
+        // 3. 返回降级提示
+        return AIResponse.builder()
+            .status(ResponseStatus.DEGRADED)
+            .fallback(FallbackInfo.builder()
+                .type("KEYWORD_SEARCH")
+                .suggestion("AI 服务暂时不可用，请使用搜索功能")
+                .build())
+            .build();
+    }
+}
+```
+
+### 18.5 Action 校验
+
+Java 系统对 AI 输出进行严格校验：
+
+```java
+@Component
+public class AIActionValidator {
+    
+    public ValidationResult validate(Action action, User user, Context context) {
+        // 1. 校验 Action 格式
+        if (!isValidActionFormat(action)) {
+            return ValidationResult.invalid("Action 格式不合法");
+        }
+        
+        // 2. 校验目标资源存在性
+        if (!resourceExists(action.getTarget())) {
+            return ValidationResult.invalid("目标资源不存在");
+        }
+        
+        // 3. 校验用户权限
+        if (!hasPermission(user, action)) {
+            return ValidationResult.invalid("用户无权执行此操作");
+        }
+        
+        return ValidationResult.valid();
+    }
+}
+```
+
+### 18.6 配置管理
+
+```yaml
+# application.yml
+ai:
+  service:
+    base-url: http://ai-service:8000
+    connect-timeout: 3000
+    read-timeout: 10000
+    retry:
+      max-attempts: 3
+      backoff-delay: 1000
+    circuit-breaker:
+      failure-rate-threshold: 50
+      wait-duration-in-open-state: 30000
+    fallback:
+      enabled: true
+      keyword-search-enabled: true
+```
+
+### 18.7 AI 集成正确性属性
+
+**Property 21: AI 服务隔离性**
+*对于任意* AI 服务调用失败，Java 业务系统必须能够继续正常运行，不影响核心业务功能
+**验证需求: 系统可用性**
+
+**Property 22: Action 校验完整性**
+*对于任意* AI 生成的 Action，Java 系统必须校验其格式、目标资源存在性和用户权限
+**验证需求: 安全性**
+
+**Property 23: 模型可替换性**
+*对于任意* LLM 模型切换（OpenAI → DeepSeek → 本地模型），不影响 Java 系统的接口契约
+**验证需求: 可扩展性**
+
+---
+
+## 19. 后续演进计划
+
+### 19.1 短期计划
 
 - 细化领域模型：引入领域事件（如 AreaPermissionGrantedEvent）
 - 引入更细粒度的建模版本管理（区域建模版本历史）
 - 补充自动化测试：单元测试（Domain / Application）、集成测试（接口 + 数据库）
 
-### 17.2 中期计划
+### 19.2 中期计划
 
 - 微服务演进方向：
   - mall-structure-service（商城结构）
@@ -2387,7 +2551,7 @@ CREATE INDEX idx_sync_log_status ON vector_sync_log(sync_status);
 - 引入消息队列处理异步任务
 - 实现 WebSocket 推送版本更新通知
 
-### 17.3 长期计划
+### 19.3 长期计划
 
 - 支持多商城管理
 - 引入搜索引擎（Elasticsearch）优化商品搜索
@@ -2409,5 +2573,6 @@ CREATE INDEX idx_sync_log_status ON vector_sync_log(sync_status);
 | 11. 正确性属性 | 系统正确性保证 |
 | 15. 与前端 / AI Agent 的协作 | 系统集成 |
 | 17. RAG 向量数据库架构设计 | RAG 知识库、AI Agent 集成 |
+| 18. AI 服务集成设计 | Java + Python AI 分离架构 |
 
 ---

@@ -30,8 +30,9 @@
 | P7 | 缓存与性能优化 | 8 | 3-4h | 低 | 未开始 |
 | P8 | WebSocket 通知 | 10 | 3-4h | 低 | 未开始 |
 | P9 | 集成测试与文档 | 6 | 2-3h | 低 | 未开始 |
+| P10 | AI 服务集成 | 12 | 4-5h | 中 | 未开始 |
 
-**总计**: 约 112 个任务，预估 38-48 小时
+**总计**: 约 124 个任务，预估 42-53 小时
 
 ---
 
@@ -771,6 +772,92 @@
 
 ---
 
+## P10. AI 服务集成
+
+> 目标：实现 Java 后端与 Python AI 服务的集成
+>
+> **状态**: 未开始
+> **参考文档**: [AI_INTEGRATION.md](../canonical/AI_INTEGRATION.md)
+
+### 10.1 AI 服务客户端 (infrastructure)
+
+- [ ] 10.1.1 创建 AIServiceClient 接口
+  - 定义在 domain 层
+  - processNaturalLanguage、isHealthy、getDegradationStatus
+  - _Requirements: AI 集成规范_
+
+- [ ] 10.1.2 实现 AIServiceClientImpl
+  - 基于 RestTemplate / WebClient
+  - 实现请求/响应转换
+  - _Requirements: AI 集成规范_
+
+- [ ] 10.1.3 配置 AI 服务连接参数
+  - base-url、timeout、retry 配置
+  - _Requirements: AI 集成规范_
+
+### 10.2 降级与熔断 (infrastructure)
+
+- [ ] 10.2.1 实现 AIServiceFallbackHandler
+  - 降级到关键词搜索
+  - 记录降级日志
+  - _Requirements: AI 集成规范_
+
+- [ ] 10.2.2 配置熔断器
+  - 使用 Resilience4j
+  - 失败率阈值、等待时间、滑动窗口
+  - _Requirements: AI 集成规范_
+
+- [ ] 10.2.3 实现健康检查
+  - 定期检查 AI 服务状态
+  - 更新熔断器状态
+  - _Requirements: AI 集成规范_
+
+### 10.3 Action 校验 (domain)
+
+- [ ] 10.3.1 实现 AIActionValidator
+  - 校验 Action 格式
+  - 校验目标资源存在性
+  - 校验用户权限
+  - _Requirements: AI 集成规范_
+
+- [ ] 10.3.2 实现 Action 执行器
+  - 根据 Action 类型分发执行
+  - 记录执行结果
+  - _Requirements: AI 集成规范_
+
+### 10.4 向量数据同步 (infrastructure)
+
+- [ ] 10.4.1 实现 VectorSyncService
+  - 实体变更时触发同步
+  - 发送到消息队列
+  - _Requirements: 需求 22_
+
+- [ ] 10.4.2 实现同步事件监听
+  - 监听实体 CRUD 事件
+  - 构建同步消息
+  - _Requirements: 需求 22_
+
+### 10.5 AI 接口层 (interfaces)
+
+- [ ] 10.5.1 实现导购接口
+  - POST /api/guide/query - 自然语言查询
+  - _Requirements: AI 集成规范_
+
+- [ ] 10.5.2 实现 AI 管理接口
+  - GET /api/admin/ai/status - AI 服务状态
+  - POST /api/admin/ai/sync - 触发向量同步
+  - _Requirements: AI 集成规范_
+
+### 10.6 AI 集成检查点
+
+- [ ] 10.6.0 Checkpoint - 确保 AI 集成完成
+  - AI 服务调用正常
+  - 降级机制正常
+  - Action 校验正常
+  - _Requirements: AI 集成规范_
+
+---
+
 ## 附录：任务依赖关系
 
 ```
@@ -784,11 +871,13 @@ P0 (基础设施)
                                └─→ P7 (缓存优化)
                                     └─→ P8 (WebSocket)
                                          └─→ P9 (集成测试)
+                                              └─→ P10 (AI 服务集成)
 ```
 
 **并行可能性**:
 - P5 (店铺商品) 可以与 P4 (权限管理) 并行开发
 - P7 (缓存优化) 可以独立开发，最后集成
 - P8 (WebSocket) 可以独立开发，最后集成
+- P10 (AI 服务集成) 可以在 P3 完成后并行开发
 
 ---
