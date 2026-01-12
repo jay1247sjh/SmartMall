@@ -72,7 +72,9 @@ Smart Mall 是一个支持 **3D 可视化浏览 + 商城布局建模 + AI 智能
 
 | 序号 | 模块 | 说明 | 难度 |
 |------|------|------|------|
-| 23 | [智能服务](./23-intelligence-service/README.md) | Python AI 服务架构与实现 | ⭐⭐⭐ |
+| 23 | [智能服务](./23-intelligence-service/README.md) | Python AI 服务架构与实现（含 RAG 知识库） | ⭐⭐⭐ |
+
+> 智能服务模块包含：LLM 集成、Function Calling、视觉理解、RAG 语义检索（Milvus + LangChain）
 
 ---
 
@@ -105,10 +107,10 @@ Smart Mall 是一个支持 **3D 可视化浏览 + 商城布局建模 + AI 智能
 ### 🤖 AI 开发（1-2 周）
 
 ```
-23-智能服务
+23-智能服务（含 RAG 知识库系统）
 ```
 
-掌握：FastAPI、LLM 集成、Function Calling
+掌握：FastAPI、LLM 集成、Function Calling、Milvus 向量数据库、LangChain RAG
 
 ### 📦 业务功能（1-2 周）
 
@@ -161,3 +163,5 @@ FAQ 和踩坑记录
 | ORM | MyBatis-Plus | 3.5+ | [官方文档](https://baomidou.com/) |
 | AI 框架 | FastAPI | 0.109+ | [官方文档](https://fastapi.tiangolo.com/) |
 | LLM | Qwen | - | [阿里云百炼](https://help.aliyun.com/zh/model-studio/) |
+| 向量数据库 | Milvus | 2.3+ | [官方文档](https://milvus.io/docs) |
+| RAG 框架 | LangChain | 0.1+ | [官方文档](https://python.langchain.com/) |

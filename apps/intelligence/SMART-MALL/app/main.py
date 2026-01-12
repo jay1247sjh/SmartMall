@@ -25,6 +25,8 @@ from app.api.health import router as health_router
 from app.api.intent import router as intent_router
 from app.api.embedding import router as embedding_router
 from app.api.chat import router as chat_router
+from app.api.rag import router as rag_router
+from app.api.mall_generator import router as mall_generator_router
 from app.core.config import settings
 
 # 配置日志
@@ -41,6 +43,15 @@ async def lifespan(app: FastAPI):
     logger.info("Intelligence Service starting...")
     logger.info(f"Environment: {settings.ENVIRONMENT}")
     logger.info(f"LLM Provider: {settings.LLM_PROVIDER}")
+    
+    # 初始化 RAG 服务（可选，失败不影响启动）
+    try:
+        from app.core.rag.service import init_rag_service
+        await init_rag_service()
+        logger.info("RAG Service initialized")
+    except Exception as e:
+        logger.warning(f"RAG Service initialization failed (non-critical): {e}")
+    
     yield
     logger.info("Intelligence Service shutting down...")
 
@@ -84,6 +95,8 @@ app.include_router(health_router, tags=["Health"])
 app.include_router(intent_router, prefix="/api", tags=["Intent"])
 app.include_router(embedding_router, prefix="/api", tags=["Embedding"])
 app.include_router(chat_router, prefix="/api", tags=["Chat"])
+app.include_router(rag_router, prefix="/api", tags=["RAG"])
+app.include_router(mall_generator_router, prefix="/api", tags=["Mall Generator"])
 
 
 @app.get("/")

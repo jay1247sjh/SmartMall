@@ -9,12 +9,14 @@
  * 1. 配置 Element Plus 国际化（中文）
  * 2. 提供全局布局容器
  * 3. 渲染路由出口（router-view）
+ * 4. 提供全局 AI 助手「小智」
  * 
  * 【组件层级】
  * SmartMall.vue (根组件)
  *   └── ElConfigProvider (Element Plus 配置)
- *         └── router-view (路由出口)
- *               └── 各个页面组件 (LoginView, MallView, etc.)
+ *         ├── router-view (路由出口)
+ *         │     └── 各个页面组件 (LoginView, MallView, etc.)
+ *         └── GlobalAiAssistant (全局 AI 助手)
  * 
  * 【为什么需要 ElConfigProvider？】
  * Element Plus 默认是英文界面，需要通过 ElConfigProvider 配置中文：
@@ -27,12 +29,30 @@
  * - 使用 <main> 语义化标签作为容器
  * - 全屏布局（100vw x 100vh）
  * - overflow: hidden 防止出现滚动条
+ * - 全局 AI 助手在所有页面可用
  * 
  * ============================================================================
  */
 
+import { computed } from 'vue'
+import { useRoute } from 'vue-router'
 import { ElConfigProvider } from 'element-plus'
 import zhCn from 'element-plus/es/locale/lang/zh-cn'
+import GlobalAiAssistant from '@/components/ai/GlobalAiAssistant.vue'
+
+const route = useRoute()
+
+/**
+ * 是否显示全局 AI 助手
+ * 
+ * 【逻辑说明】
+ * - 登录、注册、忘记密码等认证页面不显示
+ * - 其他所有页面都显示
+ */
+const showAiAssistant = computed(() => {
+  const authPages = ['/login', '/register', '/forgot-password', '/reset-password']
+  return !authPages.includes(route.path)
+})
 </script>
 
 <template>
@@ -79,6 +99,18 @@ import zhCn from 'element-plus/es/locale/lang/zh-cn'
         - /merchant/store-config → MerchantLayout.vue → StoreConfigView.vue
       -->
       <router-view />
+      
+      <!--
+        ============================================================================
+        全局 AI 助手「小智」
+        ============================================================================
+        
+        在所有页面（除认证页面外）显示的 AI 助手：
+        - 悬浮按钮在右下角
+        - 点击展开聊天面板
+        - 支持意图识别和页面导航
+      -->
+      <GlobalAiAssistant v-if="showAiAssistant" />
     </main>
   </ElConfigProvider>
 </template>

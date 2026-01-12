@@ -12,3 +12,6 @@ export * from './mall.store'
 
 // 系统状态
 export * from './system.store'
+
+// AI 助手状态
+export * from './ai.store'

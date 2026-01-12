@@ -65,6 +65,12 @@ jwt:
   access-token-expiration: 900000      # 15分钟
   refresh-token-expiration: 604800000  # 7天
 
+# Intelligence Service 配置（Python AI 服务）
+intelligence:
+  service:
+    url: ${INTELLIGENCE_SERVICE_URL:http://localhost:9001}
+    timeout: 30000
+
 # SpringDoc OpenAPI 配置
 springdoc:
   api-docs:

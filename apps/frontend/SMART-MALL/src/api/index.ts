@@ -190,3 +190,11 @@ export { default as storeApi } from './store.api'
 /** 商品管理 API - 商品创建、编辑、上下架、库存管理 */
 export * from './product.api'
 export { default as productApi } from './product.api'
+
+// ============================================================================
+// 智能服务 API
+// ============================================================================
+
+/** 智能服务 API - AI 对话、视觉理解、操作确认 */
+export * from './intelligence.api'
+export { default as intelligenceApi } from './intelligence.api'

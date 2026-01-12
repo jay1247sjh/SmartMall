@@ -1383,9 +1383,291 @@ class PromptLoader:
             cls._cache.clear()
 ```
 
+#### 5.5.8 RAG 知识库系统实现
+
+为了提升 AI Agent 的检索能力和回答准确性，系统引入了基于 Milvus 向量数据库和 LangChain 框架的 RAG（Retrieval-Augmented Generation）知识库系统。
+
+**1. RAG 系统架构**
+
+```
+用户查询
+    ↓
+┌─────────────────────┐
+│   Embedding 服务    │  ← 文本向量化（通义千问）
+└──────────┬──────────┘
+           ↓
+┌─────────────────────┐
+│   Milvus 向量检索   │  ← 语义相似度搜索
+└──────────┬──────────┘
+           ↓
+┌─────────────────────┐
+│   LangChain Retriever│  ← 结果过滤与排序
+└──────────┬──────────┘
+           ↓
+┌─────────────────────┐
+│   RAG Service       │  ← 上下文增强
+└──────────┬──────────┘
+           ↓
+      增强后的上下文 → LLM 生成回答
+```
+
+**2. 核心组件设计**
+
+| 组件 | 文件 | 职责 |
+|------|------|------|
+| Milvus 客户端 | `milvus_client.py` | 连接管理、集合操作、向量检索 |
+| Embedding 服务 | `embedding.py` | 多提供商支持、文本分块、缓存 |
+| LangChain Retriever | `retriever.py` | 自定义 Retriever、过滤条件 |
+| RAG 服务 | `service.py` | 店铺/商品搜索、上下文生成 |
+| 数据同步 | `sync.py` | 全量/增量同步、同步日志 |
+
+**3. 向量数据集合设计**
+
+系统定义了三个核心集合：
+
+```python
+# 店铺集合 Schema
+STORE_COLLECTION_SCHEMA = {
+    "name": "stores",
+    "fields": [
+        {"name": "id", "type": "VARCHAR", "max_length": 64, "is_primary": True},
+        {"name": "name", "type": "VARCHAR", "max_length": 200},
+        {"name": "category", "type": "VARCHAR", "max_length": 100},
+        {"name": "description", "type": "VARCHAR", "max_length": 2000},
+        {"name": "floor", "type": "INT64"},
+        {"name": "area", "type": "VARCHAR", "max_length": 100},
+        {"name": "position_x", "type": "FLOAT"},
+        {"name": "position_y", "type": "FLOAT"},
+        {"name": "position_z", "type": "FLOAT"},
+        {"name": "tags", "type": "VARCHAR", "max_length": 500},
+        {"name": "embedding", "type": "FLOAT_VECTOR", "dim": 1024}
+    ],
+    "index": {"field": "embedding", "type": "IVF_FLAT", "metric": "COSINE", "params": {"nlist": 128}}
+}
+
+# 商品集合 Schema
+PRODUCT_COLLECTION_SCHEMA = {
+    "name": "products",
+    "fields": [
+        {"name": "id", "type": "VARCHAR", "max_length": 64, "is_primary": True},
+        {"name": "name", "type": "VARCHAR", "max_length": 200},
+        {"name": "brand", "type": "VARCHAR", "max_length": 100},
+        {"name": "category", "type": "VARCHAR", "max_length": 100},
+        {"name": "description", "type": "VARCHAR", "max_length": 2000},
+        {"name": "price", "type": "FLOAT"},
+        {"name": "store_id", "type": "VARCHAR", "max_length": 64},
+        {"name": "store_name", "type": "VARCHAR", "max_length": 200},
+        {"name": "tags", "type": "VARCHAR", "max_length": 500},
+        {"name": "embedding", "type": "FLOAT_VECTOR", "dim": 1024}
+    ],
+    "index": {"field": "embedding", "type": "IVF_FLAT", "metric": "COSINE", "params": {"nlist": 128}}
+}
+```
+
+**4. Embedding 服务实现**
+
+```python
+class EmbeddingService:
+    """Embedding 服务 - 支持多提供商"""
+    
+    def __init__(self, provider: str = "qwen"):
+        self.provider = provider
+        self.dimension = 1024  # 通义千问 text-embedding-v3
+        self._cache: Dict[str, List[float]] = {}
+    
+    async def embed_text(self, text: str) -> List[float]:
+        """文本向量化"""
+        # 检查缓存
+        cache_key = hashlib.md5(text.encode()).hexdigest()
+        if cache_key in self._cache:
+            return self._cache[cache_key]
+        
+        # 调用 Embedding API
+        embedding = await self._call_embedding_api(text)
+        self._cache[cache_key] = embedding
+        return embedding
+    
+    async def embed_batch(self, texts: List[str]) -> List[List[float]]:
+        """批量向量化"""
+        return [await self.embed_text(text) for text in texts]
+```
+
+**5. LangChain Retriever 实现**
+
+```python
+class MilvusRetriever(BaseRetriever):
+    """自定义 LangChain Retriever"""
+    
+    def __init__(self, collection_name: str, embedding_service: EmbeddingService):
+        self.collection_name = collection_name
+        self.embedding_service = embedding_service
+        self.milvus_client = get_milvus_client()
+    
+    def _get_relevant_documents(
+        self,
+        query: str,
+        *,
+        filters: Optional[Dict] = None,
+        top_k: int = 5
+    ) -> List[Document]:
+        """检索相关文档"""
+        # 1. 查询向量化
+        query_embedding = self.embedding_service.embed_text(query)
+        
+        # 2. 构建过滤条件
+        filter_expr = self._build_filter_expr(filters)
+        
+        # 3. 向量检索
+        results = self.milvus_client.search(
+            collection_name=self.collection_name,
+            query_vectors=[query_embedding],
+            filter_expr=filter_expr,
+            top_k=top_k,
+            output_fields=["*"]
+        )
+        
+        # 4. 转换为 LangChain Document
+        return [self._to_document(hit) for hit in results[0]]
+```
+
+**6. RAG 服务核心实现**
+
+```python
+class RAGService:
+    """RAG 核心服务"""
+    
+    def __init__(self):
+        self.embedding_service = EmbeddingService()
+        self.store_retriever = MilvusRetriever("stores", self.embedding_service)
+        self.product_retriever = MilvusRetriever("products", self.embedding_service)
+    
+    async def search_stores(
+        self,
+        query: str,
+        category: Optional[str] = None,
+        floor: Optional[int] = None,
+        top_k: int = 5
+    ) -> List[Dict]:
+        """语义搜索店铺"""
+        filters = {}
+        if category:
+            filters["category"] = category
+        if floor:
+            filters["floor"] = floor
+        
+        docs = self.store_retriever.get_relevant_documents(
+            query, filters=filters, top_k=top_k
+        )
+        return [doc.metadata for doc in docs]
+    
+    async def search_products(
+        self,
+        query: str,
+        min_price: Optional[float] = None,
+        max_price: Optional[float] = None,
+        brand: Optional[str] = None,
+        top_k: int = 10
+    ) -> List[Dict]:
+        """语义搜索商品"""
+        filters = {}
+        if min_price:
+            filters["price_gte"] = min_price
+        if max_price:
+            filters["price_lte"] = max_price
+        if brand:
+            filters["brand"] = brand
+        
+        docs = self.product_retriever.get_relevant_documents(
+            query, filters=filters, top_k=top_k
+        )
+        return [doc.metadata for doc in docs]
+    
+    async def generate_context(self, query: str) -> str:
+        """生成增强上下文"""
+        stores = await self.search_stores(query, top_k=3)
+        products = await self.search_products(query, top_k=5)
+        
+        context = "相关店铺信息：\n"
+        for store in stores:
+            context += f"- {store['name']}（{store['category']}）位于{store['floor']}楼{store['area']}\n"
+        
+        context += "\n相关商品信息：\n"
+        for product in products:
+            context += f"- {product['name']}（{product['brand']}）¥{product['price']}，在{product['store_name']}\n"
+        
+        return context
+```
+
+**7. 数据同步服务**
+
+```python
+class DataSyncService:
+    """数据同步服务"""
+    
+    async def sync_stores(self, stores: List[Dict]) -> SyncResult:
+        """同步店铺数据到 Milvus"""
+        # 1. 生成 Embedding
+        texts = [self._store_to_text(s) for s in stores]
+        embeddings = await self.embedding_service.embed_batch(texts)
+        
+        # 2. 准备数据
+        entities = []
+        for store, embedding in zip(stores, embeddings):
+            entities.append({
+                **store,
+                "embedding": embedding
+            })
+        
+        # 3. 插入 Milvus
+        self.milvus_client.insert("stores", entities)
+        
+        return SyncResult(success=True, count=len(entities))
+    
+    async def full_sync(self) -> Dict[str, SyncResult]:
+        """全量同步所有数据"""
+        results = {}
+        results["stores"] = await self.sync_stores(await self._fetch_all_stores())
+        results["products"] = await self.sync_products(await self._fetch_all_products())
+        results["locations"] = await self.sync_locations(await self._fetch_all_locations())
+        return results
+```
+
+**8. Agent 集成 RAG**
+
+Mall Agent 在处理用户查询时，优先使用 RAG 检索获取相关信息：
+
+```python
+class MallAgent:
+    def __init__(self):
+        self.llm = LLMFactory.create("qwen")
+        self.rag_service = get_rag_service()
+    
+    async def process(self, user_input: str, ...) -> Dict[str, Any]:
+        # 1. 使用 RAG 获取相关上下文
+        try:
+            rag_context = await self.rag_service.generate_context(user_input)
+        except Exception:
+            rag_context = ""  # RAG 失败时降级
+        
+        # 2. 增强系统提示词
+        enhanced_prompt = f"{system_prompt}\n\n当前商城信息：\n{rag_context}"
+        
+        # 3. 调用 LLM 进行 Function Calling
+        return await self._process_with_context(user_input, enhanced_prompt)
+```
+
+**9. RAG API 接口**
+
+| 接口 | 方法 | 说明 |
+|------|------|------|
+| `/api/rag/search/stores` | POST | 店铺语义搜索 |
+| `/api/rag/search/products` | POST | 商品语义搜索 |
+| `/api/rag/sync/trigger` | POST | 触发数据同步 |
+| `/api/rag/health` | GET | RAG 服务健康检查 |
+
 ### 5.6 本章小结
 
-本章详细描述了系统各层的设计与实现。渲染引擎层提供了 Three.js 的封装和管理；领域场景层实现了语义对象建模和商城管理；业务协调层设计了 Action 协议和 RCAC 权限模型；后端实现了商城建模器持久化服务和区域权限管理；AI Agent 模块实现了完整的 Function Calling 工具链、三级安全控制和模块化提示词系统。各层职责清晰，相互协作，共同构成了完整的系统。
+本章详细描述了系统各层的设计与实现。渲染引擎层提供了 Three.js 的封装和管理；领域场景层实现了语义对象建模和商城管理；业务协调层设计了 Action 协议和 RCAC 权限模型；后端实现了商城建模器持久化服务和区域权限管理；AI Agent 模块实现了完整的 Function Calling 工具链、三级安全控制和模块化提示词系统；RAG 知识库系统基于 Milvus 向量数据库和 LangChain 框架，为智能导购提供了语义检索能力，显著提升了 AI 回答的准确性和相关性。各层职责清晰，相互协作，共同构成了完整的系统。
 
 ---
 
@@ -1540,6 +1822,7 @@ class PromptLoader:
    - 三级安全控制（safe/confirm/critical）
    - 模块化提示词系统（YAML 配置，支持热更新）
    - 多层安全防护（提示词注入检测、敏感话题过滤）
+   - 基于 Milvus + LangChain 的 RAG 知识库系统，提供语义检索能力
 
 6. **区域建模权限机制**：设计了商家建模权限申请、审批和沙盒约束机制，支持多商家协作，保证了空间治理的有序性。
 
@@ -1635,10 +1918,17 @@ class PromptLoader:
 |---------|---------|
 | app/main.py | FastAPI 入口 |
 | app/api/chat.py | 对话接口 |
+| app/api/rag.py | RAG 检索接口 |
 | app/core/llm/qwen.py | Qwen LLM 提供商 |
 | app/core/agent/mall_agent.py | 智能导购 Agent |
 | app/core/agent/tools.py | Function Calling 工具定义 |
 | app/core/prompt_loader.py | 提示词加载器 |
+| app/core/rag/milvus_client.py | Milvus 向量数据库客户端 |
+| app/core/rag/embedding.py | Embedding 向量化服务 |
+| app/core/rag/retriever.py | LangChain 自定义 Retriever |
+| app/core/rag/service.py | RAG 核心服务 |
+| app/core/rag/sync.py | 数据同步服务 |
+| app/core/rag/schemas.py | 集合 Schema 定义 |
 | app/prompts/system.yaml | 系统提示词配置 |
 | app/prompts/intent.yaml | 意图识别提示词 |
 | app/prompts/action.yaml | Action 生成提示词 |

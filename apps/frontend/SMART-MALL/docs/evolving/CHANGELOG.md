@@ -9,6 +9,53 @@
 
 ---
 
+## [Unreleased] - 2026-01-11
+
+### Added - 新增功能
+
+#### AI 导购助手集成 ⭐ 新增
+
+**API 模块 (`api/intelligence.api.ts`)** ⭐ 新增
+- ✅ 创建智能服务 API 模块，对接 Intelligence Service
+- ✅ 智能对话 API：
+  - `chat()` - 发送对话消息（支持纯文本和图片+文字）
+  - `confirm()` - 确认或取消操作（加购、下单等）
+  - `uploadImage()` - 上传图片获取 URL
+- ✅ 类型定义：
+  - `ChatRequest` - 对话请求
+  - `ChatResponse` - 对话响应
+  - `ChatMessage` - 聊天消息（前端展示用）
+  - `ToolResult` - 工具调用结果
+  - `ConfirmRequest` - 确认请求
+
+**AI 聊天组件 (`components/ai/AiChatPanel.vue`)** ⭐ 新增
+- ✅ 与 AI 导购助手「小智」的对话界面
+- ✅ 文字输入对话
+- ✅ 图片上传（视觉理解）
+- ✅ 操作确认（加购、下单等需确认操作）
+- ✅ 消息历史展示
+- ✅ 加载状态和错误处理
+- ✅ 深色主题 UI 设计
+- ✅ 响应式布局
+
+**Agent 模块 (`agent/index.ts`)** ⭐ 新增
+- ✅ 封装与 Intelligence Service 的交互逻辑
+- ✅ `parseToolResultToAction()` - 解析工具调用结果为场景操作
+- ✅ 场景操作类型定义（navigate、highlight、showDetail、addToCart）
+
+**Mall3DView.vue 集成**
+- ✅ 集成 AI 聊天面板组件
+- ✅ AI 聊天按钮（右下角浮动按钮）
+- ✅ AI 导航事件处理（handleAiNavigate）
+- ✅ AI 高亮事件处理（handleAiHighlight）
+- ✅ AI 显示详情事件处理（handleAiShowDetail）
+
+**Vite 配置更新**
+- ✅ 添加 Intelligence Service 代理配置
+  - `/intelligence-api` → `http://localhost:9000`
+
+---
+
 ## [Unreleased] - 2026-01-10
 
 ### Added - 新增功能

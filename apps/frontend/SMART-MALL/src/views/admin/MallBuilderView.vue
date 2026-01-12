@@ -2194,7 +2194,112 @@ onMounted(() => {
   window.addEventListener('keydown', handleKeydown)
   window.addEventListener('keyup', handleKeyup)
   window.addEventListener('resize', handleResize)
+  
+  // 检查是否有 AI 生成的商城数据
+  loadAiGeneratedMall()
 })
+
+/**
+ * 加载 AI 生成的商城数据
+ */
+function loadAiGeneratedMall() {
+  const savedMallData = localStorage.getItem('ai_generated_mall')
+  if (savedMallData) {
+    try {
+      const mallData = JSON.parse(savedMallData)
+      console.log('[MallBuilder] 加载 AI 生成的商城数据:', mallData)
+      
+      // 将 AI 生成的数据转换为项目格式
+      const projectData = convertAiDataToProject(mallData)
+      const result = importProject(JSON.stringify(projectData))
+      
+      if (result.success && result.project) {
+        project.value = result.project
+        currentFloorId.value = result.project.floors[0]?.id || null
+        showWizard.value = false
+        
+        // 等待场景初始化完成后渲染
+        setTimeout(() => {
+          renderProject()
+          saveHistory()
+        }, 500)
+      }
+      
+      // 清除 localStorage 中的数据（已加载）
+      localStorage.removeItem('ai_generated_mall')
+    } catch (err) {
+      console.error('[MallBuilder] 加载 AI 生成数据失败:', err)
+    }
+  }
+}
+
+/**
+ * 将 AI 生成的数据转换为项目格式
+ */
+function convertAiDataToProject(aiData: any): any {
+  return {
+    id: generateId(),
+    name: aiData.name || '新商城',
+    description: aiData.description || '',
+    outline: aiData.outline || {
+      vertices: [
+        { x: -25, y: -25 },
+        { x: 25, y: -25 },
+        { x: 25, y: 25 },
+        { x: -25, y: 25 },
+      ],
+      isClosed: true,
+    },
+    floors: (aiData.floors || []).map((floor: any, index: number) => ({
+      id: generateId(),
+      name: floor.name || `${index + 1}F`,
+      level: floor.level || index + 1,
+      height: floor.height || 4,
+      visible: true,
+      locked: false,
+      shape: floor.inheritOutline === false ? floor.shape : undefined,
+      areas: (floor.areas || []).map((area: any) => ({
+        id: generateId(),
+        name: area.name || '未命名区域',
+        type: mapAreaType(area.type),
+        shape: area.shape || {
+          vertices: [
+            { x: 0, y: 0 },
+            { x: 10, y: 0 },
+            { x: 10, y: 10 },
+            { x: 0, y: 10 },
+          ],
+          isClosed: true,
+        },
+        color: area.color || '#3b82f6',
+        properties: area.properties || {},
+      })),
+    })),
+    settings: aiData.settings || {},
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+    version: 1,
+  }
+}
+
+/**
+ * 映射区域类型
+ */
+function mapAreaType(type: string): AreaType {
+  const typeMap: Record<string, AreaType> = {
+    'store': 'retail',
+    'retail': 'retail',
+    'food': 'food',
+    'restaurant': 'food',
+    'cafe': 'food',
+    'corridor': 'corridor',
+    'facility': 'service',
+    'service': 'service',
+    'entrance': 'entrance',
+    'entertainment': 'entertainment',
+  }
+  return typeMap[type?.toLowerCase()] || 'retail'
+}
 
 onUnmounted(() => {
   window.removeEventListener('keydown', handleKeydown)

@@ -17,12 +17,15 @@
 | 👁️ 视觉理解 | 识别图片内容，推荐相似商品/美食 | ✅ |
 | 🛡️ 安全防护 | 提示词注入检测、敏感内容过滤 | ✅ |
 | 🎯 意图识别 | 精准识别用户意图和实体 | ✅ |
+| 🔍 RAG 语义检索 | 基于 Milvus + LangChain 的向量检索 | ✅ |
 
 ### 技术栈
 
 - **框架**: FastAPI 0.109+
 - **语言**: Python 3.11+
 - **LLM**: 阿里云百炼 Qwen（支持 OpenAI 兼容接口）
+- **向量数据库**: Milvus 2.3+
+- **RAG 框架**: LangChain
 - **类型**: Pydantic 2.x
 - **配置**: YAML + 环境变量
 
@@ -91,6 +94,7 @@ intelligence/SMART-MALL/
 │   │   ├── chat.py             # 对话接口
 │   │   ├── intent.py           # 意图识别接口
 │   │   ├── embedding.py        # Embedding 接口
+│   │   ├── rag.py              # RAG 检索接口 ⭐
 │   │   └── health.py           # 健康检查
 │   ├── core/                   # 核心模块
 │   │   ├── config.py           # 配置管理
@@ -99,9 +103,17 @@ intelligence/SMART-MALL/
 │   │   │   ├── base.py         # 基类定义
 │   │   │   ├── factory.py      # 工厂模式
 │   │   │   └── qwen.py         # Qwen 实现
-│   │   └── agent/              # Agent 模块
-│   │       ├── mall_agent.py   # 导购 Agent
-│   │       └── tools.py        # Function Calling 工具
+│   │   ├── agent/              # Agent 模块
+│   │   │   ├── mall_agent.py   # 导购 Agent
+│   │   │   └── tools.py        # Function Calling 工具
+│   │   └── rag/                # RAG 模块 ⭐
+│   │       ├── milvus_client.py # Milvus 客户端
+│   │       ├── embedding.py    # Embedding 服务
+│   │       ├── retriever.py    # LangChain Retriever
+│   │       ├── service.py      # RAG 核心服务
+│   │       ├── sync.py         # 数据同步服务
+│   │       ├── schemas.py      # 集合 Schema
+│   │       └── seed_data.py    # 示例数据
 │   ├── prompts/                # 提示词配置 ⭐
 │   │   ├── system.yaml         # 系统提示词
 │   │   ├── intent.yaml         # 意图识别
@@ -110,12 +122,134 @@ intelligence/SMART-MALL/
 │   │   ├── safety.yaml         # 安全防护
 │   │   └── README.md           # 提示词指南
 │   └── schemas/                # 数据模型
+│       └── rag.py              # RAG API Schema
+├── tests/                      # 测试
+│   ├── test_milvus_client.py   # Milvus 客户端测试
+│   ├── test_embedding_properties.py  # Embedding 属性测试
+│   ├── test_retriever_properties.py  # Retriever 属性测试
+│   ├── test_rag_service_properties.py # RAG 服务属性测试
+│   ├── test_sync_properties.py # 数据同步属性测试
+│   └── test_agent_integration.py # Agent 集成测试
 ├── docs/                       # 项目文档
 │   ├── canonical/              # 规范文档
 │   └── evolving/               # 演进文档
 ├── .env                        # 环境变量
 ├── requirements.txt            # 依赖
 └── Dockerfile                  # 容器化
+```
+
+---
+
+## RAG 模块说明
+
+### 概述
+
+RAG（Retrieval-Augmented Generation）模块基于 Milvus 向量数据库和 LangChain 框架，为智能导购提供语义检索能力。
+
+### 架构
+
+```
+┌─────────────┐     ┌─────────────┐     ┌─────────────┐
+│   Agent     │────►│ RAG Service │────►│   Milvus    │
+│ (mall_agent)│     │  (service)  │     │  (向量DB)   │
+└─────────────┘     └──────┬──────┘     └─────────────┘
+                          │
+                          ▼
+                   ┌─────────────┐
+                   │  Embedding  │
+                   │  (通义千问)  │
+                   └─────────────┘
+```
+
+### 核心组件
+
+| 组件 | 文件 | 说明 |
+|------|------|------|
+| Milvus 客户端 | `milvus_client.py` | 连接管理、CRUD、向量检索 |
+| Embedding 服务 | `embedding.py` | 多提供商支持、文本分块、缓存 |
+| LangChain Retriever | `retriever.py` | 自定义 Retriever、过滤条件 |
+| RAG 服务 | `service.py` | 店铺/商品搜索、上下文生成 |
+| 数据同步 | `sync.py` | 全量/增量同步、同步日志 |
+| 示例数据 | `seed_data.py` | 15 家店铺、60+ 商品、位置数据 |
+
+### 数据集合
+
+| 集合 | 字段 | 说明 |
+|------|------|------|
+| stores | id, name, category, description, floor, area, position_x/y/z, tags, embedding | 店铺信息 |
+| products | id, name, brand, category, description, price, store_id, store_name, tags, embedding | 商品信息 |
+| locations | id, name, type, description, floor, position_x/y/z, embedding | 位置信息 |
+
+### API 接口
+
+```http
+# 店铺语义搜索
+POST /api/rag/search/stores
+{
+  "query": "运动品牌",
+  "category": "运动",
+  "floor": 1,
+  "top_k": 5
+}
+
+# 商品语义搜索
+POST /api/rag/search/products
+{
+  "query": "跑鞋",
+  "brand": "Nike",
+  "min_price": 500,
+  "max_price": 1000,
+  "top_k": 10
+}
+
+# 触发数据同步
+POST /api/rag/sync/trigger
+{
+  "collections": ["stores", "products", "locations"]
+}
+
+# 健康检查
+GET /api/rag/health
+```
+
+### 使用示例
+
+```python
+from app.core.rag.service import get_rag_service
+
+# 获取 RAG 服务
+rag = get_rag_service()
+
+# 搜索店铺
+stores = await rag.search_stores("Nike 专卖店")
+
+# 搜索商品（带价格过滤）
+products = await rag.search_products(
+    query="跑鞋",
+    min_price=500,
+    max_price=1000
+)
+
+# 导航到店铺
+result = await rag.navigate_to_store("星巴克")
+```
+
+### Milvus 部署
+
+使用 Docker Compose 部署 Milvus Standalone：
+
+```bash
+cd infra
+docker-compose up -d milvus etcd minio
+```
+
+配置环境变量：
+
+```env
+MILVUS_HOST=localhost
+MILVUS_PORT=19530
+EMBEDDING_PROVIDER=qwen
+QWEN_EMBEDDING_MODEL=text-embedding-v3
 ```
 
 ---

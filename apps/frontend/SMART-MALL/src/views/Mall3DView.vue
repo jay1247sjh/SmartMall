@@ -7,6 +7,7 @@
  * 【业务职责】
  * Smart Mall 的核心页面，展示 3D 可视化的商城空间。
  * 用户可以在这里浏览商城、切换楼层、搜索店铺、查看店铺详情。
+ * 集成 AI 导购助手，支持智能对话和视觉理解。
  *
  * 【页面功能】
  * 1. 3D 场景渲染 - 使用 Three.js 引擎渲染商城模型
@@ -14,13 +15,19 @@
  * 3. 店铺搜索 - 按名称搜索店铺
  * 4. 店铺详情 - 点击店铺查看详细信息
  * 5. 迷你地图 - 显示当前楼层的俯视图
- * 6. 操作提示 - 指导用户如何操作 3D 场景
+ * 6. AI 导购 - 智能对话、图片识别、导航推荐
+ * 7. 操作提示 - 指导用户如何操作 3D 场景
  *
  * 【3D 交互说明】
  * - 鼠标拖拽：旋转视角
  * - 滚轮：缩放场景
  * - 右键拖拽：平移视角
  * - 点击店铺：显示店铺详情面板
+ *
+ * 【AI 导购功能】
+ * - 文字对话：询问店铺位置、商品推荐等
+ * - 图片识别：上传图片，推荐相似商品
+ * - 场景联动：AI 回复可触发导航、高亮等操作
  *
  * 【加载流程】
  * 1. 初始化 Three.js 引擎
@@ -32,7 +39,7 @@
  *
  * 【UI 层级】
  * - 底层：Three.js 渲染的 3D 场景
- * - 顶层：UI 覆盖层（顶部栏、楼层选择器、迷你地图、店铺面板等）
+ * - 顶层：UI 覆盖层（顶部栏、楼层选择器、迷你地图、店铺面板、AI 聊天等）
  * UI 覆盖层使用 pointer-events: none 让鼠标事件穿透到 3D 场景，
  * 只有具体的 UI 元素设置 pointer-events: auto 接收点击。
  *
@@ -44,12 +51,14 @@
  * - ThreeEngine：3D 渲染引擎，封装 Three.js
  * - mall.store：商城数据状态管理
  * - system.store：系统模式（RUNTIME/CONFIG）管理
+ * - AiChatPanel：AI 导购聊天组件
  * ============================================================================
  */
 import { ref, onMounted, onUnmounted, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { ThreeEngine } from '@/engine'
 import { useUserStore } from '@/stores'
+import { AiChatPanel } from '@/components'
 
 // ============================================================================
 // 状态定义
@@ -97,11 +106,11 @@ const showMinimap = ref(true)
  * 楼层列表
  * 实际项目中应从 mall.store 获取
  */
-const floors = [
+const floors = ref([
   { id: 1, name: '1F', label: '一楼 - 餐饮美食' },
   { id: 2, name: '2F', label: '二楼 - 服装服饰' },
   { id: 3, name: '3F', label: '三楼 - 娱乐休闲' },
-]
+])
 
 // ----------------------------------------------------------------------------
 // 搜索状态
@@ -113,6 +122,19 @@ const searchQuery = ref('')
 const showSearchResults = ref(false)
 /** 搜索结果列表 */
 const searchResults = ref<any[]>([])
+
+// ----------------------------------------------------------------------------
+// AI 聊天状态
+// ----------------------------------------------------------------------------
+
+/** 是否显示 AI 聊天面板 */
+const showAiChat = ref(false)
+
+/** AI 生成的商城数据 */
+const generatedMallData = ref<any>(null)
+
+/** 是否显示导入成功提示 */
+const showImportSuccess = ref(false)
 
 // ============================================================================
 // 方法定义
@@ -144,8 +166,25 @@ async function initEngine() {
   loadProgress.value = 60
   loadingText.value = '构建商城模型...'
 
-  // 加载商城模型（目前是模拟数据）
-  await simulateLoadMall()
+  // 检查是否有 AI 生成的商城数据
+  const savedMallData = localStorage.getItem('ai_generated_mall')
+  if (savedMallData) {
+    try {
+      generatedMallData.value = JSON.parse(savedMallData)
+      await loadGeneratedMall(generatedMallData.value)
+      showImportSuccess.value = true
+      // 3秒后隐藏提示
+      setTimeout(() => {
+        showImportSuccess.value = false
+      }, 3000)
+    } catch (e) {
+      console.error('Failed to parse generated mall data:', e)
+      await simulateLoadMall()
+    }
+  } else {
+    // 加载默认商城模型
+    await simulateLoadMall()
+  }
 
   loadProgress.value = 80
   loadingText.value = '初始化交互...'
@@ -213,6 +252,185 @@ async function simulateLoadMall() {
 }
 
 /**
+ * 加载 AI 生成的商城数据
+ * 根据生成的 JSON 数据创建 3D 场景
+ */
+async function loadGeneratedMall(mallData: any) {
+  if (!engine.value || !mallData) return
+
+  const THREE = await import('three')
+  const scene = engine.value.getScene()
+
+  // 获取商城尺寸
+  const outline = mallData.outline
+  let width = 100, height = 80
+  if (outline?.vertices?.length >= 2) {
+    const xs = outline.vertices.map((v: any) => v.x)
+    const ys = outline.vertices.map((v: any) => v.y)
+    width = Math.max(...xs) - Math.min(...xs)
+    height = Math.max(...ys) - Math.min(...ys)
+  }
+
+  // 创建地板
+  const floorGeometry = new THREE.PlaneGeometry(width + 20, height + 20)
+  const floorMaterial = new THREE.MeshStandardMaterial({ 
+    color: 0x1a1a1a,
+    roughness: 0.8,
+  })
+  const floor = new THREE.Mesh(floorGeometry, floorMaterial)
+  floor.rotation.x = -Math.PI / 2
+  floor.position.set(width / 2, 0, height / 2)
+  floor.receiveShadow = true
+  scene.add(floor)
+
+  // 更新楼层数据
+  if (mallData.floors?.length > 0) {
+    floors.value = mallData.floors.map((f: any, index: number) => ({
+      id: f.level || index + 1,
+      name: f.name || `${index + 1}F`,
+      label: `${f.name || `${index + 1}F`} - ${getFloorDescription(f)}`,
+    }))
+  }
+
+  // 渲染当前楼层的区域
+  const currentFloorData = mallData.floors?.find((f: any) => f.level === currentFloor.value) || mallData.floors?.[0]
+  if (currentFloorData?.areas) {
+    for (const area of currentFloorData.areas) {
+      await renderArea(area, THREE)
+    }
+  }
+
+  // 请求重新渲染
+  engine.value.requestRender()
+}
+
+/**
+ * 获取楼层描述
+ */
+function getFloorDescription(floor: any): string {
+  if (!floor.areas?.length) return '待规划'
+  const storeCount = floor.areas.filter((a: any) => a.type === 'store').length
+  const types = [...new Set(floor.areas.map((a: any) => a.properties?.category).filter(Boolean))]
+  if (types.length > 0) {
+    const categoryNames: Record<string, string> = {
+      fashion: '服装',
+      sports: '运动',
+      food: '餐饮',
+      cafe: '咖啡',
+      electronics: '数码',
+      entertainment: '娱乐',
+    }
+    return types.map(t => categoryNames[t as string] || t).join('·')
+  }
+  return `${storeCount} 家店铺`
+}
+
+/**
+ * 渲染单个区域
+ */
+async function renderArea(area: any, THREE: any) {
+  if (!engine.value || !area.shape?.vertices?.length) return
+
+  const vertices = area.shape.vertices
+  
+  // 计算区域中心和尺寸
+  const xs = vertices.map((v: any) => v.x)
+  const ys = vertices.map((v: any) => v.y)
+  const minX = Math.min(...xs), maxX = Math.max(...xs)
+  const minY = Math.min(...ys), maxY = Math.max(...ys)
+  const centerX = (minX + maxX) / 2
+  const centerZ = (minY + maxY) / 2
+  const areaWidth = maxX - minX
+  const areaDepth = maxY - minY
+
+  // 根据类型设置高度
+  const heightMap: Record<string, number> = {
+    store: 4,
+    corridor: 0.1,
+    facility: 3,
+    entrance: 2,
+  }
+  const areaHeight = heightMap[area.type] || 4
+
+  // 解析颜色
+  let color = 0x3b82f6
+  if (area.color) {
+    color = parseInt(area.color.replace('#', ''), 16)
+  }
+
+  // 创建 3D 方块
+  if (area.type === 'corridor') {
+    // 走廊用扁平的方块
+    const geometry = new THREE.BoxGeometry(areaWidth, 0.1, areaDepth)
+    const material = new THREE.MeshStandardMaterial({ 
+      color: color,
+      roughness: 0.9,
+      transparent: true,
+      opacity: 0.5,
+    })
+    const mesh = new THREE.Mesh(geometry, material)
+    mesh.position.set(centerX, 0.05, centerZ)
+    mesh.userData = { name: area.name, type: area.type, isArea: true }
+    engine.value.getScene().add(mesh)
+  } else {
+    // 店铺用立体方块
+    const geometry = new THREE.BoxGeometry(areaWidth - 1, areaHeight, areaDepth - 1)
+    const material = new THREE.MeshStandardMaterial({ 
+      color: color,
+      roughness: 0.6,
+    })
+    const mesh = new THREE.Mesh(geometry, material)
+    mesh.position.set(centerX, areaHeight / 2, centerZ)
+    mesh.castShadow = true
+    mesh.receiveShadow = true
+    mesh.userData = { name: area.name, type: area.type, isArea: true }
+    engine.value.getScene().add(mesh)
+    
+    // 添加店铺名称标签（使用 Sprite）
+    const canvas = document.createElement('canvas')
+    const ctx = canvas.getContext('2d')!
+    canvas.width = 256
+    canvas.height = 64
+    ctx.fillStyle = 'rgba(0, 0, 0, 0.7)'
+    ctx.fillRect(0, 0, canvas.width, canvas.height)
+    ctx.fillStyle = '#ffffff'
+    ctx.font = 'bold 24px Arial'
+    ctx.textAlign = 'center'
+    ctx.textBaseline = 'middle'
+    ctx.fillText(area.name, canvas.width / 2, canvas.height / 2)
+    
+    const texture = new THREE.CanvasTexture(canvas)
+    const spriteMaterial = new THREE.SpriteMaterial({ map: texture })
+    const sprite = new THREE.Sprite(spriteMaterial)
+    sprite.position.set(centerX, areaHeight + 1, centerZ)
+    sprite.scale.set(8, 2, 1)
+    sprite.userData = { isArea: true }
+    engine.value.getScene().add(sprite)
+  }
+}
+
+/**
+ * 清除生成的商城数据
+ */
+function clearGeneratedMall() {
+  localStorage.removeItem('ai_generated_mall')
+  generatedMallData.value = null
+  // 重新加载默认场景
+  if (engine.value) {
+    const scene = engine.value.getScene()
+    // 清除所有对象（保留灯光和相机）
+    const toRemove: any[] = []
+    scene.traverse((obj: any) => {
+      if (obj.type === 'Mesh' || obj.type === 'Sprite') {
+        toRemove.push(obj)
+      }
+    })
+    toRemove.forEach(obj => scene.remove(obj))
+    simulateLoadMall()
+  }
+}
+
+/**
  * 返回上一页（商城首页）
  */
 function goBack() {
@@ -223,10 +441,34 @@ function goBack() {
  * 切换楼层
  * @param floorId - 目标楼层 ID
  */
-function selectFloor(floorId: number) {
+async function selectFloor(floorId: number) {
   currentFloor.value = floorId
   showFloorSelector.value = false
-  // TODO: 切换楼层场景，加载对应楼层的模型
+  
+  // 如果有生成的商城数据，重新渲染对应楼层
+  if (generatedMallData.value && engine.value) {
+    const THREE = await import('three')
+    const scene = engine.value.getScene()
+    
+    // 清除当前楼层的对象（保留地板和灯光）
+    const toRemove: any[] = []
+    scene.traverse((obj: any) => {
+      if ((obj.type === 'Mesh' || obj.type === 'Sprite') && obj.userData?.isArea) {
+        toRemove.push(obj)
+      }
+    })
+    toRemove.forEach(obj => scene.remove(obj))
+    
+    // 渲染新楼层的区域
+    const currentFloorData = generatedMallData.value.floors?.find((f: any) => f.level === floorId)
+    if (currentFloorData?.areas) {
+      for (const area of currentFloorData.areas) {
+        await renderArea(area, THREE)
+      }
+    }
+    
+    engine.value.requestRender()
+  }
 }
 
 /**
@@ -275,6 +517,45 @@ function toggleMinimap() {
   showMinimap.value = !showMinimap.value
 }
 
+/**
+ * 切换 AI 聊天面板显示状态
+ */
+function toggleAiChat() {
+  showAiChat.value = !showAiChat.value
+}
+
+/**
+ * 处理 AI 导航事件
+ * 当 AI 返回导航指令时，移动相机到目标位置
+ */
+function handleAiNavigate(payload: { storeId: string; position: { x: number; y: number; z: number } }) {
+  console.log('AI Navigate:', payload)
+  // TODO: 实现相机飞行动画到目标位置
+  // engine.value?.flyTo(payload.position)
+}
+
+/**
+ * 处理 AI 高亮事件
+ * 当 AI 返回高亮指令时，高亮显示目标对象
+ */
+function handleAiHighlight(payload: { type: 'store' | 'product'; id: string }) {
+  console.log('AI Highlight:', payload)
+  // TODO: 实现高亮效果
+  // engine.value?.highlight(payload.id)
+}
+
+/**
+ * 处理 AI 显示详情事件
+ */
+function handleAiShowDetail(payload: { type: 'store' | 'product'; id: string }) {
+  console.log('AI Show Detail:', payload)
+  // TODO: 显示详情面板
+  if (payload.type === 'store') {
+    selectedStore.value = { id: payload.id, name: '店铺详情' }
+    showStorePanel.value = true
+  }
+}
+
 // ============================================================================
 // 生命周期
 // ============================================================================
@@ -313,6 +594,25 @@ onUnmounted(() => {
 
     <!-- UI 覆盖层 -->
     <div v-if="!isLoading" class="ui-overlay">
+      <!-- AI 生成商城导入成功提示 -->
+      <Transition name="fade">
+        <div v-if="showImportSuccess && generatedMallData" class="import-success-toast">
+          <span class="toast-icon">✨</span>
+          <span class="toast-text">已加载 AI 生成的商城：{{ generatedMallData.name }}</span>
+          <button class="toast-close" @click="showImportSuccess = false">×</button>
+        </div>
+      </Transition>
+
+      <!-- 商城信息面板（AI 生成时显示） -->
+      <div v-if="generatedMallData" class="mall-info-panel">
+        <div class="mall-info-header">
+          <span class="mall-name">{{ generatedMallData.name }}</span>
+          <span class="mall-badge">AI 生成</span>
+        </div>
+        <div class="mall-info-desc">{{ generatedMallData.description }}</div>
+        <button class="btn-clear-mall" @click="clearGeneratedMall">清除并重置</button>
+      </div>
+
       <!-- 顶部栏 -->
       <div class="top-bar">
         <button class="btn-back" @click="goBack">
@@ -420,12 +720,27 @@ onUnmounted(() => {
         <span>🔍 滚轮缩放</span>
         <span>⌨️ 右键平移</span>
       </div>
+
+      <!-- AI 聊天按钮 -->
+      <button v-if="!showAiChat" class="btn-ai-chat" @click="toggleAiChat">
+        <span class="ai-icon">🤖</span>
+        <span class="ai-label">小智</span>
+      </button>
+
+      <!-- AI 聊天面板 -->
+      <AiChatPanel
+        :visible="showAiChat"
+        @close="showAiChat = false"
+        @navigate="handleAiNavigate"
+        @highlight="handleAiHighlight"
+        @show-detail="handleAiShowDetail"
+      />
     </div>
   </div>
 </template>
 
 
-<style scoped>
+<style scoped lang="scss">
 .mall-3d-page {
   position: relative;
   width: 100%;
@@ -439,7 +754,9 @@ onUnmounted(() => {
   height: 100%;
 }
 
-/* Loading Overlay */
+// ============================================================================
+// Loading Overlay
+// ============================================================================
 .loading-overlay {
   position: absolute;
   inset: 0;
@@ -494,18 +811,22 @@ onUnmounted(() => {
   color: #5f6368;
 }
 
-/* UI Overlay */
+// ============================================================================
+// UI Overlay
+// ============================================================================
 .ui-overlay {
   position: absolute;
   inset: 0;
   pointer-events: none;
+
+  > * {
+    pointer-events: auto;
+  }
 }
 
-.ui-overlay > * {
-  pointer-events: auto;
-}
-
-/* Top Bar */
+// ============================================================================
+// Top Bar
+// ============================================================================
 .top-bar {
   position: absolute;
   top: 0;
@@ -531,35 +852,35 @@ onUnmounted(() => {
   font-size: 14px;
   cursor: pointer;
   transition: background 0.15s;
-}
 
-.btn-back:hover {
-  background: rgba(255, 255, 255, 0.15);
+  &:hover {
+    background: rgba(255, 255, 255, 0.15);
+  }
 }
 
 .search-box {
   position: relative;
   flex: 1;
   max-width: 400px;
-}
 
-.search-box input {
-  width: 100%;
-  padding: 10px 16px 10px 40px;
-  background: rgba(255, 255, 255, 0.1);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 8px;
-  color: #e8eaed;
-  font-size: 14px;
-}
+  input {
+    width: 100%;
+    padding: 10px 16px 10px 40px;
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 8px;
+    color: #e8eaed;
+    font-size: 14px;
 
-.search-box input:focus {
-  outline: none;
-  border-color: #60a5fa;
-}
+    &:focus {
+      outline: none;
+      border-color: #60a5fa;
+    }
 
-.search-box input::placeholder {
-  color: #5f6368;
+    &::placeholder {
+      color: #5f6368;
+    }
+  }
 }
 
 .search-icon {
@@ -588,10 +909,10 @@ onUnmounted(() => {
   padding: 12px 16px;
   cursor: pointer;
   transition: background 0.15s;
-}
 
-.search-item:hover {
-  background: rgba(255, 255, 255, 0.05);
+  &:hover {
+    background: rgba(255, 255, 255, 0.05);
+  }
 }
 
 .store-name {
@@ -610,7 +931,9 @@ onUnmounted(() => {
   color: #9aa0a6;
 }
 
-/* Floor Selector */
+// ============================================================================
+// Floor Selector
+// ============================================================================
 .floor-selector {
   position: absolute;
   left: 20px;
@@ -631,10 +954,10 @@ onUnmounted(() => {
   font-weight: 600;
   cursor: pointer;
   transition: all 0.15s;
-}
 
-.floor-btn:hover {
-  background: rgba(17, 17, 19, 1);
+  &:hover {
+    background: rgba(17, 17, 19, 1);
+  }
 }
 
 .arrow {
@@ -665,14 +988,14 @@ onUnmounted(() => {
   border: none;
   cursor: pointer;
   transition: background 0.15s;
-}
 
-.floor-item:hover {
-  background: rgba(255, 255, 255, 0.05);
-}
+  &:hover {
+    background: rgba(255, 255, 255, 0.05);
+  }
 
-.floor-item.active {
-  background: rgba(96, 165, 250, 0.15);
+  &.active {
+    background: rgba(96, 165, 250, 0.15);
+  }
 }
 
 .floor-name {
@@ -686,7 +1009,9 @@ onUnmounted(() => {
   color: #9aa0a6;
 }
 
-/* Minimap */
+// ============================================================================
+// Minimap
+// ============================================================================
 .minimap {
   position: absolute;
   right: 20px;
@@ -719,10 +1044,10 @@ onUnmounted(() => {
   display: flex;
   align-items: center;
   justify-content: center;
-}
 
-.btn-close:hover {
-  color: #e8eaed;
+  &:hover {
+    color: #e8eaed;
+  }
 }
 
 .minimap-content {
@@ -754,13 +1079,15 @@ onUnmounted(() => {
   font-size: 20px;
   cursor: pointer;
   transition: background 0.15s;
+
+  &:hover {
+    background: rgba(17, 17, 19, 1);
+  }
 }
 
-.btn-minimap:hover {
-  background: rgba(17, 17, 19, 1);
-}
-
-/* Store Panel */
+// ============================================================================
+// Store Panel
+// ============================================================================
 .store-panel {
   position: absolute;
   right: 20px;
@@ -778,13 +1105,13 @@ onUnmounted(() => {
   justify-content: space-between;
   padding: 16px 20px;
   border-bottom: 1px solid rgba(255, 255, 255, 0.06);
-}
 
-.panel-header h3 {
-  font-size: 16px;
-  font-weight: 600;
-  color: #e8eaed;
-  margin: 0;
+  h3 {
+    font-size: 16px;
+    font-weight: 600;
+    color: #e8eaed;
+    margin: 0;
+  }
 }
 
 .panel-content {
@@ -798,16 +1125,16 @@ onUnmounted(() => {
   display: flex;
   justify-content: space-between;
   align-items: center;
-}
 
-.info-row label {
-  font-size: 13px;
-  color: #9aa0a6;
-}
+  label {
+    font-size: 13px;
+    color: #9aa0a6;
+  }
 
-.info-row span {
-  font-size: 14px;
-  color: #e8eaed;
+  span {
+    font-size: 14px;
+    color: #e8eaed;
+  }
 }
 
 .panel-actions {
@@ -826,13 +1153,15 @@ onUnmounted(() => {
   font-weight: 500;
   cursor: pointer;
   transition: background 0.15s;
+
+  &:hover {
+    background: #93c5fd;
+  }
 }
 
-.btn-primary:hover {
-  background: #93c5fd;
-}
-
-/* Controls Hint */
+// ============================================================================
+// Controls Hint
+// ============================================================================
 .controls-hint {
   position: absolute;
   bottom: 20px;
@@ -845,5 +1174,162 @@ onUnmounted(() => {
   border-radius: 20px;
   font-size: 12px;
   color: #9aa0a6;
+}
+
+// ============================================================================
+// AI Chat Button
+// ============================================================================
+.btn-ai-chat {
+  position: absolute;
+  right: 20px;
+  bottom: 80px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 20px;
+  background: linear-gradient(135deg, #60a5fa 0%, #3b82f6 100%);
+  border: none;
+  border-radius: 24px;
+  color: white;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  box-shadow: 0 4px 16px rgba(96, 165, 250, 0.4);
+  transition: all 0.2s;
+
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(96, 165, 250, 0.5);
+  }
+
+  .ai-icon {
+    font-size: 18px;
+  }
+
+  .ai-label {
+    font-weight: 600;
+  }
+}
+
+// ============================================================================
+// AI 生成商城导入成功提示
+// ============================================================================
+.import-success-toast {
+  position: absolute;
+  top: 80px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 20px;
+  background: linear-gradient(135deg, rgba(34, 197, 94, 0.9) 0%, rgba(22, 163, 74, 0.9) 100%);
+  border-radius: 12px;
+  color: white;
+  font-size: 14px;
+  box-shadow: 0 4px 20px rgba(34, 197, 94, 0.4);
+  z-index: 100;
+}
+
+.toast-icon {
+  font-size: 18px;
+}
+
+.toast-close {
+  margin-left: 8px;
+  width: 20px;
+  height: 20px;
+  background: rgba(255, 255, 255, 0.2);
+  border: none;
+  border-radius: 50%;
+  color: white;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+
+  &:hover {
+    background: rgba(255, 255, 255, 0.3);
+  }
+}
+
+// ============================================================================
+// 商城信息面板
+// ============================================================================
+.mall-info-panel {
+  position: absolute;
+  left: 20px;
+  top: 80px;
+  width: 240px;
+  padding: 16px;
+  background: rgba(17, 17, 19, 0.95);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  backdrop-filter: blur(10px);
+}
+
+.mall-info-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.mall-name {
+  font-size: 16px;
+  font-weight: 600;
+  color: #e8eaed;
+}
+
+.mall-badge {
+  padding: 2px 8px;
+  background: linear-gradient(135deg, #60a5fa 0%, #818cf8 100%);
+  border-radius: 10px;
+  font-size: 10px;
+  color: white;
+  font-weight: 500;
+}
+
+.mall-info-desc {
+  font-size: 12px;
+  color: #9aa0a6;
+  line-height: 1.5;
+  margin-bottom: 12px;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.btn-clear-mall {
+  width: 100%;
+  padding: 8px;
+  background: rgba(239, 68, 68, 0.15);
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  border-radius: 8px;
+  color: #ef4444;
+  font-size: 12px;
+  cursor: pointer;
+  transition: all 0.15s;
+
+  &:hover {
+    background: rgba(239, 68, 68, 0.25);
+    border-color: rgba(239, 68, 68, 0.5);
+  }
+}
+
+// ============================================================================
+// 淡入淡出动画
+// ============================================================================
+.fade-enter-active,
+.fade-leave-active {
+  transition: opacity 0.3s ease, transform 0.3s ease;
+}
+
+.fade-enter-from,
+.fade-leave-to {
+  opacity: 0;
+  transform: translateX(-50%) translateY(-10px);
 }
 </style>

@@ -5,7 +5,7 @@
 """
 
 from pydantic_settings import BaseSettings
-from typing import List
+from typing import List, Optional
 from functools import lru_cache
 
 
@@ -52,22 +52,73 @@ class Settings(BaseSettings):
     LLM_MAX_TOKENS: int = 2000
     LLM_TIMEOUT: int = 30
     
-    # 向量数据库配置
-    VECTOR_DB_TYPE: str = "milvus"  # milvus / qdrant
-    VECTOR_DB_URL: str = "http://localhost:19530"
-    VECTOR_DB_API_KEY: str = ""
+    # ============ Milvus 向量数据库配置 ============
+    MILVUS_HOST: str = "localhost"
+    MILVUS_PORT: int = 19530
+    MILVUS_USER: str = ""
+    MILVUS_PASSWORD: str = ""
+    MILVUS_DB_NAME: str = "smartmall"
+    # 集合名称
+    MILVUS_COLLECTION_STORES: str = "stores"
+    MILVUS_COLLECTION_PRODUCTS: str = "products"
+    MILVUS_COLLECTION_LOCATIONS: str = "locations"
     
-    # Embedding 配置
-    EMBEDDING_MODEL: str = "text-embedding-ada-002"
-    EMBEDDING_DIMENSION: int = 1536
+    # ============ Embedding 配置 ============
+    EMBEDDING_PROVIDER: str = "qwen"  # qwen / openai / local
+    EMBEDDING_MODEL: str = "text-embedding-v3"  # 通用 Embedding 模型配置
+    # 通义千问 Embedding（推荐，中文效果好）
+    QWEN_EMBEDDING_MODEL: str = "text-embedding-v3"
+    # OpenAI Embedding
+    OPENAI_EMBEDDING_MODEL: str = "text-embedding-3-small"
+    # 本地 Embedding（BGE-M3 / M3E）
+    LOCAL_EMBEDDING_MODEL: str = "BAAI/bge-m3"
+    # Embedding 维度（根据模型调整）
+    EMBEDDING_DIMENSION: int = 1024  # BGE-M3: 1024, text-embedding-v3: 1024
+    # 文本分块配置
+    CHUNK_SIZE: int = 512
+    CHUNK_OVERLAP: int = 50
     
-    # RAG 配置
-    RAG_TOP_K: int = 5
-    RAG_SCORE_THRESHOLD: float = 0.7
+    # ============ RAG 配置 ============
+    RAG_TOP_K: int = 5  # 检索返回数量
+    RAG_SCORE_THRESHOLD: float = 0.6  # 相似度阈值
+    RAG_RERANK_ENABLED: bool = False  # 是否启用重排序
+    RAG_CACHE_ENABLED: bool = True  # 是否启用缓存
+    RAG_CACHE_TTL: int = 300  # 缓存过期时间（秒）
+    
+    # ============ 数据同步配置 ============
+    SYNC_BATCH_SIZE: int = 100  # 批量同步大小
+    SYNC_INTERVAL_MINUTES: int = 5  # 增量同步间隔（分钟）
+    
+    # ============ PostgreSQL 配置（数据源） ============
+    PG_HOST: str = "localhost"
+    PG_PORT: int = 5433
+    PG_USER: str = "smartmall"
+    PG_PASSWORD: str = "smartmall123"
+    PG_DATABASE: str = "smartmall"
     
     # 缓存配置
     REDIS_URL: str = "redis://localhost:6379/0"
     CACHE_TTL: int = 300  # 5 分钟
+    
+    # 兼容旧配置
+    VECTOR_DB_TYPE: str = "milvus"
+    VECTOR_DB_URL: str = "http://localhost:19530"
+    VECTOR_DB_API_KEY: str = ""
+    
+    @property
+    def milvus_uri(self) -> str:
+        """获取 Milvus 连接 URI"""
+        return f"http://{self.MILVUS_HOST}:{self.MILVUS_PORT}"
+    
+    @property
+    def pg_dsn(self) -> str:
+        """获取 PostgreSQL 连接字符串"""
+        return f"postgresql://{self.PG_USER}:{self.PG_PASSWORD}@{self.PG_HOST}:{self.PG_PORT}/{self.PG_DATABASE}"
+    
+    @property
+    def pg_async_dsn(self) -> str:
+        """获取 PostgreSQL 异步连接字符串"""
+        return f"postgresql+asyncpg://{self.PG_USER}:{self.PG_PASSWORD}@{self.PG_HOST}:{self.PG_PORT}/{self.PG_DATABASE}"
     
     class Config:
         env_file = ".env"

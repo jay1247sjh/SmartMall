@@ -108,12 +108,12 @@ function handleLogout() {
   <ElContainer class="dashboard-layout">
     <!-- 侧边栏 -->
     <ElAside :width="sidebarCollapsed ? '64px' : '220px'" class="sidebar">
-      <header class="sidebar-header">
-        <div class="logo" @click="navigateTo('/mall')">
+      <header class="sidebar-header" :class="{ collapsed: sidebarCollapsed }">
+        <div v-if="!sidebarCollapsed" class="logo" @click="navigateTo('/mall')">
           <ElAvatar :size="36" class="logo-icon">
             <span>S</span>
           </ElAvatar>
-          <span v-show="!sidebarCollapsed" class="logo-text">Smart Mall</span>
+          <span class="logo-text">Smart Mall</span>
         </div>
         <ElButton
           :icon="sidebarCollapsed ? ArrowRight : ArrowLeft"
@@ -229,6 +229,13 @@ function handleLogout() {
     justify-content: space-between;
     padding: 16px;
     border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+    gap: 8px;
+    min-height: 68px;
+
+    &.collapsed {
+      justify-content: center;
+      padding: 16px 12px;
+    }
 
     .logo {
       display: flex;
@@ -238,6 +245,9 @@ function handleLogout() {
       padding: 4px;
       border-radius: 8px;
       transition: background 0.2s;
+      overflow: hidden;
+      flex: 1;
+      min-width: 0;
 
       &:hover {
         background: rgba(255, 255, 255, 0.04);
@@ -265,10 +275,12 @@ function handleLogout() {
       color: #9aa0a6;
       border-color: rgba(255, 255, 255, 0.1);
       background: transparent;
+      z-index: 10;
 
       &:hover {
-        background: rgba(255, 255, 255, 0.04);
+        background: rgba(255, 255, 255, 0.1);
         color: #e8eaed;
+        border-color: rgba(255, 255, 255, 0.2);
       }
     }
   }

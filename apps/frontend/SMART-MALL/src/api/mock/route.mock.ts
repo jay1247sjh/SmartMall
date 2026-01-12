@@ -175,6 +175,16 @@ const commonRoutes: RouteConfig[] = [
     },
   },
   {
+    path: '/mall/3d',
+    name: 'Mall3D',
+    component: 'Mall3DView',
+    meta: {
+      title: '3D商城',
+      icon: 'view',
+      roles: ['ADMIN', 'MERCHANT', 'USER'],
+    },
+  },
+  {
     path: '/builder',
     name: 'Builder',
     component: 'BuilderView',

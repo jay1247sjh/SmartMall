@@ -302,79 +302,168 @@ class MallAgent:
         """
         执行函数
         
-        TODO: 实际实现时，这里应该调用 Java 后端 API
-        当前返回 Mock 数据
+        使用 RAG 服务进行语义检索
         """
+        from app.core.rag.service import get_rag_service
         
-        # Mock 实现
+        rag_service = get_rag_service()
+        
+        # 导航到店铺
         if func_name == "navigate_to_store":
-            return {
-                "success": True,
-                "store": {
-                    "id": f"store_{args['store_name'].lower()}_001",
-                    "name": args["store_name"],
-                    "floor": 2,
-                    "area": "A区",
-                    "position": {"x": 100, "y": 0, "z": 50}
-                },
-                "message": f"{args['store_name']} 店位于 2 楼 A 区"
-            }
+            try:
+                result = await rag_service.navigate_to_store(args["store_name"])
+                if result:
+                    return result
+                else:
+                    return {
+                        "success": False,
+                        "message": f"未找到店铺: {args['store_name']}"
+                    }
+            except Exception as e:
+                logger.warning(f"RAG navigate failed, using fallback: {e}")
+                return self._fallback_navigate(args)
         
+        # 搜索商品
         elif func_name == "search_products":
-            return {
-                "success": True,
-                "products": [
-                    {
-                        "id": "prod_001",
-                        "name": f"{args.get('brand', '')} {args['keyword']}".strip(),
-                        "price": 399,
-                        "store": "Nike 专卖店",
-                        "rating": 4.8
-                    },
-                    {
-                        "id": "prod_002",
-                        "name": f"经典款 {args['keyword']}",
-                        "price": 459,
-                        "store": "运动世界",
-                        "rating": 4.6
+            try:
+                results = await rag_service.search_products(
+                    query=args["keyword"],
+                    category=args.get("category"),
+                    brand=args.get("brand"),
+                    min_price=args.get("min_price"),
+                    max_price=args.get("max_price"),
+                    top_k=5
+                )
+                
+                if results:
+                    return {
+                        "success": True,
+                        "products": [r.to_dict() for r in results],
+                        "total": len(results)
                     }
-                ],
-                "total": 2
-            }
+                else:
+                    return {
+                        "success": True,
+                        "products": [],
+                        "total": 0,
+                        "message": f"未找到相关商品: {args['keyword']}"
+                    }
+            except Exception as e:
+                logger.warning(f"RAG search_products failed, using fallback: {e}")
+                return self._fallback_search_products(args)
         
+        # 搜索店铺
+        elif func_name == "search_stores":
+            try:
+                results = await rag_service.search_stores(
+                    query=args["keyword"],
+                    category=args.get("category"),
+                    top_k=5
+                )
+                
+                if results:
+                    return {
+                        "success": True,
+                        "stores": [r.to_dict() for r in results],
+                        "total": len(results)
+                    }
+                else:
+                    return {
+                        "success": True,
+                        "stores": [],
+                        "total": 0,
+                        "message": f"未找到相关店铺: {args['keyword']}"
+                    }
+            except Exception as e:
+                logger.warning(f"RAG search_stores failed, using fallback: {e}")
+                return self._fallback_search_stores(args)
+        
+        # 推荐餐厅
         elif func_name == "recommend_restaurants":
-            return {
-                "success": True,
-                "restaurants": [
-                    {
-                        "id": "rest_001",
-                        "name": "川味轩",
-                        "cuisine": args.get("cuisine", "中餐"),
-                        "floor": 3,
-                        "rating": 4.7,
-                        "price_per_person": 68
-                    },
-                    {
-                        "id": "rest_002",
-                        "name": "湘菜馆",
-                        "cuisine": "湘菜",
-                        "floor": 3,
-                        "rating": 4.5,
-                        "price_per_person": 55
+            try:
+                # 构建查询
+                query_parts = ["餐厅", "美食"]
+                if args.get("cuisine"):
+                    query_parts.append(args["cuisine"])
+                if args.get("style"):
+                    query_parts.append(args["style"])
+                query = " ".join(query_parts)
+                
+                results = await rag_service.search_stores(
+                    query=query,
+                    category="餐饮",
+                    top_k=5
+                )
+                
+                if results:
+                    restaurants = []
+                    for r in results:
+                        restaurants.append({
+                            "id": r.id,
+                            "name": r.name,
+                            "cuisine": r.category,
+                            "floor": r.floor,
+                            "area": r.area,
+                            "description": r.description,
+                            "score": r.score
+                        })
+                    return {
+                        "success": True,
+                        "restaurants": restaurants
                     }
-                ]
-            }
+                else:
+                    return {
+                        "success": True,
+                        "restaurants": [],
+                        "message": "未找到相关餐厅"
+                    }
+            except Exception as e:
+                logger.warning(f"RAG recommend_restaurants failed, using fallback: {e}")
+                return self._fallback_recommend_restaurants(args)
         
+        # 图片搜索
         elif func_name == "search_by_image":
-            return {
-                "success": True,
-                "message": f"根据图片风格（{args['image_description'][:50]}...）为您推荐",
-                "results": [
-                    {"id": "item_001", "name": "推荐商品1", "match_score": 0.92},
-                    {"id": "item_002", "name": "推荐商品2", "match_score": 0.85}
-                ]
-            }
+            try:
+                # 使用图片描述进行语义搜索
+                description = args.get("image_description", "")
+                search_type = args.get("search_type", "product")
+                
+                if search_type == "product":
+                    results = await rag_service.search_products(
+                        query=description,
+                        top_k=5
+                    )
+                    return {
+                        "success": True,
+                        "message": f"根据图片风格为您推荐",
+                        "results": [r.to_dict() for r in results] if results else []
+                    }
+                elif search_type == "food":
+                    results = await rag_service.search_stores(
+                        query=description,
+                        category="餐饮",
+                        top_k=5
+                    )
+                    return {
+                        "success": True,
+                        "message": f"根据图片为您推荐餐厅",
+                        "results": [r.to_dict() for r in results] if results else []
+                    }
+                else:
+                    results = await rag_service.search_stores(
+                        query=description,
+                        top_k=5
+                    )
+                    return {
+                        "success": True,
+                        "message": f"根据图片为您推荐店铺",
+                        "results": [r.to_dict() for r in results] if results else []
+                    }
+            except Exception as e:
+                logger.warning(f"RAG search_by_image failed, using fallback: {e}")
+                return self._fallback_search_by_image(args)
         
+        # 其他操作使用 Fallback
         elif func_name == "add_to_cart":
             return {
                 "success": True,
@@ -388,7 +477,7 @@ class MallAgent:
                 "success": True,
                 "product": {
                     "id": args["product_id"],
-                    "name": "Nike Air Zoom 跑鞋",
+                    "name": "商品详情",
                     "price": 399,
                     "stock": 15,
                     "sizes": [40, 41, 42, 43],
@@ -398,6 +487,78 @@ class MallAgent:
         
         # 默认返回
         return {"success": True, "message": f"执行 {func_name} 成功"}
+    
+    def _fallback_navigate(self, args: Dict[str, Any]) -> Dict[str, Any]:
+        """导航 Fallback"""
+        return {
+            "success": True,
+            "store": {
+                "id": f"store_{args['store_name'].lower()}_001",
+                "name": args["store_name"],
+                "floor": 2,
+                "area": "A区",
+                "position": {"x": 100, "y": 0, "z": 50}
+            },
+            "message": f"{args['store_name']} 店位于 2 楼 A 区"
+        }
+    
+    def _fallback_search_products(self, args: Dict[str, Any]) -> Dict[str, Any]:
+        """商品搜索 Fallback"""
+        return {
+            "success": True,
+            "products": [
+                {
+                    "id": "prod_001",
+                    "name": f"{args.get('brand', '')} {args['keyword']}".strip(),
+                    "price": 399,
+                    "store": "Nike 专卖店",
+                    "rating": 4.8
+                }
+            ],
+            "total": 1
+        }
+    
+    def _fallback_search_stores(self, args: Dict[str, Any]) -> Dict[str, Any]:
+        """店铺搜索 Fallback"""
+        return {
+            "success": True,
+            "stores": [
+                {
+                    "id": "store_001",
+                    "name": args["keyword"],
+                    "category": args.get("category", "零售"),
+                    "floor": 1,
+                    "area": "A区"
+                }
+            ],
+            "total": 1
+        }
+    
+    def _fallback_recommend_restaurants(self, args: Dict[str, Any]) -> Dict[str, Any]:
+        """餐厅推荐 Fallback"""
+        return {
+            "success": True,
+            "restaurants": [
+                {
+                    "id": "rest_001",
+                    "name": "川味轩",
+                    "cuisine": args.get("cuisine", "中餐"),
+                    "floor": 3,
+                    "rating": 4.7,
+                    "price_per_person": 68
+                }
+            ]
+        }
+    
+    def _fallback_search_by_image(self, args: Dict[str, Any]) -> Dict[str, Any]:
+        """图片搜索 Fallback"""
+        return {
+            "success": True,
+            "message": f"根据图片风格（{args['image_description'][:50]}...）为您推荐",
+            "results": [
+                {"id": "item_001", "name": "推荐商品1", "match_score": 0.92}
+            ]
+        }
     
     def _get_confirmation_message(self, func_name: str, args: Dict[str, Any]) -> str:
         """获取关键操作的确认消息"""

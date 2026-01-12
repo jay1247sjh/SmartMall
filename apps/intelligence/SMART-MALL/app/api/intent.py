@@ -1,7 +1,7 @@
 """
 意图理解接口
 
-处理自然语言输入，返回结构化 Action
+使用 LLM 进行自然语言意图识别，返回结构化 Action
 """
 
 from fastapi import APIRouter, HTTPException
@@ -9,9 +9,26 @@ from pydantic import BaseModel
 from typing import Optional, List, Dict, Any
 from datetime import datetime
 import logging
+import json
+import time
+
+from app.core.llm.factory import LLMFactory
+from app.core.llm.qwen import QwenProvider
+from app.core.prompt_loader import PromptLoader
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
+
+# LLM 单例
+_llm: Optional[QwenProvider] = None
+
+
+def get_llm() -> QwenProvider:
+    """获取 LLM 单例"""
+    global _llm
+    if _llm is None:
+        _llm = LLMFactory.create("qwen")
+    return _llm
 
 
 # ============ 请求/响应模型 ============
@@ -30,6 +47,7 @@ class Context(BaseModel):
     mallId: Optional[str] = None
     currentPosition: Optional[Position] = None
     sessionId: Optional[str] = None
+    currentPage: Optional[str] = None
 
 
 class Input(BaseModel):
@@ -101,11 +119,68 @@ class AIResponse(BaseModel):
     requestId: str
     version: str = "1.0"
     timestamp: str
-    status: str  # SUCCESS / ERROR / DEGRADED
+    status: str
     result: Optional[AIResult] = None
     error: Optional[ErrorInfo] = None
     fallback: Optional[FallbackInfo] = None
     metadata: Optional[Metadata] = None
+
+
+# ============ 意图识别 ============
+
+async def recognize_intent(
+    text: str,
+    role: str,
+    current_page: Optional[str] = None
+) -> Dict[str, Any]:
+    """
+    使用 LLM 识别意图
+    
+    Args:
+        text: 用户输入文本
+        role: 用户角色
+        current_page: 当前页面路径
+        
+    Returns:
+        意图识别结果
+    """
+    llm = get_llm()
+    
+    # 从 YAML 加载 prompt 配置
+    system_prompt = PromptLoader.get_system_prompt("intent")
+    user_prompt = PromptLoader.format_user_prompt(
+        "intent",
+        user_input=text,
+        user_role=role,
+        current_page=current_page or "未知"
+    )
+    params = PromptLoader.get_parameters("intent")
+    
+    messages = [
+        {"role": "system", "content": system_prompt},
+        {"role": "user", "content": user_prompt}
+    ]
+    
+    response = await llm.chat(
+        messages=messages,
+        temperature=params.get("temperature", 0.1),
+        max_tokens=params.get("max_tokens", 500)
+    )
+    
+    # 解析 JSON 响应
+    content = response.content.strip()
+    
+    # 处理可能的 markdown 代码块
+    if content.startswith("```"):
+        lines = content.split("\n")
+        content = "\n".join(lines[1:-1])
+    
+    try:
+        result = json.loads(content)
+        return result
+    except json.JSONDecodeError as e:
+        logger.error(f"Failed to parse LLM response: {content}")
+        raise ValueError(f"Invalid JSON response: {e}")
 
 
 # ============ 接口实现 ============
@@ -114,84 +189,52 @@ class AIResponse(BaseModel):
 async def process_natural_language(request: AIRequest) -> AIResponse:
     """
     处理自然语言输入，返回结构化 Action
-    
-    - 输入: 用户自然语言 + 上下文
-    - 输出: 意图 + Action 列表 + 自然语言响应
     """
-    import time
     start_time = time.time()
     
     try:
         logger.info(f"[{request.requestId}] Processing: {request.input.text}")
         
-        # TODO: 实际调用 LLM 进行意图理解
-        # 当前返回 Mock 数据用于开发测试
-        
-        # 简单的关键词匹配（Mock 实现）
-        text = request.input.text.lower()
-        
-        if "nike" in text or "耐克" in text:
-            intent = "NAVIGATE_TO_STORE"
-            actions = [
-                Action(
-                    action="NAVIGATE_TO_STORE",
-                    target=ActionTarget(type="STORE", id="store_nike_001"),
-                    params={"highlight": True}
-                )
-            ]
-            response_text = "Nike 店位于 2 楼 A 区，我来为您导航。"
-            suggestions = ["查看店铺详情", "搜索其他品牌"]
-            confidence = 0.95
-            
-        elif "餐厅" in text or "吃" in text or "美食" in text:
-            intent = "NAVIGATE_TO_AREA"
-            actions = [
-                Action(
-                    action="NAVIGATE_TO_AREA",
-                    target=ActionTarget(type="AREA", id="area_food_001"),
-                    params={"showStores": True}
-                )
-            ]
-            response_text = "美食区位于 3 楼，有多家餐厅可供选择。"
-            suggestions = ["查看餐厅列表", "推荐热门餐厅"]
-            confidence = 0.88
-            
-        elif "搜索" in text or "找" in text:
-            intent = "PRODUCT_SEARCH"
-            actions = [
-                Action(
-                    action="SEARCH_PRODUCTS",
-                    params={"keyword": text}
-                )
-            ]
-            response_text = "正在为您搜索相关商品..."
-            suggestions = ["筛选价格", "筛选品牌"]
-            confidence = 0.82
-            
-        else:
-            intent = "GENERAL_QUESTION"
-            actions = []
-            response_text = "抱歉，我没有完全理解您的问题。您可以尝试询问店铺位置、商品搜索等。"
-            suggestions = ["Nike 店在哪", "推荐餐厅", "搜索商品"]
-            confidence = 0.5
+        # 使用 LLM 识别意图
+        result = await recognize_intent(
+            text=request.input.text,
+            role=request.context.role,
+            current_page=request.context.currentPage
+        )
         
         latency_ms = int((time.time() - start_time) * 1000)
+        
+        # 构建 Action 列表
+        actions = []
+        if result.get("action"):
+            action_data = result["action"]
+            target = None
+            if action_data.get("target"):
+                target = ActionTarget(
+                    type=action_data["target"].get("type", ""),
+                    id=action_data["target"].get("id", "")
+                )
+            actions.append(Action(
+                action=action_data.get("type", result["intent"]),
+                target=target,
+                params=action_data.get("params")
+            ))
         
         return AIResponse(
             requestId=request.requestId,
             timestamp=datetime.utcnow().isoformat() + "Z",
             status="SUCCESS",
             result=AIResult(
-                intent=intent,
-                confidence=confidence,
+                intent=result["intent"],
+                confidence=result.get("confidence", 0.9),
                 actions=actions,
                 response=ResponseContent(
-                    text=response_text,
-                    suggestions=suggestions
+                    text=result["response"]["text"],
+                    suggestions=result["response"].get("suggestions", [])
                 )
             ),
             metadata=Metadata(
-                modelUsed="mock",
+                modelUsed="qwen",
                 tokensUsed=0,
                 latencyMs=latency_ms
             )
@@ -199,6 +242,8 @@ async def process_natural_language(request: AIRequest) -> AIResponse:
         
     except Exception as e:
         logger.error(f"[{request.requestId}] Error: {str(e)}")
+        latency_ms = int((time.time() - start_time) * 1000)
+        
         return AIResponse(
             requestId=request.requestId,
             timestamp=datetime.utcnow().isoformat() + "Z",
@@ -212,6 +257,11 @@ async def process_natural_language(request: AIRequest) -> AIResponse:
             fallback=FallbackInfo(
                 type="KEYWORD_SEARCH",
                 suggestion="您可以尝试使用关键词搜索"
+            ),
+            metadata=Metadata(
+                modelUsed="qwen",
+                tokensUsed=0,
+                latencyMs=latency_ms
             )
         )
 
@@ -222,13 +272,18 @@ async def get_supported_intents():
     return {
         "intents": [
             {
-                "type": "NAVIGATE_TO_STORE",
-                "description": "导航到店铺",
+                "type": "NAVIGATE_TO_PAGE",
+                "description": "导航到管理页面",
+                "examples": ["打开商品管理", "去控制台", "进入商城建模"]
+            },
+            {
+                "type": "STORE_QUERY",
+                "description": "查询店铺位置",
                 "examples": ["Nike 店在哪", "带我去星巴克"]
             },
             {
-                "type": "NAVIGATE_TO_AREA",
-                "description": "导航到区域",
+                "type": "AREA_QUERY",
+                "description": "查询区域",
                 "examples": ["美食区在哪", "去服装区"]
             },
             {
@@ -237,14 +292,15 @@ async def get_supported_intents():
                 "examples": ["搜索运动鞋", "找一件外套"]
             },
             {
-                "type": "STORE_INFO",
-                "description": "查询店铺信息",
-                "examples": ["Nike 店营业时间", "这家店有什么优惠"]
+                "type": "GENERATE_MALL",
+                "description": "生成商城布局",
+                "examples": ["创建一个3层商城", "生成商城布局"]
             },
             {
                 "type": "GENERAL_QUESTION",
                 "description": "一般问题",
                 "examples": ["商城几点关门", "有停车场吗"]
             }
-        ]
+        ],
+        "model": "qwen"
     }

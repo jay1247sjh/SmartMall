@@ -11,12 +11,13 @@ export default defineConfig({
   // 开发服务器配置
   server: {
     port: 5173,
-    // API 代理配置 - 后端运行在 8081 端口
+    // API 代理配置
     proxy: {
+      // 后端 API - 运行在 8081 端口
+      // 所有 /api 请求都转发到 Java 后端，包括 AI 相关接口
       '/api': {
         target: 'http://localhost:8081',
         changeOrigin: true,
-        // rewrite: (path) => path.replace(/^\/api/, '/api')
       }
     }
   },

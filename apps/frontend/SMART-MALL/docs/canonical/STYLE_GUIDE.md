@@ -567,3 +567,362 @@
   margin: 0 auto;
 }
 ```
+
+---
+
+## SCSS 嵌套设计规范
+
+### 必须使用 SCSS
+
+所有 Vue 组件的样式必须使用 SCSS 预处理器：
+
+```vue
+<style scoped lang="scss">
+// 样式代码
+</style>
+```
+
+### 嵌套规则
+
+#### 1. 伪类和伪元素必须嵌套
+
+```scss
+// ✅ 正确
+.btn-primary {
+  background: #60a5fa;
+  
+  &:hover {
+    background: #93c5fd;
+  }
+  
+  &:active {
+    background: #3b82f6;
+  }
+  
+  &::before {
+    content: '';
+  }
+}
+
+// ❌ 错误
+.btn-primary {
+  background: #60a5fa;
+}
+
+.btn-primary:hover {
+  background: #93c5fd;
+}
+```
+
+#### 2. 状态类必须嵌套
+
+```scss
+// ✅ 正确
+.floor-item {
+  background: transparent;
+  
+  &.active {
+    background: rgba(96, 165, 250, 0.15);
+  }
+  
+  &.disabled {
+    opacity: 0.5;
+  }
+}
+
+// ❌ 错误
+.floor-item {
+  background: transparent;
+}
+
+.floor-item.active {
+  background: rgba(96, 165, 250, 0.15);
+}
+```
+
+#### 3. 子元素选择器应嵌套
+
+```scss
+// ✅ 正确
+.search-box {
+  position: relative;
+  
+  input {
+    width: 100%;
+    padding: 10px;
+    
+    &:focus {
+      border-color: #60a5fa;
+    }
+    
+    &::placeholder {
+      color: #5f6368;
+    }
+  }
+}
+
+// ❌ 错误
+.search-box {
+  position: relative;
+}
+
+.search-box input {
+  width: 100%;
+  padding: 10px;
+}
+```
+
+#### 4. 直接子元素选择器
+
+```scss
+// ✅ 正确
+.ui-overlay {
+  position: absolute;
+  pointer-events: none;
+  
+  > * {
+    pointer-events: auto;
+  }
+}
+```
+
+### 嵌套深度限制
+
+- 最大嵌套深度：3 层
+- 超过 3 层时考虑重构选择器
+
+```scss
+// ✅ 可接受
+.panel {
+  .header {
+    h3 {
+      color: #e8eaed;
+    }
+  }
+}
+
+// ❌ 避免
+.panel {
+  .header {
+    .title {
+      span {
+        color: #e8eaed;
+      }
+    }
+  }
+}
+```
+
+### 代码组织 - 使用注释分隔区块
+
+```scss
+// ============================================================================
+// Loading Overlay
+// ============================================================================
+.loading-overlay {
+  // ...
+}
+
+// ============================================================================
+// Top Bar
+// ============================================================================
+.top-bar {
+  // ...
+}
+```
+
+### CSS 属性顺序
+
+1. 定位属性 (position, top, right, bottom, left, z-index)
+2. 盒模型 (display, flex, width, height, margin, padding)
+3. 边框和背景 (border, background)
+4. 文字 (font, color, text-align)
+5. 其他 (cursor, transition, animation)
+
+```scss
+.example {
+  // 定位
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: 100;
+  
+  // 盒模型
+  display: flex;
+  align-items: center;
+  width: 100%;
+  padding: 16px;
+  
+  // 边框和背景
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: #0a0a0a;
+  border-radius: 8px;
+  
+  // 文字
+  font-size: 14px;
+  color: #e8eaed;
+  
+  // 其他
+  cursor: pointer;
+  transition: all 0.15s;
+}
+```
+
+---
+
+## Element Plus 组件样式覆盖
+
+### 使用 :deep() 穿透 scoped 样式
+
+```scss
+// ✅ 正确 - 使用 :deep() 穿透
+.input-row {
+  :deep(.el-textarea__inner) {
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 12px;
+    color: #e8eaed;
+
+    &::placeholder {
+      color: #5f6368;
+    }
+
+    &:focus {
+      border-color: #60a5fa;
+    }
+  }
+}
+
+// ❌ 错误 - 直接写选择器无法穿透 scoped
+.input-row .el-textarea__inner {
+  background: rgba(255, 255, 255, 0.08);
+}
+```
+
+### 常用 Element Plus 组件覆盖示例
+
+```scss
+// Badge 红点样式
+.ai-badge {
+  :deep(.el-badge__content.is-dot) {
+    top: 4px;
+    right: 4px;
+    background: #ef4444;
+  }
+}
+
+// Button 样式
+.custom-btn {
+  :deep(.el-button) {
+    background: transparent;
+    border-color: rgba(255, 255, 255, 0.1);
+    
+    &:hover {
+      background: rgba(255, 255, 255, 0.05);
+    }
+  }
+}
+```
+
+---
+
+## 滚动条样式
+
+### 统一滚动条设计
+
+```scss
+.scrollable-container {
+  overflow-y: auto;
+
+  &::-webkit-scrollbar {
+    width: 6px;
+  }
+
+  &::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  &::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 3px;
+
+    &:hover {
+      background: rgba(255, 255, 255, 0.2);
+    }
+  }
+}
+
+// 隐藏滚动条（保留滚动功能）
+.hide-scrollbar {
+  overflow-x: auto;
+
+  &::-webkit-scrollbar {
+    display: none;
+  }
+}
+```
+
+---
+
+## Vue Transition 动画
+
+### 命名规范
+
+- 淡入淡出：`fade`
+- 滑动：`slide`、`panel-slide`
+- 缩放：`scale`、`zoom`
+
+### 标准动画模板
+
+```scss
+// 淡入淡出
+.fade-enter-active,
+.fade-leave-active {
+  transition: opacity 0.3s ease, transform 0.3s ease;
+}
+
+.fade-enter-from,
+.fade-leave-to {
+  opacity: 0;
+  transform: translateY(-10px);
+}
+
+// 面板滑动
+.panel-slide-enter-active,
+.panel-slide-leave-active {
+  transition: all 0.3s ease;
+}
+
+.panel-slide-enter-from,
+.panel-slide-leave-to {
+  opacity: 0;
+  transform: translateY(20px) scale(0.95);
+}
+```
+
+---
+
+## 响应式设计
+
+使用媒体查询嵌套：
+
+```scss
+.ai-chat-panel {
+  width: 380px;
+  height: 520px;
+  
+  @media (max-width: 480px) {
+    width: auto;
+    height: 60vh;
+  }
+}
+```
+
+---
+
+## 参考文件
+
+以下文件是良好的 SCSS 嵌套设计示例：
+
+- `apps/frontend/SMART-MALL/src/views/Mall3DView.vue`
+- `apps/frontend/SMART-MALL/src/components/ai/GlobalAiAssistant.vue`

@@ -72,13 +72,7 @@ export const routeApi = {
    * ```
    */
   async getUserRoutes(): Promise<RouteConfig[]> {
-    // 开发环境使用 Mock 数据
-    if (import.meta.env.DEV) {
-      const { getMockRoutes } = await import('./mock/route.mock')
-      return getMockRoutes()
-    }
-    
-    // 生产环境调用后端接口
+    // 调用后端接口获取路由配置
     return http.get<RouteConfig[]>('/user/routes')
   },
 }
