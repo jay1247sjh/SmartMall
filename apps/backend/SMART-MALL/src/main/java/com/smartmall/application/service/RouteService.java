@@ -146,9 +146,9 @@ public class RouteService {
             ))
             .build());
         
-        // 商城建模器（独立全屏路由）
+        // 商城建模器（独立全屏路由，支持项目ID参数）
         routes.add(RouteDTO.builder()
-            .path("/admin/builder")
+            .path("/admin/builder/:projectId?")
             .name("AdminMallBuilder")
             .component("AdminMallBuilder")
             .meta(RouteMeta.builder()

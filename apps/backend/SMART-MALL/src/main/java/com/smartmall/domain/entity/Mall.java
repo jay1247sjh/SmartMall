@@ -3,7 +3,7 @@ package com.smartmall.domain.entity;
 import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
-import com.baomidou.mybatisplus.extension.handlers.JacksonTypeHandler;
+import com.smartmall.infrastructure.config.PostgresJsonbTypeHandler;
 import com.smartmall.domain.enums.MallStatus;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
@@ -24,13 +24,13 @@ public class Mall extends BaseEntity {
     
     private String description;
     
-    @TableField(typeHandler = JacksonTypeHandler.class)
+    @TableField(typeHandler = PostgresJsonbTypeHandler.class)
     private Map<String, Object> locationMeta;
     
     private String currentLayoutVersion;
     
     private MallStatus status;
     
-    @TableField(typeHandler = JacksonTypeHandler.class)
+    @TableField(typeHandler = PostgresJsonbTypeHandler.class)
     private Map<String, Object> config;
 }

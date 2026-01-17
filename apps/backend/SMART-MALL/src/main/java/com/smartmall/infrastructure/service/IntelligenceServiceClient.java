@@ -79,7 +79,7 @@ public class IntelligenceServiceClient {
                 url, HttpMethod.POST, entity, JsonNode.class
             );
             
-            return parseIntentResponse(response.getBody(), requestId);
+            return parseIntentResponse(response.getBody(), requestId, message);
             
         } catch (RestClientException e) {
             log.error("[{}] Failed to call Intelligence Service: {}", requestId, e.getMessage());
@@ -143,7 +143,7 @@ public class IntelligenceServiceClient {
     /**
      * 解析意图响应
      */
-    private AiChatResponse parseIntentResponse(JsonNode json, String requestId) {
+    private AiChatResponse parseIntentResponse(JsonNode json, String requestId, String originalMessage) {
         AiChatResponse response = new AiChatResponse();
         response.setRequestId(requestId);
         response.setTimestamp(Instant.now().toString());
@@ -178,9 +178,11 @@ public class IntelligenceServiceClient {
             
             // 解析 actions
             JsonNode actions = result.path("actions");
+            log.info("[{}] Actions array: {}", requestId, actions);
             if (actions.isArray() && !actions.isEmpty()) {
                 JsonNode firstAction = actions.get(0);
                 String actionType = firstAction.path("action").asText();
+                log.info("[{}] First action type: {}", requestId, actionType);
                 
                 if ("NAVIGATE_TO_PAGE".equals(actionType)) {
                     response.setType("navigate");
@@ -192,12 +194,21 @@ public class IntelligenceServiceClient {
                     // 调用商城生成 API
                     JsonNode params = firstAction.path("params");
                     String description = params.path("description").asText();
+                    
+                    // 如果 LLM 没有返回 description，使用原始用户输入
+                    if (description == null || description.isEmpty()) {
+                        log.warn("[{}] GENERATE_MALL action missing description in params, using original message", requestId);
+                        description = originalMessage;
+                    }
+                    
+                    log.info("[{}] Generating mall with description: {}", requestId, description);
                     return generateMallLayout(requestId, description);
                 } else {
                     response.setType("text");
                     response.setAction(actionType);
                 }
             } else {
+                log.warn("[{}] No actions in response, setting type to text", requestId);
                 response.setType("text");
             }
         } else {

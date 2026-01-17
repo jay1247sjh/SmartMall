@@ -9,12 +9,20 @@
 | 文件 | 用途 | 使用场景 |
 |------|------|----------|
 | `project-context.prompt.md` | 项目上下文 | 始终加载，提供项目背景 |
-| `mode-strict-coding.prompt.md` | 严格编码模式 | 生产级代码开发 |
+| `mode-strict-coding.prompt.md` | 严格编码模式 | 生产级代码、AI 服务开发 |
 | `mode-progressive-coding.prompt.md` | 渐进式编码模式 | 教学式开发 |
 | `mode-architect-review.prompt.md` | 架构评审模式 | 设计评审 |
 | `mode-debug-detective.prompt.md` | 调试排查模式 | 问题排查 |
 | `mode-socratic-teaching.prompt.md` | 苏格拉底教学模式 | 概念学习 |
-| `mode-ai-coding.prompt.md` | AI 服务编码模式 | Python AI 开发 |
+
+---
+
+## 与 Kiro Steering 的关系
+
+- `.prompt/` - 模式切换配置，用于不同协作风格
+- `.kiro/steering/` - 项目约束文档，Kiro 自动加载
+
+**推荐**：使用 Kiro 时，项目上下文已在 `.kiro/steering/project-context.md` 中定义。
 
 ---
 
@@ -50,6 +58,7 @@
 ├─────────────────────────────────────────────────────────────┤
 │                                                             │
 │  写生产代码 ──────────────▶ mode-strict-coding              │
+│  （含前端/后端/AI服务）                                      │
 │                                                             │
 │  学习新概念 ──────────────▶ mode-socratic-teaching          │
 │                                                             │
@@ -58,8 +67,6 @@
 │  评审设计 ────────────────▶ mode-architect-review           │
 │                                                             │
 │  排查问题 ────────────────▶ mode-debug-detective            │
-│                                                             │
-│  开发 AI 服务 ────────────▶ mode-ai-coding                  │
 │                                                             │
 └─────────────────────────────────────────────────────────────┘
 ```

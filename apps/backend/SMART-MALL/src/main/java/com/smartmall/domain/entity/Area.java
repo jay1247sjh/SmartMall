@@ -3,7 +3,7 @@ package com.smartmall.domain.entity;
 import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
-import com.baomidou.mybatisplus.extension.handlers.JacksonTypeHandler;
+import com.smartmall.infrastructure.config.PostgresJsonbTypeHandler;
 import com.smartmall.domain.enums.AreaStatus;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
@@ -27,17 +27,17 @@ public class Area extends BaseEntity {
     
     private String type;
     
-    @TableField(typeHandler = JacksonTypeHandler.class)
+    @TableField(typeHandler = PostgresJsonbTypeHandler.class)
     private Map<String, Object> shape;
     
     private String color;
     
-    @TableField(typeHandler = JacksonTypeHandler.class)
+    @TableField(typeHandler = PostgresJsonbTypeHandler.class)
     private Map<String, Object> properties;
     
     private String merchantId;
     
-    @TableField(typeHandler = JacksonTypeHandler.class)
+    @TableField(typeHandler = PostgresJsonbTypeHandler.class)
     private Map<String, Object> rental;
     
     private Boolean visible;

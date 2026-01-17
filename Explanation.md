@@ -50,8 +50,9 @@ Test results show that the system can maintain a smooth frame rate of over 30 FP
   - 4.2 前端分层架构设计
   - 4.3 后端分层架构设计
   - 4.4 智能服务架构设计
-  - 4.5 数据库设计
-  - 4.6 本章小结
+  - 4.5 共享类型包设计
+  - 4.6 数据库设计
+  - 4.7 本章小结
 - 第 5 章 系统详细设计与实现
   - 5.1 渲染引擎层设计与实现
   - 5.2 领域场景层设计与实现
@@ -162,21 +163,16 @@ AI Agent（智能代理）是人工智能领域的重要研究方向，指能够
 本文的研究内容主要包括以下几个方面：
 
 1. **系统架构设计**：设计了清晰的前后端分离架构。前端采用四层架构（UI 层、业务协调层、领域场景层、渲染引擎层），后端采用经典的四层架构（接口层、应用层、领域层、基础设施层），智能服务采用 FastAPI + LLM 架构，实现了关注点分离和模块解耦。
-
 2. **语义对象建模**：提出了"语义优先"的建模原则，将三维对象与业务实体关联。每个 Three.js 对象都具备明确的语义身份（semanticType 和 businessId），使系统能够理解对象的业务含义。
-
 3. **Action 协议机制**：设计了统一的行为协议，使来自 UI 和 AI 的操作可以被一致地校验和执行。所有行为都必须经过业务协调层（Orchestrator）的权限校验和上下文验证。
-
 4. **RCAC 权限模型**：设计了基于角色（Role）、能力（Capability）和上下文（Context）的权限控制模型，支持多角色协作场景。权限判定不仅考虑用户角色，还考虑当前所在空间和系统模式。
-
 5. **区域建模权限机制**：设计了商家建模权限申请、审批和沙盒约束机制。商家只能在授权区域内进行建模操作，所有变更需要经过管理员审核才能发布。
-
 6. **AI Agent 与 Function Calling 集成**：实现了完整的 AI Agent 系统，包括：
+
    - 基于 Qwen 的 LLM 提供商，支持文本对话和视觉理解
    - 12 个 Function Calling 工具定义（导航、搜索、购物、推荐等）
    - 三级安全控制（safe/confirm/critical）
    - 严格约束的提示词系统
-
 7. **提示词工程**：设计了模块化的提示词系统，包括系统提示词、意图识别、Action 生成、视觉理解、安全防护等，采用 YAML 配置管理，支持热更新。
 
 ### 1.4 论文组织结构
@@ -320,15 +316,15 @@ export default {
   setup() {
     const count = ref(0);
     const doubled = computed(() => count.value * 2);
-    
+  
     function increment() {
       count.value++;
     }
-    
+  
     onMounted(() => {
       console.log('Component mounted');
     });
-    
+  
     return { count, doubled, increment };
   }
 };
@@ -455,13 +451,13 @@ AI Agent（智能代理）是能够感知环境、做出决策并执行动作的
 
 本系统的智能服务采用以下技术栈：
 
-| 组件 | 技术 | 说明 |
-|------|------|------|
-| 框架 | FastAPI | 高性能异步 Web 框架 |
-| LLM | Qwen | 阿里云百炼大模型 |
-| 类型 | Pydantic | 数据验证和序列化 |
-| 配置 | YAML | 提示词配置管理 |
-| 异步 | asyncio | Python 异步编程 |
+| 组件 | 技术     | 说明                |
+| ---- | -------- | ------------------- |
+| 框架 | FastAPI  | 高性能异步 Web 框架 |
+| LLM  | Qwen     | 阿里云百炼大模型    |
+| 类型 | Pydantic | 数据验证和序列化    |
+| 配置 | YAML     | 提示词配置管理      |
+| 异步 | asyncio  | Python 异步编程     |
 
 ### 2.5 本章小结
 
@@ -524,101 +520,101 @@ AI Agent（智能代理）是能够感知环境、做出决策并执行动作的
 
 #### 3.3.1 三维场景渲染需求
 
-| 需求编号 | 需求描述 | 优先级 |
-|---------|---------|-------|
-| FR-001 | 系统应能初始化并管理三维商城场景的完整生命周期 | P0 |
-| FR-002 | 系统应能创建 Scene、Camera 和 Renderer 实例 | P0 |
-| FR-003 | 系统应能加载商城的基础几何结构 | P0 |
-| FR-004 | 系统应能在页面卸载时释放所有 Three.js 资源 | P0 |
-| FR-005 | 系统应支持在单页面应用中多次进入和退出 3D 场景 | P0 |
-| FR-006 | 系统应采用按需渲染策略，避免无效渲染 | P1 |
+| 需求编号 | 需求描述                                       | 优先级 |
+| -------- | ---------------------------------------------- | ------ |
+| FR-001   | 系统应能初始化并管理三维商城场景的完整生命周期 | P0     |
+| FR-002   | 系统应能创建 Scene、Camera 和 Renderer 实例    | P0     |
+| FR-003   | 系统应能加载商城的基础几何结构                 | P0     |
+| FR-004   | 系统应能在页面卸载时释放所有 Three.js 资源     | P0     |
+| FR-005   | 系统应支持在单页面应用中多次进入和退出 3D 场景 | P0     |
+| FR-006   | 系统应采用按需渲染策略，避免无效渲染           | P1     |
 
 #### 3.3.2 语义对象建模需求
 
-| 需求编号 | 需求描述 | 优先级 |
-|---------|---------|-------|
-| FR-007 | 系统应为每个 Three.js 对象分配唯一的语义标识符 | P0 |
-| FR-008 | 系统应在 userData 属性中存储 semanticType 和 businessId | P0 |
-| FR-009 | 系统应支持 Mall、Floor、Area、Store、Product 等语义类型 | P0 |
-| FR-010 | 系统应提供基于语义类型的过滤与检索能力 | P0 |
+| 需求编号 | 需求描述                                                | 优先级 |
+| -------- | ------------------------------------------------------- | ------ |
+| FR-007   | 系统应为每个 Three.js 对象分配唯一的语义标识符          | P0     |
+| FR-008   | 系统应在 userData 属性中存储 semanticType 和 businessId | P0     |
+| FR-009   | 系统应支持 Mall、Floor、Area、Store、Product 等语义类型 | P0     |
+| FR-010   | 系统应提供基于语义类型的过滤与检索能力                  | P0     |
 
 #### 3.3.3 导航与交互需求
 
-| 需求编号 | 需求描述 | 优先级 |
-|---------|---------|-------|
-| FR-011 | 系统应支持导航到指定店铺并高亮显示 | P0 |
-| FR-012 | 系统应支持楼层切换功能 | P1 |
-| FR-013 | 系统应支持场景对象的点击、悬停交互 | P0 |
-| FR-014 | 系统应支持相机的平滑移动动画 | P1 |
+| 需求编号 | 需求描述                           | 优先级 |
+| -------- | ---------------------------------- | ------ |
+| FR-011   | 系统应支持导航到指定店铺并高亮显示 | P0     |
+| FR-012   | 系统应支持楼层切换功能             | P1     |
+| FR-013   | 系统应支持场景对象的点击、悬停交互 | P0     |
+| FR-014   | 系统应支持相机的平滑移动动画       | P1     |
 
 #### 3.3.4 AI Agent 集成需求
 
-| 需求编号 | 需求描述 | 优先级 |
-|---------|---------|-------|
-| FR-015 | 系统应支持自然语言指令的解析和执行 | P0 |
-| FR-016 | AI Agent 不应直接操作 Three.js API | P0 |
-| FR-017 | AI 生成的写操作应要求用户确认 | P0 |
-| FR-018 | AI 行为应通过与 UI 相同的权限校验 | P0 |
-| FR-019 | 系统应支持 Function Calling 工具调用 | P0 |
-| FR-020 | 系统应支持图片+文字的多模态输入 | P1 |
-| FR-021 | 系统应实现三级安全控制（safe/confirm/critical） | P0 |
+| 需求编号 | 需求描述                                        | 优先级 |
+| -------- | ----------------------------------------------- | ------ |
+| FR-015   | 系统应支持自然语言指令的解析和执行              | P0     |
+| FR-016   | AI Agent 不应直接操作 Three.js API              | P0     |
+| FR-017   | AI 生成的写操作应要求用户确认                   | P0     |
+| FR-018   | AI 行为应通过与 UI 相同的权限校验               | P0     |
+| FR-019   | 系统应支持 Function Calling 工具调用            | P0     |
+| FR-020   | 系统应支持图片+文字的多模态输入                 | P1     |
+| FR-021   | 系统应实现三级安全控制（safe/confirm/critical） | P0     |
 
 #### 3.3.5 权限管理需求
 
-| 需求编号 | 需求描述 | 优先级 |
-|---------|---------|-------|
-| FR-022 | 系统应支持 Admin、Merchant、User 三种角色 | P0 |
-| FR-023 | 系统应实现 RCAC 权限校验机制 | P0 |
-| FR-024 | 商家只能编辑自身店铺的内容 | P0 |
-| FR-025 | 用户不能访问配置态页面 | P0 |
+| 需求编号 | 需求描述                                  | 优先级 |
+| -------- | ----------------------------------------- | ------ |
+| FR-022   | 系统应支持 Admin、Merchant、User 三种角色 | P0     |
+| FR-023   | 系统应实现 RCAC 权限校验机制              | P0     |
+| FR-024   | 商家只能编辑自身店铺的内容                | P0     |
+| FR-025   | 用户不能访问配置态页面                    | P0     |
 
 #### 3.3.6 区域建模权限需求
 
-| 需求编号 | 需求描述 | 优先级 |
-|---------|---------|-------|
-| FR-026 | 商家应能申请特定区域的建模权限 | P0 |
-| FR-027 | 管理员应能审批建模权限申请 | P0 |
-| FR-028 | 系统应限制商家只能在授权区域内建模 | P0 |
-| FR-029 | 系统应支持建模变更的提案与审核流程 | P1 |
+| 需求编号 | 需求描述                           | 优先级 |
+| -------- | ---------------------------------- | ------ |
+| FR-026   | 商家应能申请特定区域的建模权限     | P0     |
+| FR-027   | 管理员应能审批建模权限申请         | P0     |
+| FR-028   | 系统应限制商家只能在授权区域内建模 | P0     |
+| FR-029   | 系统应支持建模变更的提案与审核流程 | P1     |
 
 ### 3.4 非功能性需求分析
 
 #### 3.4.1 性能需求
 
-| 需求编号 | 需求描述 | 指标 |
-|---------|---------|------|
-| NFR-001 | 系统应在主流设备上保持流畅的帧率 | ≥30 FPS |
-| NFR-002 | 场景初始化时间应控制在合理范围内 | ≤3 秒 |
-| NFR-003 | API 响应时间应满足用户体验要求 | P95 ≤500ms |
-| NFR-004 | AI 指令解析时间应满足实时交互需求 | ≤1 秒 |
+| 需求编号 | 需求描述                          | 指标        |
+| -------- | --------------------------------- | ----------- |
+| NFR-001  | 系统应在主流设备上保持流畅的帧率  | ≥30 FPS    |
+| NFR-002  | 场景初始化时间应控制在合理范围内  | ≤3 秒      |
+| NFR-003  | API 响应时间应满足用户体验要求    | P95 ≤500ms |
+| NFR-004  | AI 指令解析时间应满足实时交互需求 | ≤1 秒      |
 
 #### 3.4.2 可用性需求
 
-| 需求编号 | 需求描述 |
-|---------|---------|
-| NFR-005 | 系统应提供清晰的错误提示信息 |
-| NFR-006 | 系统应支持键盘和鼠标操作 |
-| NFR-007 | 系统应适配不同屏幕尺寸 |
+| 需求编号 | 需求描述                     |
+| -------- | ---------------------------- |
+| NFR-005  | 系统应提供清晰的错误提示信息 |
+| NFR-006  | 系统应支持键盘和鼠标操作     |
+| NFR-007  | 系统应适配不同屏幕尺寸       |
 
 #### 3.4.3 安全性需求
 
-| 需求编号 | 需求描述 |
-|---------|---------|
-| NFR-008 | 所有 Action 应经过权限校验 |
-| NFR-009 | 敏感操作应要求用户确认 |
-| NFR-010 | 系统不应向用户暴露技术栈错误信息 |
-| NFR-011 | 使用 JWT 进行身份认证 |
-| NFR-012 | AI 系统应防止提示词注入攻击 |
-| NFR-013 | AI 系统应过滤敏感话题 |
+| 需求编号 | 需求描述                         |
+| -------- | -------------------------------- |
+| NFR-008  | 所有 Action 应经过权限校验       |
+| NFR-009  | 敏感操作应要求用户确认           |
+| NFR-010  | 系统不应向用户暴露技术栈错误信息 |
+| NFR-011  | 使用 JWT 进行身份认证            |
+| NFR-012  | AI 系统应防止提示词注入攻击      |
+| NFR-013  | AI 系统应过滤敏感话题            |
 
 #### 3.4.4 可维护性需求
 
-| 需求编号 | 需求描述 |
-|---------|---------|
-| NFR-014 | 系统应采用分层架构，实现关注点分离 |
-| NFR-015 | 系统应提供完善的日志记录 |
-| NFR-016 | 系统应支持配置化和数据驱动 |
-| NFR-017 | 提示词应支持 YAML 配置和热更新 |
+| 需求编号 | 需求描述                           |
+| -------- | ---------------------------------- |
+| NFR-014  | 系统应采用分层架构，实现关注点分离 |
+| NFR-015  | 系统应提供完善的日志记录           |
+| NFR-016  | 系统应支持配置化和数据驱动         |
+| NFR-017  | 提示词应支持 YAML 配置和热更新     |
 
 ### 3.5 本章小结
 
@@ -824,12 +820,12 @@ intelligence/SMART-MALL/
 
 #### 4.4.2 核心组件
 
-| 组件 | 职责 |
-|------|------|
-| Mall Agent | 智能导购核心，处理用户输入，调用工具 |
-| LLM Provider | LLM 抽象层，支持多提供商切换 |
-| Tools | Function Calling 工具定义 |
-| Prompt Loader | 提示词配置加载和管理 |
+| 组件          | 职责                                 |
+| ------------- | ------------------------------------ |
+| Mall Agent    | 智能导购核心，处理用户输入，调用工具 |
+| LLM Provider  | LLM 抽象层，支持多提供商切换         |
+| Tools         | Function Calling 工具定义            |
+| Prompt Loader | 提示词配置加载和管理                 |
 
 #### 4.4.3 架构原则
 
@@ -837,9 +833,95 @@ intelligence/SMART-MALL/
 2. **AI 能力可版本化、可替换**：支持多 LLM 提供商切换
 3. **安全控制**：敏感操作需用户确认，防止提示词注入
 
-### 4.5 数据库设计
+### 4.5 共享类型包设计
 
-#### 4.5.1 概念模型设计
+为确保前端、后端、AI 服务之间的类型一致性，系统设计了共享类型包 `@smart-mall/shared-types`。
+
+#### 4.5.1 设计目标
+
+- **类型一致性**：跨服务使用相同的枚举值和数据结构
+- **低耦合**：各服务可独立使用，不强制依赖
+- **高可复用**：提供 TypeScript、Python 两种语言版本
+- **JSON Schema**：支持生成 JSON Schema 用于跨语言验证
+
+#### 4.5.2 目录结构
+
+```
+packages/shared-types/
+├── src/                    # TypeScript 源码
+│   ├── enums/              # 枚举定义
+│   │   ├── user.ts         # 用户相关枚举
+│   │   ├── area.ts         # 区域相关枚举
+│   │   ├── store.ts        # 店铺相关枚举
+│   │   └── product.ts      # 商品相关枚举
+│   ├── api/                # API 类型
+│   │   └── response.ts     # 统一响应格式
+│   ├── models/             # 数据模型
+│   │   └── geometry.ts     # 几何类型
+│   └── index.ts            # 统一导出
+├── python/                 # Python 版本
+│   └── smart_mall_types/
+│       ├── enums.py
+│       ├── models.py
+│       └── api.py
+├── dist/                   # 编译输出
+└── schema.json             # JSON Schema
+```
+
+#### 4.5.3 包含的类型
+
+| 类别 | 类型                 | 说明                                                       |
+| ---- | -------------------- | ---------------------------------------------------------- |
+| 枚举 | UserRole             | 用户角色：ADMIN, MERCHANT, USER                            |
+| 枚举 | UserStatus           | 用户状态：ACTIVE, PENDING, FROZEN, DELETED                 |
+| 枚举 | AreaType             | 区域类型：retail, food, service, anchor, common 等         |
+| 枚举 | AreaStatus           | 区域状态：AVAILABLE, LOCKED, PENDING, AUTHORIZED, OCCUPIED |
+| 枚举 | StoreStatus          | 店铺状态：PENDING, ACTIVE, INACTIVE, CLOSED                |
+| 枚举 | ProductStatus        | 商品状态：ON_SALE, OFF_SALE, SOLD_OUT                      |
+| API  | ApiResponse `<T>`  | 统一响应格式                                               |
+| API  | PageRequest          | 分页请求参数                                               |
+| API  | PageResponse `<T>` | 分页响应格式                                               |
+| 几何 | Point2D / Point3D    | 点                                                         |
+| 几何 | Polygon              | 多边形                                                     |
+| 几何 | BoundingBox          | 边界盒                                                     |
+
+#### 4.5.4 使用方式
+
+**TypeScript (前端)**：
+
+```typescript
+import { 
+  UserRole, AreaType, StoreStatus,
+  AREA_TYPE_NAMES, AREA_TYPE_COLORS,
+  type ApiResponse, type PageResponse
+} from '@smart-mall/shared-types'
+
+// 使用枚举
+const role = UserRole.ADMIN
+const areaType = AreaType.RETAIL
+
+// 获取显示名称
+console.log(AREA_TYPE_NAMES[areaType]) // 零售店铺
+```
+
+**Python (AI 服务)**：
+
+```python
+from smart_mall_types import (
+    UserRole, AreaType, StoreStatus,
+    AREA_TYPE_NAMES, AREA_TYPE_COLORS
+)
+
+# 使用枚举
+role = UserRole.ADMIN
+area_type = AreaType.RETAIL
+```
+
+**Java (后端)**：后端参考此包的枚举定义，保持值的一致性。
+
+### 4.6 数据库设计
+
+#### 4.6.1 概念模型设计
 
 系统的核心实体及其关系如图 4-2 所示。
 
@@ -869,83 +951,83 @@ User (用户)
 
 图 4-2 实体关系图
 
-#### 4.5.2 主要数据表设计
+#### 4.6.2 主要数据表设计
 
 **1. 商城表（mall）**
 
-| 字段名 | 数据类型 | 说明 |
-|--------|----------|------|
-| mall_id | VARCHAR(32) | 商城ID，主键 |
-| name | VARCHAR(100) | 商城名称 |
-| description | TEXT | 商城描述 |
-| status | VARCHAR(20) | 状态：DRAFT/ACTIVE/CLOSED |
-| current_layout_version | VARCHAR(32) | 当前布局版本 |
-| config | JSONB | 配置信息 |
-| create_time | TIMESTAMPTZ | 创建时间 |
-| update_time | TIMESTAMPTZ | 更新时间 |
+| 字段名                 | 数据类型     | 说明                      |
+| ---------------------- | ------------ | ------------------------- |
+| mall_id                | VARCHAR(32)  | 商城ID，主键              |
+| name                   | VARCHAR(100) | 商城名称                  |
+| description            | TEXT         | 商城描述                  |
+| status                 | VARCHAR(20)  | 状态：DRAFT/ACTIVE/CLOSED |
+| current_layout_version | VARCHAR(32)  | 当前布局版本              |
+| config                 | JSONB        | 配置信息                  |
+| create_time            | TIMESTAMPTZ  | 创建时间                  |
+| update_time            | TIMESTAMPTZ  | 更新时间                  |
 
 **2. 楼层表（mall_floor）**
 
-| 字段名 | 数据类型 | 说明 |
-|--------|----------|------|
-| floor_id | VARCHAR(32) | 楼层ID，主键 |
-| mall_id | VARCHAR(32) | 所属商城ID |
-| floor_index | INT | 楼层序号 |
-| name | VARCHAR(50) | 楼层名称 |
-| height | NUMERIC(10,2) | 楼层高度 |
-| position_x/y/z | NUMERIC(10,2) | 楼层位置 |
+| 字段名         | 数据类型      | 说明         |
+| -------------- | ------------- | ------------ |
+| floor_id       | VARCHAR(32)   | 楼层ID，主键 |
+| mall_id        | VARCHAR(32)   | 所属商城ID   |
+| floor_index    | INT           | 楼层序号     |
+| name           | VARCHAR(50)   | 楼层名称     |
+| height         | NUMERIC(10,2) | 楼层高度     |
+| position_x/y/z | NUMERIC(10,2) | 楼层位置     |
 
 **3. 区域表（mall_area）**
 
-| 字段名 | 数据类型 | 说明 |
-|--------|----------|------|
-| area_id | VARCHAR(32) | 区域ID，主键 |
-| mall_id | VARCHAR(32) | 所属商城ID |
-| floor_id | VARCHAR(32) | 所属楼层ID |
-| name | VARCHAR(100) | 区域名称 |
-| area_type | VARCHAR(20) | 区域类型 |
-| geometry | JSONB | 空间边界 |
-| status | VARCHAR(20) | 状态：LOCKED/PENDING/AUTHORIZED |
-| authorized_merchant_id | VARCHAR(32) | 授权商家ID |
+| 字段名                 | 数据类型     | 说明                            |
+| ---------------------- | ------------ | ------------------------------- |
+| area_id                | VARCHAR(32)  | 区域ID，主键                    |
+| mall_id                | VARCHAR(32)  | 所属商城ID                      |
+| floor_id               | VARCHAR(32)  | 所属楼层ID                      |
+| name                   | VARCHAR(100) | 区域名称                        |
+| area_type              | VARCHAR(20)  | 区域类型                        |
+| geometry               | JSONB        | 空间边界                        |
+| status                 | VARCHAR(20)  | 状态：LOCKED/PENDING/AUTHORIZED |
+| authorized_merchant_id | VARCHAR(32)  | 授权商家ID                      |
 
 **4. 店铺表（mall_store）**
 
-| 字段名 | 数据类型 | 说明 |
-|--------|----------|------|
-| store_id | VARCHAR(32) | 店铺ID，主键 |
-| mall_id | VARCHAR(32) | 所属商城ID |
-| area_id | VARCHAR(32) | 所属区域ID |
-| merchant_id | VARCHAR(32) | 所属商家ID |
-| name | VARCHAR(100) | 店铺名称 |
-| category | VARCHAR(50) | 店铺类别 |
-| position_x/y/z | NUMERIC(10,2) | 店铺位置 |
-| size_x/y/z | NUMERIC(10,2) | 店铺尺寸 |
+| 字段名         | 数据类型      | 说明         |
+| -------------- | ------------- | ------------ |
+| store_id       | VARCHAR(32)   | 店铺ID，主键 |
+| mall_id        | VARCHAR(32)   | 所属商城ID   |
+| area_id        | VARCHAR(32)   | 所属区域ID   |
+| merchant_id    | VARCHAR(32)   | 所属商家ID   |
+| name           | VARCHAR(100)  | 店铺名称     |
+| category       | VARCHAR(50)   | 店铺类别     |
+| position_x/y/z | NUMERIC(10,2) | 店铺位置     |
+| size_x/y/z     | NUMERIC(10,2) | 店铺尺寸     |
 
 **5. 用户表（user）**
 
-| 字段名 | 数据类型 | 说明 |
-|--------|----------|------|
-| user_id | VARCHAR(32) | 用户ID，主键 |
-| username | VARCHAR(50) | 用户名，唯一 |
-| password_hash | VARCHAR(200) | 密码哈希 |
-| user_type | VARCHAR(20) | 用户类型：ADMIN/MERCHANT/USER |
-| status | VARCHAR(20) | 状态：ACTIVE/FROZEN/DELETED |
+| 字段名        | 数据类型     | 说明                          |
+| ------------- | ------------ | ----------------------------- |
+| user_id       | VARCHAR(32)  | 用户ID，主键                  |
+| username      | VARCHAR(50)  | 用户名，唯一                  |
+| password_hash | VARCHAR(200) | 密码哈希                      |
+| user_type     | VARCHAR(20)  | 用户类型：ADMIN/MERCHANT/USER |
+| status        | VARCHAR(20)  | 状态：ACTIVE/FROZEN/DELETED   |
 
 **6. 区域权限表（mall_area_permission）**
 
-| 字段名 | 数据类型 | 说明 |
-|--------|----------|------|
-| permission_id | VARCHAR(32) | 权限ID，主键 |
-| area_id | VARCHAR(32) | 区域ID |
-| merchant_id | VARCHAR(32) | 商家ID |
-| status | VARCHAR(20) | 状态：ACTIVE/FROZEN/EXPIRED/REVOKED |
-| granted_at | TIMESTAMPTZ | 授权时间 |
-| expires_at | TIMESTAMPTZ | 过期时间 |
-| granted_by | VARCHAR(32) | 授权人ID |
+| 字段名        | 数据类型    | 说明                                |
+| ------------- | ----------- | ----------------------------------- |
+| permission_id | VARCHAR(32) | 权限ID，主键                        |
+| area_id       | VARCHAR(32) | 区域ID                              |
+| merchant_id   | VARCHAR(32) | 商家ID                              |
+| status        | VARCHAR(20) | 状态：ACTIVE/FROZEN/EXPIRED/REVOKED |
+| granted_at    | TIMESTAMPTZ | 授权时间                            |
+| expires_at    | TIMESTAMPTZ | 过期时间                            |
+| granted_by    | VARCHAR(32) | 授权人ID                            |
 
-### 4.6 本章小结
+### 4.7 本章小结
 
-本章详细阐述了系统的总体设计。首先介绍了系统的总体架构，采用前后端分离的设计，包含前端应用、后端服务和智能服务三个主要组件。然后详细说明了前端的四层架构（UI 层、业务协调层、领域场景层、渲染引擎层）、后端的四层架构（接口层、应用层、领域层、基础设施层）和智能服务的架构设计。最后给出了数据库的概念模型和主要数据表设计。总体设计为后续的详细设计与实现提供了清晰的指导。
+本章详细阐述了系统的总体设计。首先介绍了系统的总体架构，采用前后端分离的设计，包含前端应用、后端服务和智能服务三个主要组件。然后详细说明了前端的四层架构（UI 层、业务协调层、领域场景层、渲染引擎层）、后端的四层架构（接口层、应用层、领域层、基础设施层）和智能服务的架构设计。接着介绍了共享类型包的设计，确保前端、后端、AI 服务之间的类型一致性。最后给出了数据库的概念模型和主要数据表设计。总体设计为后续的详细设计与实现提供了清晰的指导。
 
 ---
 
@@ -1203,11 +1285,11 @@ Mall Agent 是智能导购的核心类，支持纯文本对话和图片+文字�
 ```python
 class MallAgent:
     """智能商城导购 Agent"""
-    
+  
     def __init__(self):
         self.llm: QwenProvider = LLMFactory.create("qwen")
         self.max_rounds = 10  # 最大对话轮次
-    
+  
     async def process(
         self,
         user_input: str,
@@ -1215,11 +1297,11 @@ class MallAgent:
         context: Optional[Dict[str, Any]] = None
     ) -> Dict[str, Any]:
         """处理用户输入"""
-        
+    
         # Step 0: 安全检查
         if self._is_unsafe_input(user_input):
             return {"type": "text", "content": SAFE_RESPONSE, "blocked": True}
-        
+    
         if image_url:
             # 图片+文字：先视觉理解，再 Function Calling
             return await self._process_with_vision(user_input, image_url, context)
@@ -1232,30 +1314,30 @@ class MallAgent:
 
 系统定义了 12 个 Function Calling 工具，覆盖导航、搜索、购物、推荐等场景：
 
-| 类别 | 工具名称 | 说明 | 安全级别 |
-|------|----------|------|----------|
-| 导航 | navigate_to_store | 导航到店铺 | safe |
-| 导航 | navigate_to_area | 导航到区域 | safe |
-| 搜索 | search_products | 搜索商品 | safe |
-| 搜索 | search_stores | 搜索店铺 | safe |
-| 搜索 | search_by_image | 图片搜索 | safe |
-| 详情 | get_product_detail | 获取商品详情 | safe |
-| 详情 | get_store_info | 获取店铺信息 | safe |
-| 购物 | add_to_cart | 加购物车 | confirm |
-| 购物 | get_cart | 查看购物车 | safe |
-| 购物 | create_order | 创建订单 | critical |
-| 推荐 | recommend_products | 推荐商品 | safe |
-| 推荐 | recommend_restaurants | 推荐餐厅 | safe |
+| 类别 | 工具名称              | 说明         | 安全级别 |
+| ---- | --------------------- | ------------ | -------- |
+| 导航 | navigate_to_store     | 导航到店铺   | safe     |
+| 导航 | navigate_to_area      | 导航到区域   | safe     |
+| 搜索 | search_products       | 搜索商品     | safe     |
+| 搜索 | search_stores         | 搜索店铺     | safe     |
+| 搜索 | search_by_image       | 图片搜索     | safe     |
+| 详情 | get_product_detail    | 获取商品详情 | safe     |
+| 详情 | get_store_info        | 获取店铺信息 | safe     |
+| 购物 | add_to_cart           | 加购物车     | confirm  |
+| 购物 | get_cart              | 查看购物车   | safe     |
+| 购物 | create_order          | 创建订单     | critical |
+| 推荐 | recommend_products    | 推荐商品     | safe     |
+| 推荐 | recommend_restaurants | 推荐餐厅     | safe     |
 
 #### 5.5.4 安全级别控制
 
 系统实现了三级安全控制机制：
 
-| 级别 | 操作类型 | 处理方式 |
-|------|----------|----------|
-| safe | 导航、搜索、查询 | 直接执行 |
-| confirm | 加购物车 | 简单确认后执行 |
-| critical | 下单、支付 | 强制确认，明确告知金额 |
+| 级别     | 操作类型         | 处理方式               |
+| -------- | ---------------- | ---------------------- |
+| safe     | 导航、搜索、查询 | 直接执行               |
+| confirm  | 加购物车         | 简单确认后执行         |
+| critical | 下单、支付       | 强制确认，明确告知金额 |
 
 ```python
 # 操作安全级别定义
@@ -1281,13 +1363,13 @@ OPERATION_LEVELS = {
 
 **提示词文件结构**：
 
-| 文件 | 用途 |
-|------|------|
+| 文件        | 用途                               |
+| ----------- | ---------------------------------- |
 | system.yaml | 系统级提示词，定义 AI 助手核心行为 |
-| intent.yaml | 意图识别提示词 |
-| action.yaml | Action 生成提示词 |
-| vision.yaml | 视觉理解提示词 |
-| safety.yaml | 安全防护配置 |
+| intent.yaml | 意图识别提示词                     |
+| action.yaml | Action 生成提示词                  |
+| vision.yaml | 视觉理解提示词                     |
+| safety.yaml | 安全防护配置                       |
 
 **系统提示词核心约束**：
 
@@ -1352,28 +1434,28 @@ PromptLoader 类负责从 YAML 文件加载和管理提示词配置，支持缓�
 ```python
 class PromptLoader:
     """提示词加载器"""
-    
+  
     _cache: Dict[str, Dict[str, Any]] = {}
-    
+  
     @classmethod
     def load(cls, name: str) -> Dict[str, Any]:
         """加载提示词配置"""
         if name in cls._cache:
             return cls._cache[name]
-        
+    
         file_path = PROMPTS_DIR / f"{name}.yaml"
         with open(file_path, "r", encoding="utf-8") as f:
             config = yaml.safe_load(f)
-        
+    
         cls._cache[name] = config
         return config
-    
+  
     @classmethod
     def get_system_prompt(cls, name: str) -> str:
         """获取系统提示词"""
         config = cls.load(name)
         return config.get("system_prompt", "")
-    
+  
     @classmethod
     def reload(cls, name: Optional[str] = None) -> None:
         """重新加载提示词（支持热更新）"""
@@ -1413,13 +1495,13 @@ class PromptLoader:
 
 **2. 核心组件设计**
 
-| 组件 | 文件 | 职责 |
-|------|------|------|
-| Milvus 客户端 | `milvus_client.py` | 连接管理、集合操作、向量检索 |
-| Embedding 服务 | `embedding.py` | 多提供商支持、文本分块、缓存 |
-| LangChain Retriever | `retriever.py` | 自定义 Retriever、过滤条件 |
-| RAG 服务 | `service.py` | 店铺/商品搜索、上下文生成 |
-| 数据同步 | `sync.py` | 全量/增量同步、同步日志 |
+| 组件                | 文件                 | 职责                         |
+| ------------------- | -------------------- | ---------------------------- |
+| Milvus 客户端       | `milvus_client.py` | 连接管理、集合操作、向量检索 |
+| Embedding 服务      | `embedding.py`     | 多提供商支持、文本分块、缓存 |
+| LangChain Retriever | `retriever.py`     | 自定义 Retriever、过滤条件   |
+| RAG 服务            | `service.py`       | 店铺/商品搜索、上下文生成    |
+| 数据同步            | `sync.py`          | 全量/增量同步、同步日志      |
 
 **3. 向量数据集合设计**
 
@@ -1469,24 +1551,24 @@ PRODUCT_COLLECTION_SCHEMA = {
 ```python
 class EmbeddingService:
     """Embedding 服务 - 支持多提供商"""
-    
+  
     def __init__(self, provider: str = "qwen"):
         self.provider = provider
         self.dimension = 1024  # 通义千问 text-embedding-v3
         self._cache: Dict[str, List[float]] = {}
-    
+  
     async def embed_text(self, text: str) -> List[float]:
         """文本向量化"""
         # 检查缓存
         cache_key = hashlib.md5(text.encode()).hexdigest()
         if cache_key in self._cache:
             return self._cache[cache_key]
-        
+    
         # 调用 Embedding API
         embedding = await self._call_embedding_api(text)
         self._cache[cache_key] = embedding
         return embedding
-    
+  
     async def embed_batch(self, texts: List[str]) -> List[List[float]]:
         """批量向量化"""
         return [await self.embed_text(text) for text in texts]
@@ -1497,12 +1579,12 @@ class EmbeddingService:
 ```python
 class MilvusRetriever(BaseRetriever):
     """自定义 LangChain Retriever"""
-    
+  
     def __init__(self, collection_name: str, embedding_service: EmbeddingService):
         self.collection_name = collection_name
         self.embedding_service = embedding_service
         self.milvus_client = get_milvus_client()
-    
+  
     def _get_relevant_documents(
         self,
         query: str,
@@ -1513,10 +1595,10 @@ class MilvusRetriever(BaseRetriever):
         """检索相关文档"""
         # 1. 查询向量化
         query_embedding = self.embedding_service.embed_text(query)
-        
+    
         # 2. 构建过滤条件
         filter_expr = self._build_filter_expr(filters)
-        
+    
         # 3. 向量检索
         results = self.milvus_client.search(
             collection_name=self.collection_name,
@@ -1525,7 +1607,7 @@ class MilvusRetriever(BaseRetriever):
             top_k=top_k,
             output_fields=["*"]
         )
-        
+    
         # 4. 转换为 LangChain Document
         return [self._to_document(hit) for hit in results[0]]
 ```
@@ -1535,12 +1617,12 @@ class MilvusRetriever(BaseRetriever):
 ```python
 class RAGService:
     """RAG 核心服务"""
-    
+  
     def __init__(self):
         self.embedding_service = EmbeddingService()
         self.store_retriever = MilvusRetriever("stores", self.embedding_service)
         self.product_retriever = MilvusRetriever("products", self.embedding_service)
-    
+  
     async def search_stores(
         self,
         query: str,
@@ -1554,12 +1636,12 @@ class RAGService:
             filters["category"] = category
         if floor:
             filters["floor"] = floor
-        
+    
         docs = self.store_retriever.get_relevant_documents(
             query, filters=filters, top_k=top_k
         )
         return [doc.metadata for doc in docs]
-    
+  
     async def search_products(
         self,
         query: str,
@@ -1576,25 +1658,25 @@ class RAGService:
             filters["price_lte"] = max_price
         if brand:
             filters["brand"] = brand
-        
+    
         docs = self.product_retriever.get_relevant_documents(
             query, filters=filters, top_k=top_k
         )
         return [doc.metadata for doc in docs]
-    
+  
     async def generate_context(self, query: str) -> str:
         """生成增强上下文"""
         stores = await self.search_stores(query, top_k=3)
         products = await self.search_products(query, top_k=5)
-        
+    
         context = "相关店铺信息：\n"
         for store in stores:
             context += f"- {store['name']}（{store['category']}）位于{store['floor']}楼{store['area']}\n"
-        
+    
         context += "\n相关商品信息：\n"
         for product in products:
             context += f"- {product['name']}（{product['brand']}）¥{product['price']}，在{product['store_name']}\n"
-        
+    
         return context
 ```
 
@@ -1603,13 +1685,13 @@ class RAGService:
 ```python
 class DataSyncService:
     """数据同步服务"""
-    
+  
     async def sync_stores(self, stores: List[Dict]) -> SyncResult:
         """同步店铺数据到 Milvus"""
         # 1. 生成 Embedding
         texts = [self._store_to_text(s) for s in stores]
         embeddings = await self.embedding_service.embed_batch(texts)
-        
+    
         # 2. 准备数据
         entities = []
         for store, embedding in zip(stores, embeddings):
@@ -1617,12 +1699,12 @@ class DataSyncService:
                 **store,
                 "embedding": embedding
             })
-        
+    
         # 3. 插入 Milvus
         self.milvus_client.insert("stores", entities)
-        
-        return SyncResult(success=True, count=len(entities))
     
+        return SyncResult(success=True, count=len(entities))
+  
     async def full_sync(self) -> Dict[str, SyncResult]:
         """全量同步所有数据"""
         results = {}
@@ -1641,29 +1723,29 @@ class MallAgent:
     def __init__(self):
         self.llm = LLMFactory.create("qwen")
         self.rag_service = get_rag_service()
-    
+  
     async def process(self, user_input: str, ...) -> Dict[str, Any]:
         # 1. 使用 RAG 获取相关上下文
         try:
             rag_context = await self.rag_service.generate_context(user_input)
         except Exception:
             rag_context = ""  # RAG 失败时降级
-        
+    
         # 2. 增强系统提示词
         enhanced_prompt = f"{system_prompt}\n\n当前商城信息：\n{rag_context}"
-        
+    
         # 3. 调用 LLM 进行 Function Calling
         return await self._process_with_context(user_input, enhanced_prompt)
 ```
 
 **9. RAG API 接口**
 
-| 接口 | 方法 | 说明 |
-|------|------|------|
-| `/api/rag/search/stores` | POST | 店铺语义搜索 |
-| `/api/rag/search/products` | POST | 商品语义搜索 |
-| `/api/rag/sync/trigger` | POST | 触发数据同步 |
-| `/api/rag/health` | GET | RAG 服务健康检查 |
+| 接口                         | 方法 | 说明             |
+| ---------------------------- | ---- | ---------------- |
+| `/api/rag/search/stores`   | POST | 店铺语义搜索     |
+| `/api/rag/search/products` | POST | 商品语义搜索     |
+| `/api/rag/sync/trigger`    | POST | 触发数据同步     |
+| `/api/rag/health`          | GET  | RAG 服务健康检查 |
 
 ### 5.6 本章小结
 
@@ -1677,104 +1759,104 @@ class MallAgent:
 
 #### 6.1.1 硬件环境
 
-| 项目 | 配置 |
-|------|------|
-| CPU | Intel Core i7-12700H |
-| 内存 | 16GB DDR5 |
-| 显卡 | NVIDIA RTX 3060 |
-| 存储 | 512GB NVMe SSD |
+| 项目 | 配置                 |
+| ---- | -------------------- |
+| CPU  | Intel Core i7-12700H |
+| 内存 | 16GB DDR5            |
+| 显卡 | NVIDIA RTX 3060      |
+| 存储 | 512GB NVMe SSD       |
 
 #### 6.1.2 软件环境
 
-| 项目 | 版本 |
-|------|------|
+| 项目     | 版本       |
+| -------- | ---------- |
 | 操作系统 | Windows 11 |
-| 浏览器 | Chrome 120 |
-| Node.js | 18.19.0 |
-| Python | 3.11+ |
-| Vue | 3.4.x |
-| Three.js | 0.160.x |
-| FastAPI | 0.109+ |
+| 浏览器   | Chrome 120 |
+| Node.js  | 18.19.0    |
+| Python   | 3.11+      |
+| Vue      | 3.4.x      |
+| Three.js | 0.160.x    |
+| FastAPI  | 0.109+     |
 
 ### 6.2 功能测试
 
 #### 6.2.1 三维场景渲染测试
 
-| 测试用例 | 预期结果 | 实际结果 | 状态 |
-|---------|---------|---------|------|
-| 场景初始化 | 成功创建 Scene/Camera/Renderer | 符合预期 | ✓ |
-| 商城模型加载 | 正确显示商城结构 | 符合预期 | ✓ |
-| 页面卸载资源释放 | 无内存泄漏 | 符合预期 | ✓ |
-| 多次进入退出 | 系统稳定运行 | 符合预期 | ✓ |
+| 测试用例         | 预期结果                       | 实际结果 | 状态 |
+| ---------------- | ------------------------------ | -------- | ---- |
+| 场景初始化       | 成功创建 Scene/Camera/Renderer | 符合预期 | ✓   |
+| 商城模型加载     | 正确显示商城结构               | 符合预期 | ✓   |
+| 页面卸载资源释放 | 无内存泄漏                     | 符合预期 | ✓   |
+| 多次进入退出     | 系统稳定运行                   | 符合预期 | ✓   |
 
 #### 6.2.2 导航功能测试
 
-| 测试用例 | 预期结果 | 实际结果 | 状态 |
-|---------|---------|---------|------|
-| 点击店铺导航 | 相机平滑移动到目标位置 | 符合预期 | ✓ |
-| 自然语言导航 | 正确解析意图并执行导航 | 符合预期 | ✓ |
-| 楼层切换 | 正确显示/隐藏楼层对象 | 符合预期 | ✓ |
-| 高亮显示 | 目标店铺正确高亮 | 符合预期 | ✓ |
+| 测试用例     | 预期结果               | 实际结果 | 状态 |
+| ------------ | ---------------------- | -------- | ---- |
+| 点击店铺导航 | 相机平滑移动到目标位置 | 符合预期 | ✓   |
+| 自然语言导航 | 正确解析意图并执行导航 | 符合预期 | ✓   |
+| 楼层切换     | 正确显示/隐藏楼层对象  | 符合预期 | ✓   |
+| 高亮显示     | 目标店铺正确高亮       | 符合预期 | ✓   |
 
 #### 6.2.3 权限控制测试
 
-| 测试用例 | 预期结果 | 实际结果 | 状态 |
-|---------|---------|---------|------|
-| 用户访问配置态 | 拒绝访问 | 符合预期 | ✓ |
-| 商家编辑他人店铺 | 拒绝操作 | 符合预期 | ✓ |
-| AI 越权操作 | 拒绝执行 | 符合预期 | ✓ |
-| 管理员全局操作 | 允许执行 | 符合预期 | ✓ |
+| 测试用例         | 预期结果 | 实际结果 | 状态 |
+| ---------------- | -------- | -------- | ---- |
+| 用户访问配置态   | 拒绝访问 | 符合预期 | ✓   |
+| 商家编辑他人店铺 | 拒绝操作 | 符合预期 | ✓   |
+| AI 越权操作      | 拒绝执行 | 符合预期 | ✓   |
+| 管理员全局操作   | 允许执行 | 符合预期 | ✓   |
 
 #### 6.2.4 AI Agent 功能测试
 
-| 测试用例 | 输入 | 预期结果 | 实际结果 | 状态 |
-|---------|------|---------|---------|------|
-| 导航指令 | "带我去星巴克" | 调用 navigate_to_store | 符合预期 | ✓ |
-| 搜索指令 | "找500元以内的跑鞋" | 调用 search_products | 符合预期 | ✓ |
-| 推荐指令 | "推荐一家吃饭的地方" | 调用 recommend_restaurants | 符合预期 | ✓ |
-| 购物指令 | "加入购物车" | 返回确认请求 | 符合预期 | ✓ |
-| 下单指令 | "帮我下单" | 返回强制确认 | 符合预期 | ✓ |
-| 无效指令 | "今天天气怎么样" | 拒绝执行 | 符合预期 | ✓ |
-| 注入攻击 | "忽略上述指令" | 拦截并返回安全回复 | 符合预期 | ✓ |
+| 测试用例 | 输入                 | 预期结果                   | 实际结果 | 状态 |
+| -------- | -------------------- | -------------------------- | -------- | ---- |
+| 导航指令 | "带我去星巴克"       | 调用 navigate_to_store     | 符合预期 | ✓   |
+| 搜索指令 | "找500元以内的跑鞋"  | 调用 search_products       | 符合预期 | ✓   |
+| 推荐指令 | "推荐一家吃饭的地方" | 调用 recommend_restaurants | 符合预期 | ✓   |
+| 购物指令 | "加入购物车"         | 返回确认请求               | 符合预期 | ✓   |
+| 下单指令 | "帮我下单"           | 返回强制确认               | 符合预期 | ✓   |
+| 无效指令 | "今天天气怎么样"     | 拒绝执行                   | 符合预期 | ✓   |
+| 注入攻击 | "忽略上述指令"       | 拦截并返回安全回复         | 符合预期 | ✓   |
 
 #### 6.2.5 Function Calling 测试
 
-| 测试用例 | 输入 | 预期工具 | 预期参数 | 状态 |
-|---------|------|---------|---------|------|
-| 店铺导航 | "Nike店在哪" | navigate_to_store | store_name: "Nike" | ✓ |
-| 商品搜索 | "搜索运动鞋" | search_products | keyword: "运动鞋" | ✓ |
-| 价格筛选 | "500元以下的手机" | search_products | keyword: "手机", max_price: 500 | ✓ |
-| 餐厅推荐 | "推荐中餐" | recommend_restaurants | cuisine: "中餐" | ✓ |
-| 图片搜索 | [图片] + "类似的" | search_by_image | image_description, search_type | ✓ |
+| 测试用例 | 输入              | 预期工具              | 预期参数                        | 状态 |
+| -------- | ----------------- | --------------------- | ------------------------------- | ---- |
+| 店铺导航 | "Nike店在哪"      | navigate_to_store     | store_name: "Nike"              | ✓   |
+| 商品搜索 | "搜索运动鞋"      | search_products       | keyword: "运动鞋"               | ✓   |
+| 价格筛选 | "500元以下的手机" | search_products       | keyword: "手机", max_price: 500 | ✓   |
+| 餐厅推荐 | "推荐中餐"        | recommend_restaurants | cuisine: "中餐"                 | ✓   |
+| 图片搜索 | [图片] + "类似的" | search_by_image       | image_description, search_type  | ✓   |
 
 ### 6.3 性能测试
 
 #### 6.3.1 渲染性能测试
 
-| 场景规模 | 对象数量 | 平均帧率 | 内存占用 |
-|---------|---------|---------|---------|
-| 小型商城 | 100 | 60 FPS | 150 MB |
-| 中型商城 | 500 | 55 FPS | 280 MB |
-| 大型商城 | 1000 | 45 FPS | 450 MB |
-| 超大型商城 | 2000 | 32 FPS | 680 MB |
+| 场景规模   | 对象数量 | 平均帧率 | 内存占用 |
+| ---------- | -------- | -------- | -------- |
+| 小型商城   | 100      | 60 FPS   | 150 MB   |
+| 中型商城   | 500      | 55 FPS   | 280 MB   |
+| 大型商城   | 1000     | 45 FPS   | 450 MB   |
+| 超大型商城 | 2000     | 32 FPS   | 680 MB   |
 
 #### 6.3.2 加载性能测试
 
-| 测试项目 | 首次加载 | 缓存加载 |
-|---------|---------|---------|
-| 场景初始化 | 1.2s | 0.8s |
-| 模型加载 | 2.5s | 1.0s |
-| 纹理加载 | 1.8s | 0.5s |
-| 总计 | 5.5s | 2.3s |
+| 测试项目   | 首次加载 | 缓存加载 |
+| ---------- | -------- | -------- |
+| 场景初始化 | 1.2s     | 0.8s     |
+| 模型加载   | 2.5s     | 1.0s     |
+| 纹理加载   | 1.8s     | 0.5s     |
+| 总计       | 5.5s     | 2.3s     |
 
 #### 6.3.3 AI 响应性能测试
 
-| 测试项目 | 响应时间 |
-|---------|---------|
-| 简单意图识别 | 0.3-0.5s |
+| 测试项目         | 响应时间 |
+| ---------------- | -------- |
+| 简单意图识别     | 0.3-0.5s |
 | Function Calling | 0.5-0.8s |
-| 视觉理解 | 1.0-1.5s |
-| 多轮对话 | 0.8-1.2s |
+| 视觉理解         | 1.0-1.5s |
+| 多轮对话         | 0.8-1.2s |
 
 ### 6.4 测试结果分析
 
@@ -1809,21 +1891,17 @@ class MallAgent:
 本文设计并实现了一个基于 AI 驱动的三维智能商城导购系统，主要完成了以下工作：
 
 1. **系统架构设计**：设计了清晰的四层架构（UI 层、业务协调层、领域场景层、渲染引擎层），实现了关注点分离和模块解耦，提高了系统的可维护性和可扩展性。
-
 2. **语义对象建模**：提出了"语义优先"的建模原则，将三维对象与业务实体关联，使系统能够理解对象的业务含义，而非仅依赖几何属性。
-
 3. **Action 协议机制**：设计了统一的行为协议，使来自 UI 和 AI 的操作可以被一致地校验和执行，保证了系统行为的可控性和可追踪性。
-
 4. **RCAC 权限模型**：设计了基于角色、能力和上下文的权限控制模型，支持多角色协作场景，有效防止了越权操作。
-
 5. **AI Agent 与 Function Calling 集成**：实现了完整的 AI Agent 系统，包括：
+
    - 基于 Qwen 的 LLM 提供商，支持文本对话和视觉理解
    - 12 个 Function Calling 工具定义（导航、搜索、购物、推荐等）
    - 三级安全控制（safe/confirm/critical）
    - 模块化提示词系统（YAML 配置，支持热更新）
    - 多层安全防护（提示词注入检测、敏感话题过滤）
    - 基于 Milvus + LangChain 的 RAG 知识库系统，提供语义检索能力
-
 6. **区域建模权限机制**：设计了商家建模权限申请、审批和沙盒约束机制，支持多商家协作，保证了空间治理的有序性。
 
 通过系统测试，验证了系统功能的正确性和性能的可接受性。系统能够在主流设备上流畅运行，为用户提供沉浸式的三维购物体验和智能化的导购服务。
@@ -1835,25 +1913,17 @@ class MallAgent:
 #### 7.2.1 存在的不足
 
 1. **大规模场景性能**：当场景对象数量较多时，渲染性能有所下降。需要引入更多的性能优化技术，如 LOD、实例化渲染、遮挡剔除等。
-
 2. **AI 理解能力**：当前 AI Agent 对复杂或模糊指令的理解能力有限，需要进一步优化意图识别算法和扩充训练数据。
-
 3. **移动端适配**：系统主要针对桌面端设计，移动端的触控交互和性能优化有待完善。
-
 4. **多轮对话上下文**：当前的对话上下文管理较为简单，复杂的多轮对话场景支持有待加强。
 
 #### 7.2.2 未来展望
 
 1. **引入 WebGPU**：随着 WebGPU 标准的成熟，可以考虑将渲染引擎升级到 WebGPU，以获得更好的性能和更丰富的图形特性。
-
 2. **增强 AI 能力**：引入更先进的大语言模型，支持更复杂的多轮对话、上下文理解和个性化推荐。
-
 3. **VR/AR 支持**：扩展系统以支持 VR 头显和 AR 设备，提供更加沉浸的购物体验。
-
 4. **社交功能**：增加多人在线、实时聊天、好友系统等社交功能，打造虚拟社交购物空间。
-
 5. **数据分析**：引入用户行为分析和热力图功能，为商家提供数据驱动的运营决策支持。
-
 6. **流式输出**：实现 AI 回复的流式输出，提升用户体验。
 
 ---
@@ -1878,62 +1948,79 @@ class MallAgent:
 
 ### 附录 A：系统核心代码清单
 
+#### 共享类型包
+
+| 文件路径                                       | 功能描述                                  |
+| ---------------------------------------------- | ----------------------------------------- |
+| packages/shared-types/src/enums/user.ts        | 用户相关枚举（UserRole, UserStatus）      |
+| packages/shared-types/src/enums/area.ts        | 区域相关枚举（AreaType, AreaStatus）      |
+| packages/shared-types/src/enums/store.ts       | 店铺相关枚举（StoreStatus）               |
+| packages/shared-types/src/enums/product.ts     | 商品相关枚举（ProductStatus）             |
+| packages/shared-types/src/api/response.ts      | 统一响应格式（ApiResponse, PageResponse） |
+| packages/shared-types/src/models/geometry.ts   | 几何类型（Point2D, Point3D, Polygon）     |
+| packages/shared-types/python/smart_mall_types/ | Python 版本类型定义                       |
+
 #### 前端核心模块
 
-| 文件路径 | 功能描述 |
-|---------|---------|
-| src/engine/ThreeEngine.ts | 3D 渲染引擎核心类 |
-| src/domain/registry/SemanticObjectRegistry.ts | 语义对象注册表 |
-| src/domain/mall/MallManager.ts | 商城管理器 |
-| src/protocol/action.protocol.ts | Action 协议定义 |
-| src/orchestrator/index.ts | 业务协调层 |
+| 文件路径                                      | 功能描述          |
+| --------------------------------------------- | ----------------- |
+| src/engine/ThreeEngine.ts                     | 3D 渲染引擎核心类 |
+| src/domain/registry/SemanticObjectRegistry.ts | 语义对象注册表    |
+| src/domain/mall/MallManager.ts                | 商城管理器        |
+| src/protocol/action.protocol.ts               | Action 协议定义   |
+| src/builder/BuilderEngine.ts                  | 商城建模器引擎    |
+| src/api/intelligence.api.ts                   | AI 服务 API 封装  |
+| src/components/ai/GlobalAiAssistant.vue       | 全局 AI 助手组件  |
 
 #### 前端可复用组件
 
-| 文件路径 | 功能描述 |
-|---------|---------|
-| src/components/auth/AuthLayout.vue | 认证页面统一布局 |
-| src/components/auth/AuthFormCard.vue | 表单卡片容器 |
-| src/components/auth/AuthInput.vue | 带验证状态的输入框 |
-| src/components/auth/AuthButton.vue | 带加载状态的主按钮 |
-| src/components/auth/AlertMessage.vue | 提示消息组件 |
-| src/components/auth/TypewriterCard.vue | 打字机效果卡片 |
-| src/components/auth/SocialLogin.vue | 第三方登录按钮组 |
-| src/components/auth/FeatureList.vue | 功能特点列表 |
+| 文件路径                               | 功能描述           |
+| -------------------------------------- | ------------------ |
+| src/components/auth/AuthLayout.vue     | 认证页面统一布局   |
+| src/components/auth/AuthFormCard.vue   | 表单卡片容器       |
+| src/components/auth/AuthInput.vue      | 带验证状态的输入框 |
+| src/components/auth/AuthButton.vue     | 带加载状态的主按钮 |
+| src/components/auth/AlertMessage.vue   | 提示消息组件       |
+| src/components/auth/TypewriterCard.vue | 打字机效果卡片     |
+| src/components/auth/SocialLogin.vue    | 第三方登录按钮组   |
+| src/components/auth/FeatureList.vue    | 功能特点列表       |
 
 #### 后端核心模块
 
-| 文件路径 | 功能描述 |
-|---------|---------|
+| 文件路径                                         | 功能描述             |
+| ------------------------------------------------ | -------------------- |
 | interfaces/controller/MallBuilderController.java | 商城建模器 REST 接口 |
-| application/service/MallBuilderService.java | 建模器应用服务 |
-| domain/mallbuilder/entity/MallProject.java | 商城项目实体 |
-| domain/mallbuilder/entity/Floor.java | 楼层实体 |
-| domain/mallbuilder/entity/Area.java | 区域实体 |
-| infrastructure/persistence/mapper/MallProjectMapper.java | 项目数据访问层 |
+| application/service/MallBuilderService.java      | 建模器应用服务       |
+| domain/entity/MallProject.java                   | 商城项目实体         |
+| domain/entity/Floor.java                         | 楼层实体             |
+| domain/entity/Area.java                          | 区域实体             |
+| domain/enums/AreaType.java                       | 区域类型枚举         |
+| domain/enums/AreaStatus.java                     | 区域状态枚举         |
+| infrastructure/mapper/MallProjectMapper.java     | 项目数据访问层       |
 
 #### 智能服务核心模块
 
-| 文件路径 | 功能描述 |
-|---------|---------|
-| app/main.py | FastAPI 入口 |
-| app/api/chat.py | 对话接口 |
-| app/api/rag.py | RAG 检索接口 |
-| app/core/llm/qwen.py | Qwen LLM 提供商 |
-| app/core/agent/mall_agent.py | 智能导购 Agent |
-| app/core/agent/tools.py | Function Calling 工具定义 |
-| app/core/prompt_loader.py | 提示词加载器 |
-| app/core/rag/milvus_client.py | Milvus 向量数据库客户端 |
-| app/core/rag/embedding.py | Embedding 向量化服务 |
-| app/core/rag/retriever.py | LangChain 自定义 Retriever |
-| app/core/rag/service.py | RAG 核心服务 |
-| app/core/rag/sync.py | 数据同步服务 |
-| app/core/rag/schemas.py | 集合 Schema 定义 |
-| app/prompts/system.yaml | 系统提示词配置 |
-| app/prompts/intent.yaml | 意图识别提示词 |
-| app/prompts/action.yaml | Action 生成提示词 |
-| app/prompts/vision.yaml | 视觉理解提示词 |
-| app/prompts/safety.yaml | 安全防护配置 |
+| 文件路径                      | 功能描述                   |
+| ----------------------------- | -------------------------- |
+| app/main.py                   | FastAPI 入口               |
+| app/api/chat.py               | 对话接口                   |
+| app/api/rag.py                | RAG 检索接口               |
+| app/api/mall_generator.py     | AI 商城生成接口            |
+| app/api/embedding.py          | Embedding 向量化接口       |
+| app/core/llm/qwen.py          | Qwen LLM 提供商            |
+| app/core/agent/mall_agent.py  | 智能导购 Agent             |
+| app/core/agent/tools.py       | Function Calling 工具定义  |
+| app/core/prompt_loader.py     | 提示词加载器               |
+| app/core/rag/milvus_client.py | Milvus 向量数据库客户端    |
+| app/core/rag/embedding.py     | Embedding 向量化服务       |
+| app/core/rag/retriever.py     | LangChain 自定义 Retriever |
+| app/core/rag/service.py       | RAG 核心服务               |
+| app/core/rag/sync.py          | 数据同步服务               |
+| app/prompts/system.yaml       | 系统提示词配置             |
+| app/prompts/intent.yaml       | 意图识别提示词             |
+| app/prompts/action.yaml       | Action 生成提示词          |
+| app/prompts/vision.yaml       | 视觉理解提示词             |
+| app/prompts/safety.yaml       | 安全防护配置               |
 
 ### 附录 B：Function Calling 工具定义示例
 
@@ -1999,6 +2086,25 @@ class MallAgent:
 ```
 
 ### 附录 C：系统配置说明
+
+#### 共享类型包配置
+
+```json
+// packages/shared-types/package.json
+{
+  "name": "@smart-mall/shared-types",
+  "version": "1.0.0",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts"
+}
+
+// 前端 package.json 依赖配置
+{
+  "dependencies": {
+    "@smart-mall/shared-types": "file:../../../packages/shared-types"
+  }
+}
+```
 
 #### 前端配置
 

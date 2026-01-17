@@ -193,9 +193,17 @@ export const useAiStore = defineStore('ai', () => {
         args: response.args,
       })
     } else if (response.type === 'error') {
+      // 服务连接异常时不显示错误提示
+      const errorContent = response.content || response.message || ''
+      if (errorContent.toLowerCase().includes('connection') || 
+          errorContent.includes('服务暂时不可用') ||
+          errorContent.includes('网络')) {
+        console.warn('[AI Store] Service connection error, silently ignored:', errorContent)
+        return
+      }
       addMessage({
         role: 'assistant',
-        content: response.content || response.message || '抱歉，处理时出现错误，请重试。',
+        content: errorContent || '抱歉，处理时出现错误，请重试。',
         type: 'error',
       })
     } else {

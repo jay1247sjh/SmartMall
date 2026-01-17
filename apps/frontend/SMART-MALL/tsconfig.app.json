@@ -1,5 +1,6 @@
 {
   "extends": "@vue/tsconfig/tsconfig.dom.json",
+  "exclude": ["node_modules", "dist", "public"],
   "compilerOptions": {
     "tsBuildInfoFile": "./node_modules/.tmp/tsconfig.app.tsbuildinfo",
     "types": ["vite/client"],
@@ -23,15 +24,16 @@
     "paths": {
       "@/*": ["src/*"],
       "@types/*": ["src/types/*"],
-      "@three/*": ["src/three/*"],
       "@domain/*": ["src/domain/*"],
-      "@orchestrator/*": ["src/orchestrator/*"],
       "@stores/*": ["src/stores/*"],
       "@agent/*": ["src/agent/*"],
       "@components/*": ["src/components/*"],
       "@views/*": ["src/views/*"],
-      "@utils/*": ["src/utils/*"],
-      "@api/*": ["src/api/*"]
+      "@api/*": ["src/api/*"],
+      "@engine/*": ["src/engine/*"],
+      "@builder/*": ["src/builder/*"],
+      "@protocol/*": ["src/protocol/*"],
+      "@shared/*": ["src/shared/*"]
     }
   },
   "include": ["src/**/*.ts", "src/**/*.tsx", "src/**/*.vue"]

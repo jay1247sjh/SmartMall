@@ -66,6 +66,7 @@ CREATE TABLE IF NOT EXISTS floor (
     visible         BOOLEAN DEFAULT TRUE,
     locked          BOOLEAN DEFAULT FALSE,
     sort_order      INTEGER DEFAULT 0,
+    version         INTEGER DEFAULT 0,        -- 乐观锁版本号
     created_at      TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at      TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     is_deleted      BOOLEAN NOT NULL DEFAULT FALSE
@@ -90,6 +91,7 @@ CREATE TABLE IF NOT EXISTS area (
     properties      JSONB,                    -- 区域属性(面积、周长、租金等)
     merchant_id     VARCHAR(32),              -- 关联商户ID
     rental          JSONB,                    -- 租金信息
+    status          VARCHAR(20) DEFAULT 'AVAILABLE',  -- 区域状态
     visible         BOOLEAN DEFAULT TRUE,
     locked          BOOLEAN DEFAULT FALSE,
     created_at      TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -101,24 +103,13 @@ CREATE TABLE IF NOT EXISTS area (
 CREATE INDEX IF NOT EXISTS idx_area_floor ON area(floor_id);
 CREATE INDEX IF NOT EXISTS idx_area_type ON area(type);
 CREATE INDEX IF NOT EXISTS idx_area_merchant ON area(merchant_id);
+CREATE INDEX IF NOT EXISTS idx_area_status ON area(status);
 CREATE INDEX IF NOT EXISTS idx_area_deleted ON area(is_deleted);
 
 
 -- ============================================================================
 -- 区域权限管理相关表
 -- ============================================================================
-
--- 为 area 表添加 status 字段（如果不存在）
-DO $$ 
-BEGIN
-    IF NOT EXISTS (SELECT 1 FROM information_schema.columns 
-                   WHERE table_name = 'area' AND column_name = 'status') THEN
-        ALTER TABLE area ADD COLUMN status VARCHAR(20) DEFAULT 'AVAILABLE';
-    END IF;
-END $$;
-
--- 创建区域状态索引
-CREATE INDEX IF NOT EXISTS idx_area_status ON area(status);
 
 -- 区域权限申请表
 CREATE TABLE IF NOT EXISTS area_apply (

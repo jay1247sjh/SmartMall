@@ -121,7 +121,11 @@ export const intelligenceApi = {
       positionZ: context?.current_position?.z,
     }
 
-    return http.post<ChatResponse>('/ai/chat', request, { signal })
+    // AI 请求需要更长的超时时间（LLM 响应较慢）
+    return http.post<ChatResponse>('/ai/chat', request, { 
+      signal,
+      timeout: 60000  // 60 秒超时
+    })
   },
 
   /**
@@ -145,7 +149,9 @@ export const intelligenceApi = {
       confirmed,
     }
 
-    return http.post<ChatResponse>('/ai/confirm', request)
+    return http.post<ChatResponse>('/ai/confirm', request, {
+      timeout: 60000  // 60 秒超时
+    })
   },
 
   /**

@@ -1,0 +1,9 @@
+# pnpm workspace 配置
+# 定义哪些目录是 workspace 的一部分
+
+packages:
+  # 应用层：前端、后端、AI 服务
+  - 'apps/*/SMART-MALL'
+  
+  # 共享包层：类型定义、工具函数等
+  - 'packages/*'

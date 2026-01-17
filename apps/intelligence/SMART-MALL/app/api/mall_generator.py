@@ -21,7 +21,7 @@ logger = logging.getLogger(__name__)
 class GenerateMallRequest(BaseModel):
     """生成商城请求"""
     description: str  # 自然语言描述
-    userId: str
+    userId: Optional[str] = None  # 用户ID（可选）
     
 
 class Vertex(BaseModel):

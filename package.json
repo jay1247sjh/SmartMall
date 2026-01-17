@@ -1,0 +1,28 @@
+{
+  "name": "smart-mall-monorepo",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Smart Mall - 3D 可视化 + 商城建模 + AI 智能导购",
+  "scripts": {
+    "dev": "pnpm --filter smart-mall dev",
+    "dev:frontend": "pnpm --filter smart-mall dev",
+    "build": "pnpm -r build",
+    "build:frontend": "pnpm --filter smart-mall build",
+    "build:shared-types": "pnpm --filter @smart-mall/shared-types build",
+    "lint": "pnpm -r lint",
+    "format": "pnpm -r format",
+    "test": "pnpm -r test"
+  },
+  "keywords": [
+    "monorepo",
+    "smart-mall",
+    "3d-visualization",
+    "vue3",
+    "threejs"
+  ],
+  "engines": {
+    "node": ">=18.0.0",
+    "pnpm": ">=9.0.0"
+  },
+  "packageManager": "pnpm@9.0.4"
+}

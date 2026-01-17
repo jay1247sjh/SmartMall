@@ -16,7 +16,7 @@
  * - 导出/导入
  */
 import { ref, reactive, computed, onMounted, onUnmounted, watch, shallowRef } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRouter, useRoute, onBeforeRouteLeave } from 'vue-router'
 import * as THREE from 'three'
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js'
 
@@ -110,6 +110,7 @@ interface SavedCameraState {
 // ============================================================================
 
 const router = useRouter()
+const route = useRoute()
 const containerRef = ref<HTMLElement | null>(null)
 
 // Three.js 相关
@@ -324,13 +325,14 @@ async function initEngine() {
   directionalLight.shadow.mapSize.height = 2048
   scene.value.add(directionalLight)
 
-  // 添加网格 - 缩小范围，与商城轮廓匹配（50x50）
-  const gridHelper = new THREE.GridHelper(60, 60, 0x1f1f1f, 0x151515)
+  // 添加网格 - 匹配商城轮廓大小（100x100）
+  const gridHelper = new THREE.GridHelper(120, 120, 0x1f1f1f, 0x151515)
   gridHelper.position.y = -0.02
+  gridHelper.name = 'grid-helper'
   scene.value.add(gridHelper)
 
-  // 添加地板 - 缩小范围
-  const floorGeometry = new THREE.PlaneGeometry(70, 70)
+  // 添加地板 - 匹配商城轮廓大小
+  const floorGeometry = new THREE.PlaneGeometry(140, 140)
   const floorMaterial = new THREE.MeshStandardMaterial({ 
     color: 0x0d0d0d,
     roughness: 0.95,
@@ -339,7 +341,7 @@ async function initEngine() {
   floor.rotation.x = -Math.PI / 2
   floor.position.y = -0.03
   floor.receiveShadow = true
-  floor.name = 'ground'
+  floor.name = 'ground-floor'
   scene.value.add(floor)
 
   loadProgress.value = 80
@@ -413,6 +415,9 @@ function createNewProject() {
     currentFloorId.value = project.value.floors[0].id
   }
 
+  // 更新 URL，添加项目 ID
+  router.replace({ params: { projectId: project.value.id } })
+
   showWizard.value = false
   renderProject()
   saveHistory()
@@ -424,6 +429,9 @@ function createCustomProject() {
   if (project.value.floors[0]) {
     currentFloorId.value = project.value.floors[0].id
   }
+  
+  // 更新 URL，添加项目 ID
+  router.replace({ params: { projectId: project.value.id } })
   
   showWizard.value = false
   setTool('draw-outline')
@@ -438,6 +446,30 @@ function renderProject(renderAllFloors: boolean = false) {
   const isRoamingMode = viewMode.value === 'orbit'
   
   console.log(`[renderProject] renderAllFloors: ${renderAllFloors}, useFullHeight: ${useFullHeight}, 楼层数: ${project.value.floors.length}`)
+
+  // 计算商城轮廓中心
+  let outlineCenter = { x: 0, z: 0 }
+  if (project.value.outline?.vertices?.length >= 3) {
+    outlineCenter = getAreaCenter(project.value.outline.vertices)
+  }
+
+  // 更新网格和地板位置到商城中心
+  const gridHelper = scene.value.getObjectByName('grid-helper')
+  if (gridHelper) {
+    gridHelper.position.x = outlineCenter.x
+    gridHelper.position.z = outlineCenter.z
+  }
+  const groundFloor = scene.value.getObjectByName('ground-floor')
+  if (groundFloor) {
+    groundFloor.position.x = outlineCenter.x
+    groundFloor.position.z = outlineCenter.z
+  }
+
+  // 更新相机目标点到商城中心
+  if (controls.value) {
+    controls.value.target.set(outlineCenter.x, 6, outlineCenter.z)
+    controls.value.update()
+  }
 
   // 清除旧的对象
   clearSceneObjects()
@@ -522,6 +554,250 @@ function renderProject(renderAllFloors: boolean = false) {
   }
 }
 
+/**
+ * 创建区域墙壁和入口门面
+ * @param area 区域定义
+ * @param yPosition Y轴位置
+ * @param wallHeight 墙壁高度
+ * @param wallThickness 墙壁厚度
+ * @param color 区域颜色
+ * @param isSelected 是否选中
+ */
+function createAreaWalls(
+  area: AreaDefinition,
+  yPosition: number,
+  wallHeight: number,
+  wallThickness: number,
+  color: number,
+  isSelected: boolean
+): THREE.Group {
+  const group = new THREE.Group()
+  group.name = `walls-${area.id}`
+  
+  const vertices = area.shape.vertices
+  if (vertices.length < 3) return group
+  
+  // 获取区域边界，确定入口方向（默认最长边为入口）
+  const bounds = getAreaBounds(vertices)
+  const width = bounds.maxX - bounds.minX
+  const depth = bounds.maxY - bounds.minY
+  
+  // 计算每条边的长度，找出最长边作为入口
+  let maxEdgeLength = 0
+  let entranceEdgeIndex = 0
+  
+  for (let i = 0; i < vertices.length; i++) {
+    const v1 = vertices[i]
+    const v2 = vertices[(i + 1) % vertices.length]
+    const edgeLength = Math.sqrt(Math.pow(v2.x - v1.x, 2) + Math.pow(v2.y - v1.y, 2))
+    if (edgeLength > maxEdgeLength) {
+      maxEdgeLength = edgeLength
+      entranceEdgeIndex = i
+    }
+  }
+  
+  // 墙壁材质
+  const wallMaterial = new THREE.MeshStandardMaterial({
+    color: isSelected ? 0xffffff : 0x4a4a5a,
+    roughness: 0.8,
+    metalness: 0.1,
+  })
+  
+  // 入口门面材质（玻璃效果）
+  const glassMaterial = new THREE.MeshStandardMaterial({
+    color: color,
+    transparent: true,
+    opacity: 0.4,
+    roughness: 0.1,
+    metalness: 0.3,
+  })
+  
+  // 门框材质
+  const frameMaterial = new THREE.MeshStandardMaterial({
+    color: 0x2a2a3a,
+    roughness: 0.5,
+    metalness: 0.5,
+  })
+  
+  // 为每条边创建墙壁
+  for (let i = 0; i < vertices.length; i++) {
+    const v1 = vertices[i]
+    const v2 = vertices[(i + 1) % vertices.length]
+    
+    // 计算边的长度和角度
+    const dx = v2.x - v1.x
+    const dy = v2.y - v1.y
+    const edgeLength = Math.sqrt(dx * dx + dy * dy)
+    const angle = Math.atan2(dy, dx)
+    
+    // 边的中点
+    const midX = (v1.x + v2.x) / 2
+    const midY = (v1.y + v2.y) / 2
+    
+    if (i === entranceEdgeIndex) {
+      // 入口边：创建带门的门面
+      const doorWidth = Math.min(edgeLength * 0.6, 4)  // 门宽度为边长的60%，最大4米
+      const doorHeight = wallHeight * 0.85  // 门高度为墙高的85%
+      const sideWallWidth = (edgeLength - doorWidth) / 2
+      
+      // 左侧墙
+      if (sideWallWidth > 0.1) {
+        const leftWall = new THREE.Mesh(
+          new THREE.BoxGeometry(sideWallWidth, wallHeight, wallThickness),
+          wallMaterial
+        )
+        const leftOffset = -(edgeLength / 2) + (sideWallWidth / 2)
+        leftWall.position.set(
+          midX + leftOffset * Math.cos(angle),
+          yPosition + wallHeight / 2,
+          -(midY + leftOffset * Math.sin(angle))
+        )
+        leftWall.rotation.y = -angle
+        leftWall.castShadow = true
+        leftWall.receiveShadow = true
+        group.add(leftWall)
+      }
+      
+      // 右侧墙
+      if (sideWallWidth > 0.1) {
+        const rightWall = new THREE.Mesh(
+          new THREE.BoxGeometry(sideWallWidth, wallHeight, wallThickness),
+          wallMaterial
+        )
+        const rightOffset = (edgeLength / 2) - (sideWallWidth / 2)
+        rightWall.position.set(
+          midX + rightOffset * Math.cos(angle),
+          yPosition + wallHeight / 2,
+          -(midY + rightOffset * Math.sin(angle))
+        )
+        rightWall.rotation.y = -angle
+        rightWall.castShadow = true
+        rightWall.receiveShadow = true
+        group.add(rightWall)
+      }
+      
+      // 门上方的横梁
+      const topBeamHeight = wallHeight - doorHeight
+      if (topBeamHeight > 0.05) {
+        const topBeam = new THREE.Mesh(
+          new THREE.BoxGeometry(doorWidth, topBeamHeight, wallThickness),
+          wallMaterial
+        )
+        topBeam.position.set(
+          midX,
+          yPosition + doorHeight + topBeamHeight / 2,
+          -midY
+        )
+        topBeam.rotation.y = -angle
+        topBeam.castShadow = true
+        group.add(topBeam)
+      }
+      
+      // 玻璃门面
+      const glassPanel = new THREE.Mesh(
+        new THREE.BoxGeometry(doorWidth - 0.1, doorHeight - 0.1, 0.05),
+        glassMaterial
+      )
+      glassPanel.position.set(
+        midX,
+        yPosition + doorHeight / 2,
+        -midY
+      )
+      glassPanel.rotation.y = -angle
+      group.add(glassPanel)
+      
+      // 门框
+      const frameThickness = 0.08
+      // 左门框
+      const leftFrame = new THREE.Mesh(
+        new THREE.BoxGeometry(frameThickness, doorHeight, frameThickness),
+        frameMaterial
+      )
+      leftFrame.position.set(
+        midX - (doorWidth / 2) * Math.cos(angle),
+        yPosition + doorHeight / 2,
+        -(midY - (doorWidth / 2) * Math.sin(angle))
+      )
+      leftFrame.rotation.y = -angle
+      group.add(leftFrame)
+      
+      // 右门框
+      const rightFrame = new THREE.Mesh(
+        new THREE.BoxGeometry(frameThickness, doorHeight, frameThickness),
+        frameMaterial
+      )
+      rightFrame.position.set(
+        midX + (doorWidth / 2) * Math.cos(angle),
+        yPosition + doorHeight / 2,
+        -(midY + (doorWidth / 2) * Math.sin(angle))
+      )
+      rightFrame.rotation.y = -angle
+      group.add(rightFrame)
+      
+    } else {
+      // 普通边：创建实心墙壁
+      const wall = new THREE.Mesh(
+        new THREE.BoxGeometry(edgeLength, wallHeight, wallThickness),
+        wallMaterial
+      )
+      wall.position.set(
+        midX,
+        yPosition + wallHeight / 2,
+        -midY
+      )
+      wall.rotation.y = -angle
+      wall.castShadow = true
+      wall.receiveShadow = true
+      group.add(wall)
+    }
+  }
+  
+  return group
+}
+
+/**
+ * 创建区域名称标签精灵
+ */
+function createAreaLabel(text: string, color: string): THREE.Sprite {
+  const canvas = document.createElement('canvas')
+  const ctx = canvas.getContext('2d')!
+  
+  // 设置画布大小
+  canvas.width = 256
+  canvas.height = 64
+  
+  // 绘制背景（半透明黑色）
+  ctx.fillStyle = 'rgba(0, 0, 0, 0.7)'
+  ctx.roundRect(0, 0, canvas.width, canvas.height, 8)
+  ctx.fill()
+  
+  // 绘制左侧颜色条
+  ctx.fillStyle = color
+  ctx.fillRect(0, 0, 6, canvas.height)
+  
+  // 绘制文字
+  ctx.fillStyle = '#ffffff'
+  ctx.font = 'bold 28px "Microsoft YaHei", sans-serif'
+  ctx.textAlign = 'center'
+  ctx.textBaseline = 'middle'
+  ctx.fillText(text, canvas.width / 2, canvas.height / 2)
+  
+  // 创建纹理和精灵
+  const texture = new THREE.CanvasTexture(canvas)
+  texture.needsUpdate = true
+  
+  const material = new THREE.SpriteMaterial({
+    map: texture,
+    transparent: true,
+    depthTest: false,
+  })
+  
+  const sprite = new THREE.Sprite(material)
+  sprite.scale.set(4, 1, 1) // 调整标签大小
+  
+  return sprite
+}
+
 function renderArea(area: AreaDefinition, yPosition: number, fullHeight: boolean = false) {
   if (!scene.value) return
 
@@ -539,12 +815,14 @@ function renderArea(area: AreaDefinition, yPosition: number, fullHeight: boolean
   // 调试日志
   console.log(`[renderArea] 区域: ${area.name}, 类型: ${area.type}, fullHeight: ${fullHeight}, isInfrastructure: ${isInfrastructure}`)
   
+  // 获取区域中心点用于放置标签
+  const center = getAreaCenter(area.shape.vertices)
+  
   if (isInfrastructure && area.properties?.infrastructureType) {
     // 基础设施使用专门的模型
     const infrastructureType = area.properties.infrastructureType as string
     const model = createInfrastructureModel(infrastructureType)
     if (model) {
-      const center = getAreaCenter(area.shape.vertices)
       model.position.set(center.x, yPosition, center.z)
       model.name = `infrastructure-${area.id}`
       model.userData = {
@@ -564,12 +842,15 @@ function renderArea(area: AreaDefinition, yPosition: number, fullHeight: boolean
     console.log(`[renderArea] 渲染设施3D模型: ${area.type}`)
     renderFacilityModel(area, yPosition, isSelected, fullHeight)
   } else {
-    // 普通区域使用默认渲染
+    // 普通区域使用默认渲染（带墙壁和入口门面）
     const areaHeight = fullHeight ? 3 : 0.5
+    const wallHeight = fullHeight ? 2.8 : 0.45  // 墙壁高度略低于区域高度
+    const wallThickness = 0.1
 
+    // 创建地板
     const mesh = createPolygonMesh3D(
       area.shape,
-      { depth: areaHeight, bevelEnabled: false },
+      { depth: 0.1, bevelEnabled: false },
       {
         color: isOverlapping ? 0xff0000 : color,
         opacity: isSelected ? 0.9 : 0.7,
@@ -585,15 +866,34 @@ function renderArea(area: AreaDefinition, yPosition: number, fullHeight: boolean
     mesh.name = `area-${area.id}`
     scene.value.add(mesh)
 
+    // 为店铺类型区域添加墙壁和入口门面
+    const isShopType = ['retail', 'food', 'service', 'anchor'].includes(area.type)
+    if (isShopType && area.shape.vertices.length >= 3) {
+      const wallGroup = createAreaWalls(area, yPosition, wallHeight, wallThickness, color, isSelected)
+      wallGroup.userData = { isArea: true, areaId: area.id }
+      scene.value.add(wallGroup)
+    }
+
     // 添加边框
     const outline = createPolygonOutline(
       area.shape,
       isSelected ? 0xffffff : 0x3f3f46,
       isSelected ? 2 : 1
     )
-    outline.position.y = yPosition + 0.51
+    outline.position.y = yPosition + 0.11
     outline.userData = { isArea: true, areaId: area.id }
     scene.value.add(outline)
+  }
+  
+  // 添加区域名称标签（如果启用且有名称）
+  const showLabels = project.value?.settings?.display?.showAreaLabels !== false
+  if (showLabels && area.name) {
+    const labelHeight = fullHeight ? 3.5 : 1.2
+    const label = createAreaLabel(area.name, area.color)
+    label.position.set(center.x, yPosition + labelHeight, center.z)
+    label.name = `label-${area.id}`
+    label.userData = { isAreaLabel: true, areaId: area.id }
+    scene.value.add(label)
   }
 }
 
@@ -697,7 +997,7 @@ function clearSceneObjects() {
   if (!scene.value) return
   const toRemove: THREE.Object3D[] = []
   scene.value.traverse(obj => {
-    if (obj.userData.isArea || obj.name.startsWith('floor-') || obj.name.startsWith('area-') || obj.name === 'mall-outline' || obj.name === 'preview') {
+    if (obj.userData.isArea || obj.userData.isAreaLabel || obj.name.startsWith('floor-') || obj.name.startsWith('area-') || obj.name.startsWith('label-') || obj.name === 'mall-outline' || obj.name === 'preview') {
       toRemove.push(obj)
     }
   })
@@ -712,6 +1012,13 @@ function clearSceneObjects() {
         } else if (Array.isArray(child.material)) {
           child.material.forEach(m => m.dispose())
         }
+      }
+      // 清理 Sprite 材质和纹理
+      if (child instanceof THREE.Sprite) {
+        if (child.material.map) {
+          child.material.map.dispose()
+        }
+        child.material.dispose()
       }
     })
   })
@@ -1549,6 +1856,9 @@ function saveHistory() {
     history.value.shift()
     historyIndex.value--
   }
+  
+  // 标记有未保存的更改
+  markUnsaved()
 }
 
 function undo() {
@@ -1589,6 +1899,72 @@ const showProjectListModal = ref(false)
 const projectList = ref<{ projectId: string; name: string; description?: string; floorCount: number; areaCount: number; createdAt: string; updatedAt: string }[]>([])
 const isLoadingProjects = ref(false)
 
+// 未保存更改跟踪
+const hasUnsavedChanges = ref(false)
+const lastSavedState = ref<string | null>(null)
+
+// 离开确认弹窗
+const showLeaveConfirm = ref(false)
+const pendingNavigation = ref<(() => void) | null>(null)
+
+/**
+ * 标记有未保存的更改
+ */
+function markUnsaved() {
+  hasUnsavedChanges.value = true
+}
+
+/**
+ * 标记已保存
+ */
+function markSaved() {
+  hasUnsavedChanges.value = false
+  if (project.value) {
+    lastSavedState.value = JSON.stringify(project.value)
+  }
+}
+
+/**
+ * 检查是否有未保存的更改
+ */
+function checkUnsavedChanges(): boolean {
+  if (!project.value) return false
+  if (!lastSavedState.value) return hasUnsavedChanges.value
+  return JSON.stringify(project.value) !== lastSavedState.value
+}
+
+/**
+ * 处理离开确认 - 保存并离开
+ */
+async function handleSaveAndLeave() {
+  await saveToServer()
+  showLeaveConfirm.value = false
+  if (pendingNavigation.value) {
+    pendingNavigation.value()
+    pendingNavigation.value = null
+  }
+}
+
+/**
+ * 处理离开确认 - 不保存直接离开
+ */
+function handleLeaveWithoutSave() {
+  hasUnsavedChanges.value = false
+  showLeaveConfirm.value = false
+  if (pendingNavigation.value) {
+    pendingNavigation.value()
+    pendingNavigation.value = null
+  }
+}
+
+/**
+ * 处理离开确认 - 取消
+ */
+function handleCancelLeave() {
+  showLeaveConfirm.value = false
+  pendingNavigation.value = null
+}
+
 /**
  * 保存项目到服务器
  */
@@ -1601,6 +1977,7 @@ async function saveToServer() {
   try {
     const { mallBuilderApi, toCreateRequest, toUpdateRequest, toMallProject } = await import('@/api/mall-builder.api')
     
+    const isNewProject = !serverProjectId.value
     let response
     if (serverProjectId.value) {
       // 更新现有项目
@@ -1614,6 +1991,14 @@ async function saveToServer() {
     const savedProject = toMallProject(response)
     serverProjectId.value = response.projectId
     project.value.version = savedProject.version
+    
+    // 如果是新项目，更新 URL
+    if (isNewProject) {
+      router.replace({ params: { projectId: response.projectId } })
+    }
+    
+    // 标记已保存
+    markSaved()
     
     saveMessage.value = '保存成功'
     setTimeout(() => { saveMessage.value = null }, 2000)
@@ -1655,8 +2040,16 @@ async function loadFromServer(projectId: string) {
     project.value = loadedProject
     serverProjectId.value = response.projectId
     currentFloorId.value = loadedProject.floors[0]?.id || null
+    
+    // 更新 URL
+    router.replace({ params: { projectId: response.projectId } })
+    
     showWizard.value = false
     showProjectListModal.value = false
+    
+    // 标记为已保存状态
+    markSaved()
+    
     renderProject()
     saveHistory()
   } catch (err) {
@@ -1805,9 +2198,23 @@ function toggleOrbitMode() {
     const floorHeights = project.value?.floors.map(f => f.height) || [4]
     const floorY = calculateFloorYPosition(floorIndex, floorHeights) + 0.1
     
+    // 计算商城轮廓中心点作为角色出生位置
+    let spawnX = 0
+    let spawnZ = 0
+    if (project.value?.outline?.vertices && project.value.outline.vertices.length >= 3) {
+      const vertices = project.value.outline.vertices
+      let sumX = 0, sumY = 0
+      for (const v of vertices) {
+        sumX += v.x
+        sumY += v.y
+      }
+      spawnX = sumX / vertices.length
+      spawnZ = -sumY / vertices.length  // Y 坐标取反转换为 Z
+    }
+    
     // 创建角色控制器（使用随机角色模型）
     characterController = new CharacterController()
-    characterController.setPosition(0, floorY, 0)
+    characterController.setPosition(spawnX, floorY, spawnZ)
     characterController.setFloorHeight(floorY)
     characterController.setMoveSpeed(walkSpeedPreset.value)  // 应用当前速度设置
     
@@ -2189,14 +2596,27 @@ function handleKeyup(e: KeyboardEvent) {
 // Lifecycle
 // ============================================================================
 
-onMounted(() => {
+onMounted(async () => {
   initEngine()
   window.addEventListener('keydown', handleKeydown)
   window.addEventListener('keyup', handleKeyup)
   window.addEventListener('resize', handleResize)
   
-  // 检查是否有 AI 生成的商城数据
-  loadAiGeneratedMall()
+  // 检查 URL 参数中是否有项目 ID
+  const projectIdFromUrl = route.params.projectId as string | undefined
+  if (projectIdFromUrl) {
+    // 从服务器加载项目
+    try {
+      await loadFromServer(projectIdFromUrl)
+    } catch (err) {
+      console.error('从 URL 加载项目失败:', err)
+      // 加载失败，显示向导
+      showWizard.value = true
+    }
+  } else {
+    // 没有项目 ID，检查是否有 AI 生成的商城数据
+    loadAiGeneratedMall()
+  }
 })
 
 /**
@@ -2301,10 +2721,35 @@ function mapAreaType(type: string): AreaType {
   return typeMap[type?.toLowerCase()] || 'retail'
 }
 
+// 浏览器关闭/刷新时的提示
+function handleBeforeUnload(e: BeforeUnloadEvent) {
+  if (checkUnsavedChanges()) {
+    e.preventDefault()
+    e.returnValue = '您有未保存的更改，确定要离开吗？'
+    return e.returnValue
+  }
+}
+
+// 路由离开守卫
+onBeforeRouteLeave((_to, _from, next) => {
+  if (checkUnsavedChanges()) {
+    showLeaveConfirm.value = true
+    pendingNavigation.value = () => next()
+    return false
+  }
+  next()
+})
+
+onMounted(() => {
+  // 添加浏览器关闭/刷新提示
+  window.addEventListener('beforeunload', handleBeforeUnload)
+})
+
 onUnmounted(() => {
   window.removeEventListener('keydown', handleKeydown)
   window.removeEventListener('keyup', handleKeyup)
   window.removeEventListener('resize', handleResize)
+  window.removeEventListener('beforeunload', handleBeforeUnload)
   document.removeEventListener('pointerlockchange', handlePointerLockChange)
   document.removeEventListener('mousemove', handleRoamMouseMove)
   stopRoamLoop()
@@ -2866,6 +3311,27 @@ watch(currentFloorId, () => {
         </label>
       </div>
     </footer>
+
+    <!-- 离开确认弹窗 -->
+    <div v-if="showLeaveConfirm" class="modal-overlay">
+      <div class="modal">
+        <div class="modal-header">
+          <h3>未保存的更改</h3>
+        </div>
+        <div class="modal-body">
+          <p style="color: #a1a1aa; line-height: 1.6;">
+            您有未保存的更改，是否要在离开前保存？
+          </p>
+        </div>
+        <div class="modal-footer" style="display: flex; gap: 12px; justify-content: flex-end;">
+          <button class="btn-secondary" @click="handleCancelLeave">取消</button>
+          <button class="btn-secondary" style="color: #f87171;" @click="handleLeaveWithoutSave">不保存</button>
+          <button class="btn-primary" @click="handleSaveAndLeave" :disabled="isSaving">
+            {{ isSaving ? '保存中...' : '保存并离开' }}
+          </button>
+        </div>
+      </div>
+    </div>
 
     <!-- 添加楼层弹窗 -->
     <div v-if="showAddFloorModal" class="modal-overlay" @click.self="showAddFloorModal = false">
@@ -3552,7 +4018,13 @@ watch(currentFloorId, () => {
   transition: all 0.15s;
 }
 
-.btn-save:hover { background: #93c5fd; }
+.btn-save:hover:not(:disabled) { background: #93c5fd; }
+.btn-save:disabled {
+  background: #4b5563;
+  color: #9ca3af;
+  cursor: not-allowed;
+  opacity: 0.7;
+}
 .btn-save svg { width: 16px; height: 16px; }
 
 /* Left Panel Container */

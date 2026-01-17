@@ -6,6 +6,14 @@
  */
 
 import type { Point2D, Polygon, Rectangle, Transform2D } from '../geometry/types'
+import { 
+  AreaType, 
+  AREA_TYPE_NAMES, 
+  AREA_TYPE_COLORS 
+} from '@smart-mall/shared-types'
+
+// 重新导出共享类型，保持向后兼容
+export { AreaType, AREA_TYPE_NAMES, AREA_TYPE_COLORS }
 
 // ============================================================================
 // 项目级别类型
@@ -145,24 +153,7 @@ export interface AreaDefinition {
   rental?: RentalInfo
 }
 
-/**
- * 区域类型
- */
-export type AreaType = 
-  | 'retail'      // 零售店铺
-  | 'food'        // 餐饮
-  | 'service'     // 服务
-  | 'anchor'      // 主力店
-  | 'common'      // 公共区域
-  | 'corridor'    // 走廊
-  | 'elevator'    // 电梯
-  | 'escalator'   // 扶梯
-  | 'stairs'      // 楼梯
-  | 'restroom'    // 洗手间
-  | 'storage'     // 仓储
-  | 'office'      // 办公
-  | 'parking'     // 停车
-  | 'other'       // 其他
+// AreaType 已从 @smart-mall/shared-types 导入
 
 /**
  * 区域属性
@@ -396,46 +387,17 @@ export function generateId(): string {
 
 /**
  * 获取区域类型的显示名称
+ * @deprecated 使用 AREA_TYPE_NAMES[type] 代替
  */
 export function getAreaTypeName(type: AreaType): string {
-  const names: Record<AreaType, string> = {
-    retail: '零售店铺',
-    food: '餐饮',
-    service: '服务',
-    anchor: '主力店',
-    common: '公共区域',
-    corridor: '走廊',
-    elevator: '电梯',
-    escalator: '扶梯',
-    stairs: '楼梯',
-    restroom: '洗手间',
-    storage: '仓储',
-    office: '办公',
-    parking: '停车',
-    other: '其他',
-  }
-  return names[type] ?? type
+  return AREA_TYPE_NAMES[type] ?? String(type)
 }
 
 /**
  * 获取区域类型的默认颜色
+ * @deprecated 使用 AREA_TYPE_COLORS[type] 代替
  */
 export function getAreaTypeColor(type: AreaType): string {
-  const colors: Record<AreaType, string> = {
-    retail: '#3b82f6',     // 蓝色
-    food: '#f97316',       // 橙色
-    service: '#8b5cf6',    // 紫色
-    anchor: '#ef4444',     // 红色
-    common: '#6b7280',     // 灰色
-    corridor: '#9ca3af',   // 浅灰
-    elevator: '#10b981',   // 绿色
-    escalator: '#14b8a6',  // 青色
-    stairs: '#06b6d4',     // 天蓝
-    restroom: '#ec4899',   // 粉色
-    storage: '#78716c',    // 棕灰
-    office: '#6366f1',     // 靛蓝
-    parking: '#84cc16',    // 黄绿
-    other: '#a3a3a3',      // 中灰
-  }
-  return colors[type] ?? '#6b7280'
+  return AREA_TYPE_COLORS[type] ?? '#6b7280'
 }
+

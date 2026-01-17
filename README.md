@@ -18,50 +18,68 @@ Smart Mall 是一个现代化的商城管理系统，提供 3D 可视化商城�
 - **HTTP 客户端**：Axios
 
 ### 后端
-- **框架**：Spring Boot 3.x
-- **ORM**：MyBatis-Plus
-- **数据库**：PostgreSQL 15+
-- **缓存**：Redis 6+
+- **框架**：Spring Boot 3.2
+- **ORM**：MyBatis-Plus 3.5
+- **数据库**：PostgreSQL 15
+- **缓存**：Redis 7
 - **安全**：Spring Security + JWT
+
+### AI 服务
+- **框架**：FastAPI
+- **LLM**：Qwen（阿里云百炼）
+- **向量数据库**：Milvus 2.3
+- **RAG 框架**：LangChain
 
 ## 项目结构
 
 ```
 Smart-Mall/
 ├── apps/
-│   ├── frontend/SMART-MALL/     # 前端项目
+│   ├── frontend/SMART-MALL/     # Vue 3 前端
 │   │   ├── src/
-│   │   │   ├── api/             # API 接口
-│   │   │   ├── assets/
-│   │   │   │   └── styles/scss/ # SCSS 样式系统
-│   │   │   ├── components/      # 组件
-│   │   │   │   ├── auth/        # 认证组件
-│   │   │   │   ├── layouts/     # 布局组件
-│   │   │   │   └── shared/      # 共享组件
-│   │   │   ├── stores/          # Pinia 状态
+│   │   │   ├── api/             # API 接口封装
+│   │   │   ├── builder/         # 商城建模器模块
+│   │   │   ├── components/      # 通用组件
+│   │   │   ├── domain/          # 领域模型
+│   │   │   ├── stores/          # Pinia 状态管理
 │   │   │   ├── views/           # 页面视图
 │   │   │   └── router/          # 路由配置
 │   │   └── package.json
 │   │
-│   └── backend/SMART-MALL/      # 后端项目
-│       ├── src/main/java/com/smartmall/
-│       │   ├── application/     # 应用层
-│       │   ├── domain/          # 领域层
-│       │   ├── infrastructure/  # 基础设施层
-│       │   ├── interfaces/      # 接口层
-│       │   └── protocol/        # 协议定义
-│       └── pom.xml
+│   ├── backend/SMART-MALL/      # Spring Boot 后端
+│   │   ├── src/main/java/com/smartmall/
+│   │   │   ├── application/     # 应用服务层
+│   │   │   ├── domain/          # 领域层（实体、枚举）
+│   │   │   ├── infrastructure/  # 基础设施层（Mapper、配置）
+│   │   │   ├── interfaces/      # 接口层（Controller、DTO）
+│   │   │   └── common/          # 公共模块
+│   │   └── pom.xml
+│   │
+│   └── intelligence/            # Python AI 服务（开发中）
 │
-├── infra/                       # 基础设施配置
-│   ├── docker-compose.yml       # Docker 编排
+├── packages/                    # 共享包
+│   └── shared-types/            # 跨服务共享类型定义
+│       ├── src/                 # TypeScript 版本
+│       └── python/              # Python 版本
+│
+├── infra/                       # Docker 基础设施
+│   ├── docker-compose.yml       # 容器编排
 │   └── init-db/                 # 数据库初始化脚本
 │
-└── study/                       # 学习文档
-    ├── 01-login/                # 登录功能
-    ├── 02-register/             # 注册功能
-    ├── 03-password-reset/       # 密码重置
-    └── ...
+├── study/                       # 学习文档（01-23）
+├── .prompt/                     # AI 提示词模式配置
+└── .kiro/steering/              # Kiro 协作约束
 ```
+
+## 共享类型包
+
+`packages/shared-types` 包含前端、后端、AI 服务共用的类型定义，确保跨服务类型一致性：
+
+- **枚举**：UserRole, AreaType, StoreStatus, ProductStatus, AreaStatus
+- **API 类型**：ApiResponse, PageRequest, PageResponse
+- **几何类型**：Point2D, Point3D, Polygon, Rectangle
+
+详见 [packages/shared-types/README.md](packages/shared-types/README.md)
 
 ## 快速开始
 
@@ -70,24 +88,27 @@ Smart-Mall/
 - Node.js 18+
 - Java 17+
 - Docker & Docker Compose
-- PostgreSQL 15+
-- Redis 6+
+- pnpm（推荐）
 
-### 启动基础设施
+### 1. 启动基础设施
 
 ```bash
 cd infra
-docker-compose up -d
+docker-compose up -d postgres redis
 ```
 
-### 启动后端
+> 如需 AI 功能，还需启动 Milvus：`docker-compose up -d`
+
+### 2. 启动后端
 
 ```bash
 cd apps/backend/SMART-MALL
 ./mvnw spring-boot:run
 ```
 
-### 启动前端
+后端运行在 http://localhost:8080
+
+### 3. 启动前端
 
 ```bash
 cd apps/frontend/SMART-MALL
@@ -95,89 +116,69 @@ pnpm install
 pnpm run dev
 ```
 
+前端运行在 http://localhost:5173
+
 ## 功能模块
 
-### 已完成
+### ✅ 已完成
 
-- ✅ 用户认证（登录/注册/密码重置）
-- ✅ 多角色权限（管理员/商家/用户）
-- ✅ 商城建模器（3D 可视化编辑）
-- ✅ 项目持久化（保存/加载/删除）
-- ✅ 组件化 UI（Element Plus 集成）
-- ✅ 漫游模式（第三人称 3D 漫游）
-- ✅ 漫游速度控制（慢速/正常/快速）
-- ✅ 基础设施放置（长椅、路灯、垃圾桶等 12 种设施）
-
-### 开发中
-
-- 🚧 AI 智能导购
-- 🚧 店铺管理
-- 🚧 商品管理
-
-## 前端组件
-
-项目采用高度组件化架构：
-
-### 认证组件 (`@/components/auth/`)
-
-| 组件 | 说明 |
+| 模块 | 功能 |
 |------|------|
-| `AuthLayout` | 认证页面统一布局 |
-| `AuthFormCard` | 表单卡片容器 |
-| `AuthInput` | 带图标、验证状态的输入框 |
-| `AuthButton` | 带加载状态的主按钮 |
-| `AlertMessage` | 错误/成功/警告提示 |
-| `TypewriterCard` | 打字机效果卡片 |
-| `SocialLogin` | 第三方登录按钮组 |
-| `FeatureList` | 功能特点列表 |
+| 用户认证 | 登录、注册、密码重置、JWT 认证 |
+| 权限管理 | 管理员、商家、用户三种角色 |
+| 商城建模器 | 3D 可视化编辑、多楼层管理、区域绘制 |
+| 项目持久化 | 保存、加载、删除项目（PostgreSQL JSONB） |
+| 漫游模式 | 第三人称 3D 漫游、速度控制 |
+| 基础设施 | 12 种设施模型（长椅、路灯、ATM 等） |
+| 区域标签 | 3D 场景中显示区域名称 |
+| AI 助手 | Agent 决策流程展示、工具调用提示 |
 
-### 商城建模器 (`@/builder/`)
+### 🚧 开发中
 
-| 模块 | 说明 |
-|------|------|
-| `materials/` | 材质系统（预设、类型定义） |
-| `objects/` | 3D 模型（电梯、扶梯、楼梯、基础设施等） |
-| `rendering/` | 渲染相关（楼层、区域、漫游环境） |
-| `geometry/` | 几何计算（面积、周长、碰撞检测） |
-| `resources/` | 资源管理（材质缓存、内存释放） |
+- AI 智能导购（RAG 知识库）
+- 店铺管理
+- 商品管理
+- 区域审批流程
 
-### 基础设施类型
+## 商城建模器功能
 
-商城建模器支持以下基础设施的手动放置：
+### 区域类型
 
-| 类型 | 说明 |
-|------|------|
-| 长椅 | 供顾客休息的座椅 |
-| 路灯 | 照明装饰灯 |
-| 垃圾桶 | 分类垃圾桶 |
-| 花盆/绿植 | 装饰性绿植 |
-| 指示牌 | 导向指示牌 |
-| 喷泉 | 装饰喷泉 |
-| 售货亭 | 小型售货亭/信息亭 |
-| ATM机 | 自动取款机 |
-| 自动售货机 | 饮料/零食售货机 |
-| 信息屏 | 电子信息显示屏 |
-| 时钟 | 装饰时钟 |
-| 消防栓 | 消防设备 |
+| 类型 | 说明 | 颜色 |
+|------|------|------|
+| retail | 零售店铺 | 蓝色 |
+| food | 餐饮 | 橙色 |
+| service | 服务 | 紫色 |
+| anchor | 主力店 | 红色 |
+| common | 公共区域 | 灰色 |
+| corridor | 走廊 | 浅灰 |
+| elevator | 电梯 | 绿色 |
+| escalator | 扶梯 | 青色 |
+| stairs | 楼梯 | 天蓝 |
+| restroom | 洗手间 | 粉色 |
 
-## API 文档
+### 基础设施
 
-### 认证接口
+长椅、路灯、垃圾桶、花盆、指示牌、喷泉、售货亭、ATM、自动售货机、信息屏、时钟、消防栓
+
+## API 接口
+
+### 认证
 
 | 方法 | 路径 | 说明 |
 |------|------|------|
-| POST | /api/auth/login | 用户登录 |
-| POST | /api/auth/register | 用户注册 |
+| POST | /api/auth/login | 登录 |
+| POST | /api/auth/register | 注册 |
 | POST | /api/auth/forgot-password | 忘记密码 |
 | POST | /api/auth/reset-password | 重置密码 |
 
-### 建模器接口
+### 商城建模器
 
 | 方法 | 路径 | 说明 |
 |------|------|------|
-| GET | /api/mall-builder/projects | 获取项目列表 |
+| GET | /api/mall-builder/projects | 项目列表 |
 | POST | /api/mall-builder/projects | 创建项目 |
-| GET | /api/mall-builder/projects/{id} | 获取项目详情 |
+| GET | /api/mall-builder/projects/{id} | 项目详情 |
 | PUT | /api/mall-builder/projects/{id} | 更新项目 |
 | DELETE | /api/mall-builder/projects/{id} | 删除项目 |
 
@@ -189,14 +190,27 @@ pnpm run dev
 | 商家 | merchant | 123456 |
 | 用户 | user | 123456 |
 
+## 数据库连接
+
+| 参数 | 值 |
+|------|------|
+| Host | localhost |
+| Port | **5433**（非默认 5432） |
+| Database | smartmall |
+| Username | smartmall |
+| Password | smartmall123 |
+
+JDBC 连接字符串：`jdbc:postgresql://localhost:5433/smartmall`
+
 ## 学习资源
 
-项目包含详细的学习文档，采用苏格拉底式教学法：
+项目包含 23 个学习模块，采用苏格拉底式教学法：
 
 - [学习路线](study/README.md)
-- [登录功能](study/01-login/README.md)
-- [注册功能](study/02-register/README.md)
-- [密码重置](study/03-password-reset/README.md)
+- 前端模块：01-11, 14, 18-19
+- 后端模块：12-13, 15-17
+- 业务模块：20-22
+- AI 模块：23
 
 ## 许可证
 

@@ -3,7 +3,7 @@ package com.smartmall.domain.entity;
 import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
-import com.baomidou.mybatisplus.extension.handlers.JacksonTypeHandler;
+import com.smartmall.infrastructure.config.PostgresJsonbListTypeHandler;
 import com.smartmall.domain.enums.ProductStatus;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
@@ -68,7 +68,7 @@ public class Product extends BaseEntity {
     /**
      * 图片列表(JSON)
      */
-    @TableField(typeHandler = JacksonTypeHandler.class)
+    @TableField(typeHandler = PostgresJsonbListTypeHandler.class)
     private List<String> images;
     
     /**

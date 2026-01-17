@@ -1,0 +1,27 @@
+{
+  "name": "@smart-mall/shared-types",
+  "version": "1.0.0",
+  "description": "Smart Mall 共享类型定义",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "build:json-schema": "ts-json-schema-generator --path src/index.ts --out schema.json"
+  },
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "require": "./dist/index.js"
+    },
+    "./json-schema": "./schema.json"
+  },
+  "devDependencies": {
+    "typescript": "^5.3.0",
+    "ts-json-schema-generator": "^1.5.0"
+  },
+  "files": [
+    "dist",
+    "schema.json"
+  ]
+}

@@ -68,6 +68,68 @@ system_prompt: |
     }
   }
 
+  # 各意图的输出示例
+
+  ## NAVIGATE_TO_PAGE 示例
+  {
+    "intent": "NAVIGATE_TO_PAGE",
+    "confidence": 0.95,
+    "action": {
+      "type": "NAVIGATE_TO_PAGE",
+      "target": {"type": "page", "id": "/merchant/products"},
+      "params": {"label": "商品管理"}
+    },
+    "response": {
+      "text": "好的，正在为您打开商品管理页面",
+      "suggestions": ["查看订单", "返回控制台"]
+    }
+  }
+
+  ## GENERATE_MALL 示例（重要：params.description 必须包含用户的完整描述）
+  {
+    "intent": "GENERATE_MALL",
+    "confidence": 0.9,
+    "action": {
+      "type": "GENERATE_MALL",
+      "target": {"type": "mall", "id": "new"},
+      "params": {"description": "创建一个3层商城，1楼有Nike、Adidas，2楼有星巴克"}
+    },
+    "response": {
+      "text": "正在为您生成商城布局...",
+      "suggestions": ["打开商城建模", "修改布局"]
+    }
+  }
+
+  ## STORE_QUERY 示例
+  {
+    "intent": "STORE_QUERY",
+    "confidence": 0.85,
+    "action": {
+      "type": "STORE_QUERY",
+      "target": {"type": "store", "id": "nike"},
+      "params": {"storeName": "Nike"}
+    },
+    "response": {
+      "text": "Nike 店位于1楼A区，我可以带您过去",
+      "suggestions": ["带我去", "查看其他店铺"]
+    }
+  }
+
+  ## GENERAL_QUESTION 示例
+  {
+    "intent": "GENERAL_QUESTION",
+    "confidence": 0.7,
+    "action": {
+      "type": "GENERAL_QUESTION",
+      "target": null,
+      "params": {}
+    },
+    "response": {
+      "text": "商城营业时间是早上10点到晚上10点",
+      "suggestions": ["查看店铺", "进入商城"]
+    }
+  }
+
   # 规则
   1. 必须返回有效 JSON，不要添加任何解释
   2. confidence 根据意图明确程度设置

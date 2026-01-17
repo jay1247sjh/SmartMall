@@ -28,15 +28,16 @@ export default defineConfig({
     alias: {
       '@': path.resolve(__dirname, './src'),                    // 根目录别名
       '@types': path.resolve(__dirname, './src/types'),         // 类型定义
-      '@three': path.resolve(__dirname, './src/three'),         // Three.js 渲染引擎层
       '@domain': path.resolve(__dirname, './src/domain'),       // 领域场景层
-      '@orchestrator': path.resolve(__dirname, './src/orchestrator'), // 业务协调层
       '@stores': path.resolve(__dirname, './src/stores'),       // Pinia 状态管理
       '@agent': path.resolve(__dirname, './src/agent'),         // AI Agent 模块
       '@components': path.resolve(__dirname, './src/components'), // Vue 组件
       '@views': path.resolve(__dirname, './src/views'),         // 页面视图
-      '@utils': path.resolve(__dirname, './src/utils'),         // 工具函数
-      '@api': path.resolve(__dirname, './src/api')              // API 接口
+      '@api': path.resolve(__dirname, './src/api'),             // API 接口
+      '@engine': path.resolve(__dirname, './src/engine'),       // 3D 引擎层
+      '@builder': path.resolve(__dirname, './src/builder'),     // 建模器模块
+      '@protocol': path.resolve(__dirname, './src/protocol'),   // 协议层
+      '@shared': path.resolve(__dirname, './src/shared')        // 共享模块
     }
   }
 })

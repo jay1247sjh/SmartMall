@@ -19,6 +19,10 @@
 node_modules/
 target/
 
+# pnpm
+.pnpm-store/
+.pnpm-debug.log
+
 # Build outputs
 dist/
 build/

@@ -28,7 +28,9 @@ import { useRouter, useRoute } from 'vue-router'
 import { ElInput, ElButton, ElIcon, ElUpload, ElMessage, ElBadge } from 'element-plus'
 import { Promotion, Picture, Close, Loading, ChatDotRound, VideoPause } from '@element-plus/icons-vue'
 import { intelligenceApi } from '@/api/intelligence.api'
-import { useUserStore, useAiStore, NAVIGATION_TARGETS } from '@/stores'
+import { mallBuilderApi, toCreateRequest } from '@/api/mall-builder.api'
+import type { MallProject } from '@/builder/types/mall-project'
+import { useUserStore, useAiStore } from '@/stores'
 
 // ============================================================================
 // 状态
@@ -55,20 +57,24 @@ const inputRef = ref<InstanceType<typeof ElInput> | null>(null)
 const abortController = ref<AbortController | null>(null)
 
 /** 思考步骤 */
-const thinkingSteps = ref<string[]>([])
+const thinkingSteps = ref<Array<{ text: string; status: 'pending' | 'done' | 'active'; icon?: string }>>([])
 
-/** 当前思考步骤索引 */
-const currentThinkingStep = ref(0)
+/** 当前思考阶段 */
+const thinkingPhase = ref<'thinking' | 'tool' | 'executing' | 'generating'>('thinking')
+
+/** 当前调用的工具名称 */
+const currentTool = ref<string>('')
 
 /** 思考动画定时器 */
 let thinkingTimer: ReturnType<typeof setInterval> | null = null
 
-// 思考步骤文案
-const THINKING_MESSAGES = [
-  '正在理解您的问题...',
-  '分析意图中...',
-  '检索相关信息...',
-  '生成回复...',
+// Agent 决策流程步骤
+const AGENT_STEPS = [
+  { text: '🧠 理解用户意图...', phase: 'thinking' },
+  { text: '🔍 分析上下文信息...', phase: 'thinking' },
+  { text: '🛠️ 选择合适的工具...', phase: 'tool' },
+  { text: '⚡ 执行操作中...', phase: 'executing' },
+  { text: '✨ 生成回复...', phase: 'generating' },
 ]
 
 // ============================================================================
@@ -85,21 +91,74 @@ function scrollToBottom() {
 }
 
 /** 开始思考动画 */
-function startThinking() {
+function startThinking(userInput?: string) {
   thinkingSteps.value = []
-  currentThinkingStep.value = 0
+  thinkingPhase.value = 'thinking'
+  currentTool.value = ''
+  
+  // 根据用户输入智能判断可能调用的工具
+  const toolHint = detectToolFromInput(userInput || '')
   
   // 立即显示第一步
-  thinkingSteps.value.push(THINKING_MESSAGES[0])
+  thinkingSteps.value.push({ 
+    text: '🧠 理解用户意图...', 
+    status: 'active',
+    icon: '🧠'
+  })
+  
+  let stepIndex = 0
+  const steps = [
+    { text: '🔍 分析上下文信息...', delay: 600 },
+    { text: `🛠️ 调用工具: ${toolHint}`, delay: 800, phase: 'tool' as const },
+    { text: '⚡ 执行操作中...', delay: 1000, phase: 'executing' as const },
+    { text: '✨ 生成回复...', delay: 600, phase: 'generating' as const },
+  ]
   
   // 每隔一段时间显示下一步
   thinkingTimer = setInterval(() => {
-    currentThinkingStep.value++
-    if (currentThinkingStep.value < THINKING_MESSAGES.length) {
-      thinkingSteps.value.push(THINKING_MESSAGES[currentThinkingStep.value])
+    // 将当前步骤标记为完成
+    if (thinkingSteps.value.length > 0) {
+      thinkingSteps.value[thinkingSteps.value.length - 1].status = 'done'
+    }
+    
+    if (stepIndex < steps.length) {
+      const step = steps[stepIndex]
+      thinkingSteps.value.push({ 
+        text: step.text, 
+        status: 'active' 
+      })
+      if (step.phase) {
+        thinkingPhase.value = step.phase
+      }
+      if (step.text.includes('调用工具')) {
+        currentTool.value = toolHint
+      }
+      stepIndex++
       scrollToBottom()
     }
-  }, 800)
+  }, 700)
+}
+
+/** 根据用户输入检测可能调用的工具 */
+function detectToolFromInput(input: string): string {
+  const lowerInput = input.toLowerCase()
+  
+  if (lowerInput.includes('打开') || lowerInput.includes('进入') || lowerInput.includes('去')) {
+    return 'navigate_to_page'
+  }
+  if (lowerInput.includes('创建') || lowerInput.includes('生成') || lowerInput.includes('商城')) {
+    return 'generate_mall_layout'
+  }
+  if (lowerInput.includes('搜索') || lowerInput.includes('找') || lowerInput.includes('查')) {
+    return 'search_products'
+  }
+  if (lowerInput.includes('店') || lowerInput.includes('在哪')) {
+    return 'locate_store'
+  }
+  if (lowerInput.includes('推荐')) {
+    return 'recommend_products'
+  }
+  return 'intent_recognition'
 }
 
 /** 停止思考动画 */
@@ -109,7 +168,8 @@ function stopThinking() {
     thinkingTimer = null
   }
   thinkingSteps.value = []
-  currentThinkingStep.value = 0
+  thinkingPhase.value = 'thinking'
+  currentTool.value = ''
 }
 
 /** 停止回答 */
@@ -185,7 +245,7 @@ async function sendMessage() {
   
   // 调用 AI 服务（后端会处理意图识别）
   aiStore.setSending(true)
-  startThinking()
+  startThinking(text)
 
   try {
     const userId = userStore.currentUser?.userId || 'anonymous'
@@ -217,16 +277,31 @@ async function sendMessage() {
       }
     }
     
-    // 如果是商城生成类型，存储数据并导航到建模器页面
+    // 如果是商城生成类型，创建项目并导航到建模器页面
     if (response.type === 'mall_generated' && response.args?.mallData) {
-      // 将生成的数据存储到 localStorage，供建模器页面读取
-      localStorage.setItem('ai_generated_mall', JSON.stringify(response.args.mallData))
-      ElMessage.success('商城布局已生成！正在打开建模器...')
-      
-      // 自动导航到建模器页面（可以继续编辑）
-      setTimeout(() => {
-        router.push('/admin/builder')
-      }, 500)
+      try {
+        // 将 AI 生成的数据转换为 MallProject 格式
+        const mallData = response.args.mallData as MallProject
+        
+        // 调用 API 创建项目
+        const createRequest = toCreateRequest(mallData)
+        const createdProject = await mallBuilderApi.createProject(createRequest)
+        
+        ElMessage.success('商城布局已生成！正在打开建模器...')
+        
+        // 导航到带有项目 ID 的建模器页面
+        setTimeout(() => {
+          router.push(`/admin/builder/${createdProject.projectId}`)
+        }, 500)
+      } catch (error) {
+        console.error('Failed to create project:', error)
+        // 如果创建失败，回退到旧方式（存储到 localStorage）
+        localStorage.setItem('ai_generated_mall', JSON.stringify(response.args.mallData))
+        ElMessage.warning('项目保存失败，使用临时存储')
+        setTimeout(() => {
+          router.push('/admin/builder')
+        }, 500)
+      }
     }
     
     // 处理工具调用结果
@@ -244,12 +319,9 @@ async function sendMessage() {
       return
     }
     
+    // 服务连接异常时静默处理，不显示错误提示
     console.error('Chat error:', error)
-    aiStore.addMessage({
-      role: 'assistant',
-      content: '抱歉，网络出现问题，请稍后重试。',
-      type: 'error',
-    })
+    // 不再显示错误消息，让用户可以重试
   } finally {
     abortController.value = null
     aiStore.setSending(false)
@@ -332,12 +404,10 @@ function handleKeydown(event: KeyboardEvent) {
   }
 }
 
-/** 快捷导航 */
-function quickNavigate(key: string) {
-  const target = NAVIGATION_TARGETS[key]
-  if (target) {
-    handleNavigationIntent(target.path, target.label)
-  }
+/** 快捷导航 - 通过 AI 处理 */
+function quickNavigate(label: string) {
+  inputText.value = `打开${label}`
+  sendMessage()
 }
 
 // ============================================================================
@@ -432,24 +502,49 @@ onUnmounted(() => {
             </template>
           </div>
 
-          <!-- 加载中 - 思考过程 -->
+          <!-- 加载中 - Agent 决策流程 -->
           <div v-if="aiStore.isSending" class="message assistant">
             <div class="message-content assistant-message thinking">
               <div class="thinking-header">
-                <ElIcon class="loading-icon"><Loading /></ElIcon>
-                <span>小智正在思考...</span>
+                <div class="thinking-avatar">
+                  <span class="avatar-icon">🤖</span>
+                  <span class="status-dot" :class="thinkingPhase"></span>
+                </div>
+                <div class="thinking-title">
+                  <span class="title-text">小智正在处理...</span>
+                  <span class="phase-badge" :class="thinkingPhase">
+                    {{ thinkingPhase === 'thinking' ? '思考中' : 
+                       thinkingPhase === 'tool' ? '调用工具' : 
+                       thinkingPhase === 'executing' ? '执行中' : '生成中' }}
+                  </span>
+                </div>
               </div>
-              <div v-if="thinkingSteps.length > 0" class="thinking-steps">
+              
+              <!-- Agent 决策步骤 -->
+              <div v-if="thinkingSteps.length > 0" class="agent-steps">
                 <div 
                   v-for="(step, index) in thinkingSteps" 
                   :key="index"
-                  class="thinking-step"
-                  :class="{ active: index === thinkingSteps.length - 1 }"
+                  class="agent-step"
+                  :class="step.status"
                 >
-                  <span class="step-dot">{{ index === thinkingSteps.length - 1 ? '●' : '✓' }}</span>
-                  <span class="step-text">{{ step }}</span>
+                  <span class="step-indicator">
+                    <span v-if="step.status === 'done'" class="done-icon">✓</span>
+                    <span v-else-if="step.status === 'active'" class="active-icon">
+                      <ElIcon class="spinning"><Loading /></ElIcon>
+                    </span>
+                    <span v-else class="pending-icon">○</span>
+                  </span>
+                  <span class="step-text">{{ step.text }}</span>
                 </div>
               </div>
+              
+              <!-- 当前工具调用提示 -->
+              <div v-if="currentTool" class="tool-call-hint">
+                <span class="tool-icon">⚙️</span>
+                <code class="tool-name">{{ currentTool }}</code>
+              </div>
+              
               <button class="btn-stop" @click="stopResponse">
                 <ElIcon><VideoPause /></ElIcon>
                 <span>停止回答</span>
@@ -730,48 +825,162 @@ onUnmounted(() => {
   }
   
   &.thinking {
-    padding: 12px 16px;
+    padding: 16px;
     
     .thinking-header {
       display: flex;
       align-items: center;
-      gap: 8px;
-      color: #60a5fa;
-      font-weight: 500;
-      margin-bottom: 8px;
+      gap: 12px;
+      margin-bottom: 12px;
+    }
+    
+    .thinking-avatar {
+      position: relative;
+      width: 36px;
+      height: 36px;
+      background: linear-gradient(135deg, #60a5fa 0%, #818cf8 100%);
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
       
-      .loading-icon {
-        animation: spin 1s linear infinite;
+      .avatar-icon {
+        font-size: 18px;
+      }
+      
+      .status-dot {
+        position: absolute;
+        bottom: -2px;
+        right: -2px;
+        width: 10px;
+        height: 10px;
+        border-radius: 50%;
+        border: 2px solid rgba(17, 17, 19, 0.95);
+        
+        &.thinking { background: #f59e0b; }
+        &.tool { background: #8b5cf6; }
+        &.executing { background: #3b82f6; }
+        &.generating { background: #22c55e; }
       }
     }
     
-    .thinking-steps {
-      margin: 8px 0;
-      padding-left: 4px;
-      border-left: 2px solid rgba(96, 165, 250, 0.3);
+    .thinking-title {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      
+      .title-text {
+        font-weight: 500;
+        color: #e8eaed;
+        font-size: 14px;
+      }
+      
+      .phase-badge {
+        display: inline-flex;
+        align-items: center;
+        padding: 2px 8px;
+        border-radius: 10px;
+        font-size: 10px;
+        font-weight: 500;
+        width: fit-content;
+        
+        &.thinking {
+          background: rgba(245, 158, 11, 0.15);
+          color: #f59e0b;
+        }
+        &.tool {
+          background: rgba(139, 92, 246, 0.15);
+          color: #8b5cf6;
+        }
+        &.executing {
+          background: rgba(59, 130, 246, 0.15);
+          color: #3b82f6;
+        }
+        &.generating {
+          background: rgba(34, 197, 94, 0.15);
+          color: #22c55e;
+        }
+      }
     }
     
-    .thinking-step {
+    .agent-steps {
+      margin: 12px 0;
+      padding: 12px;
+      background: rgba(0, 0, 0, 0.2);
+      border-radius: 10px;
+      border-left: 3px solid rgba(96, 165, 250, 0.5);
+    }
+    
+    .agent-step {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 6px 0;
+      font-size: 13px;
+      transition: all 0.3s ease;
+      
+      .step-indicator {
+        width: 20px;
+        height: 20px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        
+        .done-icon {
+          color: #22c55e;
+          font-size: 14px;
+          font-weight: bold;
+        }
+        
+        .active-icon {
+          color: #60a5fa;
+          
+          .spinning {
+            animation: spin 1s linear infinite;
+          }
+        }
+        
+        .pending-icon {
+          color: #5f6368;
+          font-size: 12px;
+        }
+      }
+      
+      .step-text {
+        color: #9aa0a6;
+      }
+      
+      &.done .step-text {
+        color: #9aa0a6;
+      }
+      
+      &.active .step-text {
+        color: #e8eaed;
+        font-weight: 500;
+      }
+    }
+    
+    .tool-call-hint {
       display: flex;
       align-items: center;
       gap: 8px;
-      padding: 4px 0 4px 12px;
-      font-size: 13px;
-      color: #9aa0a6;
-      transition: all 0.3s ease;
+      margin: 8px 0;
+      padding: 8px 12px;
+      background: rgba(139, 92, 246, 0.1);
+      border: 1px solid rgba(139, 92, 246, 0.2);
+      border-radius: 8px;
       
-      .step-dot {
-        font-size: 10px;
-        color: #22c55e;
+      .tool-icon {
+        font-size: 14px;
       }
       
-      &.active {
-        color: #e8eaed;
-        
-        .step-dot {
-          color: #60a5fa;
-          animation: pulse 1s ease-in-out infinite;
-        }
+      .tool-name {
+        font-family: 'Fira Code', 'Consolas', monospace;
+        font-size: 12px;
+        color: #a78bfa;
+        background: rgba(139, 92, 246, 0.15);
+        padding: 2px 6px;
+        border-radius: 4px;
       }
     }
     

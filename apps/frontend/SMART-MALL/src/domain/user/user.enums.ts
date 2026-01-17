@@ -1,23 +1,12 @@
 /**
  * 用户领域 - 枚举定义
+ * 
+ * 从共享类型包导入核心枚举，确保跨服务一致性
  */
 
-/**
- * 角色枚举
- * 定义系统中的用户角色
- */
-export enum Role {
-  ADMIN = 'ADMIN',
-  MERCHANT = 'MERCHANT',
-  USER = 'USER'
-}
-
-/**
- * 在线状态枚举
- * 定义用户的在线状态
- */
-export enum OnlineStatus {
-  ONLINE = 'ONLINE',
-  DISCONNECTED = 'DISCONNECTED',
-  OFFLINE = 'OFFLINE'
-}
+// 从共享类型包导入
+export { 
+  UserRole as Role, 
+  OnlineStatus,
+  USER_ROLE_NAMES
+} from '@smart-mall/shared-types'

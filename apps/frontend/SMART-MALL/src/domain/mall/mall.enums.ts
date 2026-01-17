@@ -1,28 +1,17 @@
 /**
  * 商城领域 - 枚举定义
+ * 
+ * 从共享类型包导入核心枚举，确保跨服务一致性
  */
 
-/**
- * 区域类型枚举
- * 定义区域的业务分类
- */
-export enum AreaType {
-  RETAIL = 'retail',
-  FOOD = 'food',
-  ENTERTAINMENT = 'entertainment',
-  SERVICE = 'service'
-}
-
-/**
- * 区域状态枚举
- * 定义区域的建模权限状态
- */
-export enum AreaStatus {
-  LOCKED = 'LOCKED',           // 初始状态，不可编辑
-  PENDING = 'PENDING',         // 有商家申请中，等待审批
-  AUTHORIZED = 'AUTHORIZED',   // 已授权，可被特定商家编辑
-  OCCUPIED = 'OCCUPIED'        // 已被占用，不可再申请
-}
+// 从共享类型包导入
+export { 
+  AreaType, 
+  AreaStatus,
+  AREA_TYPE_NAMES,
+  AREA_TYPE_COLORS,
+  isShopAreaType
+} from '@smart-mall/shared-types'
 
 /**
  * 权限申请状态枚举
