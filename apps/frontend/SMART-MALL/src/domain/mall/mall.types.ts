@@ -118,3 +118,56 @@ export interface Product {
   /** 库存状态 */
   inStock?: boolean
 }
+
+// ============================================================================
+// AI 生成数据结构
+// ============================================================================
+
+/**
+ * AI 生成的商城数据
+ * 用于从 AI 服务接收的商城布局数据
+ */
+export interface GeneratedMallData {
+  /** 商城名称 */
+  name: string
+  /** 商城描述 */
+  description?: string
+  /** 商城轮廓 */
+  outline?: {
+    vertices: Array<{ x: number; y: number }>
+  }
+  /** 楼层列表 */
+  floors?: GeneratedFloorData[]
+}
+
+/**
+ * AI 生成的楼层数据
+ */
+export interface GeneratedFloorData {
+  /** 楼层编号 */
+  level?: number
+  /** 楼层名称 */
+  name?: string
+  /** 区域列表 */
+  areas?: GeneratedAreaData[]
+}
+
+/**
+ * AI 生成的区域数据
+ */
+export interface GeneratedAreaData {
+  /** 区域名称 */
+  name: string
+  /** 区域类型 */
+  type: 'store' | 'corridor' | 'facility' | 'entrance'
+  /** 区域颜色（十六进制） */
+  color?: string
+  /** 区域形状 */
+  shape?: {
+    vertices: Array<{ x: number; y: number }>
+  }
+  /** 区域属性 */
+  properties?: {
+    category?: string
+  }
+}

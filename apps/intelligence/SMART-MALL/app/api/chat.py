@@ -12,11 +12,48 @@ from pydantic import BaseModel
 from typing import Optional, List, Dict, Any
 from datetime import datetime
 import logging
+import re
 
 from app.core.agent.mall_agent import MallAgent
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
+
+
+# ============ 错误码映射 ============
+
+def parse_llm_error(error: Exception) -> tuple[int, str, str]:
+    """
+    解析 LLM 调用错误，返回 (状态码, 错误类型, 用户友好消息)
+    """
+    error_str = str(error)
+    
+    # API Key 错误
+    if 'invalid_api_key' in error_str or '401' in error_str:
+        return 401, 'api_key_error', 'AI 服务配置异常，请联系管理员检查 API 密钥配置'
+    
+    # 配额/限流错误
+    if 'rate_limit' in error_str or '429' in error_str:
+        return 429, 'rate_limit', 'AI 服务请求过于频繁，请稍后再试'
+    
+    # 余额不足
+    if 'insufficient_quota' in error_str or 'billing' in error_str.lower():
+        return 402, 'quota_exceeded', 'AI 服务配额不足，请联系管理员'
+    
+    # 模型不存在
+    if 'model_not_found' in error_str or 'does not exist' in error_str:
+        return 404, 'model_not_found', 'AI 模型配置错误，请联系管理员'
+    
+    # 超时
+    if 'timeout' in error_str.lower() or 'timed out' in error_str.lower():
+        return 504, 'timeout', 'AI 服务响应超时，请稍后重试'
+    
+    # 连接错误
+    if 'connection' in error_str.lower() or 'network' in error_str.lower():
+        return 503, 'connection_error', 'AI 服务连接失败，请检查网络或稍后重试'
+    
+    # 默认服务器错误
+    return 500, 'internal_error', '服务处理异常，请稍后重试'
 
 # 全局 Agent 实例
 _agent: Optional[MallAgent] = None
@@ -106,7 +143,19 @@ async def chat(request: ChatRequest) -> ChatResponse:
         
     except Exception as e:
         logger.error(f"[{request.request_id}] Error: {str(e)}")
-        raise HTTPException(status_code=500, detail=str(e))
+        
+        # 解析错误并返回友好消息
+        status_code, error_type, user_message = parse_llm_error(e)
+        logger.warning(f"[{request.request_id}] Parsed error: type={error_type}, status={status_code}")
+        
+        # 返回错误响应而非抛出异常，让前端能正常处理
+        return ChatResponse(
+            request_id=request.request_id,
+            type="error",
+            content=user_message,
+            message=error_type,
+            timestamp=datetime.utcnow().isoformat() + "Z"
+        )
 
 
 class ConfirmRequest(BaseModel):
@@ -168,4 +217,14 @@ async def confirm_action(request: ConfirmRequest) -> ChatResponse:
         
     except Exception as e:
         logger.error(f"[{request.request_id}] Confirm error: {str(e)}")
-        raise HTTPException(status_code=500, detail=str(e))
+        
+        # 解析错误并返回友好消息
+        status_code, error_type, user_message = parse_llm_error(e)
+        
+        return ChatResponse(
+            request_id=request.request_id,
+            type="error",
+            content=user_message,
+            message=error_type,
+            timestamp=datetime.utcnow().isoformat() + "Z"
+        )

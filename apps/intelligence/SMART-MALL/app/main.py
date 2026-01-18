@@ -1,3 +1,4 @@
+
 """
 Smart Mall Intelligence Service - FastAPI 入口
 

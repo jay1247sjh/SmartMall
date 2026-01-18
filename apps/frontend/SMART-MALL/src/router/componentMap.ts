@@ -46,12 +46,6 @@ export const componentMap: Record<string, () => Promise<Component>> = {
   // ===== 用户页面 =====
   'UserProfile': () => import('@/views/user/ProfileView.vue'),
 
-  // ===== 建模器 =====
-  'BuilderView': () => import('@/views/BuilderView.vue'),
-
-  // ===== 测试页面 =====
-  'DomainTestView': () => import('@/views/DomainTestView.vue'),
-
   // ===== 错误页面 =====
   'NotFound': () => import('@/views/errors/NotFoundView.vue'),
   'Forbidden': () => import('@/views/errors/ForbiddenView.vue'),

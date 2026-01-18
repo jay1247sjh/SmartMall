@@ -151,8 +151,8 @@ const mouseSensitivity = 0.003  // 鼠标灵敏度
 let roamAnimationId: number | null = null
 let prevTime = performance.now()
 // 相机跟随参数
-const cameraDistance = 5      // 相机距离角色的距离（适中距离，能看到角色全身和周围环境）
-const cameraHeight = 2        // 相机高度偏移（高于角色头部）
+const cameraDistance = 10     // 相机距离角色的距离（调高到原来的两倍）
+const cameraHeight = 4        // 相机高度偏移（调高到原来的两倍）
 const cameraPitch = ref(0.3)  // 相机俯仰角（上下看）- 稍微向下看
 const cameraYaw = ref(0)      // 相机偏航角（左右看）
 // 指针是否已锁定
@@ -552,6 +552,81 @@ function renderProject(renderAllFloors: boolean = false) {
   if (viewMode.value === 'edit') {
     renderConnectionIndicators()
   }
+}
+
+/**
+ * 提取区域的墙壁线段（用于碰撞检测）
+ * 返回所有非入口边的线段，以及入口边门两侧的墙壁线段
+ */
+function extractWallSegments(area: AreaDefinition): Array<{ start: { x: number; y: number }; end: { x: number; y: number } }> {
+  const vertices = area.shape.vertices
+  if (vertices.length < 3) return []
+  
+  // 计算每条边的长度，找出最长边作为入口
+  let maxEdgeLength = 0
+  let entranceEdgeIndex = 0
+  
+  for (let i = 0; i < vertices.length; i++) {
+    const v1 = vertices[i]
+    const v2 = vertices[(i + 1) % vertices.length]
+    const edgeLength = Math.sqrt(Math.pow(v2.x - v1.x, 2) + Math.pow(v2.y - v1.y, 2))
+    if (edgeLength > maxEdgeLength) {
+      maxEdgeLength = edgeLength
+      entranceEdgeIndex = i
+    }
+  }
+  
+  // 提取所有非入口边作为墙壁线段
+  const wallSegments: Array<{ start: { x: number; y: number }; end: { x: number; y: number } }> = []
+  
+  for (let i = 0; i < vertices.length; i++) {
+    const v1 = vertices[i]
+    const v2 = vertices[(i + 1) % vertices.length]
+    
+    if (i === entranceEdgeIndex) {
+      // 入口边：只添加门两侧的墙壁线段
+      const edgeLength = Math.sqrt(Math.pow(v2.x - v1.x, 2) + Math.pow(v2.y - v1.y, 2))
+      const doorWidth = Math.min(edgeLength * 0.6, 4)  // 门宽度为边长的60%，最大4米
+      const sideWallWidth = (edgeLength - doorWidth) / 2
+      
+      if (sideWallWidth > 0.1) {
+        // 计算边的方向向量
+        const dx = v2.x - v1.x
+        const dy = v2.y - v1.y
+        const length = Math.sqrt(dx * dx + dy * dy)
+        const dirX = dx / length
+        const dirY = dy / length
+        
+        // 左侧墙壁线段（从 v1 开始）
+        const leftEnd = {
+          x: v1.x + dirX * sideWallWidth,
+          y: v1.y + dirY * sideWallWidth
+        }
+        wallSegments.push({
+          start: { x: v1.x, y: v1.y },
+          end: leftEnd
+        })
+        
+        // 右侧墙壁线段（到 v2 结束）
+        const rightStart = {
+          x: v2.x - dirX * sideWallWidth,
+          y: v2.y - dirY * sideWallWidth
+        }
+        wallSegments.push({
+          start: rightStart,
+          end: { x: v2.x, y: v2.y }
+        })
+      }
+    } else {
+      // 非入口边：整条边都是墙壁
+      wallSegments.push({
+        start: { x: v1.x, y: v1.y },
+        end: { x: v2.x, y: v2.y }
+      })
+    }
+  }
+  
+  return wallSegments
 }
 
 /**
@@ -2223,12 +2298,24 @@ function toggleOrbitMode() {
       characterController.setBoundary(project.value.outline.vertices)
     }
     
-    // 设置区域障碍物碰撞检测（当前楼层的所有区域）
+    // 设置墙壁线段碰撞检测（只阻挡墙壁，不阻挡门口）
+    // 提取当前楼层所有店铺区域的墙壁线段
     if (currentFloor.value?.areas) {
-      const obstacles = currentFloor.value.areas
-        .filter(area => area.visible && area.shape?.vertices?.length >= 3)
-        .map(area => ({ vertices: area.shape.vertices }))
-      characterController.setObstacles(obstacles)
+      const allWallSegments: Array<{ start: { x: number; y: number }; end: { x: number; y: number } }> = []
+      
+      currentFloor.value.areas.forEach(area => {
+        if (!area.visible || !area.shape?.vertices || area.shape.vertices.length < 3) return
+        
+        // 只为店铺类型的区域提取墙壁线段
+        const isShopType = ['retail', 'food', 'service', 'anchor'].includes(area.type)
+        if (isShopType) {
+          const wallSegments = extractWallSegments(area)
+          allWallSegments.push(...wallSegments)
+        }
+      })
+      
+      characterController.setWallSegments(allWallSegments)
+      console.log(`[toggleOrbitMode] 设置墙壁线段数量: ${allWallSegments.length}`)
     }
     
     scene.value.add(characterController.character)

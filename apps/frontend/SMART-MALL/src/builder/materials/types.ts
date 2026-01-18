@@ -4,7 +4,7 @@
  * 定义预设材质、放置规则等相关类型
  */
 
-import type { AreaType } from '../types/mall-project'
+import type { AreaType } from '../types'
 
 /**
  * 材质分类

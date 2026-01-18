@@ -12,12 +12,12 @@ import type {
   OutlineParams,
   MallProject,
   FloorDefinition,
-} from '../types/mall-project'
+} from '../types'
 import { 
   createEmptyProject, 
   createDefaultFloor,
-  generateId,
-} from '../types/mall-project'
+} from '../factories'
+import { generateId } from '../utils'
 
 // ============================================================================
 // 模板定义

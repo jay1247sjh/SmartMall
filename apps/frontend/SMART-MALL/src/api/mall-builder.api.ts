@@ -38,7 +38,7 @@ import type {
   FloorDefinition, 
   AreaDefinition,
   ProjectSettings,
-} from '@/builder/types/mall-project'
+} from '@/builder/types'
 import type { Polygon } from '@/builder/geometry/types'
 
 // ============================================================================

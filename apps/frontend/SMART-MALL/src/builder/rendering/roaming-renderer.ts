@@ -423,14 +423,16 @@ export function createRoamingEnvironment(
   })
   group.add(walls)
   
-  // 创建天花板（使用吊顶效果）
+  // 创建天花板（使用半透明材质，不阻挡相机视角）
   const ceiling = createCeiling(outline, yPos + wallHeight, {
     color: options.ceilingColor ?? 0xfafafa,
+    transparent: true,  // 启用透明
+    opacity: 0.3,       // 设置为半透明，既能提供光照反射，又不会完全遮挡视角
   })
   group.add(ceiling)
   
-  // 添加环境光照增强
-  const ambientBoost = new THREE.AmbientLight(0xffffff, 0.5)
+  // 添加环境光照增强（提高亮度）
+  const ambientBoost = new THREE.AmbientLight(0xffffff, 0.8)  // 从 0.5 提高到 0.8
   ambientBoost.name = 'roaming-ambient'
   group.add(ambientBoost)
   

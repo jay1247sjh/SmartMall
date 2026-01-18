@@ -168,6 +168,9 @@ export class CharacterController {
   // 区域碰撞检测（商城内的实体）
   private obstacles: Polygon[] = []
   
+  // 墙壁线段障碍物（用于精确的墙壁碰撞检测）
+  private wallSegments: Array<{ start: Point2D; end: Point2D }> = []
+  
   // 模型加载状态
   private modelLoaded: boolean = false
   private modelName: string = 'character-male-a'
@@ -309,6 +312,15 @@ export class CharacterController {
   }
   
   /**
+   * 设置墙壁线段障碍物（用于精确的墙壁碰撞检测）
+   * @param segments 墙壁线段数组
+   */
+  setWallSegments(segments: Array<{ start: Point2D; end: Point2D }>): void {
+    this.wallSegments = segments
+    console.log('[CharacterController] 墙壁线段已设置，数量:', this.wallSegments.length)
+  }
+  
+  /**
    * 清除边界
    */
   clearBoundary(): void {
@@ -320,6 +332,53 @@ export class CharacterController {
    */
   clearObstacles(): void {
     this.obstacles = []
+    this.wallSegments = []
+  }
+  
+  /**
+   * 计算点到线段的最短距离
+   */
+  private pointToSegmentDistance(point: Point2D, segStart: Point2D, segEnd: Point2D): number {
+    const dx = segEnd.x - segStart.x
+    const dy = segEnd.y - segStart.y
+    const lengthSquared = dx * dx + dy * dy
+    
+    if (lengthSquared === 0) {
+      // 线段退化为点
+      const pdx = point.x - segStart.x
+      const pdy = point.y - segStart.y
+      return Math.sqrt(pdx * pdx + pdy * pdy)
+    }
+    
+    // 计算投影参数 t
+    let t = ((point.x - segStart.x) * dx + (point.y - segStart.y) * dy) / lengthSquared
+    t = Math.max(0, Math.min(1, t))
+    
+    // 计算投影点
+    const projX = segStart.x + t * dx
+    const projY = segStart.y + t * dy
+    
+    // 计算距离
+    const distX = point.x - projX
+    const distY = point.y - projY
+    return Math.sqrt(distX * distX + distY * distY)
+  }
+  
+  /**
+   * 检查位置是否与墙壁线段碰撞
+   */
+  private isCollidingWithWalls(x: number, z: number): boolean {
+    const point2D: Point2D = { x: x, y: -z }
+    
+    // 检查是否与任何墙壁线段碰撞
+    for (const segment of this.wallSegments) {
+      const distance = this.pointToSegmentDistance(point2D, segment.start, segment.end)
+      if (distance < this.collisionRadius) {
+        return true
+      }
+    }
+    
+    return false
   }
   
   /**
@@ -333,10 +392,18 @@ export class CharacterController {
       return false
     }
     
-    // 检查是否在任何障碍物内（如果在障碍物内，则不能移动到该位置）
-    for (const obstacle of this.obstacles) {
-      if (isPointInside(point2D, obstacle)) {
+    // 检查是否与墙壁线段碰撞（优先使用墙壁线段检测）
+    if (this.wallSegments.length > 0) {
+      if (this.isCollidingWithWalls(x, z)) {
         return false
+      }
+    } else {
+      // 如果没有墙壁线段，则使用旧的多边形障碍物检测
+      // 检查是否在任何障碍物内（如果在障碍物内，则不能移动到该位置）
+      for (const obstacle of this.obstacles) {
+        if (isPointInside(point2D, obstacle)) {
+          return false
+        }
       }
     }
     

@@ -4,7 +4,7 @@
  * 验证区域内是否可以放置特定类型的设施
  */
 
-import type { AreaType } from '../types/mall-project'
+import type { AreaType } from '../types'
 import type { PlacementRule, PlacementValidationResult } from '../materials/types'
 import { getMaterialPresetByAreaType } from '../materials/presets'
 

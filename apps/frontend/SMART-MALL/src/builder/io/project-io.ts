@@ -5,8 +5,9 @@
  * 格式版本管理和向后兼容
  */
 
-import type { MallProject, ProjectExport } from '../types/mall-project'
-import { createDefaultSettings, generateId } from '../types/mall-project'
+import type { MallProject, ProjectExport } from '../types'
+import { createDefaultSettings } from '../factories'
+import { generateId } from '../utils'
 
 /** 当前格式版本 */
 export const FORMAT_VERSION = '1.0.0'

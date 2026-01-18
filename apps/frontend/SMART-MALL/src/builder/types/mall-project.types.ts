@@ -1,8 +1,13 @@
 /**
- * 商城项目数据模型
+ * 商城项目类型定义
  * 
- * 定义商城建模器的核心数据结构
- * 支持多楼层、自定义形状、区域管理
+ * 定义商城建模器的核心数据结构。
+ * 支持多楼层、自定义形状、区域管理。
+ * 
+ * 规则：
+ * - 只包含 interface、type、enum 定义
+ * - 不包含任何函数实现
+ * - 不包含任何业务逻辑
  */
 
 import type { Point2D, Polygon, Rectangle, Transform2D } from '../geometry/types'
@@ -313,91 +318,3 @@ export interface ProjectExport {
   /** 项目数据 */
   project: MallProject
 }
-
-// ============================================================================
-// 工具函数
-// ============================================================================
-
-/**
- * 创建默认项目设置
- */
-export function createDefaultSettings(): ProjectSettings {
-  return {
-    gridSize: 1,
-    snapToGrid: true,
-    defaultFloorHeight: 4,
-    unit: 'meters',
-    display: {
-      showGrid: true,
-      showRuler: true,
-      showAreaLabels: true,
-      backgroundColor: '#0a0a0a',
-      gridColor: '#1a1a1a',
-    },
-  }
-}
-
-/**
- * 创建空项目
- */
-export function createEmptyProject(name: string): MallProject {
-  const now = new Date().toISOString()
-  return {
-    id: generateId(),
-    name,
-    createdAt: now,
-    updatedAt: now,
-    version: 1,
-    outline: {
-      vertices: [
-        { x: -50, y: -50 },
-        { x: 50, y: -50 },
-        { x: 50, y: 50 },
-        { x: -50, y: 50 },
-      ],
-      isClosed: true,
-    },
-    floors: [],
-    settings: createDefaultSettings(),
-  }
-}
-
-/**
- * 创建默认楼层
- */
-export function createDefaultFloor(level: number, name?: string): FloorDefinition {
-  return {
-    id: generateId(),
-    name: name ?? `${level}F`,
-    level,
-    height: 4,
-    inheritOutline: true,
-    areas: [],
-    visible: true,
-    locked: false,
-  }
-}
-
-/**
- * 生成唯一ID
- */
-export function generateId(): string {
-  return `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 9)}`
-}
-
-/**
- * 获取区域类型的显示名称
- * @deprecated 使用 AREA_TYPE_NAMES[type] 代替
- */
-export function getAreaTypeName(type: AreaType): string {
-  return AREA_TYPE_NAMES[type] ?? String(type)
-}
-
-/**
- * 获取区域类型的默认颜色
- * @deprecated 使用 AREA_TYPE_COLORS[type] 代替
- */
-export function getAreaTypeColor(type: AreaType): string {
-  return AREA_TYPE_COLORS[type] ?? '#6b7280'
-}
-

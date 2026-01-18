@@ -56,25 +56,21 @@ const inputRef = ref<InstanceType<typeof ElInput> | null>(null)
 /** 当前请求的 AbortController */
 const abortController = ref<AbortController | null>(null)
 
-/** 思考步骤 */
-const thinkingSteps = ref<Array<{ text: string; status: 'pending' | 'done' | 'active'; icon?: string }>>([])
+/** 处理步骤（企业级） */
+const agentSteps = ref<Array<{ text: string; status: 'pending' | 'active' | 'done' }>>([])
 
-/** 当前思考阶段 */
-const thinkingPhase = ref<'thinking' | 'tool' | 'executing' | 'generating'>('thinking')
+/** 当前步骤索引 */
+const currentStepIndex = ref(0)
 
-/** 当前调用的工具名称 */
-const currentTool = ref<string>('')
+/** 处理动画定时器 */
+let processingTimer: ReturnType<typeof setInterval> | null = null
 
-/** 思考动画定时器 */
-let thinkingTimer: ReturnType<typeof setInterval> | null = null
-
-// Agent 决策流程步骤
+// Agent 处理步骤（企业级文案）
 const AGENT_STEPS = [
-  { text: '🧠 理解用户意图...', phase: 'thinking' },
-  { text: '🔍 分析上下文信息...', phase: 'thinking' },
-  { text: '🛠️ 选择合适的工具...', phase: 'tool' },
-  { text: '⚡ 执行操作中...', phase: 'executing' },
-  { text: '✨ 生成回复...', phase: 'generating' },
+  { text: '分析请求', delay: 400 },
+  { text: '检索上下文', delay: 500 },
+  { text: '执行操作', delay: 600 },
+  { text: '生成回复', delay: 400 },
 ]
 
 // ============================================================================
@@ -90,86 +86,52 @@ function scrollToBottom() {
   })
 }
 
-/** 开始思考动画 */
-function startThinking(userInput?: string) {
-  thinkingSteps.value = []
-  thinkingPhase.value = 'thinking'
-  currentTool.value = ''
+/** 开始处理动画 */
+function startProcessing() {
+  // 初始化步骤
+  agentSteps.value = AGENT_STEPS.map((step, index) => ({
+    text: step.text,
+    status: index === 0 ? 'active' : 'pending'
+  }))
+  currentStepIndex.value = 0
   
-  // 根据用户输入智能判断可能调用的工具
-  const toolHint = detectToolFromInput(userInput || '')
-  
-  // 立即显示第一步
-  thinkingSteps.value.push({ 
-    text: '🧠 理解用户意图...', 
-    status: 'active',
-    icon: '🧠'
-  })
-  
+  // 逐步推进
   let stepIndex = 0
-  const steps = [
-    { text: '🔍 分析上下文信息...', delay: 600 },
-    { text: `🛠️ 调用工具: ${toolHint}`, delay: 800, phase: 'tool' as const },
-    { text: '⚡ 执行操作中...', delay: 1000, phase: 'executing' as const },
-    { text: '✨ 生成回复...', delay: 600, phase: 'generating' as const },
-  ]
-  
-  // 每隔一段时间显示下一步
-  thinkingTimer = setInterval(() => {
+  processingTimer = setInterval(() => {
     // 将当前步骤标记为完成
-    if (thinkingSteps.value.length > 0) {
-      thinkingSteps.value[thinkingSteps.value.length - 1].status = 'done'
+    const currentStep = agentSteps.value[stepIndex]
+    if (currentStep) {
+      currentStep.status = 'done'
     }
     
-    if (stepIndex < steps.length) {
-      const step = steps[stepIndex]
-      thinkingSteps.value.push({ 
-        text: step.text, 
-        status: 'active' 
-      })
-      if (step.phase) {
-        thinkingPhase.value = step.phase
+    stepIndex++
+    currentStepIndex.value = stepIndex
+    
+    // 激活下一步
+    if (stepIndex < AGENT_STEPS.length) {
+      const nextStep = agentSteps.value[stepIndex]
+      if (nextStep) {
+        nextStep.status = 'active'
       }
-      if (step.text.includes('调用工具')) {
-        currentTool.value = toolHint
-      }
-      stepIndex++
       scrollToBottom()
+    } else {
+      // 全部完成，停止定时器
+      if (processingTimer) {
+        clearInterval(processingTimer)
+        processingTimer = null
+      }
     }
-  }, 700)
+  }, 500)
 }
 
-/** 根据用户输入检测可能调用的工具 */
-function detectToolFromInput(input: string): string {
-  const lowerInput = input.toLowerCase()
-  
-  if (lowerInput.includes('打开') || lowerInput.includes('进入') || lowerInput.includes('去')) {
-    return 'navigate_to_page'
+/** 停止处理动画 */
+function stopProcessing() {
+  if (processingTimer) {
+    clearInterval(processingTimer)
+    processingTimer = null
   }
-  if (lowerInput.includes('创建') || lowerInput.includes('生成') || lowerInput.includes('商城')) {
-    return 'generate_mall_layout'
-  }
-  if (lowerInput.includes('搜索') || lowerInput.includes('找') || lowerInput.includes('查')) {
-    return 'search_products'
-  }
-  if (lowerInput.includes('店') || lowerInput.includes('在哪')) {
-    return 'locate_store'
-  }
-  if (lowerInput.includes('推荐')) {
-    return 'recommend_products'
-  }
-  return 'intent_recognition'
-}
-
-/** 停止思考动画 */
-function stopThinking() {
-  if (thinkingTimer) {
-    clearInterval(thinkingTimer)
-    thinkingTimer = null
-  }
-  thinkingSteps.value = []
-  thinkingPhase.value = 'thinking'
-  currentTool.value = ''
+  agentSteps.value = []
+  currentStepIndex.value = 0
 }
 
 /** 停止回答 */
@@ -178,7 +140,7 @@ function stopResponse() {
     abortController.value.abort()
     abortController.value = null
   }
-  stopThinking()
+  stopProcessing()
   aiStore.setSending(false)
   
   // 添加一条提示消息
@@ -188,6 +150,47 @@ function stopResponse() {
     type: 'text',
   })
   scrollToBottom()
+}
+
+/** 解析错误消息，返回用户友好的提示 */
+function parseErrorMessage(error: unknown): string {
+  // 如果是 HTTP 错误对象
+  if (error && typeof error === 'object') {
+    const err = error as Record<string, unknown>
+    
+    // 检查常见的错误结构
+    const message = err.message || err.msg || err.detail
+    if (typeof message === 'string') {
+      // API Key 错误
+      if (message.includes('invalid_api_key') || message.includes('401')) {
+        return 'AI 服务配置异常，请联系管理员检查 API 密钥配置'
+      }
+      // 限流错误
+      if (message.includes('rate_limit') || message.includes('429')) {
+        return 'AI 服务请求过于频繁，请稍后再试'
+      }
+      // 超时错误
+      if (message.includes('timeout') || message.includes('ETIMEDOUT')) {
+        return 'AI 服务响应超时，请稍后重试'
+      }
+      // 网络错误
+      if (message.includes('network') || message.includes('ECONNREFUSED')) {
+        return 'AI 服务连接失败，请检查网络'
+      }
+    }
+    
+    // 检查 HTTP 状态码
+    const status = err.status || err.statusCode
+    if (typeof status === 'number') {
+      if (status === 401) return 'AI 服务配置异常，请联系管理员'
+      if (status === 429) return 'AI 服务请求过于频繁，请稍后再试'
+      if (status === 503) return 'AI 服务暂时不可用，请稍后重试'
+      if (status >= 500) return '服务处理异常，请稍后重试'
+    }
+  }
+  
+  // 默认错误消息
+  return '抱歉，处理时出现异常，请稍后重试'
 }
 
 /** 处理面板显示 */
@@ -245,7 +248,7 @@ async function sendMessage() {
   
   // 调用 AI 服务（后端会处理意图识别）
   aiStore.setSending(true)
-  startThinking(text)
+  startProcessing()
 
   try {
     const userId = userStore.currentUser?.userId || 'anonymous'
@@ -257,7 +260,7 @@ async function sendMessage() {
       abortController.value.signal
     )
     
-    stopThinking()
+    stopProcessing()
     
     console.log('[AI] Response received:', response)
     
@@ -311,7 +314,7 @@ async function sendMessage() {
       }
     }
   } catch (error: unknown) {
-    stopThinking()
+    stopProcessing()
     
     // 检查是否是用户主动取消
     if (error instanceof Error && error.name === 'AbortError') {
@@ -319,9 +322,14 @@ async function sendMessage() {
       return
     }
     
-    // 服务连接异常时静默处理，不显示错误提示
+    // 显示错误消息
     console.error('Chat error:', error)
-    // 不再显示错误消息，让用户可以重试
+    const errorMessage = parseErrorMessage(error)
+    aiStore.addMessage({
+      role: 'assistant',
+      content: errorMessage,
+      type: 'error',
+    })
   } finally {
     abortController.value = null
     aiStore.setSending(false)
@@ -348,15 +356,15 @@ async function confirmAction(confirmed: boolean) {
   const { action, args } = aiStore.pendingConfirmation
   aiStore.clearPendingConfirmation()
   aiStore.setSending(true)
-  startThinking()
+  startProcessing()
 
   try {
     const userId = userStore.currentUser?.userId || 'anonymous'
     const response = await intelligenceApi.confirm(action, args, confirmed, userId)
-    stopThinking()
+    stopProcessing()
     aiStore.handleResponse(response)
   } catch (error) {
-    stopThinking()
+    stopProcessing()
     console.error('Confirm error:', error)
     aiStore.addMessage({
       role: 'assistant',
@@ -397,9 +405,10 @@ function removePendingImage() {
 }
 
 /** 处理键盘事件 */
-function handleKeydown(event: KeyboardEvent) {
-  if (event.key === 'Enter' && !event.shiftKey) {
-    event.preventDefault()
+function handleKeydown(event: Event) {
+  const e = event as KeyboardEvent
+  if (e.key === 'Enter' && !e.shiftKey) {
+    e.preventDefault()
     sendMessage()
   }
 }
@@ -423,7 +432,7 @@ watch(() => aiStore.isPanelVisible, (visible) => {
 
 // 组件卸载时清理
 onUnmounted(() => {
-  stopThinking()
+  stopProcessing()
   if (abortController.value) {
     abortController.value.abort()
   }
@@ -438,7 +447,7 @@ onUnmounted(() => {
         class="ai-fab" 
         :class="{ active: aiStore.isPanelVisible }"
         @click="handleTogglePanel"
-        title="小智 · AI 助手"
+        title="智能助手"
       >
         <ElIcon :size="24">
           <Close v-if="aiStore.isPanelVisible" />
@@ -454,7 +463,7 @@ onUnmounted(() => {
         <div class="panel-header">
           <div class="header-title">
             <ElIcon :size="20" class="ai-icon"><Promotion /></ElIcon>
-            <span>小智 · AI 助手</span>
+            <span>智能助手</span>
           </div>
           <button class="btn-close" @click="aiStore.hidePanel">
             <ElIcon><Close /></ElIcon>
@@ -502,52 +511,33 @@ onUnmounted(() => {
             </template>
           </div>
 
-          <!-- 加载中 - Agent 决策流程 -->
+          <!-- 加载中 - 企业级 Agent 步骤 -->
           <div v-if="aiStore.isSending" class="message assistant">
-            <div class="message-content assistant-message thinking">
-              <div class="thinking-header">
-                <div class="thinking-avatar">
-                  <span class="avatar-icon">🤖</span>
-                  <span class="status-dot" :class="thinkingPhase"></span>
-                </div>
-                <div class="thinking-title">
-                  <span class="title-text">小智正在处理...</span>
-                  <span class="phase-badge" :class="thinkingPhase">
-                    {{ thinkingPhase === 'thinking' ? '思考中' : 
-                       thinkingPhase === 'tool' ? '调用工具' : 
-                       thinkingPhase === 'executing' ? '执行中' : '生成中' }}
-                  </span>
-                </div>
+            <div class="message-content assistant-message processing">
+              <!-- 进度条 -->
+              <div class="progress-bar">
+                <div 
+                  class="progress-fill" 
+                  :style="{ width: `${(currentStepIndex / AGENT_STEPS.length) * 100}%` }"
+                />
               </div>
               
-              <!-- Agent 决策步骤 -->
-              <div v-if="thinkingSteps.length > 0" class="agent-steps">
+              <!-- Agent 步骤列表 -->
+              <div class="agent-steps">
                 <div 
-                  v-for="(step, index) in thinkingSteps" 
+                  v-for="(step, index) in agentSteps" 
                   :key="index"
                   class="agent-step"
                   :class="step.status"
                 >
-                  <span class="step-indicator">
-                    <span v-if="step.status === 'done'" class="done-icon">✓</span>
-                    <span v-else-if="step.status === 'active'" class="active-icon">
-                      <ElIcon class="spinning"><Loading /></ElIcon>
-                    </span>
-                    <span v-else class="pending-icon">○</span>
-                  </span>
+                  <span class="step-dot" />
                   <span class="step-text">{{ step.text }}</span>
                 </div>
               </div>
               
-              <!-- 当前工具调用提示 -->
-              <div v-if="currentTool" class="tool-call-hint">
-                <span class="tool-icon">⚙️</span>
-                <code class="tool-name">{{ currentTool }}</code>
-              </div>
-              
+              <!-- 取消按钮 -->
               <button class="btn-stop" @click="stopResponse">
-                <ElIcon><VideoPause /></ElIcon>
-                <span>停止回答</span>
+                <span>取消</span>
               </button>
             </div>
           </div>
@@ -619,27 +609,25 @@ onUnmounted(() => {
 }
 
 .ai-fab {
-  width: 56px;
-  height: 56px;
+  width: 48px;
+  height: 48px;
   border-radius: 50%;
   border: none;
-  background: linear-gradient(135deg, #60a5fa 0%, #818cf8 100%);
+  background: var(--accent-primary, #3b82f6);
   color: white;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 4px 20px rgba(96, 165, 250, 0.4);
-  transition: all 0.3s ease;
+  transition: background 0.15s ease;
 
   &:hover {
-    transform: scale(1.05);
-    box-shadow: 0 6px 24px rgba(96, 165, 250, 0.5);
+    background: var(--accent-hover, #2563eb);
   }
 
   &.active {
-    background: rgba(255, 255, 255, 0.1);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    background: var(--bg-tertiary, #18181b);
+    border: 1px solid var(--border-subtle, #27272a);
   }
 }
 
@@ -647,29 +635,27 @@ onUnmounted(() => {
 .ai-chat-panel {
   position: absolute;
   right: 0;
-  bottom: 70px;
+  bottom: 64px;
   width: 380px;
   height: 520px;
-  background: rgba(17, 17, 19, 0.95);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 16px;
+  background: var(--bg-secondary, #111113);
+  border: 1px solid var(--border-subtle, #27272a);
+  border-radius: 8px;
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  backdrop-filter: blur(20px);
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
 }
 
 /* 面板动画 */
 .panel-slide-enter-active,
 .panel-slide-leave-active {
-  transition: all 0.3s ease;
+  transition: opacity 0.15s ease, transform 0.15s ease;
 }
 
 .panel-slide-enter-from,
 .panel-slide-leave-to {
   opacity: 0;
-  transform: translateY(20px) scale(0.95);
+  transform: translateY(8px);
 }
 
 /* 头部 */
@@ -677,21 +663,21 @@ onUnmounted(() => {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 16px 20px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
-  background: rgba(96, 165, 250, 0.1);
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--border-subtle, #27272a);
+  background: var(--bg-tertiary, #18181b);
 }
 
 .header-title {
   display: flex;
   align-items: center;
-  gap: 10px;
-  font-size: 15px;
-  font-weight: 600;
-  color: #e8eaed;
+  gap: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text-primary, #fafafa);
 
   .ai-icon {
-    color: #60a5fa;
+    color: var(--accent-primary, #3b82f6);
   }
 }
 
@@ -701,16 +687,16 @@ onUnmounted(() => {
   background: transparent;
   border: none;
   border-radius: 6px;
-  color: #9aa0a6;
+  color: var(--text-secondary, #a1a1aa);
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: all 0.15s;
+  transition: background 0.15s;
 
   &:hover {
-    background: rgba(255, 255, 255, 0.1);
-    color: #e8eaed;
+    background: var(--bg-tertiary, #18181b);
+    color: var(--text-primary, #fafafa);
   }
 }
 
@@ -718,8 +704,8 @@ onUnmounted(() => {
 .quick-actions {
   display: flex;
   gap: 8px;
-  padding: 12px 16px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  padding: 10px 16px;
+  border-bottom: 1px solid var(--border-subtle, #27272a);
   overflow-x: auto;
 
   &::-webkit-scrollbar {
@@ -730,18 +716,18 @@ onUnmounted(() => {
 .quick-btn {
   flex-shrink: 0;
   padding: 6px 12px;
-  background: rgba(255, 255, 255, 0.06);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 16px;
-  color: #9aa0a6;
+  background: transparent;
+  border: 1px solid var(--border-subtle, #27272a);
+  border-radius: 6px;
+  color: var(--text-secondary, #a1a1aa);
   font-size: 12px;
   cursor: pointer;
   transition: all 0.15s;
 
   &:hover {
-    background: rgba(96, 165, 250, 0.15);
-    border-color: rgba(96, 165, 250, 0.3);
-    color: #60a5fa;
+    background: var(--bg-tertiary, #18181b);
+    border-color: var(--border-muted, #3f3f46);
+    color: var(--text-primary, #fafafa);
   }
 }
 
@@ -783,8 +769,8 @@ onUnmounted(() => {
 
 .message-content {
   max-width: 85%;
-  padding: 12px 16px;
-  border-radius: 16px;
+  padding: 10px 14px;
+  border-radius: 8px;
   font-size: 14px;
   line-height: 1.5;
 
@@ -796,213 +782,133 @@ onUnmounted(() => {
 }
 
 .user-message {
-  background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+  background: var(--accent-primary, #3b82f6);
   color: #ffffff;
-  border-bottom-right-radius: 4px;
+  border-bottom-right-radius: 2px;
 
   .message-image {
     max-width: 100%;
     max-height: 150px;
-    border-radius: 8px;
+    border-radius: 6px;
     margin-bottom: 8px;
   }
 }
 
 .assistant-message {
-  background: rgba(255, 255, 255, 0.08);
-  color: #e8eaed;
-  border-bottom-left-radius: 4px;
+  background: var(--bg-tertiary, #18181b);
+  color: var(--text-primary, #fafafa);
+  border-bottom-left-radius: 2px;
 
-  &.loading {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    color: #9aa0a6;
-
-    .loading-icon {
-      animation: spin 1s linear infinite;
-    }
-  }
-  
-  &.thinking {
-    padding: 16px;
+  /* 处理中状态 - 企业级 Agent 步骤 */
+  &.processing {
+    padding: 14px 16px;
+    min-width: 200px;
     
-    .thinking-header {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      margin-bottom: 12px;
-    }
-    
-    .thinking-avatar {
-      position: relative;
-      width: 36px;
-      height: 36px;
-      background: linear-gradient(135deg, #60a5fa 0%, #818cf8 100%);
-      border-radius: 10px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
+    /* 进度条 */
+    .progress-bar {
+      height: 2px;
+      background: var(--border-subtle, #27272a);
+      border-radius: 1px;
+      margin-bottom: 14px;
+      overflow: hidden;
       
-      .avatar-icon {
-        font-size: 18px;
-      }
-      
-      .status-dot {
-        position: absolute;
-        bottom: -2px;
-        right: -2px;
-        width: 10px;
-        height: 10px;
-        border-radius: 50%;
-        border: 2px solid rgba(17, 17, 19, 0.95);
-        
-        &.thinking { background: #f59e0b; }
-        &.tool { background: #8b5cf6; }
-        &.executing { background: #3b82f6; }
-        &.generating { background: #22c55e; }
+      .progress-fill {
+        height: 100%;
+        background: var(--accent-primary, #3b82f6);
+        border-radius: 1px;
+        transition: width 0.3s ease;
       }
     }
     
-    .thinking-title {
+    /* Agent 步骤列表 */
+    .agent-steps {
       display: flex;
       flex-direction: column;
-      gap: 4px;
-      
-      .title-text {
-        font-weight: 500;
-        color: #e8eaed;
-        font-size: 14px;
-      }
-      
-      .phase-badge {
-        display: inline-flex;
-        align-items: center;
-        padding: 2px 8px;
-        border-radius: 10px;
-        font-size: 10px;
-        font-weight: 500;
-        width: fit-content;
-        
-        &.thinking {
-          background: rgba(245, 158, 11, 0.15);
-          color: #f59e0b;
-        }
-        &.tool {
-          background: rgba(139, 92, 246, 0.15);
-          color: #8b5cf6;
-        }
-        &.executing {
-          background: rgba(59, 130, 246, 0.15);
-          color: #3b82f6;
-        }
-        &.generating {
-          background: rgba(34, 197, 94, 0.15);
-          color: #22c55e;
-        }
-      }
-    }
-    
-    .agent-steps {
-      margin: 12px 0;
-      padding: 12px;
-      background: rgba(0, 0, 0, 0.2);
-      border-radius: 10px;
-      border-left: 3px solid rgba(96, 165, 250, 0.5);
+      gap: 8px;
     }
     
     .agent-step {
       display: flex;
       align-items: center;
       gap: 10px;
-      padding: 6px 0;
       font-size: 13px;
-      transition: all 0.3s ease;
       
-      .step-indicator {
-        width: 20px;
-        height: 20px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        
-        .done-icon {
-          color: #22c55e;
-          font-size: 14px;
-          font-weight: bold;
-        }
-        
-        .active-icon {
-          color: #60a5fa;
-          
-          .spinning {
-            animation: spin 1s linear infinite;
-          }
-        }
-        
-        .pending-icon {
-          color: #5f6368;
-          font-size: 12px;
-        }
+      .step-dot {
+        width: 6px;
+        height: 6px;
+        border-radius: 50%;
+        background: var(--border-muted, #3f3f46);
+        transition: all 0.2s ease;
+        flex-shrink: 0;
       }
       
       .step-text {
-        color: #9aa0a6;
+        color: var(--text-muted, #71717a);
+        transition: color 0.2s ease;
       }
       
-      &.done .step-text {
-        color: #9aa0a6;
+      /* 待处理 */
+      &.pending {
+        .step-dot {
+          background: var(--border-muted, #3f3f46);
+        }
+        .step-text {
+          color: var(--text-muted, #71717a);
+        }
       }
       
-      &.active .step-text {
-        color: #e8eaed;
-        font-weight: 500;
+      /* 进行中 */
+      &.active {
+        .step-dot {
+          background: var(--accent-primary, #3b82f6);
+          box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
+          animation: pulse-dot 1.5s ease-in-out infinite;
+        }
+        .step-text {
+          color: var(--text-primary, #fafafa);
+          font-weight: 500;
+        }
+      }
+      
+      /* 已完成 */
+      &.done {
+        .step-dot {
+          background: var(--success, #22c55e);
+        }
+        .step-text {
+          color: var(--text-secondary, #a1a1aa);
+        }
       }
     }
     
-    .tool-call-hint {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      margin: 8px 0;
-      padding: 8px 12px;
-      background: rgba(139, 92, 246, 0.1);
-      border: 1px solid rgba(139, 92, 246, 0.2);
-      border-radius: 8px;
-      
-      .tool-icon {
-        font-size: 14px;
-      }
-      
-      .tool-name {
-        font-family: 'Fira Code', 'Consolas', monospace;
-        font-size: 12px;
-        color: #a78bfa;
-        background: rgba(139, 92, 246, 0.15);
-        padding: 2px 6px;
-        border-radius: 4px;
-      }
-    }
-    
+    /* 取消按钮 */
     .btn-stop {
-      display: flex;
+      display: inline-flex;
       align-items: center;
-      gap: 6px;
       margin-top: 12px;
-      padding: 6px 12px;
-      background: rgba(239, 68, 68, 0.15);
-      border: 1px solid rgba(239, 68, 68, 0.3);
-      border-radius: 8px;
-      color: #ef4444;
+      padding: 4px 10px;
+      background: transparent;
+      border: 1px solid var(--border-subtle, #27272a);
+      border-radius: 4px;
+      color: var(--text-muted, #71717a);
       font-size: 12px;
       cursor: pointer;
       transition: all 0.15s;
       
       &:hover {
-        background: rgba(239, 68, 68, 0.25);
-        border-color: rgba(239, 68, 68, 0.5);
+        border-color: var(--border-muted, #3f3f46);
+        color: var(--text-secondary, #a1a1aa);
       }
     }
+  }
+}
+
+@keyframes pulse-dot {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
   }
 }
 
@@ -1020,8 +926,8 @@ onUnmounted(() => {
 /* 输入区域 */
 .input-area {
   padding: 12px 16px;
-  border-top: 1px solid rgba(255, 255, 255, 0.06);
-  background: rgba(0, 0, 0, 0.2);
+  border-top: 1px solid var(--border-subtle, #27272a);
+  background: var(--bg-primary, #0a0a0b);
 }
 
 .pending-image {
@@ -1064,18 +970,18 @@ onUnmounted(() => {
   }
 
   :deep(.el-textarea__inner) {
-    background: rgba(255, 255, 255, 0.08);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    border-radius: 12px;
-    color: #e8eaed;
-    padding: 10px 14px;
+    background: var(--bg-secondary, #111113);
+    border: 1px solid var(--border-subtle, #27272a);
+    border-radius: 6px;
+    color: var(--text-primary, #fafafa);
+    padding: 10px 12px;
 
     &::placeholder {
-      color: #5f6368;
+      color: var(--text-muted, #71717a);
     }
 
     &:focus {
-      border-color: #60a5fa;
+      border-color: var(--accent-primary, #3b82f6);
     }
   }
 }
@@ -1083,15 +989,6 @@ onUnmounted(() => {
 @keyframes spin {
   to {
     transform: rotate(360deg);
-  }
-}
-
-@keyframes pulse {
-  0%, 100% {
-    opacity: 1;
-  }
-  50% {
-    opacity: 0.4;
   }
 }
 
@@ -1106,7 +1003,7 @@ onUnmounted(() => {
     position: fixed;
     right: 10px;
     left: 10px;
-    bottom: 80px;
+    bottom: 70px;
     width: auto;
     height: 60vh;
   }

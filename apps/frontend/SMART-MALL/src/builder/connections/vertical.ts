@@ -11,7 +11,7 @@ import type {
   CreateConnectionParams,
   ConnectionValidationResult,
 } from './types'
-import { generateId } from '../types/mall-project'
+import { generateId } from '../utils'
 
 /**
  * 创建垂直连接

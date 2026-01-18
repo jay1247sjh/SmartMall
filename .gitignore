@@ -4,6 +4,7 @@
 
 # Kiro
 .kiro/
+.qoder/
 
 # Images
 *.png

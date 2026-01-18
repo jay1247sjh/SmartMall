@@ -1,11 +1,11 @@
 <script setup lang="ts">
 /**
  * ============================================================================
- * AI 聊天面板组件 (AiChatPanel)
+ * 聊天面板组件 (AiChatPanel)
  * ============================================================================
  *
  * 【组件职责】
- * 提供与 AI 导购助手「小智」的对话界面，支持：
+ * 提供智能助手的对话界面，支持：
  * - 文字输入对话
  * - 图片上传（视觉理解）
  * - 操作确认（加购、下单等）
@@ -14,7 +14,7 @@
  * 【交互流程】
  * 1. 用户输入文字或上传图片
  * 2. 发送到 Intelligence Service
- * 3. 展示 AI 回复
+ * 3. 展示回复
  * 4. 如需确认，显示确认按钮
  * 5. 执行操作后更新 3D 场景
  *
@@ -146,12 +146,12 @@ function handleResponse(response: ChatResponse) {
     addMessage({
       role: 'assistant',
       content: response.content || '',
-      tool_results: response.tool_results,
+      tool_results: response.toolResults,
     })
 
     // 处理工具调用结果，触发场景操作
-    if (response.tool_results) {
-      for (const tr of response.tool_results) {
+    if (response.toolResults) {
+      for (const tr of response.toolResults) {
         handleToolResult(tr.function, tr.result)
       }
     }
@@ -166,8 +166,8 @@ function handleToolResult(funcName: string, result: Record<string, unknown>) {
     const store = result.store as { id: string; position: { x: number; y: number; z: number } }
     emit('navigate', { storeId: store.id, position: store.position })
   } else if (funcName === 'search_products' && result.success) {
-    const products = result.products as Array<{ id: string }>
-    if (products.length > 0) {
+    const products = result.products as Array<{ id: string }> | undefined
+    if (products && products.length > 0) {
       emit('highlight', { type: 'product', id: products[0].id })
     }
   } else if (funcName === 'get_product_detail' && result.success) {
@@ -272,9 +272,10 @@ function removePendingImage() {
 /**
  * 处理键盘事件
  */
-function handleKeydown(event: KeyboardEvent) {
-  if (event.key === 'Enter' && !event.shiftKey) {
-    event.preventDefault()
+function handleKeydown(event: Event) {
+  const e = event as KeyboardEvent
+  if (e.key === 'Enter' && !e.shiftKey) {
+    e.preventDefault()
     sendMessage()
   }
 }
@@ -287,7 +288,7 @@ onMounted(() => {
   // 添加欢迎消息
   addMessage({
     role: 'assistant',
-    content: '你好！我是小智，Smart Mall 的 AI 导购助手。有什么可以帮您的吗？\n\n您可以问我：\n• Nike 店在哪？\n• 帮我找一双 500 以内的跑鞋\n• 推荐一家好吃的餐厅',
+    content: '您好，我是 Smart Mall 的智能助手。有什么可以帮您的吗？\n\n您可以问我：\n• Nike 店在哪？\n• 帮我找一双 500 以内的跑鞋\n• 推荐一家好吃的餐厅',
   })
 })
 
@@ -305,7 +306,7 @@ watch(() => props.visible, (visible) => {
     <div class="panel-header">
       <div class="header-title">
         <ElIcon :size="20" class="ai-icon"><Promotion /></ElIcon>
-        <span>小智 · AI 导购</span>
+        <span>智能助手</span>
       </div>
       <button class="btn-close" @click="emit('close')">
         <ElIcon><Close /></ElIcon>
@@ -349,7 +350,7 @@ watch(() => props.visible, (visible) => {
       <div v-if="isSending" class="message assistant">
         <div class="message-content assistant-message loading">
           <ElIcon class="loading-icon"><Loading /></ElIcon>
-          <span>小智正在思考...</span>
+          <span>处理中...</span>
         </div>
       </div>
     </div>
@@ -406,14 +407,12 @@ watch(() => props.visible, (visible) => {
   bottom: 80px;
   width: 360px;
   height: 500px;
-  background: rgba(17, 17, 19, 0.95);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 16px;
+  background: var(--bg-secondary, #111113);
+  border: 1px solid var(--border-subtle, #27272a);
+  border-radius: 8px;
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  backdrop-filter: blur(10px);
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
 }
 
 /* 头部 */
@@ -421,21 +420,21 @@ watch(() => props.visible, (visible) => {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 16px 20px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
-  background: rgba(96, 165, 250, 0.1);
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--border-subtle, #27272a);
+  background: var(--bg-tertiary, #18181b);
 }
 
 .header-title {
   display: flex;
   align-items: center;
-  gap: 10px;
-  font-size: 15px;
-  font-weight: 600;
-  color: #e8eaed;
+  gap: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text-primary, #fafafa);
 
   .ai-icon {
-    color: #60a5fa;
+    color: var(--accent-primary, #3b82f6);
   }
 }
 
@@ -445,16 +444,16 @@ watch(() => props.visible, (visible) => {
   background: transparent;
   border: none;
   border-radius: 6px;
-  color: #9aa0a6;
+  color: var(--text-secondary, #a1a1aa);
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: all 0.15s;
+  transition: background 0.15s;
 
   &:hover {
-    background: rgba(255, 255, 255, 0.1);
-    color: #e8eaed;
+    background: var(--bg-tertiary, #18181b);
+    color: var(--text-primary, #fafafa);
   }
 }
 
@@ -496,8 +495,8 @@ watch(() => props.visible, (visible) => {
 
 .message-content {
   max-width: 85%;
-  padding: 12px 16px;
-  border-radius: 16px;
+  padding: 10px 14px;
+  border-radius: 8px;
   font-size: 14px;
   line-height: 1.5;
 
@@ -509,28 +508,28 @@ watch(() => props.visible, (visible) => {
 }
 
 .user-message {
-  background: #60a5fa;
-  color: #0a0a0a;
-  border-bottom-right-radius: 4px;
+  background: var(--accent-primary, #3b82f6);
+  color: #ffffff;
+  border-bottom-right-radius: 2px;
 
   .message-image {
     max-width: 100%;
     max-height: 150px;
-    border-radius: 8px;
+    border-radius: 6px;
     margin-bottom: 8px;
   }
 }
 
 .assistant-message {
-  background: rgba(255, 255, 255, 0.08);
-  color: #e8eaed;
-  border-bottom-left-radius: 4px;
+  background: var(--bg-tertiary, #18181b);
+  color: var(--text-primary, #fafafa);
+  border-bottom-left-radius: 2px;
 
   &.loading {
     display: flex;
     align-items: center;
     gap: 8px;
-    color: #9aa0a6;
+    color: var(--text-secondary, #a1a1aa);
 
     .loading-icon {
       animation: spin 1s linear infinite;
@@ -552,8 +551,8 @@ watch(() => props.visible, (visible) => {
 /* 输入区域 */
 .input-area {
   padding: 12px 16px;
-  border-top: 1px solid rgba(255, 255, 255, 0.06);
-  background: rgba(0, 0, 0, 0.2);
+  border-top: 1px solid var(--border-subtle, #27272a);
+  background: var(--bg-primary, #0a0a0b);
 }
 
 .pending-image {
@@ -564,8 +563,8 @@ watch(() => props.visible, (visible) => {
   img {
     max-width: 100px;
     max-height: 80px;
-    border-radius: 8px;
-    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 6px;
+    border: 1px solid var(--border-subtle, #27272a);
   }
 
   .btn-remove {
@@ -574,7 +573,7 @@ watch(() => props.visible, (visible) => {
     right: -6px;
     width: 20px;
     height: 20px;
-    background: #ef4444;
+    background: var(--error, #ef4444);
     border: none;
     border-radius: 50%;
     color: white;
@@ -596,18 +595,18 @@ watch(() => props.visible, (visible) => {
   }
 
   :deep(.el-textarea__inner) {
-    background: rgba(255, 255, 255, 0.08);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    border-radius: 12px;
-    color: #e8eaed;
-    padding: 10px 14px;
+    background: var(--bg-secondary, #111113);
+    border: 1px solid var(--border-subtle, #27272a);
+    border-radius: 6px;
+    color: var(--text-primary, #fafafa);
+    padding: 10px 12px;
 
     &::placeholder {
-      color: #5f6368;
+      color: var(--text-muted, #71717a);
     }
 
     &:focus {
-      border-color: #60a5fa;
+      border-color: var(--accent-primary, #3b82f6);
     }
   }
 }

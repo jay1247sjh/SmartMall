@@ -6,7 +6,7 @@
 
 import { ref, computed, readonly } from 'vue'
 import type { Transform2D } from '../geometry/types'
-import type { BackgroundImage } from '../types/mall-project'
+import type { BackgroundImage } from '../types'
 
 // ============================================================================
 // 类型定义
