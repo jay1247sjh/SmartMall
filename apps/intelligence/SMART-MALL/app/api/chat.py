@@ -7,60 +7,25 @@
 - Function Calling
 """
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Depends
 from pydantic import BaseModel
 from typing import Optional, List, Dict, Any
 from datetime import datetime
 import logging
-import re
 
 from app.core.agent.mall_agent import MallAgent
+from app.core.errors import parse_llm_error
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
 
-
-# ============ 错误码映射 ============
-
-def parse_llm_error(error: Exception) -> tuple[int, str, str]:
-    """
-    解析 LLM 调用错误，返回 (状态码, 错误类型, 用户友好消息)
-    """
-    error_str = str(error)
-    
-    # API Key 错误
-    if 'invalid_api_key' in error_str or '401' in error_str:
-        return 401, 'api_key_error', 'AI 服务配置异常，请联系管理员检查 API 密钥配置'
-    
-    # 配额/限流错误
-    if 'rate_limit' in error_str or '429' in error_str:
-        return 429, 'rate_limit', 'AI 服务请求过于频繁，请稍后再试'
-    
-    # 余额不足
-    if 'insufficient_quota' in error_str or 'billing' in error_str.lower():
-        return 402, 'quota_exceeded', 'AI 服务配额不足，请联系管理员'
-    
-    # 模型不存在
-    if 'model_not_found' in error_str or 'does not exist' in error_str:
-        return 404, 'model_not_found', 'AI 模型配置错误，请联系管理员'
-    
-    # 超时
-    if 'timeout' in error_str.lower() or 'timed out' in error_str.lower():
-        return 504, 'timeout', 'AI 服务响应超时，请稍后重试'
-    
-    # 连接错误
-    if 'connection' in error_str.lower() or 'network' in error_str.lower():
-        return 503, 'connection_error', 'AI 服务连接失败，请检查网络或稍后重试'
-    
-    # 默认服务器错误
-    return 500, 'internal_error', '服务处理异常，请稍后重试'
 
 # 全局 Agent 实例
 _agent: Optional[MallAgent] = None
 
 
 def get_agent() -> MallAgent:
-    """获取 Agent 单例"""
+    """获取 Agent 单例（用于依赖注入）"""
     global _agent
     if _agent is None:
         _agent = MallAgent()
@@ -102,7 +67,10 @@ class ChatResponse(BaseModel):
 # ============ 接口实现 ============
 
 @router.post("/chat", response_model=ChatResponse)
-async def chat(request: ChatRequest) -> ChatResponse:
+async def chat(
+    request: ChatRequest,
+    agent: MallAgent = Depends(get_agent)
+) -> ChatResponse:
     """
     智能对话接口
     
@@ -117,8 +85,6 @@ async def chat(request: ChatRequest) -> ChatResponse:
     """
     try:
         logger.info(f"[{request.request_id}] Chat: {request.message[:50]}...")
-        
-        agent = get_agent()
         
         result = await agent.process(
             user_input=request.message,
@@ -168,7 +134,10 @@ class ConfirmRequest(BaseModel):
 
 
 @router.post("/chat/confirm", response_model=ChatResponse)
-async def confirm_action(request: ConfirmRequest) -> ChatResponse:
+async def confirm_action(
+    request: ConfirmRequest,
+    agent: MallAgent = Depends(get_agent)
+) -> ChatResponse:
     """
     确认操作接口
     
@@ -185,8 +154,6 @@ async def confirm_action(request: ConfirmRequest) -> ChatResponse:
                 content="好的，已取消操作。还有什么可以帮您的吗？",
                 timestamp=datetime.utcnow().isoformat() + "Z"
             )
-        
-        agent = get_agent()
         
         # 执行已确认的操作
         result = await agent._execute_function(

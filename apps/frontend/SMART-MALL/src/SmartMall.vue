@@ -116,6 +116,9 @@ const showAiAssistant = computed(() => {
 </template>
 
 <style scoped lang="scss">
+@use '@/assets/styles/scss/variables' as *;
+@use '@/assets/styles/scss/mixins' as *;
+
 /**
  * ============================================================================
  * 根组件样式

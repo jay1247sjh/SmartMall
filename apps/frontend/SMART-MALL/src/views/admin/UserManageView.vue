@@ -13,38 +13,34 @@
  *
  * 用户角色：
  * - 仅管理员（ADMIN）可访问
+ *
+ * 组件结构：
+ * - UserSearchForm: 搜索和筛选表单
+ * - UserTable: 用户列表表格和分页
+ * - UserDetailDrawer: 用户详情抽屉
  */
 import { ref, reactive, onMounted } from 'vue'
-import {
-  ElCard,
-  ElForm,
-  ElFormItem,
-  ElInput,
-  ElSelect,
-  ElOption,
-  ElButton,
-  ElTable,
-  ElTableColumn,
-  ElTag,
-  ElPagination,
-  ElMessage,
-  ElMessageBox,
-  ElSkeleton,
-  ElEmpty,
-  ElSpace,
-} from 'element-plus'
-import { Search, Refresh, User } from '@element-plus/icons-vue'
+import { ElMessage, ElMessageBox } from 'element-plus'
 import { adminApi } from '@/api'
 import type { UserInfo, UserListParams } from '@/api/admin.api'
 import UserDetailDrawer from '@/components/admin/UserDetailDrawer.vue'
+import { UserSearchForm, UserTable } from '@/components/user'
+import type { UserSearchParams } from '@/components/user'
+import type { SelectOption } from '@/types/ui'
 
+// ============================================================================
 // 用户列表数据
+// ============================================================================
+
 const users = ref<UserInfo[]>([])
 const total = ref(0)
 const isLoading = ref(false)
 const error = ref<string | null>(null)
 
+// ============================================================================
 // 搜索表单
+// ============================================================================
+
 const searchForm = reactive<UserListParams>({
   keyword: '',
   userType: 'ALL',
@@ -53,12 +49,26 @@ const searchForm = reactive<UserListParams>({
   pageSize: 10,
 })
 
+// 搜索参数（用于 UserSearchForm 组件）
+const searchParams = reactive<UserSearchParams>({
+  keyword: '',
+  userType: 'ALL',
+  status: 'ALL',
+})
+
+// ============================================================================
 // 详情抽屉
+// ============================================================================
+
 const detailDrawerVisible = ref(false)
 const selectedUserId = ref<string | null>(null)
 
+// ============================================================================
+// 选项配置
+// ============================================================================
+
 // 用户类型选项
-const userTypeOptions = [
+const userTypeOptions: SelectOption[] = [
   { label: '全部', value: 'ALL' },
   { label: '管理员', value: 'ADMIN' },
   { label: '商家', value: 'MERCHANT' },
@@ -66,14 +76,20 @@ const userTypeOptions = [
 ]
 
 // 用户状态选项
-const statusOptions = [
+const statusOptions: SelectOption[] = [
   { label: '全部', value: 'ALL' },
   { label: '正常', value: 'ACTIVE' },
   { label: '冻结', value: 'FROZEN' },
   { label: '已删除', value: 'DELETED' },
 ]
 
-// 加载用户列表
+// ============================================================================
+// 数据加载
+// ============================================================================
+
+/**
+ * 加载用户列表
+ */
 async function loadUsers() {
   isLoading.value = true
   error.value = null
@@ -89,41 +105,76 @@ async function loadUsers() {
   }
 }
 
-// 搜索
+// ============================================================================
+// 搜索表单事件处理
+// ============================================================================
+
+/**
+ * 更新搜索参数
+ */
+function handleSearchParamsUpdate(params: UserSearchParams) {
+  searchParams.keyword = params.keyword
+  searchParams.userType = params.userType
+  searchParams.status = params.status
+}
+
+/**
+ * 搜索
+ */
 function handleSearch() {
+  // 同步搜索参数到 searchForm
+  searchForm.keyword = searchParams.keyword
+  searchForm.userType = searchParams.userType
+  searchForm.status = searchParams.status
   searchForm.page = 1
   loadUsers()
 }
 
-// 重置搜索
+/**
+ * 重置搜索
+ */
 function handleReset() {
-  searchForm.keyword = ''
-  searchForm.userType = 'ALL'
-  searchForm.status = 'ALL'
-  searchForm.page = 1
+  // 重置搜索参数
+  searchParams.keyword = ''
+  searchParams.userType = 'ALL'
+  searchParams.status = 'ALL'
+  // 同步到 searchForm
+  Object.assign(searchForm, { keyword: '', userType: 'ALL', status: 'ALL', page: 1 })
   loadUsers()
 }
 
-// 分页变更
+// ============================================================================
+// 表格事件处理
+// ============================================================================
+
+/**
+ * 分页变更
+ */
 function handlePageChange(page: number) {
   searchForm.page = page
   loadUsers()
 }
 
-// 每页数量变更
+/**
+ * 每页数量变更
+ */
 function handleSizeChange(size: number) {
   searchForm.pageSize = size
   searchForm.page = 1
   loadUsers()
 }
 
-// 点击行查看详情
-function handleRowClick(row: UserInfo) {
-  selectedUserId.value = row.userId
+/**
+ * 点击行查看详情
+ */
+function handleRowClick(user: UserInfo) {
+  selectedUserId.value = user.userId
   detailDrawerVisible.value = true
 }
 
-// 冻结用户
+/**
+ * 冻结用户
+ */
 async function handleFreezeUser(user: UserInfo) {
   try {
     await ElMessageBox.confirm(
@@ -141,7 +192,9 @@ async function handleFreezeUser(user: UserInfo) {
   }
 }
 
-// 激活用户
+/**
+ * 激活用户
+ */
 async function handleActivateUser(user: UserInfo) {
   try {
     await ElMessageBox.confirm(
@@ -159,61 +212,28 @@ async function handleActivateUser(user: UserInfo) {
   }
 }
 
-// 关闭详情抽屉
+/**
+ * 重试加载
+ */
+function handleRetry() {
+  loadUsers()
+}
+
+// ============================================================================
+// 详情抽屉
+// ============================================================================
+
+/**
+ * 关闭详情抽屉
+ */
 function closeDetailDrawer() {
   detailDrawerVisible.value = false
   selectedUserId.value = null
 }
 
-// 格式化日期
-function formatDate(dateStr: string): string {
-  const date = new Date(dateStr)
-  return date.toLocaleDateString('zh-CN', {
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
-  })
-}
-
-// 获取用户类型标签类型
-function getUserTypeTagType(userType: string): '' | 'success' | 'warning' | 'info' | 'danger' {
-  switch (userType) {
-    case 'ADMIN': return 'danger'
-    case 'MERCHANT': return 'warning'
-    case 'USER': return 'info'
-    default: return ''
-  }
-}
-
-// 获取用户类型显示文本
-function getUserTypeLabel(userType: string): string {
-  switch (userType) {
-    case 'ADMIN': return '管理员'
-    case 'MERCHANT': return '商家'
-    case 'USER': return '普通用户'
-    default: return userType
-  }
-}
-
-// 获取状态标签类型
-function getStatusTagType(status: string): '' | 'success' | 'warning' | 'info' | 'danger' {
-  switch (status) {
-    case 'ACTIVE': return 'success'
-    case 'FROZEN': return 'warning'
-    case 'DELETED': return 'danger'
-    default: return ''
-  }
-}
-
-// 获取状态显示文本
-function getStatusLabel(status: string): string {
-  switch (status) {
-    case 'ACTIVE': return '正常'
-    case 'FROZEN': return '冻结'
-    case 'DELETED': return '已删除'
-    default: return status
-  }
-}
+// ============================================================================
+// 生命周期
+// ============================================================================
 
 onMounted(() => {
   loadUsers()
@@ -223,132 +243,30 @@ onMounted(() => {
 <template>
   <article class="user-manage">
     <!-- 搜索筛选区域 -->
-    <ElCard shadow="never" class="search-card">
-      <ElForm :model="searchForm" inline>
-        <ElFormItem label="关键词">
-          <ElInput
-            v-model="searchForm.keyword"
-            placeholder="搜索用户名或邮箱"
-            clearable
-            style="width: 200px"
-            @keyup.enter="handleSearch"
-          />
-        </ElFormItem>
-        <ElFormItem label="用户类型">
-          <ElSelect v-model="searchForm.userType" style="width: 120px">
-            <ElOption
-              v-for="opt in userTypeOptions"
-              :key="opt.value"
-              :label="opt.label"
-              :value="opt.value"
-            />
-          </ElSelect>
-        </ElFormItem>
-        <ElFormItem label="状态">
-          <ElSelect v-model="searchForm.status" style="width: 120px">
-            <ElOption
-              v-for="opt in statusOptions"
-              :key="opt.value"
-              :label="opt.label"
-              :value="opt.value"
-            />
-          </ElSelect>
-        </ElFormItem>
-        <ElFormItem>
-          <ElSpace>
-            <ElButton type="primary" :icon="Search" @click="handleSearch">搜索</ElButton>
-            <ElButton :icon="Refresh" @click="handleReset">重置</ElButton>
-          </ElSpace>
-        </ElFormItem>
-      </ElForm>
-    </ElCard>
+    <UserSearchForm
+      :model-value="searchParams"
+      :user-type-options="userTypeOptions"
+      :status-options="statusOptions"
+      @update:model-value="handleSearchParamsUpdate"
+      @search="handleSearch"
+      @reset="handleReset"
+    />
 
     <!-- 用户列表区域 -->
-    <ElCard shadow="never" class="table-card">
-      <!-- 加载状态 -->
-      <ElSkeleton v-if="isLoading" :rows="8" animated />
-
-      <!-- 错误状态 -->
-      <div v-else-if="error" class="error-state">
-        <ElEmpty :description="error">
-          <ElButton type="primary" @click="loadUsers">重试</ElButton>
-        </ElEmpty>
-      </div>
-
-      <!-- 用户表格 -->
-      <template v-else>
-        <ElTable
-          :data="users"
-          stripe
-          highlight-current-row
-          class="user-table"
-          @row-click="handleRowClick"
-        >
-          <ElTableColumn prop="username" label="用户名" width="150" />
-          <ElTableColumn prop="email" label="邮箱" min-width="200" show-overflow-tooltip />
-          <ElTableColumn prop="userType" label="用户类型" width="120">
-            <template #default="{ row }">
-              <ElTag :type="getUserTypeTagType(row.userType)" size="small">
-                {{ getUserTypeLabel(row.userType) }}
-              </ElTag>
-            </template>
-          </ElTableColumn>
-          <ElTableColumn prop="status" label="状态" width="100">
-            <template #default="{ row }">
-              <ElTag :type="getStatusTagType(row.status)" size="small">
-                {{ getStatusLabel(row.status) }}
-              </ElTag>
-            </template>
-          </ElTableColumn>
-          <ElTableColumn prop="createdAt" label="注册时间" width="120">
-            <template #default="{ row }">
-              {{ formatDate(row.createdAt) }}
-            </template>
-          </ElTableColumn>
-          <ElTableColumn label="操作" width="150" fixed="right">
-            <template #default="{ row }">
-              <ElSpace>
-                <ElButton
-                  v-if="row.status === 'ACTIVE'"
-                  type="warning"
-                  size="small"
-                  text
-                  @click.stop="handleFreezeUser(row)"
-                >
-                  冻结
-                </ElButton>
-                <ElButton
-                  v-if="row.status === 'FROZEN'"
-                  type="success"
-                  size="small"
-                  text
-                  @click.stop="handleActivateUser(row)"
-                >
-                  激活
-                </ElButton>
-              </ElSpace>
-            </template>
-          </ElTableColumn>
-
-          <template #empty>
-            <ElEmpty description="暂无用户数据" />
-          </template>
-        </ElTable>
-
-        <!-- 分页 -->
-        <div class="pagination-wrapper">
-          <ElPagination
-            v-model:current-page="searchForm.page"
-            v-model:page-size="searchForm.pageSize"
-            :total="total"
-            :page-sizes="[10, 20, 50]"
-            layout="total, sizes, prev, pager, next, jumper"
-            @current-change="handlePageChange"
-            @size-change="handleSizeChange"
-          />
-        </div>
-      </template>
-    </ElCard>
+    <UserTable
+      :users="users"
+      :loading="isLoading"
+      :total="total"
+      :current-page="searchForm.page"
+      :page-size="searchForm.pageSize"
+      :error="error"
+      @row-click="handleRowClick"
+      @freeze="handleFreezeUser"
+      @activate="handleActivateUser"
+      @page-change="handlePageChange"
+      @size-change="handleSizeChange"
+      @retry="handleRetry"
+    />
 
     <!-- 用户详情抽屉 -->
     <UserDetailDrawer
@@ -360,41 +278,11 @@ onMounted(() => {
 </template>
 
 <style scoped lang="scss">
+@use '@/assets/styles/scss/variables' as *;
+
 .user-manage {
   display: flex;
   flex-direction: column;
-  gap: 16px;
-
-  .search-card {
-    border-radius: 12px;
-    background: rgba(17, 17, 19, 0.8);
-    border: 1px solid rgba(255, 255, 255, 0.06);
-
-    :deep(.el-form-item) {
-      margin-bottom: 0;
-    }
-  }
-
-  .table-card {
-    border-radius: 12px;
-    background: rgba(17, 17, 19, 0.8);
-    border: 1px solid rgba(255, 255, 255, 0.06);
-
-    .error-state {
-      padding: 40px 0;
-    }
-
-    .user-table {
-      :deep(.el-table__row) {
-        cursor: pointer;
-      }
-    }
-
-    .pagination-wrapper {
-      display: flex;
-      justify-content: flex-end;
-      margin-top: 16px;
-    }
-  }
+  gap: $space-4;
 }
 </style>

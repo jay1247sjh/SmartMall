@@ -1,46 +1,522 @@
 /**
- * Smart Mall 设计系统 - SCSS Mixins
- * 可复用的样式混入
+ * Smart Mall 设计系统 - 公共 Mixins
+ * 可复用的样式模式，减少重复代码
  */
 
 @use 'variables' as *;
 
 // ============================================================================
-// 响应式断点
+// 按钮系统
 // ============================================================================
 
-/// 最小宽度媒体查询
-/// @param {String} $breakpoint - 断点名称 (sm, md, lg, xl, 2xl)
-@mixin breakpoint-up($breakpoint) {
-  $value: map-get($breakpoints, $breakpoint);
-  @if $value {
-    @media (min-width: $value) {
-      @content;
-    }
-  } @else {
-    @warn "Unknown breakpoint: #{$breakpoint}";
+/// 基础按钮样式
+@mixin btn-base {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: $space-3 $space-6;
+  border-radius: $radius-md;
+  font-size: $font-size-base;
+  font-weight: $font-weight-medium;
+  cursor: pointer;
+  transition: all $duration-normal $ease-default;
+  border: none;
+
+  &:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
   }
 }
 
-/// 最大宽度媒体查询
-/// @param {String} $breakpoint - 断点名称
-@mixin breakpoint-down($breakpoint) {
-  $value: map-get($breakpoints, $breakpoint);
-  @if $value {
-    @media (max-width: #{$value - 1px}) {
-      @content;
-    }
+/// 主要按钮
+@mixin btn-primary {
+  @include btn-base;
+  background: $color-primary;
+  color: $color-bg-primary;
+
+  &:hover:not(:disabled) {
+    background: $color-primary-hover;
   }
 }
 
-/// 断点范围媒体查询
-/// @param {String} $min - 最小断点
-/// @param {String} $max - 最大断点
-@mixin breakpoint-between($min, $max) {
-  $min-value: map-get($breakpoints, $min);
-  $max-value: map-get($breakpoints, $max);
-  @media (min-width: $min-value) and (max-width: #{$max-value - 1px}) {
-    @content;
+/// 次要按钮
+@mixin btn-secondary {
+  @include btn-base;
+  background: transparent;
+  color: $color-text-secondary;
+  border: 1px solid $color-border-muted;
+
+  &:hover:not(:disabled) {
+    background: $color-bg-hover;
+  }
+}
+
+/// 成功按钮
+@mixin btn-success {
+  @include btn-base;
+  background: $color-success;
+  color: $color-bg-primary;
+
+  &:hover:not(:disabled) {
+    background: $color-success-hover;
+  }
+}
+
+/// 危险按钮
+@mixin btn-danger {
+  @include btn-base;
+  background: $color-error;
+  color: $color-bg-primary;
+
+  &:hover:not(:disabled) {
+    background: $color-error-hover;
+  }
+}
+
+/// 小尺寸按钮
+@mixin btn-sm {
+  padding: $space-2 $space-4;
+  font-size: $font-size-sm;
+}
+
+/// 操作按钮（表格内）
+@mixin btn-action {
+  padding: $space-1 + 2 $space-3;
+  border-radius: $radius-sm + 2;
+  font-size: $font-size-sm;
+  background: $color-border-subtle;
+  color: $color-text-secondary;
+  border: none;
+  cursor: pointer;
+  transition: all $duration-normal;
+
+  &:hover {
+    background: $color-border-muted;
+    color: $color-text-primary;
+  }
+
+  &.danger:hover {
+    background: rgba($color-error, 0.2);
+    color: $color-error;
+  }
+}
+
+// ============================================================================
+// 表单控件
+// ============================================================================
+
+/// 基础输入框样式
+@mixin form-control {
+  width: 100%;
+  background: $color-bg-primary;
+  border: 1px solid $color-border-muted;
+  border-radius: $radius-md;
+  padding: $space-3 $space-4;
+  font-size: $font-size-base;
+  color: $color-text-primary;
+  font-family: inherit;
+  transition: border-color $duration-normal $ease-default;
+
+  &:focus {
+    outline: none;
+    border-color: $color-primary;
+  }
+
+  &::placeholder {
+    color: $color-text-muted;
+  }
+}
+
+/// 文本域
+@mixin form-textarea {
+  @include form-control;
+  resize: vertical;
+}
+
+/// 表单项容器
+@mixin form-item {
+  display: flex;
+  flex-direction: column;
+  gap: $space-2;
+
+  label {
+    font-size: $font-size-sm + 1;
+    color: $color-text-secondary;
+  }
+}
+
+/// 表单行（两列）
+@mixin form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: $space-4;
+}
+
+// ============================================================================
+// 表格系统
+// ============================================================================
+
+/// 表格容器
+@mixin table-container {
+  flex: 1;
+  background: $color-bg-secondary;
+  border: 1px solid $color-border-subtle;
+  border-radius: $radius-lg;
+  overflow: hidden;
+}
+
+/// 基础表格
+@mixin table-base {
+  width: 100%;
+  border-collapse: collapse;
+
+  th,
+  td {
+    padding: $space-4 $space-5;
+    text-align: left;
+    border-bottom: 1px solid $color-border-subtle;
+  }
+
+  th {
+    font-size: $font-size-sm + 1;
+    font-weight: $font-weight-medium;
+    color: $color-text-secondary;
+    background: $color-bg-hover;
+  }
+
+  td {
+    font-size: $font-size-base;
+    color: $color-text-primary;
+  }
+
+  tbody tr:hover {
+    background: $color-bg-hover;
+  }
+}
+
+/// 加载/空状态
+@mixin table-empty-state {
+  padding: 60px $space-5;
+  text-align: center;
+  color: $color-text-muted;
+  font-size: $font-size-base;
+}
+
+// ============================================================================
+// 分页
+// ============================================================================
+
+@mixin pagination {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: $space-4;
+}
+
+@mixin pagination-btn {
+  padding: $space-2 $space-4;
+  border-radius: $radius-sm + 2;
+  font-size: $font-size-sm + 1;
+  background: $color-border-subtle;
+  color: $color-text-secondary;
+  border: none;
+  cursor: pointer;
+
+  &:hover:not(:disabled) {
+    background: $color-border-muted;
+    color: $color-text-primary;
+  }
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+}
+
+@mixin pagination-info {
+  font-size: $font-size-sm + 1;
+  color: $color-text-secondary;
+}
+
+// ============================================================================
+// 对话框
+// ============================================================================
+
+@mixin dialog-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+@mixin dialog-box($width: 480px) {
+  background: $color-bg-tertiary;
+  border-radius: $radius-lg;
+  width: $width;
+  max-width: 90vw;
+  max-height: 90vh;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+@mixin dialog-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: $space-5 $space-6;
+  border-bottom: 1px solid $color-border-subtle;
+
+  h3 {
+    margin: 0;
+    font-size: $font-size-xl;
+    color: $color-text-primary;
+  }
+}
+
+@mixin dialog-close {
+  background: none;
+  border: none;
+  color: $color-text-secondary;
+  font-size: 24px;
+  cursor: pointer;
+  padding: 0;
+  line-height: 1;
+  transition: color $duration-normal $ease-default;
+
+  &:hover {
+    color: $color-text-primary;
+  }
+}
+
+@mixin dialog-body {
+  padding: $space-6;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: $space-4;
+}
+
+@mixin dialog-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: $space-3;
+  padding: $space-4 $space-6;
+  border-top: 1px solid $color-border-subtle;
+}
+
+// ============================================================================
+// 状态徽章
+// ============================================================================
+
+@mixin status-badge {
+  display: inline-block;
+  padding: $space-1 $space-2 + 2;
+  border-radius: $radius-pill;
+  font-size: $font-size-sm;
+  font-weight: $font-weight-medium;
+}
+
+@mixin status-variant($bg-color, $text-color) {
+  background: rgba($text-color, 0.15);
+  color: $text-color;
+}
+
+// ============================================================================
+// 消息提示
+// ============================================================================
+
+@mixin message-alert {
+  display: flex;
+  align-items: center;
+  gap: $space-2;
+  padding: $space-3 $space-4;
+  border-radius: $radius-md;
+  font-size: $font-size-base;
+
+  &.success {
+    background: $color-success-muted;
+    color: $color-success;
+    border: 1px solid rgba($color-success, 0.2);
+  }
+
+  &.error {
+    background: $color-error-muted;
+    color: $color-error;
+    border: 1px solid rgba($color-error, 0.2);
+  }
+}
+
+// ============================================================================
+// 卡片与面板
+// ============================================================================
+
+@mixin card-base {
+  background: $color-bg-secondary;
+  border: 1px solid $color-border-subtle;
+  border-radius: $radius-lg;
+}
+
+@mixin card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: $space-4 $space-5;
+  border-bottom: 1px solid $color-border-subtle;
+
+  h3 {
+    font-size: $font-size-lg;
+    font-weight: $font-weight-semibold;
+    color: $color-text-primary;
+    margin: 0;
+  }
+}
+
+// ============================================================================
+// 统计卡片
+// ============================================================================
+
+@mixin stats-row {
+  display: flex;
+  gap: $space-4;
+}
+
+@mixin stat-item {
+  flex: 1;
+  @include card-base;
+  padding: $space-5;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: $space-2;
+}
+
+@mixin stat-value {
+  font-size: 28px;
+  font-weight: $font-weight-semibold;
+  color: $color-text-primary;
+}
+
+@mixin stat-label {
+  font-size: $font-size-sm + 1;
+  color: $color-text-secondary;
+}
+
+// ============================================================================
+// Tab 切换
+// ============================================================================
+
+@mixin tab-bar {
+  display: flex;
+  gap: $space-2;
+  padding: $space-1;
+  background: $color-bg-secondary;
+  border-radius: $radius-md + 2;
+  width: fit-content;
+}
+
+@mixin tab-btn {
+  padding: $space-2 + 2 $space-5;
+  border-radius: $radius-md;
+  background: transparent;
+  color: $color-text-secondary;
+  font-size: $font-size-base;
+  border: none;
+  cursor: pointer;
+  transition: all $duration-normal;
+
+  &:hover {
+    color: $color-text-primary;
+  }
+
+  &.active {
+    background: $color-primary-muted;
+    color: $color-primary;
+  }
+}
+
+// ============================================================================
+// 操作按钮组
+// ============================================================================
+
+@mixin action-btns {
+  display: flex;
+  gap: $space-2;
+}
+
+// ============================================================================
+// 工具类
+// ============================================================================
+
+@mixin text-muted {
+  color: $color-text-muted;
+}
+
+@mixin text-ellipsis {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+@mixin line-clamp($lines: 1) {
+  display: -webkit-box;
+  -webkit-line-clamp: $lines;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+// ============================================================================
+// 滚动条样式
+// ============================================================================
+
+/// 隐藏滚动条
+@mixin scrollbar-hidden {
+  &::-webkit-scrollbar {
+    display: none;
+  }
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+/// 细滚动条（用于聊天面板等）
+@mixin scrollbar-thin($width: 6px, $thumb-color: rgba($color-white, 0.1)) {
+  &::-webkit-scrollbar {
+    width: $width;
+  }
+
+  &::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  &::-webkit-scrollbar-thumb {
+    background: $thumb-color;
+    border-radius: $width / 2;
+  }
+}
+
+/// 主题滚动条（用于侧边栏等）
+@mixin scrollbar-themed($width: 8px) {
+  scrollbar-width: thin;
+  scrollbar-color: $color-primary rgba($color-accent-blue-darker, 0.5);
+
+  &::-webkit-scrollbar {
+    width: $width;
+  }
+
+  &::-webkit-scrollbar-track {
+    background: rgba($color-accent-blue-darker, 0.5);
+    border-radius: $radius-sm;
+  }
+
+  &::-webkit-scrollbar-thumb {
+    background: linear-gradient(180deg, $color-accent-blue-dark 0%, $color-primary 50%, $color-primary-hover 100%);
+    border-radius: $radius-sm;
   }
 }
 
@@ -48,318 +524,102 @@
 // Flexbox 布局
 // ============================================================================
 
-/// Flex 容器
-/// @param {String} $direction - 方向 (row, column)
-/// @param {String} $justify - 主轴对齐
-/// @param {String} $align - 交叉轴对齐
-/// @param {String} $gap - 间距
-@mixin flex($direction: row, $justify: flex-start, $align: stretch, $gap: null) {
-  display: flex;
-  flex-direction: $direction;
-  justify-content: $justify;
-  align-items: $align;
-  @if $gap {
-    gap: $gap;
-  }
-}
-
 /// Flex 居中
 @mixin flex-center {
   display: flex;
-  justify-content: center;
   align-items: center;
+  justify-content: center;
+}
+
+/// Flex 垂直居中
+@mixin flex-center-y {
+  display: flex;
+  align-items: center;
+}
+
+/// Flex 水平居中
+@mixin flex-center-x {
+  display: flex;
+  justify-content: center;
 }
 
 /// Flex 两端对齐
 @mixin flex-between {
   display: flex;
-  justify-content: space-between;
   align-items: center;
+  justify-content: space-between;
 }
 
 /// Flex 列布局
-@mixin flex-column($gap: null) {
+@mixin flex-column {
   display: flex;
   flex-direction: column;
-  @if $gap {
-    gap: $gap;
-  }
+}
+
+/// Flex 列居中
+@mixin flex-column-center {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
 }
 
 // ============================================================================
-// Grid 布局
+// 过渡动画
 // ============================================================================
 
-/// Grid 容器
-/// @param {Number} $columns - 列数
-/// @param {String} $gap - 间距
-@mixin grid($columns: 12, $gap: $space-4) {
-  display: grid;
-  grid-template-columns: repeat($columns, 1fr);
-  gap: $gap;
+/// 基础过渡
+@mixin transition-base {
+  transition: all $duration-normal $ease-default;
 }
 
-/// 自动填充 Grid
-/// @param {String} $min-width - 最小列宽
-/// @param {String} $gap - 间距
-@mixin grid-auto-fill($min-width: 280px, $gap: $space-4) {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax($min-width, 1fr));
-  gap: $gap;
+/// 快速过渡
+@mixin transition-fast {
+  transition: all $duration-fast $ease-default;
 }
 
-// ============================================================================
-// 定位
-// ============================================================================
-
-/// 绝对定位填充
-@mixin absolute-fill {
-  position: absolute;
-  inset: 0;
+/// 慢速过渡
+@mixin transition-slow {
+  transition: all $duration-slow $ease-default;
 }
 
-/// 固定定位填充
-@mixin fixed-fill {
-  position: fixed;
-  inset: 0;
+/// 颜色过渡
+@mixin transition-colors {
+  transition: color $duration-normal, background-color $duration-normal, border-color $duration-normal;
 }
 
-/// 绝对居中
-@mixin absolute-center {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-}
-
-// ============================================================================
-// 文本
-// ============================================================================
-
-/// 文本截断（单行）
-@mixin text-truncate {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-/// 多行文本截断
-/// @param {Number} $lines - 行数
-@mixin text-clamp($lines: 2) {
-  display: -webkit-box;
-  -webkit-line-clamp: $lines;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
-}
-
-/// 渐变文字
-/// @param {String} $gradient - 渐变值
-@mixin text-gradient($gradient: $gradient-brand) {
-  background: $gradient;
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
+/// 变换过渡
+@mixin transition-transform {
+  transition: transform $duration-normal $ease-in-out;
 }
 
 // ============================================================================
 // 交互状态
 // ============================================================================
 
-/// 悬停效果
-@mixin hover-lift {
-  transition: transform $duration-normal $ease-out, box-shadow $duration-normal $ease-out;
-  
-  &:hover {
-    transform: translateY(-2px);
-    box-shadow: $shadow-lg;
-  }
-}
-
-/// 点击效果
-@mixin click-scale {
-  transition: transform $duration-fast $ease-out;
-  
-  &:active {
-    transform: scale(0.98);
-  }
-}
-
-/// 焦点环
-@mixin focus-ring($color: $accent-primary) {
-  &:focus {
-    outline: none;
-    box-shadow: 0 0 0 2px rgba($color, 0.4);
-  }
-  
-  &:focus:not(:focus-visible) {
-    box-shadow: none;
-  }
-  
-  &:focus-visible {
-    outline: none;
-    box-shadow: 0 0 0 2px rgba($color, 0.4);
-  }
+/// 可点击元素
+@mixin clickable {
+  cursor: pointer;
+  @include transition-base;
 }
 
 /// 禁用状态
 @mixin disabled {
-  opacity: 0.5;
+  opacity: 0.6;
   cursor: not-allowed;
   pointer-events: none;
 }
 
-// ============================================================================
-// 视觉效果
-// ============================================================================
-
-/// 毛玻璃效果
-/// @param {String} $blur - 模糊程度
-/// @param {Color} $bg - 背景色
-@mixin glass($blur: 12px, $bg: rgba($bg-secondary, 0.8)) {
-  background: $bg;
-  backdrop-filter: blur($blur);
-  -webkit-backdrop-filter: blur($blur);
-}
-
-/// 卡片样式
-@mixin card($padding: $space-6) {
-  background: $bg-secondary;
-  border: 1px solid $border-subtle;
-  border-radius: $radius-xl;
-  padding: $padding;
-}
-
-/// 发光效果
-/// @param {Color} $color - 发光颜色
-/// @param {String} $size - 发光大小
-@mixin glow($color: $accent-primary, $size: 20px) {
-  box-shadow: 0 0 $size rgba($color, 0.3);
-}
-
-/// 渐变边框
-/// @param {String} $gradient - 渐变值
-/// @param {String} $width - 边框宽度
-@mixin gradient-border($gradient: $gradient-blue, $width: 1px) {
-  position: relative;
-  background: $bg-secondary;
-  
-  &::before {
-    content: '';
-    position: absolute;
-    inset: 0;
-    padding: $width;
-    background: $gradient;
-    border-radius: inherit;
-    mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
-    mask-composite: exclude;
-    -webkit-mask-composite: xor;
-    pointer-events: none;
+/// 悬停高亮
+@mixin hover-highlight {
+  &:hover {
+    background: $color-bg-hover;
   }
 }
 
-// ============================================================================
-// 滚动条
-// ============================================================================
-
-/// 自定义滚动条
-/// @param {String} $width - 滚动条宽度
-/// @param {Color} $thumb - 滑块颜色
-/// @param {Color} $track - 轨道颜色
-@mixin custom-scrollbar($width: 8px, $thumb: $border-muted, $track: $bg-secondary) {
-  &::-webkit-scrollbar {
-    width: $width;
-    height: $width;
+/// 悬停提升
+@mixin hover-lift {
+  &:hover {
+    transform: translateY(-2px);
   }
-  
-  &::-webkit-scrollbar-track {
-    background: $track;
-    border-radius: $width / 2;
-  }
-  
-  &::-webkit-scrollbar-thumb {
-    background: $thumb;
-    border-radius: $width / 2;
-    
-    &:hover {
-      background: $border-focus;
-    }
-  }
-}
-
-/// 隐藏滚动条但保留滚动功能
-@mixin hide-scrollbar {
-  -ms-overflow-style: none;
-  scrollbar-width: none;
-  
-  &::-webkit-scrollbar {
-    display: none;
-  }
-}
-
-// ============================================================================
-// 动画
-// ============================================================================
-
-/// 淡入动画
-@mixin fade-in($duration: $duration-normal) {
-  animation: fadeIn $duration $ease-out;
-  
-  @keyframes fadeIn {
-    from { opacity: 0; }
-    to { opacity: 1; }
-  }
-}
-
-/// 滑入动画
-/// @param {String} $direction - 方向 (up, down, left, right)
-/// @param {String} $distance - 距离
-@mixin slide-in($direction: up, $distance: 20px, $duration: $duration-slow) {
-  $translate: null;
-  
-  @if $direction == up {
-    $translate: translateY($distance);
-  } @else if $direction == down {
-    $translate: translateY(-$distance);
-  } @else if $direction == left {
-    $translate: translateX($distance);
-  } @else if $direction == right {
-    $translate: translateX(-$distance);
-  }
-  
-  animation: slideIn $duration $ease-out;
-  
-  @keyframes slideIn {
-    from {
-      opacity: 0;
-      transform: $translate;
-    }
-    to {
-      opacity: 1;
-      transform: translate(0);
-    }
-  }
-}
-
-// ============================================================================
-// 尺寸
-// ============================================================================
-
-/// 正方形
-/// @param {String} $size - 尺寸
-@mixin square($size) {
-  width: $size;
-  height: $size;
-}
-
-/// 圆形
-/// @param {String} $size - 尺寸
-@mixin circle($size) {
-  @include square($size);
-  border-radius: 50%;
-}
-
-/// 宽高比容器
-/// @param {Number} $ratio - 宽高比 (如 16/9)
-@mixin aspect-ratio($ratio: 1) {
-  aspect-ratio: $ratio;
 }

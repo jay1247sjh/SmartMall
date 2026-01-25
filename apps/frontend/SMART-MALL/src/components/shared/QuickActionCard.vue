@@ -36,55 +36,58 @@ function handleClick() {
 </template>
 
 <style scoped lang="scss">
+@use '@/assets/styles/scss/variables' as *;
+@use '@/assets/styles/scss/mixins' as *;
+
 .action-card {
   cursor: pointer;
-  border-radius: 12px;
-  background: rgba(17, 17, 19, 0.8);
-  border: 1px solid rgba(255, 255, 255, 0.06);
-  transition: transform 0.2s, border-color 0.2s;
+  @include card-base;
+  border-radius: $radius-lg;
+  background: rgba($color-bg-secondary, 0.8);
+  transition: transform $duration-normal, border-color $duration-normal;
 
   &:hover {
     transform: translateY(-2px);
-    border-color: rgba(138, 180, 248, 0.3);
+    border-color: rgba($color-primary, 0.3);
 
     .action-arrow {
-      transform: translateX(4px);
-      color: #8ab4f8;
+      transform: translateX($space-1);
+      color: $color-primary;
     }
   }
 
   :deep(.el-card__body) {
-    padding: 20px 24px;
+    padding: $space-5 $space-6;
   }
 
   .action-content {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    gap: 16px;
+    gap: $space-4;
 
     .action-text {
       flex: 1;
       min-width: 0;
 
       .action-title {
-        font-size: 15px;
-        font-weight: 500;
-        margin: 0 0 4px 0;
-        color: #e8eaed;
+        font-size: $font-size-lg;
+        font-weight: $font-weight-medium;
+        margin: 0 0 $space-1 0;
+        color: $color-text-primary;
       }
 
       .action-desc {
-        font-size: 13px;
+        font-size: $font-size-sm + 1;
         margin: 0;
-        color: #9aa0a6;
+        color: $color-text-secondary;
       }
     }
 
     .action-arrow {
       flex-shrink: 0;
-      color: #71717a;
-      transition: all 0.2s;
+      color: $color-text-disabled;
+      transition: all $duration-normal;
     }
   }
 }

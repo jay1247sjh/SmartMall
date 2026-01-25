@@ -15,7 +15,7 @@
  */
 
 import * as THREE from 'three'
-import { CameraController, OrbitController, type ThirdPersonCameraConfig } from './camera'
+import { CameraController, OrbitController, createPerspectiveCamera, type ThirdPersonCameraConfig } from './camera'
 import { RaycasterManager } from './interaction'
 
 // ============================================================================
@@ -49,55 +49,55 @@ export interface EngineOptions {
 
 export class ThreeEngine {
   // ==========================================================================
-  // 私有属性 - 核心对象
+  // 受保护属性 - 核心对象（子类可访问）
   // ==========================================================================
 
   /** 3D 场景，所有 3D 对象都添加到这里 */
-  private scene: THREE.Scene
+  protected scene: THREE.Scene
 
   /** WebGL 渲染器，负责将场景渲染到画布上 */
-  private renderer: THREE.WebGLRenderer
+  protected renderer: THREE.WebGLRenderer
 
   /** DOM 容器元素，渲染器的画布会挂载到这里 */
-  private container: HTMLElement
+  protected container: HTMLElement
 
   /** 时钟，用于计算每帧的时间间隔（delta） */
-  private clock: THREE.Clock
+  protected clock: THREE.Clock
 
   /** 透视相机，模拟人眼看到的 3D 效果 */
-  private camera: THREE.PerspectiveCamera
+  protected camera: THREE.PerspectiveCamera
 
   /** 射线检测管理器，用于鼠标点击检测 */
-  private raycasterManager: RaycasterManager
+  protected raycasterManager: RaycasterManager
 
   // ==========================================================================
-  // 私有属性 - 相机控制器
+  // 受保护属性 - 相机控制器（子类可访问）
   // ==========================================================================
 
   /** 轨道控制器（orbit 模式使用） */
-  private orbitController: OrbitController | null = null
+  protected orbitController: OrbitController | null = null
 
   /** 第三人称跟随控制器（follow 模式使用） */
-  private cameraController: CameraController | null = null
+  protected cameraController: CameraController | null = null
 
   /** 当前相机模式 */
-  private currentMode: CameraMode = 'orbit'
+  protected currentMode: CameraMode = 'orbit'
 
   // ==========================================================================
-  // 私有属性 - 渲染循环控制
+  // 受保护属性 - 渲染循环控制（子类可访问）
   // ==========================================================================
 
   /** requestAnimationFrame 返回的 ID，用于取消动画 */
-  private animationFrameId: number | null = null
+  protected animationFrameId: number | null = null
 
   /** 渲染循环是否正在运行 */
-  private isRunning: boolean = false
+  protected isRunning: boolean = false
 
   /** 是否需要渲染下一帧（按需渲染优化） */
-  private needsRender: boolean = true
+  protected needsRender: boolean = true
 
   /** 每帧回调函数列表 */
-  private onRenderCallbacks: Array<(delta: number) => void> = []
+  protected onRenderCallbacks: Array<(delta: number) => void> = []
 
   // ==========================================================================
   // 构造函数
@@ -189,28 +189,10 @@ export class ThreeEngine {
   /**
    * 创建透视相机
    *
-   * PerspectiveCamera 模拟人眼视角，近大远小
+   * 使用工厂函数创建，统一相机配置
    */
   private createCamera(): THREE.PerspectiveCamera {
-    // 获取容器尺寸，用于计算宽高比
-    const { clientWidth, clientHeight } = this.container
-
-    // 创建透视相机
-    // 参数：视野角度(FOV), 宽高比, 近裁剪面, 远裁剪面
-    const camera = new THREE.PerspectiveCamera(
-      60,                           // FOV: 60 度视野
-      clientWidth / clientHeight,   // 宽高比：保持画面不变形
-      0.1,                          // 近裁剪面：0.1 米内的物体不显示
-      1000                          // 远裁剪面：1000 米外的物体不显示
-    )
-
-    // 设置相机初始位置（斜上方俯视场景）
-    camera.position.set(20, 15, 20)
-
-    // 让相机看向原点
-    camera.lookAt(0, 0, 0)
-
-    return camera
+    return createPerspectiveCamera(this.container)
   }
 
   /**

@@ -173,16 +173,19 @@ defineProps<{
 </template>
 
 <style scoped lang="scss">
+@use '@/assets/styles/scss/variables' as *;
+@use '@/assets/styles/scss/mixins' as *;
+
 /**
  * ============================================================================
  * 样式说明
  * ============================================================================
  * 
  * 【颜色方案】
- * - 背景色：#0a0a0a（接近纯黑）
- * - 主文字：#e8eaed（浅灰白）
- * - 次文字：#9aa0a6（中灰）
- * - 强调色：蓝紫渐变（#60a5fa → #a78bfa → #f472b6）
+ * - 背景色：$color-bg-primary（接近纯黑）
+ * - 主文字：$color-text-primary（浅灰白）
+ * - 次文字：$color-text-secondary（中灰）
+ * - 强调色：蓝紫渐变（$color-primary → 紫色 → 粉色）
  * 
  * 【设计原则】
  * - 深色主题，减少视觉疲劳
@@ -194,14 +197,13 @@ defineProps<{
 .auth-page {
   min-height: 100vh;
   display: flex;
-  background-color: #0a0a0a;
+  background-color: $color-bg-primary;
 }
 
 /* 左侧品牌区 */
 .brand-panel {
-  flex: 0 0 55%;  /* 固定占 55% 宽度 */
-  display: flex;
-  align-items: center;
+  flex: 0 0 55%;
+  @include flex-center-y;
   padding: 80px 100px;
   position: relative;
   overflow: hidden;
@@ -209,8 +211,8 @@ defineProps<{
   /* 背景效果容器 */
   .brand-bg {
     position: absolute;
-    inset: 0;  /* 等同于 top: 0; right: 0; bottom: 0; left: 0; */
-    pointer-events: none;  /* 不响应鼠标事件 */
+    inset: 0;
+    pointer-events: none;
 
     /* 多层径向渐变 */
     .bg-gradient {
@@ -226,12 +228,10 @@ defineProps<{
     .bg-grid {
       position: absolute;
       inset: 0;
-      /* 使用线性渐变创建网格线 */
       background-image: 
-        linear-gradient(rgba(255, 255, 255, 0.02) 1px, transparent 1px),
-        linear-gradient(90deg, rgba(255, 255, 255, 0.02) 1px, transparent 1px);
+        linear-gradient(rgba($color-white, 0.02) 1px, transparent 1px),
+        linear-gradient(90deg, rgba($color-white, 0.02) 1px, transparent 1px);
       background-size: 60px 60px;
-      /* 使用遮罩让网格在边缘渐隐 */
       mask-image: radial-gradient(ellipse 80% 60% at 50% 50%, black 20%, transparent 70%);
     }
 
@@ -239,25 +239,23 @@ defineProps<{
     .bg-glow {
       position: absolute;
       border-radius: 50%;
-      filter: blur(80px);  /* 模糊效果 */
+      filter: blur(80px);
 
-      /* 右上角蓝紫光晕 */
       &.bg-glow-1 {
         width: 400px;
         height: 400px;
         top: -100px;
         right: -50px;
-        background: linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%);
+        background: linear-gradient(135deg, $color-accent-blue-dark 0%, $color-accent-purple 100%);
         opacity: 0.4;
       }
 
-      /* 左下角粉橙光晕 */
       &.bg-glow-2 {
         width: 300px;
         height: 300px;
         bottom: -50px;
         left: 10%;
-        background: linear-gradient(135deg, #ec4899 0%, #f97316 100%);
+        background: linear-gradient(135deg, $color-accent-pink 0%, $color-accent-orange 100%);
         opacity: 0.25;
       }
     }
@@ -266,23 +264,21 @@ defineProps<{
   /* 品牌内容 */
   .brand-content {
     position: relative;
-    z-index: 1;  /* 确保在背景效果之上 */
+    z-index: 1;
     max-width: 560px;
 
     hgroup {
       /* 系统名称 - 渐变色动画 */
       .system-title {
         font-size: 64px;
-        font-weight: 500;
-        letter-spacing: -0.03em;  /* 紧凑字间距 */
+        font-weight: $font-weight-medium;
+        letter-spacing: -0.03em;
         line-height: 1.1;
-        margin: 0 0 32px 0;
-        /* 渐变色文字 */
-        background: linear-gradient(135deg, #60a5fa 0%, #a78bfa 40%, #f472b6 70%, #fb923c 100%);
+        margin: 0 0 $space-8 0;
+        background: linear-gradient(135deg, $color-primary 0%, $color-accent-violet 40%, $color-accent-pink 70%, $color-accent-orange 100%);
         -webkit-background-clip: text;
         -webkit-text-fill-color: transparent;
         background-clip: text;
-        /* 渐变动画 */
         background-size: 200% 200%;
         animation: gradientShift 6s ease infinite;
       }
@@ -290,18 +286,18 @@ defineProps<{
       /* 主标语 */
       .system-headline {
         font-size: 28px;
-        font-weight: 400;
-        color: #e8eaed;
+        font-weight: $font-weight-normal;
+        color: $color-text-primary;
         line-height: 1.4;
-        margin: 0 0 16px 0;
+        margin: 0 0 $space-4 0;
       }
 
       /* 副标语 */
       .system-subtitle {
-        font-size: 15px;
-        color: #9aa0a6;
+        font-size: $font-size-lg;
+        color: $color-text-secondary;
         line-height: 1.6;
-        margin: 0 0 40px 0;
+        margin: 0 0 $space-10 0;
       }
     }
   }
@@ -309,10 +305,8 @@ defineProps<{
 
 /* 右侧表单区 */
 .form-panel {
-  flex: 1;  /* 占据剩余空间 */
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  flex: 1;
+  @include flex-center;
   padding: 48px 64px;
   position: relative;
   overflow: hidden;
@@ -333,20 +327,17 @@ defineProps<{
 
     /* Logo */
     .form-logo {
-      display: flex;
-      justify-content: center;
-      margin-bottom: 32px;
+      @include flex-center-x;
+      margin-bottom: $space-8;
 
       .logo-icon {
         width: 48px;
         height: 48px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        background: linear-gradient(135deg, rgba(96, 165, 250, 0.15) 0%, rgba(167, 139, 250, 0.15) 100%);
-        border: 1px solid rgba(255, 255, 255, 0.1);
-        border-radius: 12px;
-        color: #8ab4f8;
+        @include flex-center;
+        background: linear-gradient(135deg, $color-primary-muted 0%, rgba(167, 139, 250, 0.15) 100%);
+        border: 1px solid $color-border-muted;
+        border-radius: $radius-lg;
+        color: $color-primary;
       }
     }
   }
@@ -362,7 +353,6 @@ defineProps<{
  * 响应式设计
  * ============================================================================ */
 
-/* 中大屏 */
 @media (max-width: 1200px) {
   .brand-panel {
     padding: 60px;
@@ -374,7 +364,6 @@ defineProps<{
   }
 }
 
-/* 中屏 */
 @media (max-width: 900px) {
   .brand-panel {
     flex: 0 0 45%;
@@ -387,18 +376,17 @@ defineProps<{
   }
 }
 
-/* 小屏 - 隐藏品牌区 */
 @media (max-width: 768px) {
   .brand-panel { display: none; }
+  
   .form-panel {
-    padding: 32px 24px;
+    padding: $space-8 $space-6;
     min-height: 100vh;
 
     .form-container { max-width: 100%; }
   }
 }
 
-/* 超大屏 */
 @media (min-width: 1600px) {
   .brand-panel {
     padding: 100px 140px;

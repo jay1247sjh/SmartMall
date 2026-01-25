@@ -22,6 +22,7 @@
  */
 
 import * as THREE from 'three'
+import { createPerspectiveCamera, type CameraConfig } from './cameraFactory'
 
 // ============================================================================
 // 类型定义
@@ -304,35 +305,13 @@ export class CameraController {
   /**
    * 创建透视相机
    *
-   * 创建一个默认配置的透视相机：
-   * - 视野角度（FOV）: 60 度
-   * - 宽高比：根据容器尺寸计算
-   * - 近裁剪面：0.1 米（太近的物体不显示）
-   * - 远裁剪面：1000 米（太远的物体不显示）
-   * - 初始位置：(0, 5, 10)，斜上方俯视原点
-   *
-   * @returns 创建的透视相机
+   * 使用工厂函数创建，CameraController 独立使用时的默认配置
+   * 位置设为 (0, 5, 10)，更适合第三人称跟随场景
    */
   private createCamera(): THREE.PerspectiveCamera {
-    // 获取容器尺寸
-    const { clientWidth, clientHeight } = this.container
-
-    // 创建透视相机
-    // 参数：视野角度, 宽高比, 近裁剪面, 远裁剪面
-    const camera = new THREE.PerspectiveCamera(
-      60, // FOV: 60 度视野（人眼舒适范围）
-      clientWidth / clientHeight, // 宽高比：保持画面不变形
-      0.1, // 近裁剪面：0.1 米内的物体不显示
-      1000 // 远裁剪面：1000 米外的物体不显示
-    )
-
-    // 设置相机初始位置（斜上方俯视场景）
-    camera.position.set(0, 5, 10)
-
-    // 让相机看向原点
-    camera.lookAt(0, 0, 0)
-
-    return camera
+    return createPerspectiveCamera(this.container, {
+      position: { x: 0, y: 5, z: 10 }
+    })
   }
 
   /**

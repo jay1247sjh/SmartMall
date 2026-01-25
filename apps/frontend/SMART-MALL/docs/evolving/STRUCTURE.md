@@ -76,6 +76,7 @@ engine/
 ├── ThreeEngine.ts           # 核心引擎类
 ├── camera/                  # 相机控制
 │   ├── index.ts
+│   ├── cameraFactory.ts     # 相机工厂（统一创建逻辑）
 │   ├── CameraController.ts  # 第三人称跟随控制器
 │   └── OrbitController.ts   # 轨道控制器
 ├── effects/                 # 视觉效果
@@ -418,16 +419,28 @@ router/
 
 ```
 components/
-├── admin/                   # 管理员组件 ⭐ 新增
+├── admin/                   # 管理员组件
 │   ├── index.ts             # 管理员组件导出
 │   └── UserDetailDrawer.vue # 用户详情抽屉
+├── ai/                      # AI 组件
+│   ├── index.ts             # AI 组件导出
+│   ├── AiChatPanel.vue      # AI 聊天面板
+│   └── GlobalAiAssistant.vue # 全局 AI 助手
+├── auth/                    # 认证组件
+├── common/                  # 通用组件
+│   └── CustomSelect.vue     # 自定义下拉选择
 ├── layouts/                 # 布局组件
-│   └── DashboardLayout.vue  # 仪表盘布局（已弃用，使用 views/layouts/）
-└── shared/                  # 共享组件
-    ├── StatCard.vue         # 统计卡片
-    ├── QuickActionCard.vue  # 快捷操作卡片
-    ├── DataTable.vue        # 数据表格
-    └── Modal.vue            # 模态框
+│   └── DashboardLayout.vue  # 仪表盘布局（已弃用）
+├── mall-builder/            # 建模器组件
+├── mall3d/                  # 3D 商城组件
+├── product/                 # 商品组件
+├── shared/                  # 共享组件
+│   ├── StatCard.vue         # 统计卡片
+│   ├── QuickActionCard.vue  # 快捷操作卡片
+│   ├── DataTable.vue        # 数据表格
+│   └── Modal.vue            # 模态框
+├── store/                   # 店铺组件
+└── user/                    # 用户组件
 ```
 
 **设计规范：**
@@ -547,25 +560,34 @@ components/
 | `views/user/ProfileView.vue` | ✅ 完成 | 用户资料页面 |
 | `components/shared/*` | ✅ 完成 | 共享组件（StatCard、QuickActionCard、DataTable、Modal） |
 | `components/common/CustomSelect.vue` | ✅ 完成 | 自定义下拉选择组件 |
+| `components/ai/AiChatPanel.vue` | ✅ 完成 | AI 聊天面板组件 |
+| `components/ai/GlobalAiAssistant.vue` | ✅ 完成 | 全局 AI 助手组件 |
+| `api/intelligence.api.ts` | ✅ 完成 | AI 智能服务 API |
 | `api/register.api.ts` | ✅ 完成 | 注册 API |
 | `api/password.api.ts` | ✅ 完成 | 密码管理 API |
 | `api/admin.api.ts` | ✅ 完成 | 管理员 API |
 | `api/merchant.api.ts` | ✅ 完成 | 商家 API |
 | `api/user.api.ts` | ✅ 完成 | 用户 API |
 | `api/mall-manage.api.ts` | ✅ 完成 | 商城管理 API |
-| `api/area-permission.api.ts` | ✅ 完成 | 区域权限 API ⭐ 新增 |
-| `api/store.api.ts` | ✅ 完成 | 店铺管理 API ⭐ 新增 |
+| `api/mall-builder.api.ts` | ✅ 完成 | 商城建模器 API |
+| `api/area-permission.api.ts` | ✅ 完成 | 区域权限 API |
+| `api/store.api.ts` | ✅ 完成 | 店铺管理 API |
+| `api/product.api.ts` | ✅ 完成 | 商品管理 API |
+| `api/route.api.ts` | ✅ 完成 | 路由配置 API |
+| `stores/user.store.ts` | ✅ 完成 | 用户状态管理 |
+| `stores/mall.store.ts` | ✅ 完成 | 商城状态管理 |
+| `stores/builder.store.ts` | ✅ 完成 | 建模器状态管理 |
+| `stores/system.store.ts` | ✅ 完成 | 系统状态管理 |
+| `stores/ai.store.ts` | ✅ 完成 | AI 状态管理 |
+| `agent/index.ts` | ✅ 完成 | AI Agent 前端集成 |
 | `router/index.ts` | ✅ 完成 | 路由配置（含所有页面路由） |
+| `engine/camera/cameraFactory.ts` | ✅ 完成 | 相机工厂（统一创建逻辑） |
 
 ### 7.2 待实现模块
 
 | 模块 | 状态 | 说明 |
 |------|------|------|
-| `orchestrator/` | ⏳ 待开始 | Action 分发、权限校验 |
-| `components/scene/` | ⏳ 待开始 | 3D 场景 UI 组件 |
-| `components/mall/` | ⏳ 待开始 | 商城信息组件 |
-| `components/interaction/` | ⏳ 待开始 | 交互组件（搜索、聊天） |
-| `agent/` | ⏳ 待开始 | AI Agent 集成 |
+| `orchestrator/` | ⏳ 待完善 | Action 分发、权限校验（部分实现） |
 
 ### 7.3 最新完成模块 (2026-01-10)
 
@@ -589,6 +611,20 @@ components/
 ---
 
 ## 8. 最近更新
+
+### 2026-01-26 更新
+
+**相机工厂重构：**
+- 新增 `engine/camera/cameraFactory.ts` - 统一相机创建逻辑
+- 重构 `ThreeEngine.ts` 和 `CameraController.ts`，消除重复代码
+
+**文档对齐：**
+- 更新 STRUCTURE.md，对齐实际实现状态
+- 补充 AI 组件、API 模块、状态管理等缺失模块
+- 移除已完成模块的"待实现"标记
+
+**清理测试文件：**
+- 移除 12 个不必要的 `.property.spec.ts` 测试文件
 
 ### 2026-01-10 更新
 

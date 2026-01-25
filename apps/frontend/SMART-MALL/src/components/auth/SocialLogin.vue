@@ -91,20 +91,28 @@ defineEmits<{
 </template>
 
 <style scoped lang="scss">
+@use '@/assets/styles/scss/variables' as *;
+@use '@/assets/styles/scss/mixins' as *;
+
+// 扩展变量（基于全局变量的透明度变体）
+$border-divider: rgba($color-white, 0.08);
+$bg-button: rgba($color-white, 0.03);
+$border-button-hover: rgba($color-white, 0.15);
+
 .social-login-section {
   :deep(.el-divider) {
-    margin: 24px 0;
-    border-color: rgba(255, 255, 255, 0.08);
+    margin: $space-6 0;
+    border-color: $border-divider;
 
     .el-divider__text {
       background: transparent;
-      padding: 0 16px;
+      padding: 0 $space-4;
     }
   }
 
   .divider-text {
-    color: #5f6368;
-    font-size: 12px;
+    color: $color-text-muted;
+    font-size: $font-size-sm;
   }
 
   .social-login {
@@ -114,16 +122,16 @@ defineEmits<{
     .social-btn {
       width: 48px;
       height: 48px;
-      background: rgba(255, 255, 255, 0.03);
-      border: 1px solid rgba(255, 255, 255, 0.1);
-      border-radius: 12px;
-      color: #9aa0a6;
-      transition: all 0.2s;
+      background: $bg-button;
+      border: 1px solid $color-border-muted;
+      border-radius: $radius-lg;
+      color: $color-text-secondary;
+      transition: all $duration-normal;
 
       &:hover {
-        background: rgba(255, 255, 255, 0.06);
-        border-color: rgba(255, 255, 255, 0.15);
-        color: #e8eaed;
+        background: $color-bg-hover;
+        border-color: $border-button-hover;
+        color: $color-text-primary;
       }
 
       svg {

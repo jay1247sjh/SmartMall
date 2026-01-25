@@ -190,22 +190,12 @@ const iconComponent = computed(() => {
 </template>
 
 <style scoped lang="scss">
-/**
- * ============================================================================
- * 样式说明
- * ============================================================================
- * 
- * 【设计风格】
- * - 深色主题
- * - 半透明背景
- * - 聚焦时蓝色边框和光晕
- * - 错误时红色边框
- */
+@use '@/assets/styles/scss/variables' as *;
+@use '@/assets/styles/scss/mixins' as *;
 
 .auth-input-item {
-  margin-bottom: 20px;
+  margin-bottom: $space-5;
 
-  /* 最后一个输入框不需要底部间距 */
   &:last-of-type {
     margin-bottom: 0;
   }
@@ -213,91 +203,79 @@ const iconComponent = computed(() => {
   /* 标签样式 */
   .input-label {
     font-size: 13px;
-    font-weight: 500;
-    color: #9aa0a6;
+    font-weight: $font-weight-medium;
+    color: $color-text-secondary;
 
-    /* 必填标识：红色星号 */
     .required {
-      color: #f28b82;
+      color: $color-error;
       margin-left: 2px;
     }
 
-    /* 可选标识：灰色文字 */
     .optional {
-      color: #5f6368;
-      font-weight: 400;
-      font-size: 12px;
-      margin-left: 4px;
+      @include text-muted;
+      font-weight: $font-weight-normal;
+      font-size: $font-size-sm;
+      margin-left: $space-1;
     }
   }
 
   /* 穿透 Element Plus 输入框样式 */
   :deep(.el-input) {
     .el-input__wrapper {
-      /* 深色半透明背景 */
-      background: rgba(0, 0, 0, 0.3);
-      /* 细边框 */
-      border: 1px solid rgba(255, 255, 255, 0.1);
+      background: rgba($color-black, 0.3);
+      border: 1px solid $color-border-muted;
       border-radius: 10px;
       box-shadow: none;
-      padding: 4px 14px;
-      transition: border-color 0.2s, box-shadow 0.2s, background 0.2s;
+      padding: $space-1 14px;
+      transition: border-color $duration-normal, box-shadow $duration-normal, background $duration-normal;
 
-      /* 悬停状态 */
       &:hover {
-        border-color: rgba(255, 255, 255, 0.2);
+        border-color: rgba($color-white, 0.2);
       }
 
-      /* 聚焦状态：蓝色边框 + 光晕 */
       &.is-focus {
-        border-color: #8ab4f8;
-        background: rgba(138, 180, 248, 0.05);
-        box-shadow: 0 0 0 3px rgba(138, 180, 248, 0.1);
+        border-color: $color-primary;
+        background: rgba($color-primary, 0.05);
+        box-shadow: 0 0 0 3px rgba($color-primary, 0.1);
       }
     }
 
-    /* 输入文字样式 */
     .el-input__inner {
-      color: #e8eaed;
+      color: $color-text-primary;
 
       &::placeholder {
-        color: #5f6368;
+        color: $color-text-muted;
       }
     }
 
-    /* 错误状态：红色边框 */
     &.is-error .el-input__wrapper {
-      border-color: #f28b82;
+      border-color: $color-error;
     }
   }
 
   /* 前缀图标样式 */
   .input-icon {
-    color: #5f6368;
-    transition: color 0.2s;
+    @include text-muted;
+    transition: color $duration-normal;
   }
 
-  /* 聚焦时图标变蓝 */
   :deep(.el-input__wrapper.is-focus) .input-icon {
-    color: #8ab4f8;
+    color: $color-primary;
   }
 
   /* 状态图标样式 */
   .status-icon {
-    /* 加载动画：旋转 */
     &.checking {
       animation: spin 0.6s linear infinite;
-      color: #8ab4f8;
+      color: $color-primary;
     }
 
-    /* 验证通过：绿色 */
     &.valid {
-      color: #81c995;
+      color: $color-success;
     }
   }
 }
 
-/* 旋转动画 */
 @keyframes spin {
   to { transform: rotate(360deg); }
 }

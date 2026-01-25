@@ -234,64 +234,43 @@ onUnmounted(() => {
 </template>
 
 <style scoped lang="scss">
-/**
- * ============================================================================
- * 样式说明
- * ============================================================================
- * 
- * 【设计风格】
- * - 半透明背景：融入深色主题
- * - 细边框：增加层次感
- * - 圆角：现代感
- * 
- * 【光标动画】
- * - 打字时：光标常亮（不闪烁）
- * - 停止时：光标闪烁（吸引注意力）
- */
+@use '@/assets/styles/scss/variables' as *;
+@use '@/assets/styles/scss/mixins' as *;
+
+// 扩展变量（基于全局变量的透明度变体）
+$bg-card: rgba($color-white, 0.03);
+$border-card: rgba($color-white, 0.08);
 
 .typewriter-card {
-  /* 半透明背景，融入深色主题 */
-  background: rgba(255, 255, 255, 0.03);
-  
-  /* 细边框，增加层次感 */
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  
-  /* 圆角，现代感 */
-  border-radius: 12px;
+  background: $bg-card;
+  border: 1px solid $border-card;
+  border-radius: $radius-lg;
 
-  /* 穿透 Element Plus 卡片内边距 */
   :deep(.el-card__body) {
-    padding: 20px 24px;
+    padding: $space-5 $space-6;
   }
 
-  /* 打字机内容区域 */
   .typewriter-content {
-    /* 最小高度，防止内容为空时卡片塌陷 */
     min-height: 24px;
     line-height: 24px;
     margin: 0;
 
-    /* 文本样式 */
     .typewriter-text {
-      font-size: 14px;
-      color: #bdc1c6;  /* 浅灰色，适合深色背景 */
+      font-size: $font-size-base;
+      color: $color-text-secondary;
       line-height: 24px;
       vertical-align: middle;
     }
 
-    /* 光标样式 */
     .cursor {
       display: inline-block;
       width: 2px;
       height: 16px;
-      background: #8ab4f8;  /* Google 蓝色 */
+      background: $color-primary;
       margin-left: 1px;
       vertical-align: middle;
-      
-      /* 默认闪烁动画（停止打字时） */
       animation: blink 1s step-end infinite;
 
-      /* 打字时不闪烁 */
       &.typing {
         animation: none;
       }
@@ -299,15 +278,6 @@ onUnmounted(() => {
   }
 }
 
-/**
- * 光标闪烁动画
- * 
- * 【动画原理】
- * - 0-50%: 光标可见 (opacity: 1)
- * - 51-100%: 光标隐藏 (opacity: 0)
- * - step-end: 不使用渐变，直接跳变（更像真实光标）
- * - infinite: 无限循环
- */
 @keyframes blink {
   0%, 50% { opacity: 1; }
   51%, 100% { opacity: 0; }

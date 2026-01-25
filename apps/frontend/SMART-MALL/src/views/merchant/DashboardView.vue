@@ -246,21 +246,28 @@ onMounted(() => {
 </template>
 
 <style scoped lang="scss">
+@use '@/assets/styles/scss/variables' as *;
+@use '@/assets/styles/scss/mixins' as *;
+
+// 扩展变量（基于全局变量的透明度变体）
+$bg-item: rgba($color-white, 0.03);
+$border-item: rgba($color-white, 0.04);
+
 .merchant-dashboard {
   display: flex;
   flex-direction: column;
-  gap: 24px;
+  gap: $space-6;
 
   .welcome-section {
     position: relative;
-    border-radius: 16px;
-    padding: 32px;
+    border-radius: $radius-xl;
+    padding: $space-8;
     display: flex;
     align-items: center;
     justify-content: space-between;
     overflow: hidden;
     background: linear-gradient(135deg, rgba(244, 114, 182, 0.1) 0%, rgba(251, 146, 60, 0.1) 100%);
-    border: 1px solid rgba(255, 255, 255, 0.06);
+    border: 1px solid $color-border-subtle;
 
     .welcome-bg {
       position: absolute;
@@ -268,7 +275,7 @@ onMounted(() => {
       height: 200px;
       top: -50px;
       right: 10%;
-      background: linear-gradient(135deg, #f472b6 0%, #fb923c 100%);
+      background: $gradient-merchant;
       opacity: 0.15;
       border-radius: 50%;
       filter: blur(60px);
@@ -279,15 +286,15 @@ onMounted(() => {
       z-index: 1;
 
       h2 {
-        font-size: 24px;
-        font-weight: 500;
-        margin: 0 0 8px 0;
-        color: #e8eaed;
+        font-size: $font-size-2xl + 4;
+        font-weight: $font-weight-medium;
+        margin: 0 0 $space-2 0;
+        color: $color-text-primary;
       }
 
       p {
-        font-size: 14px;
-        color: #9aa0a6;
+        font-size: $font-size-base;
+        color: $color-text-secondary;
         margin: 0;
       }
     }
@@ -297,91 +304,91 @@ onMounted(() => {
       z-index: 1;
 
       .btn-gradient {
-        background: linear-gradient(135deg, #f472b6 0%, #fb923c 100%);
+        background: $gradient-merchant;
         border: none;
-        border-radius: 10px;
+        border-radius: $radius-md + 2;
 
-        .ml-1 { margin-left: 4px; }
-      }
-    }
-  }
-
-  .stats-section {
-    .stat-card {
-      border-radius: 12px;
-      margin-bottom: 16px;
-      background: rgba(17, 17, 19, 0.8);
-      border: 1px solid rgba(255, 255, 255, 0.06);
-    }
-  }
-
-  .content-grid {
-    .section-card {
-      border-radius: 12px;
-      margin-bottom: 20px;
-      background: rgba(17, 17, 19, 0.8);
-      border: 1px solid rgba(255, 255, 255, 0.06);
-
-      .section-header {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-
-        h3 {
-          font-size: 15px;
-          font-weight: 500;
-          margin: 0;
-          color: #e8eaed;
+        .ml-1 {
+          margin-left: $space-1;
         }
       }
+    }
+  }
 
-      .store-list, .application-list {
-        display: flex;
-        flex-direction: column;
-        gap: 12px;
+  .stats-section .stat-card {
+    @include card-base;
+    border-radius: $radius-lg;
+    margin-bottom: $space-4;
+  }
+
+  .content-grid .section-card {
+    @include card-base;
+    border-radius: $radius-lg;
+    margin-bottom: $space-5;
+
+    .section-header {
+      @include card-header;
+      padding: 0;
+      border-bottom: none;
+    }
+
+    .store-list,
+    .application-list {
+      display: flex;
+      flex-direction: column;
+      gap: $space-3;
+    }
+
+    .store-item,
+    .application-item {
+      display: flex;
+      align-items: center;
+      gap: $space-3 + 2;
+      padding: $space-4;
+      background: $bg-item;
+      border: 1px solid $border-item;
+      border-radius: $radius-md + 2;
+      cursor: pointer;
+      transition: background $duration-normal, border-color $duration-normal;
+
+      &:hover {
+        background: $color-bg-hover;
+        border-color: rgba($color-accent-pink, 0.2);
+      }
+    }
+
+    .store-avatar {
+      background: $gradient-merchant;
+      color: white;
+      font-weight: $font-weight-semibold;
+    }
+
+    .store-info,
+    .app-info {
+      flex: 1;
+
+      h4 {
+        font-size: $font-size-base;
+        font-weight: $font-weight-medium;
+        margin: 0 0 $space-1 0;
+        color: $color-text-primary;
       }
 
-      .store-item, .application-item {
-        display: flex;
-        align-items: center;
-        gap: 14px;
-        padding: 16px;
-        background: rgba(255, 255, 255, 0.03);
-        border: 1px solid rgba(255, 255, 255, 0.04);
-        border-radius: 10px;
-        cursor: pointer;
-        transition: background 0.15s, border-color 0.15s;
-
-        &:hover {
-          background: rgba(255, 255, 255, 0.06);
-          border-color: rgba(244, 114, 182, 0.2);
-        }
-      }
-
-      .store-avatar {
-        background: linear-gradient(135deg, #f472b6 0%, #fb923c 100%);
-        color: white;
-        font-weight: 600;
-      }
-
-      .store-info, .app-info {
-        flex: 1;
-
-        h4 { font-size: 14px; font-weight: 500; margin: 0 0 4px 0; color: #e8eaed; }
-        p { font-size: 12px; color: #9aa0a6; margin: 0; }
+      p {
+        font-size: $font-size-sm;
+        color: $color-text-secondary;
+        margin: 0;
       }
     }
   }
 
-  .quick-actions {
-    .section-title {
-      font-size: 14px;
-      font-weight: 500;
-      color: #9aa0a6;
-      margin: 0 0 16px 0;
-      text-transform: uppercase;
-      letter-spacing: 0.05em;
-    }
+  .quick-actions .section-title {
+    font-size: $font-size-base;
+    font-weight: $font-weight-medium;
+    color: $color-text-secondary;
+    margin: 0 0 $space-4 0;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
   }
 }
 </style>

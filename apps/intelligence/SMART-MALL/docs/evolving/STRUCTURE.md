@@ -3,7 +3,7 @@
 > 项目：智能商城导购系统（Smart Mall Guide System）  
 > 范围：Python 智能服务目录结构规范
 > 
-> 最后更新：2026-01-10
+> 最后更新：2026-01-26
 
 ---
 
@@ -39,10 +39,10 @@ api/
 ├── health.py                   # 健康检查接口
 ├── intent.py                   # 意图理解接口
 ├── embedding.py                # Embedding 接口
-└── chat.py                     # 智能对话接口（支持视觉+Function Calling）
+├── chat.py                     # 智能对话接口（支持视觉+Function Calling）
+├── rag.py                      # RAG 检索接口
+└── mall_generator.py           # 商城生成接口
 ```
-
-**说明**：移除了 v1 版本目录，简化结构。
 
 ### 2.2 app/core/ - 核心模块
 
@@ -50,6 +50,8 @@ api/
 core/
 ├── __init__.py
 ├── config.py                   # 配置管理
+├── errors.py                   # 错误定义
+├── prompt_loader.py            # Prompt 加载器
 ├── llm/                        # LLM 抽象层
 │   ├── __init__.py
 │   ├── base.py                 # LLM 基类
@@ -58,62 +60,45 @@ core/
 │   ├── openai.py               # OpenAI 实现
 │   ├── deepseek.py             # DeepSeek 实现
 │   └── local.py                # 本地模型实现
-└── agent/                      # Agent 模块
+├── agent/                      # Agent 模块
+│   ├── __init__.py
+│   ├── mall_agent.py           # 商城导购 Agent
+│   └── tools.py                # Function Calling 工具定义
+└── rag/                        # RAG 模块
     ├── __init__.py
-    ├── mall_agent.py           # 商城导购 Agent
-    └── tools.py                # Function Calling 工具定义
+    ├── embedding.py            # Embedding 服务
+    ├── milvus_client.py        # Milvus 向量数据库客户端
+    ├── retriever.py            # 检索器
+    ├── schemas.py              # RAG 数据模型
+    ├── seed_data.py            # 种子数据
+    ├── service.py              # RAG 服务
+    └── sync.py                 # 数据同步
 ```
 
 ### 2.3 app/prompts/ - Prompt 模板
 
 ```
 prompts/
+├── README.md                   # Prompt 说明
 ├── intent.yaml                 # 意图识别 Prompt
-└── action.yaml                 # Action 生成 Prompt
+├── action.yaml                 # Action 生成 Prompt
+├── safety.yaml                 # 安全检查 Prompt
+├── system.yaml                 # 系统 Prompt
+└── vision.yaml                 # 视觉理解 Prompt
 ```
-
-**说明**：移除了 v1 版本目录，简化结构。如需版本管理，建议使用 Git 分支。
 
 ### 2.4 app/schemas/ - 数据模型
 
 ```
 schemas/
 ├── __init__.py
-├── request.py                  # 请求 Schema（待实现）
-└── response.py                 # 响应 Schema（待实现）
+├── base.py                     # 基础 Schema
+└── rag.py                      # RAG 相关 Schema
 ```
 
 ---
 
-## 3. 待实现模块
-
-### 3.1 app/rag/ - RAG 模块
-
-```
-rag/
-├── __init__.py
-├── retriever.py                # 检索器
-└── collections.py              # 向量集合管理
-```
-
----
-
-## 4. 文档目录
-
-```
-docs/
-├── canonical/                  # 规范文档（不随开发变化）
-│   ├── REQUIREMENTS.md         # 需求规格
-│   └── DESIGN.md               # 设计文档
-└── evolving/                   # 演进文档（随开发更新）
-    ├── STRUCTURE.md            # 目录结构说明（本文档）
-    ├── TASK.md                 # 任务清单
-    └── CHANGELOG.md            # 变更日志
-```
-
----
-
-## 5. 实现状态
+## 3. 实现状态
 
 | 模块 | 状态 | 说明 |
 |------|------|------|
@@ -122,21 +107,48 @@ docs/
 | `app/api/intent.py` | ✅ 完成 | 意图理解接口 |
 | `app/api/embedding.py` | ✅ 完成 | Embedding 接口 |
 | `app/api/chat.py` | ✅ 完成 | 智能对话接口（视觉+Function Calling） |
+| `app/api/rag.py` | ✅ 完成 | RAG 检索接口 |
+| `app/api/mall_generator.py` | ✅ 完成 | 商城生成接口 |
 | `app/core/config.py` | ✅ 完成 | 配置管理（含 Qwen 配置） |
+| `app/core/errors.py` | ✅ 完成 | 错误定义 |
+| `app/core/prompt_loader.py` | ✅ 完成 | Prompt 加载器 |
 | `app/core/llm/` | ✅ 完成 | LLM 抽象层 |
 | `app/core/llm/qwen.py` | ✅ 完成 | 阿里云百炼 Qwen 提供商 |
+| `app/core/llm/openai.py` | ✅ 完成 | OpenAI 提供商 |
+| `app/core/llm/deepseek.py` | ✅ 完成 | DeepSeek 提供商 |
+| `app/core/llm/local.py` | ✅ 完成 | 本地模型提供商 |
 | `app/core/agent/` | ✅ 完成 | Agent 模块 |
 | `app/core/agent/mall_agent.py` | ✅ 完成 | 商城导购 Agent |
 | `app/core/agent/tools.py` | ✅ 完成 | Function Calling 工具定义 |
+| `app/core/rag/` | ✅ 完成 | RAG 模块 |
+| `app/core/rag/embedding.py` | ✅ 完成 | Embedding 服务 |
+| `app/core/rag/milvus_client.py` | ✅ 完成 | Milvus 客户端 |
+| `app/core/rag/retriever.py` | ✅ 完成 | 检索器 |
+| `app/core/rag/service.py` | ✅ 完成 | RAG 服务 |
 | `app/prompts/` | ✅ 完成 | Prompt 模板 |
-| `app/schemas/` | ⏳ 待完善 | 数据模型 |
-| `app/rag/` | ⏳ 待开始 | RAG 模块 |
+| `app/schemas/` | ✅ 完成 | 数据模型 |
 
 ---
 
-## 6. 版本历史
+## 4. API 接口汇总
+
+| 方法 | 路径 | 说明 |
+|------|------|------|
+| GET | `/health` | 健康检查 |
+| POST | `/api/intent` | 意图理解 |
+| POST | `/api/embedding` | 文本向量化 |
+| POST | `/api/chat` | 智能对话 |
+| POST | `/api/chat/confirm` | 确认操作 |
+| POST | `/api/rag/query` | RAG 检索 |
+| POST | `/api/rag/index` | 索引文档 |
+| POST | `/api/mall/generate` | 生成商城布局 |
+
+---
+
+## 5. 版本历史
 
 | 日期 | 变更说明 |
 |------|----------|
+| 2026-01-26 | 更新文档，对齐实际实现状态，补充 RAG 模块 |
 | 2026-01-10 | 新增 Qwen LLM 提供商、Agent 模块、Chat API |
-| 2026-01-10 | 初始版本，移除 prompts/v1 和 api/v1 版本目录 |
+| 2026-01-10 | 初始版本 |

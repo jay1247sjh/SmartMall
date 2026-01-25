@@ -56,6 +56,9 @@ import {
 import { Plus, Edit, Delete } from '@element-plus/icons-vue'
 import { mallManageApi } from '@/api'
 import type { Floor, Area, CreateFloorRequest, CreateAreaRequest } from '@/api/mall-manage.api'
+import { useStatusConfig } from '@/composables'
+
+const { getStatusConfig } = useStatusConfig()
 
 const isLoading = ref(true)
 const floors = ref<Floor[]>([])
@@ -91,24 +94,8 @@ function selectFloor(floor: Floor) {
   selectedFloor.value = floor
 }
 
-function getStatusType(status: string) {
-  const map: Record<string, 'info' | 'warning' | 'primary' | 'success'> = {
-    LOCKED: 'info',
-    PENDING: 'warning',
-    AUTHORIZED: 'primary',
-    OCCUPIED: 'success',
-  }
-  return map[status] || 'info'
-}
-
-function getStatusText(status: string): string {
-  const map: Record<string, string> = {
-    LOCKED: '锁定',
-    PENDING: '待审批',
-    AUTHORIZED: '已授权',
-    OCCUPIED: '已入驻',
-  }
-  return map[status] || status
+function getAreaStatusConfig(status: string) {
+  return getStatusConfig(status, 'area')
 }
 
 function formatBounds(bounds: Area['bounds']): string {
@@ -301,8 +288,8 @@ onMounted(() => {
             <ElTableColumn prop="type" label="类型" width="100" />
             <ElTableColumn prop="status" label="状态" width="100">
               <template #default="{ row }">
-                <ElTag :type="getStatusType(row.status)" size="small">
-                  {{ getStatusText(row.status) }}
+                <ElTag :type="getAreaStatusConfig(row.status).tagType" size="small">
+                  {{ getAreaStatusConfig(row.status).label }}
                 </ElTag>
               </template>
             </ElTableColumn>
@@ -422,6 +409,9 @@ onMounted(() => {
 </template>
 
 <style scoped lang="scss">
+@use '@/assets/styles/scss/variables' as *;
+@use '@/assets/styles/scss/mixins' as *;
+
 .mall-manage-page {
   height: 100%;
 
@@ -429,99 +419,75 @@ onMounted(() => {
     height: 100%;
   }
 
-  .floor-panel {
+  .floor-panel,
+  .area-panel {
     height: 100%;
-    background: rgba(17, 17, 19, 0.8);
-    border: 1px solid rgba(255, 255, 255, 0.06);
+    @include card-base;
 
     .panel-header {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-
-      h3 {
-        font-size: 15px;
-        font-weight: 600;
-        margin: 0;
-        color: #e8eaed;
-      }
+      @include card-header;
+      padding: 0;
+      border-bottom: none;
     }
+  }
 
-    .floor-list {
-      display: flex;
-      flex-direction: column;
-      gap: 8px;
+  .floor-panel .floor-list {
+    display: flex;
+    flex-direction: column;
+    gap: $space-2;
 
-      .floor-item {
-        padding: 14px 16px;
-        border-radius: 8px;
-        cursor: pointer;
-        border: 1px solid transparent;
-        transition: all 0.15s;
+    .floor-item {
+      padding: $space-3 $space-4;
+      border-radius: $radius-md;
+      cursor: pointer;
+      border: 1px solid transparent;
+      transition: all $duration-normal;
 
-        &:hover {
-          background: rgba(255, 255, 255, 0.04);
+      &:hover {
+        background: $color-bg-hover;
+      }
+
+      &.active {
+        background: rgba($color-primary, 0.1);
+        border-color: rgba($color-primary, 0.3);
+      }
+
+      .floor-info {
+        .floor-name {
+          font-size: $font-size-lg;
+          font-weight: $font-weight-semibold;
+          margin: 0 0 $space-1 0;
+          color: $color-text-primary;
         }
 
-        &.active {
-          background: rgba(138, 180, 248, 0.1);
-          border-color: rgba(138, 180, 248, 0.3);
+        .floor-desc {
+          font-size: $font-size-sm + 1;
+          color: $color-text-secondary;
+          margin: 0 0 $space-1 0;
         }
 
-        .floor-info {
-          .floor-name {
-            font-size: 15px;
-            font-weight: 600;
-            margin: 0 0 4px 0;
-            color: #e8eaed;
-          }
-
-          .floor-desc {
-            font-size: 13px;
-            color: #9aa0a6;
-            margin: 0 0 4px 0;
-          }
-
-          .floor-count {
-            font-size: 12px;
-            color: #71717a;
-          }
+        .floor-count {
+          font-size: $font-size-sm;
+          color: $color-text-disabled;
         }
+      }
 
-        .floor-actions {
-          margin-top: 10px;
-        }
+      .floor-actions {
+        margin-top: $space-2 + 2;
       }
     }
   }
 
   .area-panel {
-    height: 100%;
-    background: rgba(17, 17, 19, 0.8);
-    border: 1px solid rgba(255, 255, 255, 0.06);
-
-    .panel-header {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-
-      h3 {
-        font-size: 15px;
-        font-weight: 600;
-        margin: 0;
-        color: #e8eaed;
-      }
-
-      .mr-1 {
-        margin-right: 4px;
-      }
+    .mr-1 {
+      margin-right: $space-1;
     }
 
     .area-table {
-      border-radius: 8px;
+      border-radius: $radius-md;
 
       .text-muted {
-        color: #71717a;
+        @include text-muted;
       }
     }
   }

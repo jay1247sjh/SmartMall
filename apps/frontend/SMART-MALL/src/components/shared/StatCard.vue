@@ -39,19 +39,22 @@ defineProps<Props>()
 </template>
 
 <style scoped lang="scss">
+@use '@/assets/styles/scss/variables' as *;
+@use '@/assets/styles/scss/mixins' as *;
+
 .stat-card {
-  border-radius: 12px;
-  background: rgba(17, 17, 19, 0.8);
-  border: 1px solid rgba(255, 255, 255, 0.06);
-  transition: transform 0.2s, border-color 0.2s;
+  @include card-base;
+  border-radius: $radius-lg;
+  background: rgba($color-bg-secondary, 0.8);
+  transition: transform $duration-slow $ease-default, border-color $duration-slow $ease-default;
 
   &:hover {
     transform: translateY(-2px);
-    border-color: rgba(138, 180, 248, 0.3);
+    border-color: rgba($color-accent-blue, 0.3);
   }
 
   :deep(.el-card__body) {
-    padding: 20px 24px;
+    padding: $space-5 $space-6;
   }
 
   .stat-content {
@@ -61,23 +64,23 @@ defineProps<Props>()
 
     .stat-statistic {
       :deep(.el-statistic__head) {
-        font-size: 13px;
-        color: #9aa0a6;
-        margin-bottom: 8px;
+        font-size: $font-size-sm;
+        color: $color-text-secondary;
+        margin-bottom: $space-2;
       }
 
       :deep(.el-statistic__content) {
         font-size: 28px;
-        font-weight: 500;
-        color: #e8eaed;
+        font-weight: $font-weight-medium;
+        color: $color-text-primary;
       }
     }
 
     .stat-trend {
       display: inline-flex;
       align-items: center;
-      gap: 4px;
-      border-radius: 6px;
+      gap: $space-1;
+      border-radius: $radius-sm + 2;
     }
   }
 }

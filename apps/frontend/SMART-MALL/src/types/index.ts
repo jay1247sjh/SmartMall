@@ -9,6 +9,9 @@
  * - domain/permission
  * - protocol
  * - shared
+ * - types/domain
+ * - types/api
+ * - types/ui
  */
 
 // 场景领域
@@ -28,3 +31,8 @@ export * from '../protocol'
 
 // 共享模块
 export * from '../shared'
+
+// 新增类型定义
+export * from './domain'
+export * from './api'
+export * from './ui'

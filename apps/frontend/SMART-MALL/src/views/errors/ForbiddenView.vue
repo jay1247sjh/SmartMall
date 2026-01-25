@@ -63,12 +63,13 @@ function goHome() {
 </template>
 
 <style scoped lang="scss">
+@use '@/assets/styles/scss/variables' as *;
+@use '@/assets/styles/scss/mixins' as *;
+
 .error-view {
   min-height: 100vh;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: #0a0a0a;
+  @include flex-center;
+  background: $color-bg-primary;
 
   .error-content {
     text-align: center;
@@ -84,28 +85,28 @@ function goHome() {
 
       :deep(.el-result__title) {
         font-size: 72px;
-        font-weight: 600;
+        font-weight: $font-weight-semibold;
         color: var(--el-color-danger-light-3);
         margin-top: 0;
       }
 
       :deep(.el-result__subtitle) {
-        font-size: 16px;
+        font-size: $font-size-base + 2;
         color: var(--el-text-color-placeholder);
       }
 
       :deep(.el-button--primary) {
-        background: linear-gradient(135deg, #60a5fa 0%, #818cf8 100%);
+        background: $gradient-primary;
         border: none;
         border-radius: 10px;
       }
 
       :deep(.el-button) {
         border-radius: 10px;
-        padding: 12px 24px;
+        padding: $space-3 $space-6;
 
         .btn-icon {
-          margin-right: 8px;
+          margin-right: $space-2;
         }
       }
     }

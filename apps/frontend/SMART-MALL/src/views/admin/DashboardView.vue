@@ -37,15 +37,16 @@ import {
   ElTable,
   ElTableColumn,
   ElEmpty,
-  ElTag,
   ElSkeleton,
 } from 'element-plus'
 import { ArrowRight, Shop, User, Document, Clock } from '@element-plus/icons-vue'
 import { StatCard, QuickActionCard } from '@/components'
 import { adminApi } from '@/api'
 import type { AdminStats, ApprovalRequest } from '@/api/admin.api'
+import { useFormatters } from '@/composables'
 
 const router = useRouter()
+const { formatDate } = useFormatters()
 
 const isLoading = ref(true)
 const stats = ref<AdminStats | null>(null)
@@ -72,16 +73,6 @@ async function loadData() {
   } finally {
     isLoading.value = false
   }
-}
-
-function formatDate(dateStr: string): string {
-  const date = new Date(dateStr)
-  return date.toLocaleDateString('zh-CN', {
-    month: '2-digit',
-    day: '2-digit',
-    hour: '2-digit',
-    minute: '2-digit',
-  })
 }
 
 function handleApprovalClick(row: ApprovalRequest) {
@@ -181,7 +172,7 @@ onMounted(() => {
         <ElTableColumn prop="createdAt" label="申请时间" width="150">
           <template #default="{ row }">
             <ElIcon class="mr-1"><Clock /></ElIcon>
-            {{ formatDate(row.createdAt) }}
+            {{ formatDate(row.createdAt, 'datetime') }}
           </template>
         </ElTableColumn>
 
@@ -215,29 +206,28 @@ onMounted(() => {
 </template>
 
 <style scoped lang="scss">
+@use '@/assets/styles/scss/variables' as *;
+@use '@/assets/styles/scss/mixins' as *;
+
 .admin-dashboard {
   display: flex;
   flex-direction: column;
-  gap: 32px;
+  gap: $space-8;
 
-  .stats-section {
-    .stat-card {
-      border-radius: 12px;
-      margin-bottom: 16px;
-      background: rgba(17, 17, 19, 0.8);
-      border: 1px solid rgba(255, 255, 255, 0.06);
-    }
+  .section-title {
+    font-size: $font-size-base;
+    font-weight: $font-weight-medium;
+    color: $color-text-secondary;
+    margin: 0 0 $space-4 0;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
   }
 
-  .quick-section {
-    .section-title {
-      font-size: 14px;
-      font-weight: 500;
-      color: #9aa0a6;
-      margin: 0 0 16px 0;
-      text-transform: uppercase;
-      letter-spacing: 0.05em;
-    }
+  .stats-section .stat-card {
+    @include card-base;
+    border-radius: $radius-lg;
+    margin-bottom: $space-4;
+    background: rgba($color-bg-secondary, 0.8);
   }
 
   .approvals-section {
@@ -245,86 +235,70 @@ onMounted(() => {
       display: flex;
       align-items: center;
       justify-content: space-between;
-      margin-bottom: 16px;
+      margin-bottom: $space-4;
 
       .section-title {
-        font-size: 14px;
-        font-weight: 500;
-        color: #9aa0a6;
         margin: 0;
-        text-transform: uppercase;
-        letter-spacing: 0.05em;
       }
 
       .ml-1 {
-        margin-left: 4px;
+        margin-left: $space-1;
       }
     }
 
     .approval-table {
-      border-radius: 12px;
+      @include card-base;
+      border-radius: $radius-lg;
       overflow: hidden;
-      background: rgba(17, 17, 19, 0.8);
-      border: 1px solid rgba(255, 255, 255, 0.06);
+      background: rgba($color-bg-secondary, 0.8);
 
       :deep(.el-table__row) {
         cursor: pointer;
       }
 
       .mr-1 {
-        margin-right: 4px;
+        margin-right: $space-1;
       }
     }
   }
 
-  .notice-section {
-    .section-title {
-      font-size: 14px;
-      font-weight: 500;
-      color: #9aa0a6;
-      margin: 0 0 16px 0;
-      text-transform: uppercase;
-      letter-spacing: 0.05em;
-    }
+  .notice-section .notice-card {
+    @include card-base;
+    border-radius: $radius-lg;
+    background: rgba($color-bg-secondary, 0.8);
 
-    .notice-card {
-      border-radius: 12px;
-      background: rgba(17, 17, 19, 0.8);
-      border: 1px solid rgba(255, 255, 255, 0.06);
+    .notice-item {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: $space-4;
+      padding: $space-4 0;
+      border-bottom: 1px solid $color-border-subtle;
 
-      .notice-item {
-        display: flex;
-        align-items: flex-start;
-        justify-content: space-between;
-        gap: 16px;
-        padding: 16px 0;
-        border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+      &:last-child {
+        border-bottom: none;
+        padding-bottom: 0;
+      }
 
-        &:last-child {
-          border-bottom: none;
-          padding-bottom: 0;
+      &:first-child {
+        padding-top: 0;
+      }
+
+      .notice-content {
+        flex: 1;
+        min-width: 0;
+
+        .notice-title {
+          font-size: $font-size-base;
+          font-weight: $font-weight-medium;
+          color: $color-text-primary;
+          margin: 0 0 $space-1 + 2 0;
         }
 
-        &:first-child {
-          padding-top: 0;
-        }
-
-        .notice-content {
-          flex: 1;
-          min-width: 0;
-
-          .notice-title {
-            font-size: 14px;
-            font-weight: 500;
-            color: #e8eaed;
-            margin: 0 0 6px 0;
-          }
-
-          .notice-desc {
-            font-size: 13px;
-            color: #9aa0a6;
-            margin: 0;
-          }
+        .notice-desc {
+          font-size: $font-size-sm + 1;
+          color: $color-text-secondary;
+          margin: 0;
         }
       }
     }

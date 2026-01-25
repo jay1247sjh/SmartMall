@@ -78,8 +78,11 @@ const alertType = computed(() => {
 </template>
 
 <style scoped lang="scss">
+@use '@/assets/styles/scss/variables' as *;
+@use '@/assets/styles/scss/mixins' as *;
+
 .auth-alert {
-  margin: 20px 0 0 0;
+  margin: $space-5 0 0 0;
   border-radius: 10px;
 
   :deep(.el-alert__content) {
@@ -89,29 +92,29 @@ const alertType = computed(() => {
   }
 
   &.el-alert--error {
-    background: rgba(242, 139, 130, 0.1);
-    border: 1px solid rgba(242, 139, 130, 0.2);
+    background: $color-error-muted;
+    border: 1px solid rgba($color-error, 0.2);
 
     :deep(.el-alert__title) {
-      color: #f28b82;
+      color: $color-error;
     }
   }
 
   &.el-alert--success {
-    background: rgba(129, 201, 149, 0.1);
-    border: 1px solid rgba(129, 201, 149, 0.2);
+    background: $color-success-muted;
+    border: 1px solid rgba($color-success, 0.2);
 
     :deep(.el-alert__title) {
-      color: #81c995;
+      color: $color-success;
     }
   }
 
   &.el-alert--warning {
-    background: rgba(253, 186, 116, 0.1);
-    border: 1px solid rgba(253, 186, 116, 0.2);
+    background: $color-warning-muted;
+    border: 1px solid rgba($color-warning, 0.2);
 
     :deep(.el-alert__title) {
-      color: #fdba74;
+      color: $color-warning;
     }
   }
 }

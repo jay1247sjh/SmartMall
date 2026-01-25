@@ -67,6 +67,9 @@ defineProps<{
 </template>
 
 <style scoped lang="scss">
+@use '@/assets/styles/scss/variables' as *;
+@use '@/assets/styles/scss/mixins' as *;
+
 .feature-list {
   display: flex;
   flex-direction: column;
@@ -78,12 +81,12 @@ defineProps<{
   .feature-item {
     display: flex;
     align-items: center;
-    gap: 12px;
-    color: #bdc1c6;
-    font-size: 14px;
+    gap: $radius-lg;
+    color: $color-text-secondary;
+    font-size: $font-size-base;
 
     .feature-icon {
-      color: #81c995;
+      color: $color-success;
       flex-shrink: 0;
     }
   }

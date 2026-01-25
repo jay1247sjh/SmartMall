@@ -5,7 +5,17 @@
 > 
 > 本文档为 **变更日志（Changelog）**，用于记录版本变更历史，遵循 Keep a Changelog 格式规范。
 > 
-> 最后更新：2026-01-07
+> 最后更新：2026-01-26
+
+---
+
+## [Unreleased] - 2026-01-26
+
+### Changed
+- 更新 STRUCTURE.md 文档，对齐实际实现状态
+- 补充缺失的模块说明（AiController、RouteController、HealthController 等）
+- 补充值对象（valueobject）目录说明
+- 补充基础设施层完整配置类列表
 
 ---
 

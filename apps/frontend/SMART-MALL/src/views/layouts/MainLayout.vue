@@ -94,10 +94,13 @@ function handleMenuSelect(path: string) {
 </template>
 
 <style scoped lang="scss">
+@use '@/assets/styles/scss/variables' as *;
+@use '@/assets/styles/scss/mixins' as *;
+
 .main-layout {
   min-height: 100vh;
-  background: #0a0a0a;
-  color: #e8eaed;
+  background: $color-bg-primary;
+  color: $color-text-primary;
   position: relative;
 
   .layout-bg {
@@ -114,39 +117,35 @@ function handleMenuSelect(path: string) {
     align-items: center;
     justify-content: space-between;
     height: 60px;
-    background: rgba(17, 17, 19, 0.8);
+    background: rgba($color-bg-secondary, 0.8);
     backdrop-filter: blur(20px);
-    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+    border-bottom: 1px solid $color-border-subtle;
     position: relative;
     z-index: 10;
 
     .header-left {
-      display: flex;
-      align-items: center;
+      @include flex-center-y;
       gap: 48px;
 
       .logo {
-        display: flex;
-        align-items: center;
-        gap: 12px;
+        @include flex-center-y;
+        gap: $space-3;
         text-decoration: none;
 
         .logo-icon {
           width: 36px;
           height: 36px;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          background: linear-gradient(135deg, rgba(96, 165, 250, 0.15) 0%, rgba(167, 139, 250, 0.15) 100%);
-          border: 1px solid rgba(255, 255, 255, 0.1);
+          @include flex-center;
+          background: linear-gradient(135deg, $color-primary-muted 0%, rgba($color-accent-violet, 0.15) 100%);
+          border: 1px solid $color-border-muted;
           border-radius: 10px;
-          color: #8ab4f8;
+          color: $color-accent-blue;
         }
 
         .logo-text {
-          font-size: 16px;
-          font-weight: 600;
-          background: linear-gradient(135deg, #60a5fa 0%, #a78bfa 100%);
+          font-size: $font-size-base + 2;
+          font-weight: $font-weight-semibold;
+          background: $gradient-admin;
           background-clip: text;
           -webkit-background-clip: text;
           -webkit-text-fill-color: transparent;
@@ -161,21 +160,20 @@ function handleMenuSelect(path: string) {
           height: 60px;
           line-height: 60px;
           border-bottom: none;
-          color: #9aa0a6;
+          color: $color-text-secondary;
 
-          &:hover { background: transparent; color: #e8eaed; }
-          &.is-active { background: transparent; color: #8ab4f8; border-bottom: 2px solid #8ab4f8; }
+          &:hover { background: transparent; color: $color-text-primary; }
+          &.is-active { background: transparent; color: $color-accent-blue; border-bottom: 2px solid $color-accent-blue; }
         }
       }
     }
 
     .user-actions {
-      display: flex;
-      align-items: center;
-      gap: 16px;
+      @include flex-center-y;
+      gap: $space-4;
 
-      .username { font-size: 14px; color: #e8eaed; }
-      .mr-1 { margin-right: 4px; }
+      .username { font-size: $font-size-base; color: $color-text-primary; }
+      .mr-1 { margin-right: $space-1; }
     }
   }
 

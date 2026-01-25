@@ -5,16 +5,73 @@
  * 使用懒加载（动态 import）实现按需加载
  * 
  * 安全设计：只有在白名单中的组件才能被加载
+ * 
+ * 性能优化：
+ * - 大型组件使用 defineAsyncComponent 配置加载状态和错误处理
+ * - 配置 LoadingSpinner 和 ErrorFallback 组件
+ * 
+ * Requirements: 24.1, 24.2, 24.3, 24.4, 24.5, 24.6
  */
 
-import type { Component } from 'vue'
+import { defineAsyncComponent, type Component } from 'vue'
+import LoadingSpinner from '@/components/shared/LoadingSpinner.vue'
+import ErrorFallback from '@/components/shared/ErrorFallback.vue'
+
+// ============================================================================
+// 异步组件配置
+// ============================================================================
+
+/**
+ * 异步组件默认配置
+ */
+const asyncComponentConfig = {
+  loadingComponent: LoadingSpinner,
+  errorComponent: ErrorFallback,
+  delay: 200,        // 延迟显示 loading（避免闪烁）
+  timeout: 30000,    // 超时时间
+  suspensible: false // 不使用 Suspense
+}
+
+/**
+ * MallBuilderView 异步组件
+ * 1277 行，包含 Three.js，需要异步加载优化
+ * Requirements: 24.1
+ */
+export const AsyncMallBuilderView = defineAsyncComponent({
+  loader: () => import('@/views/admin/MallBuilderView.vue'),
+  ...asyncComponentConfig
+})
+
+/**
+ * Mall3DView 异步组件
+ * 400+ 行，包含 3D 渲染，需要异步加载优化
+ * Requirements: 24.2
+ */
+export const AsyncMall3DView = defineAsyncComponent({
+  loader: () => import('@/views/Mall3DView.vue'),
+  ...asyncComponentConfig
+})
+
+/**
+ * AiChatPanel 异步组件
+ * AI 功能，非首屏必需，需要异步加载优化
+ * Requirements: 24.3
+ */
+export const AsyncAiChatPanel = defineAsyncComponent({
+  loader: () => import('@/components/ai/AiChatPanel.vue'),
+  ...asyncComponentConfig,
+  delay: 100,        // AI 面板延迟更短
+  timeout: 10000     // AI 面板超时更短
+})
 
 /**
  * 组件映射表
  * key: 后端返回的组件标识符
- * value: 懒加载的组件
+ * value: 懒加载的组件或异步组件
+ * 
+ * 注意：大型组件使用 defineAsyncComponent 包装，提供更好的加载体验
  */
-export const componentMap: Record<string, () => Promise<Component>> = {
+export const componentMap: Record<string, (() => Promise<Component>) | Component> = {
   // ===== 布局组件 =====
   'Layout': () => import('@/views/layouts/MainLayout.vue'),
   'AdminLayout': () => import('@/views/layouts/AdminLayout.vue'),
@@ -22,7 +79,8 @@ export const componentMap: Record<string, () => Promise<Component>> = {
 
   // ===== 公共页面 =====
   'MallView': () => import('@/views/MallView.vue'),
-  'Mall3DView': () => import('@/views/Mall3DView.vue'),
+  // Mall3DView 使用异步组件优化（400+ 行，包含 3D 渲染）
+  'Mall3DView': AsyncMall3DView,
   'LoginView': () => import('@/views/LoginView.vue'),
 
   // ===== 管理员页面 =====
@@ -32,7 +90,8 @@ export const componentMap: Record<string, () => Promise<Component>> = {
   'AdminAreaPermission': () => import('@/views/admin/AreaPermissionManageView.vue'),
   'AdminStoreManage': () => import('@/views/admin/AdminStoreManageView.vue'),
   'AdminLayoutVersion': () => import('@/views/admin/LayoutVersionView.vue'),
-  'AdminMallBuilder': () => import('@/views/admin/MallBuilderView.vue'),
+  // MallBuilderView 使用异步组件优化（1277 行，包含 Three.js）
+  'AdminMallBuilder': AsyncMallBuilderView,
   'AdminUserManage': () => import('@/views/admin/UserManageView.vue'),
 
   // ===== 商家页面 =====
@@ -55,10 +114,14 @@ export const componentMap: Record<string, () => Promise<Component>> = {
  * 根据组件标识符获取组件
  * 如果不在白名单中，返回 404 页面
  * 
+ * 支持两种类型的组件：
+ * - 懒加载函数：() => Promise<Component>
+ * - 异步组件：defineAsyncComponent 返回的组件
+ * 
  * @param name - 组件标识符
- * @returns 懒加载的组件
+ * @returns 懒加载的组件或异步组件
  */
-export function getComponent(name: string): () => Promise<Component> {
+export function getComponent(name: string): (() => Promise<Component>) | Component {
   const component = componentMap[name]
   
   if (!component) {

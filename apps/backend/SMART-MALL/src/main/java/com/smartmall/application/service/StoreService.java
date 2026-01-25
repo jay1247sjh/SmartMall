@@ -6,6 +6,7 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.smartmall.common.exception.BusinessException;
 import com.smartmall.common.response.ResultCode;
 import com.smartmall.common.util.IdGenerator;
+import com.smartmall.common.util.ValidationUtils;
 import com.smartmall.domain.entity.Area;
 import com.smartmall.domain.entity.Floor;
 import com.smartmall.domain.entity.Store;
@@ -85,9 +86,7 @@ public class StoreService {
      */
     public StoreDTO getStoreById(String storeId) {
         Store store = storeMapper.selectById(storeId);
-        if (store == null || store.getIsDeleted()) {
-            throw new BusinessException(ResultCode.STORE_NOT_FOUND);
-        }
+        ValidationUtils.requireStoreExists(store);
         return convertToDTO(store);
     }
     
@@ -97,14 +96,7 @@ public class StoreService {
     @Transactional
     public StoreDTO updateStore(String merchantId, String storeId, UpdateStoreRequest request) {
         Store store = storeMapper.selectById(storeId);
-        if (store == null || store.getIsDeleted()) {
-            throw new BusinessException(ResultCode.STORE_NOT_FOUND);
-        }
-        
-        // 检查所有权
-        if (!store.getMerchantId().equals(merchantId)) {
-            throw new BusinessException(ResultCode.STORE_NOT_OWNER);
-        }
+        ValidationUtils.validateStoreOwnership(store, merchantId);
         
         // 更新字段
         if (StringUtils.hasText(request.getName())) {
@@ -137,13 +129,7 @@ public class StoreService {
     @Transactional
     public void activateStore(String merchantId, String storeId) {
         Store store = storeMapper.selectById(storeId);
-        if (store == null || store.getIsDeleted()) {
-            throw new BusinessException(ResultCode.STORE_NOT_FOUND);
-        }
-        
-        if (!store.getMerchantId().equals(merchantId)) {
-            throw new BusinessException(ResultCode.STORE_NOT_OWNER);
-        }
+        ValidationUtils.validateStoreOwnership(store, merchantId);
         
         if (store.getStatus() != StoreStatus.INACTIVE) {
             throw new BusinessException(ResultCode.STORE_INVALID_STATUS_TRANSITION);
@@ -159,13 +145,7 @@ public class StoreService {
     @Transactional
     public void deactivateStore(String merchantId, String storeId) {
         Store store = storeMapper.selectById(storeId);
-        if (store == null || store.getIsDeleted()) {
-            throw new BusinessException(ResultCode.STORE_NOT_FOUND);
-        }
-        
-        if (!store.getMerchantId().equals(merchantId)) {
-            throw new BusinessException(ResultCode.STORE_NOT_OWNER);
-        }
+        ValidationUtils.validateStoreOwnership(store, merchantId);
         
         if (store.getStatus() != StoreStatus.ACTIVE) {
             throw new BusinessException(ResultCode.STORE_INVALID_STATUS_TRANSITION);
@@ -209,9 +189,7 @@ public class StoreService {
     @Transactional
     public void approveStore(String adminId, String storeId) {
         Store store = storeMapper.selectById(storeId);
-        if (store == null || store.getIsDeleted()) {
-            throw new BusinessException(ResultCode.STORE_NOT_FOUND);
-        }
+        ValidationUtils.requireStoreExists(store);
         
         if (store.getStatus() != StoreStatus.PENDING) {
             throw new BusinessException(ResultCode.STORE_INVALID_STATUS_TRANSITION);
@@ -229,9 +207,7 @@ public class StoreService {
     @Transactional
     public void closeStore(String adminId, String storeId, String reason) {
         Store store = storeMapper.selectById(storeId);
-        if (store == null || store.getIsDeleted()) {
-            throw new BusinessException(ResultCode.STORE_NOT_FOUND);
-        }
+        ValidationUtils.requireStoreExists(store);
         
         if (store.getStatus() == StoreStatus.CLOSED) {
             throw new BusinessException(ResultCode.STORE_INVALID_STATUS_TRANSITION);

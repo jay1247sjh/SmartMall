@@ -79,21 +79,25 @@ defineEmits<{
 </template>
 
 <style scoped lang="scss">
+@use '@/assets/styles/scss/variables' as *;
+@use '@/assets/styles/scss/mixins' as *;
+
 .auth-submit-btn {
+  @include btn-base;
   width: 100%;
-  margin-top: 24px;
+  margin-top: $space-6;
   height: 48px;
   border-radius: 10px;
-  font-size: 14px;
-  font-weight: 500;
-  background: linear-gradient(135deg, #60a5fa 0%, #818cf8 100%);
+  font-size: $font-size-base;
+  font-weight: $font-weight-medium;
+  background: linear-gradient(135deg, $color-primary 0%, $color-accent-purple 100%);
   border: none;
-  transition: transform 0.15s, box-shadow 0.15s;
+  transition: transform $duration-normal, box-shadow $duration-normal;
 
   &:hover:not(:disabled) {
     transform: translateY(-1px);
-    box-shadow: 0 4px 20px rgba(96, 165, 250, 0.3);
-    background: linear-gradient(135deg, #60a5fa 0%, #818cf8 100%);
+    box-shadow: 0 4px 20px rgba($color-primary, 0.3);
+    background: linear-gradient(135deg, $color-primary 0%, $color-accent-purple 100%);
 
     .btn-arrow {
       transform: translateX(3px);
@@ -105,13 +109,13 @@ defineEmits<{
   }
 
   &:disabled {
-    background: #3c4043;
-    color: #5f6368;
+    background: $color-bg-tertiary;
+    color: $color-text-muted;
   }
 
   .btn-arrow {
-    margin-left: 8px;
-    transition: transform 0.2s;
+    margin-left: $space-2;
+    transition: transform $duration-normal;
   }
 }
 </style>

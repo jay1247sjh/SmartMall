@@ -10,11 +10,15 @@
  * - 显示店铺状态和位置信息
  * - 创建新店铺（需要先有区域权限）
  * - 激活/暂停店铺营业
+ * 
+ * Requirements: 2.4, 2.5
  */
 import { ref, computed, onMounted } from 'vue'
 import { storeApi, areaPermissionApi } from '@/api'
-import type { StoreDTO, UpdateStoreRequest, CreateStoreRequest } from '@/api/store.api'
+import type { StoreDTO, UpdateStoreRequest } from '@/api/store.api'
 import type { AreaPermissionDTO } from '@/api/area-permission.api'
+import { StoreList, StoreForm } from '@/components/store'
+import type { StoreFormData } from '@/components/store/StoreForm.vue'
 
 // ============================================================================
 // State
@@ -36,13 +40,6 @@ const editForm = ref<UpdateStoreRequest>({
 
 // 创建店铺对话框
 const showCreateDialog = ref(false)
-const createForm = ref<CreateStoreRequest>({
-  areaId: '',
-  name: '',
-  description: '',
-  category: '',
-  businessHours: '',
-})
 
 // 操作状态
 const isProcessing = ref(false)
@@ -61,6 +58,9 @@ const availableAreasForCreate = computed(() => {
     p.status === 'ACTIVE' && !storeAreaIds.includes(p.areaId)
   )
 })
+
+// 当前选中店铺的ID
+const selectedStoreId = computed(() => selectedStore.value?.storeId ?? null)
 
 // ============================================================================
 // Methods
@@ -96,6 +96,20 @@ function selectStore(store: StoreDTO) {
     category: store.category,
     businessHours: store.businessHours || '',
   }
+}
+
+function handleStoreSelect(store: StoreDTO) {
+  selectStore(store)
+}
+
+function handleStoreEdit(store: StoreDTO) {
+  selectStore(store)
+  startEdit()
+}
+
+function handleStoreDelete(store: StoreDTO) {
+  // 删除功能预留
+  console.log('Delete store:', store.storeId)
 }
 
 function startEdit() {
@@ -140,25 +154,28 @@ async function saveStore() {
 }
 
 function openCreateDialog() {
-  createForm.value = {
-    areaId: '',
-    name: '',
-    description: '',
-    category: '',
-    businessHours: '',
-  }
   showCreateDialog.value = true
 }
 
-async function createStore() {
-  if (!createForm.value.areaId || !createForm.value.name || !createForm.value.category) {
+function handleCreateDialogClose() {
+  showCreateDialog.value = false
+}
+
+async function handleCreateSubmit(formData: StoreFormData) {
+  if (!formData.areaId || !formData.name || !formData.category) {
     showMessage('error', '请填写必填项')
     return
   }
   
   isProcessing.value = true
   try {
-    const newStore = await storeApi.createStore(createForm.value)
+    const newStore = await storeApi.createStore({
+      areaId: formData.areaId,
+      name: formData.name,
+      description: formData.description || undefined,
+      category: formData.category,
+      businessHours: formData.businessHours || undefined,
+    })
     stores.value.unshift(newStore)
     selectStore(newStore)
     showCreateDialog.value = false
@@ -255,34 +272,23 @@ onMounted(() => {
           </div>
         </div>
 
-        <div v-if="isLoading" class="loading">加载中...</div>
-
-        <div v-else-if="stores.length === 0" class="empty">
-          <p>暂无店铺</p>
-          <button 
-            v-if="availableAreasForCreate.length > 0"
-            class="btn btn-primary btn-sm"
-            @click="openCreateDialog"
-          >创建店铺</button>
-        </div>
-
-        <div v-else class="store-list">
-          <div
-            v-for="store in stores"
-            :key="store.storeId"
-            :class="['store-item', { active: selectedStore?.storeId === store.storeId }]"
-            @click="selectStore(store)"
-          >
-            <div class="store-avatar">
-              {{ store.name.charAt(0) }}
-            </div>
-            <div class="store-info">
-              <span class="store-name">{{ store.name }}</span>
-              <span class="store-location">{{ store.floorName }} · {{ store.areaName }}</span>
-            </div>
-            <span :class="['status-dot', getStatusClass(store.status)]"></span>
-          </div>
-        </div>
+        <!-- 使用 StoreList 子组件 -->
+        <StoreList
+          :stores="stores"
+          :selected-id="selectedStoreId"
+          :loading="isLoading"
+          @select="handleStoreSelect"
+          @edit="handleStoreEdit"
+          @delete="handleStoreDelete"
+        >
+          <template #empty-action>
+            <button 
+              v-if="availableAreasForCreate.length > 0"
+              class="btn btn-primary btn-sm"
+              @click="openCreateDialog"
+            >创建店铺</button>
+          </template>
+        </StoreList>
       </div>
 
       <!-- 右侧：店铺详情 -->
@@ -396,506 +402,208 @@ onMounted(() => {
       </div>
     </div>
 
-    <!-- 创建店铺对话框 -->
-    <div v-if="showCreateDialog" class="dialog-overlay" @click.self="showCreateDialog = false">
-      <div class="dialog">
-        <div class="dialog-header">
-          <h3>创建新店铺</h3>
-          <button class="dialog-close" @click="showCreateDialog = false">×</button>
-        </div>
-        <div class="dialog-body">
-          <div class="form-item">
-            <label>选择区域 *</label>
-            <select v-model="createForm.areaId" class="select">
-              <option value="">请选择区域</option>
-              <option 
-                v-for="area in availableAreasForCreate" 
-                :key="area.areaId" 
-                :value="area.areaId"
-              >
-                {{ area.floorName }} - {{ area.areaName }}
-              </option>
-            </select>
-          </div>
-          <div class="form-item">
-            <label>店铺名称 *</label>
-            <input v-model="createForm.name" type="text" class="input" placeholder="请输入店铺名称" />
-          </div>
-          <div class="form-item">
-            <label>店铺分类 *</label>
-            <select v-model="createForm.category" class="select">
-              <option value="">请选择分类</option>
-              <option v-for="cat in categories" :key="cat" :value="cat">{{ cat }}</option>
-            </select>
-          </div>
-          <div class="form-item">
-            <label>营业时间</label>
-            <input v-model="createForm.businessHours" type="text" class="input" placeholder="如：08:00-22:00" />
-          </div>
-          <div class="form-item">
-            <label>店铺描述</label>
-            <textarea v-model="createForm.description" class="textarea" rows="3" placeholder="请输入店铺描述"></textarea>
-          </div>
-        </div>
-        <div class="dialog-footer">
-          <button class="btn btn-secondary" @click="showCreateDialog = false">取消</button>
-          <button class="btn btn-primary" :disabled="isProcessing" @click="createStore">
-            {{ isProcessing ? '创建中...' : '创建' }}
-          </button>
-        </div>
-      </div>
-    </div>
+    <!-- 创建店铺对话框 - 使用 StoreForm 子组件 -->
+    <StoreForm
+      :visible="showCreateDialog"
+      :store="null"
+      mode="create"
+      :available-areas="availableAreasForCreate"
+      :processing="isProcessing"
+      @update:visible="handleCreateDialogClose"
+      @submit="handleCreateSubmit"
+      @cancel="handleCreateDialogClose"
+    />
   </div>
 </template>
 
-<style scoped>
+<style scoped lang="scss">
+@use '@/assets/styles/scss/variables' as *;
+@use '@/assets/styles/scss/mixins' as *;
+
 .store-config-page {
   display: flex;
   flex-direction: column;
-  gap: 20px;
+  gap: $space-5;
   height: 100%;
 }
 
-/* Message */
+// 消息提示
 .message {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 12px 16px;
-  border-radius: 8px;
-  font-size: 14px;
+  @include message-alert;
 }
 
-.message.success {
-  background: rgba(52, 211, 153, 0.1);
-  color: #34d399;
-  border: 1px solid rgba(52, 211, 153, 0.2);
-}
-
-.message.error {
-  background: rgba(242, 139, 130, 0.1);
-  color: #f28b82;
-  border: 1px solid rgba(242, 139, 130, 0.2);
-}
-
-/* Content Grid */
+// 内容网格
 .content-grid {
   display: grid;
   grid-template-columns: 300px 1fr;
-  gap: 20px;
+  gap: $space-5;
   flex: 1;
   min-height: 0;
 }
 
-/* Store List Panel */
+// 店铺列表面板
 .store-list-panel {
-  background: #111113;
-  border: 1px solid rgba(255, 255, 255, 0.06);
-  border-radius: 12px;
+  @include card-base;
   display: flex;
   flex-direction: column;
   overflow: hidden;
 }
 
 .panel-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 16px 20px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
-}
-
-.panel-header h3 {
-  font-size: 15px;
-  font-weight: 600;
-  color: #e8eaed;
-  margin: 0;
+  @include card-header;
 }
 
 .header-actions {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: $space-3;
 }
 
 .store-count {
-  font-size: 13px;
-  color: #9aa0a6;
+  font-size: $font-size-sm;
+  color: $color-text-secondary;
 }
 
 .btn-add {
   width: 28px;
   height: 28px;
-  border-radius: 6px;
-  background: #60a5fa;
+  border-radius: $radius-sm;
+  background: $color-primary;
   color: white;
   border: none;
-  font-size: 18px;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  font-size: $font-size-xl;
+  @include flex-center;
+  @include clickable;
+
+  &:hover {
+    background: $color-primary-hover;
+  }
 }
 
-.btn-add:hover {
-  background: #93c5fd;
-}
-
-.loading,
-.empty {
-  padding: 40px 20px;
-  text-align: center;
-  color: #5f6368;
-  font-size: 14px;
-}
-
-.store-list {
-  flex: 1;
-  overflow-y: auto;
-  padding: 12px;
-}
-
-.store-item {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 14px 16px;
-  border-radius: 10px;
-  cursor: pointer;
-  margin-bottom: 8px;
-  transition: all 0.15s;
-  border: 1px solid transparent;
-}
-
-.store-item:hover {
-  background: rgba(255, 255, 255, 0.04);
-}
-
-.store-item.active {
-  background: rgba(96, 165, 250, 0.1);
-  border-color: rgba(96, 165, 250, 0.3);
-}
-
-.store-avatar {
-  width: 40px;
-  height: 40px;
-  border-radius: 10px;
-  background: linear-gradient(135deg, #60a5fa 0%, #a78bfa 100%);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 16px;
-  font-weight: 600;
-  color: white;
-  flex-shrink: 0;
-}
-
-.store-info {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  min-width: 0;
-}
-
-.store-name {
-  font-size: 14px;
-  font-weight: 500;
-  color: #e8eaed;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.store-location {
-  font-size: 12px;
-  color: #9aa0a6;
-}
-
-.status-dot {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  flex-shrink: 0;
-}
-
-.status-dot.status-active {
-  background: #34d399;
-}
-
-.status-dot.status-inactive {
-  background: #fbbf24;
-}
-
-.status-dot.status-pending {
-  background: #60a5fa;
-}
-
-.status-dot.status-closed {
-  background: #9ca3af;
-}
-
-/* Store Detail Panel */
+// 店铺详情面板
 .store-detail-panel {
-  background: #111113;
-  border: 1px solid rgba(255, 255, 255, 0.06);
-  border-radius: 12px;
-  padding: 24px;
-  display: flex;
-  flex-direction: column;
+  @include card-base;
+  padding: $space-6;
+  @include flex-column;
 }
 
 .empty-state {
   flex: 1;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: #5f6368;
-  font-size: 14px;
+  @include flex-center;
+  color: $color-text-muted;
+  font-size: $font-size-base;
 }
 
 .detail-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding-bottom: 24px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
-  margin-bottom: 24px;
+  @include flex-between;
+  padding-bottom: $space-6;
+  border-bottom: 1px solid $color-border-subtle;
+  margin-bottom: $space-6;
 }
 
 .header-left {
-  display: flex;
-  align-items: center;
-  gap: 16px;
+  @include flex-center-y;
+  gap: $space-4;
 }
 
 .store-avatar-large {
   width: 64px;
   height: 64px;
-  border-radius: 14px;
-  background: linear-gradient(135deg, #60a5fa 0%, #a78bfa 100%);
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  border-radius: $radius-lg + 2;
+  background: $gradient-admin;
+  @include flex-center;
   font-size: 26px;
-  font-weight: 600;
+  font-weight: $font-weight-semibold;
   color: white;
 }
 
-.header-info h2 {
-  font-size: 20px;
-  font-weight: 600;
-  color: #e8eaed;
-  margin: 0 0 6px 0;
+.header-info {
+  h2 {
+    font-size: $font-size-2xl;
+    font-weight: $font-weight-semibold;
+    color: $color-text-primary;
+    margin: 0 0 $space-1 + 2 0;
+  }
+
+  .location {
+    font-size: $font-size-base;
+    color: $color-text-secondary;
+  }
 }
 
-.header-info .location {
-  font-size: 14px;
-  color: #9aa0a6;
-}
-
-/* Status Badge */
+// 状态徽章
 .status-badge {
-  display: inline-block;
-  padding: 6px 14px;
-  border-radius: 20px;
-  font-size: 13px;
-  font-weight: 500;
+  @include status-badge;
+  padding: $space-1 + 2 $space-3 + 2;
+
+  &.status-active {
+    @include status-variant($color-success-muted, $color-success);
+  }
+
+  &.status-inactive {
+    @include status-variant($color-warning-muted, $color-warning);
+  }
+
+  &.status-pending {
+    @include status-variant($color-primary-muted, $color-primary);
+  }
+
+  &.status-closed {
+    @include status-variant(rgba($color-text-muted, 0.15), $color-text-muted);
+  }
 }
 
-.status-badge.status-active {
-  background: rgba(52, 211, 153, 0.15);
-  color: #34d399;
-}
-
-.status-badge.status-inactive {
-  background: rgba(251, 191, 36, 0.15);
-  color: #fbbf24;
-}
-
-.status-badge.status-pending {
-  background: rgba(96, 165, 250, 0.15);
-  color: #60a5fa;
-}
-
-.status-badge.status-closed {
-  background: rgba(156, 163, 175, 0.15);
-  color: #9ca3af;
-}
-
-/* Detail Form */
+// 详情表单
 .detail-form {
-  display: flex;
-  flex-direction: column;
-  gap: 20px;
+  @include flex-column;
+  gap: $space-5;
 }
 
 .form-item {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
+  @include form-item;
 
-.form-item label {
-  font-size: 13px;
-  color: #9aa0a6;
-}
-
-.form-item .value {
-  font-size: 15px;
-  color: #e8eaed;
+  .value {
+    font-size: $font-size-lg;
+    color: $color-text-primary;
+  }
 }
 
 .form-row {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 20px;
+  @include form-row;
+  gap: $space-5;
 }
 
 .input,
 .select,
 .textarea {
-  background: #0a0a0a;
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 8px;
-  padding: 12px 16px;
-  font-size: 14px;
-  color: #e8eaed;
-  font-family: inherit;
-}
-
-.input:focus,
-.select:focus,
-.textarea:focus {
-  outline: none;
-  border-color: #60a5fa;
-}
-
-.input::placeholder,
-.textarea::placeholder {
-  color: #5f6368;
+  @include form-control;
 }
 
 .textarea {
   resize: vertical;
 }
 
-/* Form Actions */
+// 表单操作
 .form-actions {
   display: flex;
-  gap: 12px;
-  margin-top: 12px;
+  gap: $space-3;
+  margin-top: $space-3;
 }
 
-/* Buttons */
+// 按钮
 .btn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  padding: 12px 24px;
-  border-radius: 8px;
-  font-size: 14px;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.15s;
-  border: none;
-}
+  @include btn-base;
 
-.btn:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-}
+  &-sm {
+    @include btn-sm;
+  }
 
-.btn-sm {
-  padding: 8px 16px;
-  font-size: 13px;
-}
+  &-secondary {
+    @include btn-secondary;
+  }
 
-.btn-secondary {
-  background: transparent;
-  color: #9aa0a6;
-  border: 1px solid rgba(255, 255, 255, 0.1);
-}
-
-.btn-secondary:hover:not(:disabled) {
-  background: rgba(255, 255, 255, 0.04);
-}
-
-.btn-primary {
-  background: #60a5fa;
-  color: #0a0a0a;
-}
-
-.btn-primary:hover:not(:disabled) {
-  background: #93c5fd;
-}
-
-/* Dialog */
-.dialog-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(0, 0, 0, 0.7);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 1000;
-}
-
-.dialog {
-  background: #1a1a1c;
-  border-radius: 12px;
-  width: 480px;
-  max-width: 90vw;
-  max-height: 90vh;
-  overflow: hidden;
-  display: flex;
-  flex-direction: column;
-}
-
-.dialog-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 20px 24px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
-}
-
-.dialog-header h3 {
-  margin: 0;
-  font-size: 18px;
-  color: #e8eaed;
-}
-
-.dialog-close {
-  background: none;
-  border: none;
-  color: #9aa0a6;
-  font-size: 24px;
-  cursor: pointer;
-  padding: 0;
-  line-height: 1;
-}
-
-.dialog-close:hover {
-  color: #e8eaed;
-}
-
-.dialog-body {
-  padding: 24px;
-  overflow-y: auto;
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-}
-
-.dialog-footer {
-  display: flex;
-  justify-content: flex-end;
-  gap: 12px;
-  padding: 16px 24px;
-  border-top: 1px solid rgba(255, 255, 255, 0.06);
+  &-primary {
+    @include btn-primary;
+  }
 }
 </style>

@@ -33,3 +33,4 @@
 
 export * from './CameraController'
 export * from './OrbitController'
+export * from './cameraFactory'

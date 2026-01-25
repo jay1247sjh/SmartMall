@@ -1,0 +1,19 @@
+/**
+ * Smart Mall 设计系统 - 主入口
+ * 导入所有可复用样式
+ * 
+ * 使用方式：
+ * @import '@/assets/styles/scss/index.scss';
+ */
+
+// 1. Mixins - 可复用的样式混入
+@import './mixins';
+
+// 2. 动画 - 动画定义
+@import './animations';
+
+// 3. 工具类 - 快速样式类
+@import './utilities';
+
+// 4. 通用组件样式
+@import './components/index';

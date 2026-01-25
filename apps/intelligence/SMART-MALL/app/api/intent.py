@@ -4,7 +4,7 @@
 使用 LLM 进行自然语言意图识别，返回结构化 Action
 """
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Depends
 from pydantic import BaseModel
 from typing import Optional, List, Dict, Any
 from datetime import datetime
@@ -15,6 +15,7 @@ import time
 from app.core.llm.factory import LLMFactory
 from app.core.llm.qwen import QwenProvider
 from app.core.prompt_loader import PromptLoader
+from app.core.errors import parse_llm_error
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
@@ -24,7 +25,7 @@ _llm: Optional[QwenProvider] = None
 
 
 def get_llm() -> QwenProvider:
-    """获取 LLM 单例"""
+    """获取 LLM 单例（用于依赖注入）"""
     global _llm
     if _llm is None:
         _llm = LLMFactory.create("qwen")
@@ -131,7 +132,8 @@ class AIResponse(BaseModel):
 async def recognize_intent(
     text: str,
     role: str,
-    current_page: Optional[str] = None
+    current_page: Optional[str] = None,
+    llm: QwenProvider = None
 ) -> Dict[str, Any]:
     """
     使用 LLM 识别意图
@@ -140,11 +142,13 @@ async def recognize_intent(
         text: 用户输入文本
         role: 用户角色
         current_page: 当前页面路径
+        llm: LLM 提供者实例
         
     Returns:
         意图识别结果
     """
-    llm = get_llm()
+    if llm is None:
+        llm = get_llm()
     
     # 从 YAML 加载 prompt 配置
     system_prompt = PromptLoader.get_system_prompt("intent")
@@ -186,7 +190,10 @@ async def recognize_intent(
 # ============ 接口实现 ============
 
 @router.post("/intent/process", response_model=AIResponse)
-async def process_natural_language(request: AIRequest) -> AIResponse:
+async def process_natural_language(
+    request: AIRequest,
+    llm: QwenProvider = Depends(get_llm)
+) -> AIResponse:
     """
     处理自然语言输入，返回结构化 Action
     """
@@ -199,7 +206,8 @@ async def process_natural_language(request: AIRequest) -> AIResponse:
         result = await recognize_intent(
             text=request.input.text,
             role=request.context.role,
-            current_page=request.context.currentPage
+            current_page=request.context.currentPage,
+            llm=llm
         )
         
         latency_ms = int((time.time() - start_time) * 1000)
@@ -244,14 +252,17 @@ async def process_natural_language(request: AIRequest) -> AIResponse:
         logger.error(f"[{request.requestId}] Error: {str(e)}")
         latency_ms = int((time.time() - start_time) * 1000)
         
+        # 使用共享错误处理解析错误
+        status_code, error_type, user_message = parse_llm_error(e)
+        
         return AIResponse(
             requestId=request.requestId,
             timestamp=datetime.utcnow().isoformat() + "Z",
             status="ERROR",
             error=ErrorInfo(
-                code="AI_PROCESSING_ERROR",
-                message=str(e),
-                retryable=True,
+                code=error_type.upper(),
+                message=user_message,
+                retryable=status_code in [429, 503, 504],
                 fallbackAvailable=True
             ),
             fallback=FallbackInfo(

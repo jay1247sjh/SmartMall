@@ -6,74 +6,26 @@ RAG API Schema 定义
 
 from typing import List, Optional, Dict, Any
 from pydantic import BaseModel, Field
-from enum import Enum
 
+# 从共享类型包导入枚举定义，避免重复定义
+from smart_mall_types.enums import (
+    AreaType,
+    StoreStatus,
+    ProductStatus,
+    AREA_TYPE_NAMES,
+    STORE_STATUS_NAMES,
+    PRODUCT_STATUS_NAMES,
+)
 
-# ============ 共享枚举定义 ============
-# 与 packages/shared-types 保持一致
-
-class AreaType(str, Enum):
-    """区域类型枚举"""
-    RETAIL = "retail"
-    FOOD = "food"
-    SERVICE = "service"
-    ANCHOR = "anchor"
-    COMMON = "common"
-    CORRIDOR = "corridor"
-    ELEVATOR = "elevator"
-    ESCALATOR = "escalator"
-    STAIRS = "stairs"
-    RESTROOM = "restroom"
-    STORAGE = "storage"
-    OFFICE = "office"
-    PARKING = "parking"
-    OTHER = "other"
-
-
-class StoreStatus(str, Enum):
-    """店铺状态枚举"""
-    PENDING = "PENDING"
-    ACTIVE = "ACTIVE"
-    INACTIVE = "INACTIVE"
-    CLOSED = "CLOSED"
-
-
-class ProductStatus(str, Enum):
-    """商品状态枚举"""
-    ON_SALE = "ON_SALE"
-    OFF_SALE = "OFF_SALE"
-    SOLD_OUT = "SOLD_OUT"
-
-
-AREA_TYPE_NAMES = {
-    AreaType.RETAIL: "零售店铺",
-    AreaType.FOOD: "餐饮",
-    AreaType.SERVICE: "服务",
-    AreaType.ANCHOR: "主力店",
-    AreaType.COMMON: "公共区域",
-    AreaType.CORRIDOR: "走廊",
-    AreaType.ELEVATOR: "电梯",
-    AreaType.ESCALATOR: "扶梯",
-    AreaType.STAIRS: "楼梯",
-    AreaType.RESTROOM: "洗手间",
-    AreaType.STORAGE: "仓储",
-    AreaType.OFFICE: "办公",
-    AreaType.PARKING: "停车",
-    AreaType.OTHER: "其他",
-}
-
-STORE_STATUS_NAMES = {
-    StoreStatus.PENDING: "待审批",
-    StoreStatus.ACTIVE: "营业中",
-    StoreStatus.INACTIVE: "暂停营业",
-    StoreStatus.CLOSED: "已关闭",
-}
-
-PRODUCT_STATUS_NAMES = {
-    ProductStatus.ON_SALE: "在售",
-    ProductStatus.OFF_SALE: "下架",
-    ProductStatus.SOLD_OUT: "售罄",
-}
+# 重新导出枚举，保持向后兼容
+__all__ = [
+    'AreaType',
+    'StoreStatus',
+    'ProductStatus',
+    'AREA_TYPE_NAMES',
+    'STORE_STATUS_NAMES',
+    'PRODUCT_STATUS_NAMES',
+]
 
 
 # ============ 店铺搜索 ============

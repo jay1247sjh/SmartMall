@@ -58,29 +58,32 @@ function handleClose() {
 </template>
 
 <style scoped lang="scss">
+@use '@/assets/styles/scss/variables' as *;
+@use '@/assets/styles/scss/mixins' as *;
+
 .custom-modal {
   :deep(.el-dialog) {
-    border-radius: 16px;
+    border-radius: $radius-xl;
     overflow: hidden;
 
     .el-dialog__header {
-      padding: 20px 24px;
+      padding: $space-5 $space-6;
       margin-right: 0;
       border-bottom: 1px solid var(--el-border-color-lighter);
 
       .el-dialog__title {
-        font-size: 18px;
-        font-weight: 500;
+        font-size: $font-size-xl;
+        font-weight: $font-weight-medium;
       }
 
       .el-dialog__headerbtn {
-        top: 20px;
-        right: 20px;
-        width: 32px;
-        height: 32px;
+        top: $space-5;
+        right: $space-5;
+        width: $space-8;
+        height: $space-8;
 
         .el-dialog__close {
-          font-size: 18px;
+          font-size: $font-size-xl;
         }
       }
     }
@@ -90,14 +93,13 @@ function handleClose() {
     }
 
     .el-dialog__footer {
-      padding: 16px 24px;
+      padding: $space-4 $space-6;
       border-top: 1px solid var(--el-border-color-lighter);
     }
   }
 
   .modal-body {
-    padding: 24px;
-    overflow-y: auto;
+    @include dialog-body;
     max-height: calc(80vh - 140px);
   }
 

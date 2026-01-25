@@ -127,17 +127,8 @@ defineProps<{
 </template>
 
 <style scoped lang="scss">
-/**
- * ============================================================================
- * 样式说明
- * ============================================================================
- * 
- * 【设计风格】
- * - 深色主题
- * - 半透明背景
- * - 圆角边框
- * - 居中对齐的标题
- */
+@use '@/assets/styles/scss/variables' as *;
+@use '@/assets/styles/scss/mixins' as *;
 
 .auth-form-card {
   width: 100%;
@@ -148,18 +139,16 @@ defineProps<{
     margin-bottom: 28px;
 
     hgroup {
-      /* 主标题样式 */
       h2 {
         font-size: 26px;
-        font-weight: 500;
-        color: #e8eaed;  /* 浅灰白色 */
-        margin: 0 0 8px 0;
+        font-weight: $font-weight-medium;
+        color: $color-text-primary;
+        margin: 0 0 $space-2 0;
       }
 
-      /* 描述文字样式 */
       p {
-        font-size: 14px;
-        color: #9aa0a6;  /* 中灰色 */
+        font-size: $font-size-base;
+        color: $color-text-secondary;
         margin: 0;
       }
     }
@@ -167,14 +156,10 @@ defineProps<{
 
   /* 表单内容区域 */
   .form-body {
-    /* 半透明背景 */
-    background: rgba(255, 255, 255, 0.02);
-    /* 细边框 */
-    border: 1px solid rgba(255, 255, 255, 0.08);
-    /* 大圆角 */
-    border-radius: 16px;
+    background: $color-bg-hover;
+    border: 1px solid rgba($color-white, 0.08);
+    border-radius: $radius-xl;
 
-    /* 穿透 Element Plus 卡片内边距 */
     :deep(.el-card__body) {
       padding: 28px;
     }
@@ -182,7 +167,7 @@ defineProps<{
 
   /* 底部区域 */
   .form-footer-slot {
-    margin-top: 24px;
+    margin-top: $space-6;
   }
 }
 </style>

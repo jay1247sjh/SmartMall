@@ -42,23 +42,30 @@ pip install -r requirements.txt
 
 ### 2. 配置环境变量
 
+#### 方式一：使用 .env 文件（推荐）
+
 ```bash
+# 复制配置模板
 cp .env.example .env
+
+# 编辑 .env 文件，填写必需的配置项
+# 必需配置：
+# - QWEN_API_KEY: 阿里云百炼 API Key（从 https://bailian.console.aliyun.com/ 获取）
+# - PG_PASSWORD: PostgreSQL 密码
 ```
 
-编辑 `.env` 文件：
+#### 方式二：使用 .env.local（本地开发）
 
-```env
-# LLM 配置
-LLM_PROVIDER=qwen
-QWEN_API_KEY=your_api_key
-QWEN_MODEL=qwen-plus
-QWEN_VISION_MODEL=qwen-vl-plus
+```bash
+# 创建本地配置文件（不会被提交到 Git）
+cp .env .env.local
 
-# 服务配置
-ENVIRONMENT=development
-DEBUG=true
+# 在 .env.local 中添加敏感信息
+echo "QWEN_API_KEY=your_actual_api_key" >> .env.local
+echo "PG_PASSWORD=your_actual_password" >> .env.local
 ```
+
+**配置优先级**: `.env.local` > `.env`
 
 ### 3. 启动服务
 
@@ -68,6 +75,20 @@ uvicorn app.main:app --reload --port 9000
 
 # 生产模式
 uvicorn app.main:app --host 0.0.0.0 --port 9000
+```
+
+启动时会显示配置摘要：
+
+```
+============================================================
+Configuration Loaded
+============================================================
+Environment: development
+Config Source: .env.local + .env
+LLM Provider: qwen
+Milvus: localhost:19530/smartmall
+PostgreSQL: localhost:5433/smartmall
+============================================================
 ```
 
 ### 4. 测试接口
@@ -81,6 +102,176 @@ curl -X POST http://localhost:9000/api/chat \
   -H "Content-Type: application/json" \
   -d '{"message": "Nike 店在哪里？"}'
 ```
+
+---
+
+## 配置说明
+
+### 配置文件说明
+
+| 文件 | 说明 | 是否提交到 Git |
+|------|------|----------------|
+| `.env.example` | 配置模板，包含所有配置项的说明 | ✅ 是 |
+| `.env` | 基础配置，不包含敏感信息 | ✅ 是 |
+| `.env.local` | 本地配置，包含敏感信息 | ❌ 否 |
+| `.env.production` | 生产环境配置（可选） | ❌ 否 |
+
+### 核心配置项
+
+#### LLM 配置
+
+| 配置项 | 说明 | 默认值 | 必需 |
+|--------|------|--------|------|
+| `LLM_PROVIDER` | LLM 提供商（qwen/openai/deepseek/local） | qwen | 是 |
+| `QWEN_API_KEY` | 阿里云百炼 API Key | - | 是（使用 qwen 时） |
+| `QWEN_MODEL` | Qwen 模型名称 | qwen3-vl-plus | 否 |
+| `LLM_TEMPERATURE` | 温度参数（0.0-2.0） | 0.3 | 否 |
+| `LLM_MAX_TOKENS` | 最大生成 Token 数 | 2000 | 否 |
+
+**获取 Qwen API Key**:
+1. 访问 [阿里云百炼控制台](https://bailian.console.aliyun.com/)
+2. 创建应用并获取 API Key
+3. 将 API Key 配置到 `.env.local` 中
+
+#### Milvus 配置
+
+| 配置项 | 说明 | 默认值 |
+|--------|------|--------|
+| `MILVUS_HOST` | Milvus 服务地址 | localhost |
+| `MILVUS_PORT` | Milvus 服务端口 | 19530 |
+| `MILVUS_DB_NAME` | 数据库名称 | smartmall |
+| `MILVUS_COLLECTION_STORES` | 店铺集合名称 | stores |
+| `MILVUS_COLLECTION_PRODUCTS` | 商品集合名称 | products |
+| `MILVUS_COLLECTION_LOCATIONS` | 位置集合名称 | locations |
+
+#### Embedding 配置
+
+| 配置项 | 说明 | 默认值 |
+|--------|------|--------|
+| `EMBEDDING_PROVIDER` | Embedding 提供商（qwen/openai/local） | qwen |
+| `EMBEDDING_MODEL` | Embedding 模型名称 | text-embedding-v3 |
+| `EMBEDDING_DIMENSION` | 向量维度 | 1024 |
+| `CHUNK_SIZE` | 文本分块大小 | 512 |
+| `CHUNK_OVERLAP` | 分块重叠大小 | 50 |
+
+#### RAG 配置
+
+| 配置项 | 说明 | 默认值 |
+|--------|------|--------|
+| `RAG_TOP_K` | 检索返回数量 | 5 |
+| `RAG_SCORE_THRESHOLD` | 相似度阈值（0.0-1.0） | 0.6 |
+| `RAG_RERANK_ENABLED` | 是否启用重排序 | false |
+| `RAG_CACHE_ENABLED` | 是否启用缓存 | true |
+| `RAG_CACHE_TTL` | 缓存过期时间（秒） | 300 |
+
+#### PostgreSQL 配置
+
+| 配置项 | 说明 | 默认值 | 必需 |
+|--------|------|--------|------|
+| `PG_HOST` | PostgreSQL 服务地址 | localhost | 是 |
+| `PG_PORT` | PostgreSQL 服务端口 | 5433 | 是 |
+| `PG_USER` | PostgreSQL 用户名 | smartmall | 是 |
+| `PG_PASSWORD` | PostgreSQL 密码 | - | 是 |
+| `PG_DATABASE` | PostgreSQL 数据库名称 | smartmall | 是 |
+
+### 多环境配置
+
+支持通过不同的 `.env` 文件管理多环境配置：
+
+```bash
+# 开发环境
+.env              # 基础配置
+.env.local        # 本地开发配置（覆盖 .env）
+
+# 生产环境
+.env              # 基础配置
+.env.production   # 生产配置（覆盖 .env）
+```
+
+**配置优先级**: `.env.local` > `.env.production` > `.env`
+
+### 配置验证
+
+应用启动时会自动验证配置：
+
+- ✅ 端口号范围（1-65535）
+- ✅ 温度参数范围（0.0-2.0）
+- ✅ 相似度阈值范围（0.0-1.0）
+- ✅ LLM 提供商有效性
+- ✅ Embedding 提供商有效性
+- ✅ 必需配置项完整性
+
+如果配置无效，会抛出清晰的错误信息：
+
+```
+ValueError: LLM_TEMPERATURE must be between 0.0 and 2.0, got 3.0
+ValueError: MILVUS_PORT must be between 1 and 65535, got 99999
+```
+
+### 常见配置场景
+
+#### 场景 1: 使用 OpenAI 替代 Qwen
+
+```env
+# .env.local
+LLM_PROVIDER=openai
+OPENAI_API_KEY=sk-your-openai-key
+OPENAI_MODEL=gpt-4
+
+EMBEDDING_PROVIDER=openai
+OPENAI_EMBEDDING_MODEL=text-embedding-3-small
+EMBEDDING_DIMENSION=1536
+```
+
+#### 场景 2: 使用本地 Ollama 模型
+
+```env
+# .env.local
+LLM_PROVIDER=local
+LOCAL_MODEL_URL=http://localhost:11434
+LOCAL_MODEL_NAME=llama2
+
+EMBEDDING_PROVIDER=local
+LOCAL_EMBEDDING_MODEL=BAAI/bge-m3
+EMBEDDING_DIMENSION=1024
+```
+
+#### 场景 3: 调整 RAG 参数
+
+```env
+# .env.local
+RAG_TOP_K=10
+RAG_SCORE_THRESHOLD=0.7
+RAG_RERANK_ENABLED=true
+RAG_CACHE_ENABLED=false
+```
+
+### 故障排查
+
+#### 问题 1: 启动时提示 API Key 未设置
+
+```
+WARNING: QWEN_API_KEY is not set. LLM features will not work.
+```
+
+**解决方案**: 在 `.env.local` 中设置 `QWEN_API_KEY`
+
+#### 问题 2: 无法连接 Milvus
+
+```
+ERROR: Failed to connect to Milvus at localhost:19530
+```
+
+**解决方案**: 
+1. 检查 Milvus 是否启动：`docker ps | grep milvus`
+2. 检查 `MILVUS_HOST` 和 `MILVUS_PORT` 配置
+
+#### 问题 3: 配置未生效
+
+**解决方案**: 
+1. 检查配置文件优先级（`.env.local` > `.env`）
+2. 重启服务以重新加载配置
+3. 查看启动日志中的"Configuration Loaded"部分
 
 ---
 

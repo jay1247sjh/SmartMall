@@ -1,0 +1,480 @@
+/**
+ * Mall Builder View - 商城建模器视图样式
+ * 
+ * 只包含 MallBuilder 特有的业务样式
+ * 通用组件样式已在 @/assets/styles/scss 中定义
+ */
+
+@import '../../scss/index.scss';
+
+// ============================================================================
+// Mall Builder 容器
+// ============================================================================
+
+.mall-builder {
+  @include absolute-fill;
+  position: relative;
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  font-family: var(--font-sans);
+  overflow: hidden;
+  @include scrollbar-custom(var(--accent-primary));
+}
+
+// ============================================================================
+// Canvas 容器
+// ============================================================================
+
+.canvas-container {
+  @include absolute-fill;
+  z-index: 1;
+
+  canvas {
+    display: block;
+    width: 100%;
+    height: 100%;
+    cursor: crosshair;
+
+    &.pan-cursor {
+      cursor: grab;
+      &:active { cursor: grabbing; }
+    }
+
+    &.select-cursor {
+      cursor: default;
+    }
+  }
+}
+
+// ============================================================================
+// 楼层列表（业务特定）
+// ============================================================================
+
+.floor-list {
+  @include flex-column;
+  gap: var(--space-2);
+  overflow-y: auto;
+  @include scrollbar-custom;
+
+  &__item {
+    @extend .panel__item;
+    
+    &-indicator {
+      width: 3px;
+      height: 100%;
+      background: var(--accent-primary);
+      border-radius: 2px;
+      position: absolute;
+      left: 0;
+      top: 0;
+      opacity: 0;
+      transition: opacity var(--duration-normal);
+    }
+
+    &--active &-indicator {
+      opacity: 1;
+    }
+  }
+
+  &__add-btn {
+    @include btn-secondary;
+    width: 100%;
+    justify-content: center;
+  }
+}
+
+// ============================================================================
+// 属性面板（业务特定）
+// ============================================================================
+
+.property-panel {
+  &__type-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: var(--space-1);
+  }
+
+  &__type-btn {
+    @include flex-start;
+    gap: var(--space-2);
+    padding: var(--space-2);
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-md);
+    font-size: var(--text-xs);
+    color: var(--text-secondary);
+    cursor: pointer;
+    transition: all var(--duration-normal);
+
+    &:hover {
+      background: rgba(255, 255, 255, 0.06);
+      color: var(--text-primary);
+    }
+
+    &--active {
+      background: rgba(255, 255, 255, 0.08);
+      border-color: var(--type-color);
+      color: var(--text-primary);
+    }
+  }
+
+  &__type-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--type-color);
+    flex-shrink: 0;
+  }
+
+  &__size-info {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--space-2);
+  }
+
+  &__size-item {
+    @include flex-between;
+    padding: var(--space-2) var(--space-3);
+    background: rgba(255, 255, 255, 0.03);
+    border-radius: var(--radius-md);
+  }
+
+  &__size-label {
+    font-size: var(--text-xs);
+    color: var(--text-muted);
+  }
+
+  &__size-value {
+    font-size: var(--text-sm);
+    font-weight: var(--font-medium);
+    color: var(--text-primary);
+    font-family: var(--font-mono);
+  }
+}
+
+// ============================================================================
+// 帮助按钮（业务特定）
+// ============================================================================
+
+.help-btn {
+  position: fixed;
+  bottom: 52px;
+  right: 20px;
+  @include flex-center;
+  width: 44px;
+  height: 44px;
+  background: rgba(59, 130, 246, 0.15);
+  border: 1px solid rgba(59, 130, 246, 0.3);
+  border-radius: 50%;
+  color: var(--accent-primary);
+  cursor: pointer;
+  z-index: 100;
+  transition: all var(--duration-normal);
+
+  &:hover {
+    background: rgba(59, 130, 246, 0.25);
+    transform: scale(1.05);
+  }
+
+  svg {
+    width: 22px;
+    height: 22px;
+  }
+}
+
+// ============================================================================
+// 帮助面板（业务特定）
+// ============================================================================
+
+.help {
+  &-overlay {
+    @extend .modal-overlay;
+  }
+
+  &-panel {
+    width: 680px;
+    max-height: 85vh;
+    @extend .modal-container;
+    box-shadow: 
+      0 20px 60px rgba(0, 0, 0, 0.5),
+      0 0 40px rgba(59, 130, 246, 0.1);
+  }
+
+  &-header {
+    @include flex-between;
+    padding: var(--space-5) var(--space-6);
+    border-bottom: 1px solid var(--border-subtle);
+    background: rgba(59, 130, 246, 0.05);
+
+    h2 {
+      font-size: var(--text-xl);
+      font-weight: var(--font-semibold);
+      color: var(--text-primary);
+      margin: 0;
+    }
+  }
+
+  &-content {
+    flex: 1;
+    overflow-y: auto;
+    padding: var(--space-6);
+    @include scrollbar-custom;
+  }
+
+  &-section {
+    margin-bottom: var(--space-6);
+
+    &:last-child {
+      margin-bottom: 0;
+    }
+
+    h3 {
+      font-size: var(--text-sm);
+      font-weight: var(--font-semibold);
+      color: var(--accent-primary);
+      margin: 0 0 var(--space-4) 0;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+  }
+
+  &-diagram {
+    @include flex-column;
+    gap: var(--space-3);
+  }
+
+  &-tools {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: var(--space-3);
+  }
+
+  &-shortcuts {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: var(--space-2);
+  }
+
+  &-steps {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    counter-reset: step;
+
+    li {
+      @include flex-start;
+      gap: var(--space-4);
+      padding: var(--space-3) 0;
+      border-bottom: 1px solid var(--border-subtle);
+      counter-increment: step;
+
+      &:last-child {
+        border-bottom: none;
+      }
+
+      &::before {
+        content: counter(step);
+        @include flex-center;
+        width: 28px;
+        height: 28px;
+        background: linear-gradient(135deg, var(--accent-primary) 0%, #818cf8 100%);
+        border-radius: 50%;
+        font-size: var(--text-sm);
+        font-weight: var(--font-semibold);
+        color: var(--bg-primary);
+        flex-shrink: 0;
+      }
+
+      strong {
+        display: block;
+        font-size: var(--text-sm);
+        color: var(--text-primary);
+        margin-bottom: var(--space-1);
+      }
+
+      span {
+        font-size: var(--text-sm);
+        color: var(--text-secondary);
+      }
+    }
+  }
+
+  &-notes {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+
+    li {
+      position: relative;
+      padding: var(--space-2) 0 var(--space-2) var(--space-6);
+      font-size: var(--text-sm);
+      color: var(--text-secondary);
+      line-height: var(--leading-relaxed);
+
+      &::before {
+        content: '';
+        position: absolute;
+        left: 0;
+        top: 16px;
+        width: 6px;
+        height: 6px;
+        background: var(--accent-primary);
+        border-radius: 50%;
+      }
+
+      strong {
+        color: var(--warning);
+      }
+    }
+  }
+}
+
+// ============================================================================
+// 帮助面板内的子组件
+// ============================================================================
+
+.diagram-item {
+  @include flex-start;
+  gap: var(--space-4);
+  padding: var(--space-3) var(--space-4);
+  background: rgba(255, 255, 255, 0.02);
+  border-radius: var(--radius-lg);
+
+  &__color {
+    width: 40px;
+    height: 28px;
+    border-radius: var(--radius-sm);
+    flex-shrink: 0;
+  }
+
+  &__text {
+    @include flex-column;
+    gap: 2px;
+
+    strong {
+      font-size: var(--text-sm);
+      color: var(--text-primary);
+    }
+
+    span {
+      font-size: var(--text-xs);
+      color: var(--text-secondary);
+    }
+  }
+}
+
+.tool-item {
+  @include flex-start;
+  gap: var(--space-3);
+  padding: var(--space-3);
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+
+  &__icon {
+    @include flex-center;
+    width: 36px;
+    height: 36px;
+    background: rgba(59, 130, 246, 0.1);
+    border-radius: var(--radius-lg);
+    color: var(--accent-primary);
+
+    svg {
+      width: 18px;
+      height: 18px;
+    }
+  }
+
+  &__info {
+    @include flex-column;
+    gap: 2px;
+
+    strong {
+      font-size: var(--text-sm);
+      color: var(--text-primary);
+    }
+
+    span {
+      font-size: 11px;
+      color: var(--text-secondary);
+    }
+  }
+}
+
+.shortcut-item {
+  @include flex-start;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-3);
+  background: rgba(255, 255, 255, 0.02);
+  border-radius: var(--radius-md);
+
+  kbd {
+    padding: var(--space-1) var(--space-2);
+    background: rgba(59, 130, 246, 0.15);
+    border: 1px solid rgba(59, 130, 246, 0.3);
+    border-radius: var(--radius-sm);
+    font-family: var(--font-mono);
+    font-size: 11px;
+    color: var(--accent-primary);
+  }
+
+  span {
+    font-size: var(--text-xs);
+    color: var(--text-secondary);
+  }
+}
+
+// ============================================================================
+// 项目列表（业务特定）
+// ============================================================================
+
+.project-list {
+  @include flex-column;
+  gap: var(--space-2);
+
+  &__item {
+    @include flex-start;
+    gap: var(--space-3);
+    padding: var(--space-3) var(--space-4);
+    background: rgba(255, 255, 255, 0.02);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-lg);
+    transition: all var(--duration-normal);
+
+    &:hover {
+      background: rgba(59, 130, 246, 0.1);
+      border-color: rgba(59, 130, 246, 0.3);
+    }
+  }
+
+  &__info {
+    flex: 1;
+    cursor: pointer;
+  }
+
+  &__name {
+    font-size: var(--text-sm);
+    font-weight: var(--font-medium);
+    color: var(--text-primary);
+    margin-bottom: var(--space-1);
+  }
+
+  &__meta {
+    @include flex-start;
+    gap: var(--space-3);
+    font-size: var(--text-xs);
+    color: var(--text-secondary);
+  }
+}
+
+// ============================================================================
+// 加载/空状态文本
+// ============================================================================
+
+.loading-text,
+.empty-text {
+  text-align: center;
+  padding: var(--space-10) var(--space-5);
+  color: var(--text-secondary);
+  font-size: var(--text-sm);
+}

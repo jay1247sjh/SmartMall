@@ -369,44 +369,36 @@ async function handleLogin() {
 </template>
 
 <style scoped lang="scss">
-/**
- * ============================================================================
- * 样式说明
- * ============================================================================
- * 
- * 使用 SCSS 嵌套语法，提高可读性
- * 使用 :deep() 穿透 Element Plus 组件的 scoped 样式
- */
+@use '@/assets/styles/scss/variables' as *;
+@use '@/assets/styles/scss/mixins' as *;
 
-/* 表单底部导航（忘记密码 | 创建账号） */
+// 表单底部导航（忘记密码 | 创建账号）
 .form-footer {
   display: flex;
   justify-content: center;
   align-items: center;
-  gap: 8px;
+  gap: $space-2;
 
-  /* 穿透 Element Plus 链接组件样式 */
   :deep(.el-link) {
-    font-size: 13px;
+    font-size: $font-size-sm;
   }
 
-  /* 穿透 Element Plus 分隔线组件样式 */
   :deep(.el-divider--vertical) {
     margin: 0;
-    border-color: #3c4043;
+    border-color: $color-text-muted;
   }
 }
 
-/* 测试账号提示区域 */
+// 测试账号提示区域
 .test-hint {
-  margin-top: 20px;
-  padding-top: 20px;
-  border-top: 1px solid rgba(255, 255, 255, 0.06);
+  margin-top: $space-5;
+  padding-top: $space-5;
+  border-top: 1px solid $color-border-subtle;
   text-align: center;
 
   :deep(.el-text) {
-    font-size: 11px;
-    color: #5f6368;
+    font-size: $font-size-xs + 1;
+    color: $color-text-muted;
   }
 }
 </style>

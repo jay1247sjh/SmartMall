@@ -74,25 +74,29 @@ function handleRowClick(row: any) {
 </template>
 
 <style scoped lang="scss">
+@use '@/assets/styles/scss/variables' as *;
+@use '@/assets/styles/scss/mixins' as *;
+
 .data-table-wrapper {
   width: 100%;
   overflow-x: auto;
-  
+
   .data-table {
-    border-radius: 12px;
+    @include card-base;
+    border-radius: $radius-lg;
     overflow: hidden;
     width: 100%;
 
     :deep(.el-table__header) {
       th {
         background-color: var(--el-fill-color-light);
-        font-weight: 500;
+        font-weight: $font-weight-medium;
       }
     }
 
     :deep(.el-table__row) {
       cursor: pointer;
-      transition: background-color 0.2s;
+      transition: background-color $duration-slow $ease-default;
 
       &:hover > td {
         background-color: var(--el-fill-color-lighter);

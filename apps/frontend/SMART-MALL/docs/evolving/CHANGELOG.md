@@ -9,6 +9,37 @@
 
 ---
 
+## [Unreleased] - 2026-01-26
+
+### Changed - 变更
+
+#### 相机工厂重构
+- ✅ 新增 `engine/camera/cameraFactory.ts` - 统一相机创建逻辑
+  - `createPerspectiveCamera()` - 工厂函数，支持配置 FOV、裁剪面、初始位置
+  - `CameraConfig` - 相机配置类型
+  - 默认配置：FOV 60°, near 0.1, far 1000, position (20, 15, 20)
+- ✅ 重构 `ThreeEngine.ts` - 使用工厂函数创建相机，移除重复代码
+- ✅ 重构 `CameraController.ts` - 使用工厂函数创建相机，仅覆盖不同的初始位置
+- ✅ 更新 `camera/index.ts` - 导出工厂函数
+
+### Removed - 移除
+
+#### 清理不必要的测试文件
+- ❌ 移除 `composables/useAsync.property.spec.ts`
+- ❌ 移除 `composables/useConfirm.property.spec.ts`
+- ❌ 移除 `composables/useErrorBoundary.property.spec.ts`
+- ❌ 移除 `composables/useForm.property.spec.ts`
+- ❌ 移除 `composables/useKeyboard.property.spec.ts`
+- ❌ 移除 `composables/useLocalStorage.property.spec.ts`
+- ❌ 移除 `composables/useModal.property.spec.ts`
+- ❌ 移除 `composables/useNotification.property.spec.ts`
+- ❌ 移除 `composables/usePagination.property.spec.ts`
+- ❌ 移除 `composables/useSearch.property.spec.ts`
+- ❌ 移除 `composables/useTable.property.spec.ts`
+- ❌ 移除 `components/integration.property.spec.ts`
+
+---
+
 ## [Unreleased] - 2026-01-11
 
 ### Added - 新增功能

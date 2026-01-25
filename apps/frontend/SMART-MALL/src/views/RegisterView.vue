@@ -367,6 +367,9 @@ async function handleRegister() {
 </template>
 
 <style scoped lang="scss">
+@use '@/assets/styles/scss/variables' as *;
+@use '@/assets/styles/scss/mixins' as *;
+
 .form-footer {
   display: flex;
   justify-content: center;
@@ -374,12 +377,12 @@ async function handleRegister() {
   gap: 6px;
 
   :deep(.el-text) {
-    font-size: 13px;
-    color: #9aa0a6;
+    font-size: $font-size-sm;
+    color: $color-text-secondary;
   }
 
   :deep(.el-link) {
-    font-size: 13px;
+    font-size: $font-size-sm;
   }
 }
 </style>

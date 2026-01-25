@@ -171,16 +171,17 @@ function goBack() {
 </template>
 
 <style scoped lang="scss">
+@use '@/assets/styles/scss/variables' as *;
+@use '@/assets/styles/scss/mixins' as *;
+
 .forgot-password-page {
   min-height: 100vh;
   display: flex;
-  background-color: #0a0a0a;
+  background-color: $color-bg-primary;
 
   .form-panel {
     flex: 1;
-    display: flex;
-    align-items: center;
-    justify-content: center;
+    @include flex-center;
     padding: 48px 64px;
     position: relative;
     overflow: hidden;
@@ -198,35 +199,31 @@ function goBack() {
       max-width: 400px;
 
       .form-logo {
-        display: flex;
-        justify-content: center;
-        margin-bottom: 32px;
+        @include flex-center-x;
+        margin-bottom: $space-8;
 
         .logo-icon {
           width: 48px;
           height: 48px;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          background: linear-gradient(135deg, rgba(96, 165, 250, 0.15) 0%, rgba(167, 139, 250, 0.15) 100%);
-          border: 1px solid rgba(255, 255, 255, 0.1);
-          border-radius: 12px;
-          color: #8ab4f8;
+          @include flex-center;
+          background: linear-gradient(135deg, $color-primary-muted 0%, rgba($color-accent-violet, 0.15) 100%);
+          border: 1px solid $color-border-muted;
+          border-radius: $radius-lg;
+          color: $color-accent-blue;
         }
       }
     }
   }
 
   .form-footer {
-    display: flex;
-    justify-content: center;
+    @include flex-center-x;
 
     :deep(.el-button) {
-      color: #8ab4f8;
-      font-size: 13px;
+      color: $color-accent-blue;
+      font-size: $font-size-sm;
 
       &:hover {
-        color: #aecbfa;
+        color: $color-accent-blue-hover;
       }
     }
   }
@@ -235,29 +232,29 @@ function goBack() {
     text-align: center;
 
     .success-icon {
-      color: #34d399;
+      color: $color-success;
     }
 
     :deep(.el-result__title) {
-      color: #e8eaed;
+      color: $color-text-primary;
     }
 
     :deep(.el-result__subtitle) {
-      color: #9aa0a6;
+      color: $color-text-secondary;
     }
 
     :deep(.el-button) {
-      background: linear-gradient(135deg, #60a5fa 0%, #818cf8 100%);
+      background: $gradient-primary;
       border: none;
       border-radius: 10px;
-      padding: 12px 32px;
+      padding: $space-3 $space-8;
     }
   }
 }
 
 @media (max-width: 768px) {
   .forgot-password-page .form-panel {
-    padding: 32px 24px;
+    padding: $space-8 $space-6;
 
     .form-container {
       max-width: 100%;

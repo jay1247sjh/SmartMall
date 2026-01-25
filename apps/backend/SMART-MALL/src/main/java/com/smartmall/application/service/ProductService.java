@@ -5,6 +5,7 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.smartmall.common.exception.BusinessException;
 import com.smartmall.common.response.ResultCode;
 import com.smartmall.common.util.IdGenerator;
+import com.smartmall.common.util.ValidationUtils;
 import com.smartmall.domain.entity.Product;
 import com.smartmall.domain.entity.Store;
 import com.smartmall.domain.enums.ProductStatus;
@@ -224,27 +225,20 @@ public class ProductService {
     
     /**
      * 验证店铺所有权
+     * 使用 ValidationUtils 进行统一验证
      */
     private Store validateStoreOwnership(String merchantId, String storeId) {
         Store store = storeMapper.selectById(storeId);
-        if (store == null) {
-            throw new BusinessException(ResultCode.STORE_NOT_FOUND);
-        }
-        if (!store.getMerchantId().equals(merchantId)) {
-            throw new BusinessException(ResultCode.STORE_NOT_OWNER);
-        }
-        return store;
+        return ValidationUtils.validateStoreOwnership(store, merchantId);
     }
     
     /**
      * 获取商品（检查存在性）
+     * 使用 ValidationUtils 进行统一验证
      */
     private Product getProductById(String productId) {
         Product product = productMapper.selectById(productId);
-        if (product == null) {
-            throw new BusinessException(ResultCode.PRODUCT_NOT_FOUND);
-        }
-        return product;
+        return ValidationUtils.requireProductExists(product);
     }
     
     /**

@@ -5,8 +5,12 @@
 """
 
 from pydantic_settings import BaseSettings
+from pydantic import field_validator, model_validator, ValidationInfo
 from typing import List, Optional
 from functools import lru_cache
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 class Settings(BaseSettings):
@@ -105,6 +109,148 @@ class Settings(BaseSettings):
     VECTOR_DB_URL: str = "http://localhost:19530"
     VECTOR_DB_API_KEY: str = ""
     
+    # 配置元信息
+    CONFIG_VERSION: str = "1.0.0"
+    CONFIG_LOADED_FROM: str = ""  # 记录配置来源
+    
+    # ============ 字段验证器 ============
+    
+    @field_validator("MILVUS_PORT", "PG_PORT")
+    @classmethod
+    def validate_port(cls, v: int, info: ValidationInfo) -> int:
+        """验证端口号范围"""
+        if not (1 <= v <= 65535):
+            raise ValueError(f"{info.field_name} must be between 1 and 65535, got {v}")
+        return v
+    
+    @field_validator("LLM_TEMPERATURE")
+    @classmethod
+    def validate_temperature(cls, v: float) -> float:
+        """验证温度参数范围"""
+        if not (0.0 <= v <= 2.0):
+            raise ValueError(f"LLM_TEMPERATURE must be between 0.0 and 2.0, got {v}")
+        return v
+    
+    @field_validator("RAG_SCORE_THRESHOLD")
+    @classmethod
+    def validate_score_threshold(cls, v: float) -> float:
+        """验证相似度阈值范围"""
+        if not (0.0 <= v <= 1.0):
+            raise ValueError(f"RAG_SCORE_THRESHOLD must be between 0.0 and 1.0, got {v}")
+        return v
+    
+    @field_validator("LLM_PROVIDER")
+    @classmethod
+    def validate_llm_provider(cls, v: str) -> str:
+        """验证 LLM 提供商"""
+        valid_providers = ["qwen", "openai", "deepseek", "local"]
+        if v.lower() not in valid_providers:
+            raise ValueError(f"LLM_PROVIDER must be one of {valid_providers}, got {v}")
+        return v.lower()
+    
+    @field_validator("EMBEDDING_PROVIDER")
+    @classmethod
+    def validate_embedding_provider(cls, v: str) -> str:
+        """验证 Embedding 提供商"""
+        valid_providers = ["qwen", "openai", "local"]
+        if v.lower() not in valid_providers:
+            raise ValueError(f"EMBEDDING_PROVIDER must be one of {valid_providers}, got {v}")
+        return v.lower()
+    
+    # ============ 模型验证器 ============
+    
+    @model_validator(mode="after")
+    def validate_llm_config(self) -> "Settings":
+        """验证 LLM 配置的完整性"""
+        provider = self.LLM_PROVIDER.lower()
+        
+        if provider == "qwen" and not self.QWEN_API_KEY:
+            logger.warning("QWEN_API_KEY is not set. LLM features will not work.")
+        elif provider == "openai" and not self.OPENAI_API_KEY:
+            logger.warning("OPENAI_API_KEY is not set. LLM features will not work.")
+        elif provider == "deepseek" and not self.DEEPSEEK_API_KEY:
+            logger.warning("DEEPSEEK_API_KEY is not set. LLM features will not work.")
+        
+        return self
+    
+    @model_validator(mode="after")
+    def validate_embedding_config(self) -> "Settings":
+        """验证 Embedding 配置的完整性"""
+        provider = self.EMBEDDING_PROVIDER.lower()
+        
+        if provider == "qwen" and not self.QWEN_API_KEY:
+            logger.warning("QWEN_API_KEY is not set. Embedding features will not work.")
+        elif provider == "openai" and not self.OPENAI_API_KEY:
+            logger.warning("OPENAI_API_KEY is not set. Embedding features will not work.")
+        
+        return self
+    
+    def model_post_init(self, __context) -> None:
+        """配置加载后的初始化"""
+        import os
+        
+        # 记录配置来源
+        if os.path.exists(".env.local"):
+            self.CONFIG_LOADED_FROM = ".env.local + .env"
+        else:
+            self.CONFIG_LOADED_FROM = ".env"
+        
+        # 打印配置摘要（隐藏敏感信息）
+        self._log_config_summary()
+    
+    def _log_config_summary(self) -> None:
+        """打印配置摘要（隐藏敏感信息）"""
+        logger.info("=" * 60)
+        logger.info("Configuration Loaded")
+        logger.info("=" * 60)
+        logger.info(f"Environment: {self.ENVIRONMENT}")
+        logger.info(f"Config Source: {self.CONFIG_LOADED_FROM}")
+        logger.info(f"Config Version: {self.CONFIG_VERSION}")
+        logger.info(f"Service Name: {self.SERVICE_NAME}")
+        logger.info(f"Debug Mode: {self.DEBUG}")
+        logger.info("-" * 60)
+        logger.info(f"LLM Provider: {self.LLM_PROVIDER}")
+        logger.info(f"LLM Model: {self._get_llm_model()}")
+        logger.info(f"LLM Temperature: {self.LLM_TEMPERATURE}")
+        logger.info(f"LLM Max Tokens: {self.LLM_MAX_TOKENS}")
+        logger.info("-" * 60)
+        logger.info(f"Embedding Provider: {self.EMBEDDING_PROVIDER}")
+        logger.info(f"Embedding Model: {self._get_embedding_model()}")
+        logger.info(f"Embedding Dimension: {self.EMBEDDING_DIMENSION}")
+        logger.info("-" * 60)
+        logger.info(f"Milvus: {self.MILVUS_HOST}:{self.MILVUS_PORT}/{self.MILVUS_DB_NAME}")
+        logger.info(f"PostgreSQL: {self.PG_HOST}:{self.PG_PORT}/{self.PG_DATABASE}")
+        logger.info(f"Redis: {self.REDIS_URL}")
+        logger.info("-" * 60)
+        logger.info(f"RAG Top-K: {self.RAG_TOP_K}")
+        logger.info(f"RAG Score Threshold: {self.RAG_SCORE_THRESHOLD}")
+        logger.info(f"RAG Cache Enabled: {self.RAG_CACHE_ENABLED}")
+        logger.info("=" * 60)
+    
+    def _get_llm_model(self) -> str:
+        """获取当前 LLM 模型名称"""
+        provider = self.LLM_PROVIDER.lower()
+        if provider == "qwen":
+            return self.QWEN_MODEL
+        elif provider == "openai":
+            return self.OPENAI_MODEL
+        elif provider == "deepseek":
+            return self.DEEPSEEK_MODEL
+        elif provider == "local":
+            return self.LOCAL_MODEL_NAME
+        return "unknown"
+    
+    def _get_embedding_model(self) -> str:
+        """获取当前 Embedding 模型名称"""
+        provider = self.EMBEDDING_PROVIDER.lower()
+        if provider == "qwen":
+            return self.QWEN_EMBEDDING_MODEL
+        elif provider == "openai":
+            return self.OPENAI_EMBEDDING_MODEL
+        elif provider == "local":
+            return self.LOCAL_EMBEDDING_MODEL
+        return "unknown"
+    
     @property
     def milvus_uri(self) -> str:
         """获取 Milvus 连接 URI"""
@@ -121,14 +267,45 @@ class Settings(BaseSettings):
         return f"postgresql+asyncpg://{self.PG_USER}:{self.PG_PASSWORD}@{self.PG_HOST}:{self.PG_PORT}/{self.PG_DATABASE}"
     
     class Config:
-        env_file = ".env"
+        env_file = [".env", ".env.local"]  # 优先级：.env.local > .env（后面的覆盖前面的）
+        env_file_encoding = "utf-8"
         case_sensitive = True
+        extra = "ignore"  # 忽略未定义的环境变量
 
 
 @lru_cache()
 def get_settings() -> Settings:
     """获取配置单例"""
     return Settings()
+
+
+def reload_settings() -> Settings:
+    """重载配置（清除缓存）"""
+    get_settings.cache_clear()
+    return get_settings()
+
+
+def get_hot_reloadable_config() -> dict:
+    """获取可热重载的配置项"""
+    settings = get_settings()
+    return {
+        "llm": {
+            "temperature": settings.LLM_TEMPERATURE,
+            "max_tokens": settings.LLM_MAX_TOKENS,
+            "timeout": settings.LLM_TIMEOUT,
+        },
+        "rag": {
+            "top_k": settings.RAG_TOP_K,
+            "score_threshold": settings.RAG_SCORE_THRESHOLD,
+            "rerank_enabled": settings.RAG_RERANK_ENABLED,
+            "cache_enabled": settings.RAG_CACHE_ENABLED,
+            "cache_ttl": settings.RAG_CACHE_TTL,
+        },
+        "sync": {
+            "batch_size": settings.SYNC_BATCH_SIZE,
+            "interval_minutes": settings.SYNC_INTERVAL_MINUTES,
+        }
+    }
 
 
 settings = get_settings()

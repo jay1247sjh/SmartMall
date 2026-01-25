@@ -236,31 +236,34 @@ function navigateTo(path: string) {
 </template>
 
 <style scoped lang="scss">
+@use '@/assets/styles/scss/variables' as *;
+@use '@/assets/styles/scss/mixins' as *;
+
 .welcome-section {
-  padding: 32px;
-  margin-bottom: 24px;
-  border-radius: 12px;
+  padding: $space-8;
+  margin-bottom: $space-6;
+  border-radius: $radius-lg;
   background: linear-gradient(135deg, 
-    rgba(59, 130, 246, 0.1) 0%, 
-    rgba(17, 17, 19, 0.8) 100%
+    rgba($color-primary, 0.1) 0%, 
+    rgba($color-bg-secondary, 0.8) 100%
   );
-  border: 1px solid rgba(255, 255, 255, 0.06);
+  border: 1px solid $color-border-subtle;
 
   .welcome-title {
     font-size: 28px;
-    font-weight: 500;
-    margin: 0 0 8px 0;
-    color: #e8eaed;
+    font-weight: $font-weight-medium;
+    margin: 0 0 $space-2 0;
+    color: $color-text-primary;
   }
 
   .welcome-subtitle {
-    font-size: 15px;
-    color: #9aa0a6;
+    font-size: $font-size-lg;
+    color: $color-text-secondary;
     margin: 0;
   }
 
   @media (max-width: 768px) {
-    padding: 24px;
+    padding: $space-6;
 
     .welcome-title {
       font-size: 22px;
@@ -269,51 +272,51 @@ function navigateTo(path: string) {
 }
 
 .stats-section {
-  margin-bottom: 32px;
+  margin-bottom: $space-8;
 
   .stat-card {
-    border-radius: 12px;
-    margin-bottom: 16px;
-    background: rgba(17, 17, 19, 0.8);
-    border: 1px solid rgba(255, 255, 255, 0.06);
+    border-radius: $radius-lg;
+    margin-bottom: $space-4;
+    background: rgba($color-bg-secondary, 0.8);
+    border: 1px solid $color-border-subtle;
 
     .stat-icon {
-      color: #8ab4f8;
-      margin-right: 8px;
+      color: $color-accent-blue;
+      margin-right: $space-2;
     }
   }
 }
 
 .quick-actions-section {
   .section-title {
-    font-size: 14px;
-    font-weight: 500;
-    margin: 0 0 16px 0;
-    color: #9aa0a6;
+    font-size: $font-size-base;
+    font-weight: $font-weight-medium;
+    margin: 0 0 $space-4 0;
+    color: $color-text-secondary;
     text-transform: uppercase;
     letter-spacing: 0.05em;
   }
 
   .action-card {
     cursor: pointer;
-    border-radius: 12px;
-    margin-bottom: 16px;
-    background: rgba(17, 17, 19, 0.8);
-    border: 1px solid rgba(255, 255, 255, 0.06);
+    border-radius: $radius-lg;
+    margin-bottom: $space-4;
+    background: rgba($color-bg-secondary, 0.8);
+    border: 1px solid $color-border-subtle;
     transition: transform 0.2s, box-shadow 0.2s, border-color 0.2s;
 
     &:hover {
       transform: translateY(-2px);
-      border-color: rgba(138, 180, 248, 0.3);
+      border-color: rgba($color-accent-blue, 0.3);
     }
 
     .action-content {
       display: flex;
       align-items: center;
-      gap: 16px;
+      gap: $space-4;
 
       .action-icon {
-        color: #8ab4f8;
+        color: $color-accent-blue;
         flex-shrink: 0;
       }
 
@@ -323,20 +326,20 @@ function navigateTo(path: string) {
 
         .action-title {
           font-size: 16px;
-          font-weight: 500;
-          margin: 0 0 4px 0;
-          color: #e8eaed;
+          font-weight: $font-weight-medium;
+          margin: 0 0 $space-1 0;
+          color: $color-text-primary;
         }
 
         .action-desc {
           font-size: 13px;
-          color: #9aa0a6;
+          color: $color-text-secondary;
           margin: 0;
         }
       }
 
       .action-arrow {
-        color: #71717a;
+        color: $color-text-disabled;
         flex-shrink: 0;
       }
     }

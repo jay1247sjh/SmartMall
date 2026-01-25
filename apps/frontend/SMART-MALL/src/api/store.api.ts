@@ -29,6 +29,7 @@
  * ============================================================================
  */
 import http from './http'
+import type { PageResponse } from '@/types/api'
 
 // ============================================================================
 // 类型定义
@@ -130,17 +131,6 @@ export interface StoreQueryRequest {
 export interface CloseStoreRequest {
   /** 关闭原因 */
   reason: string
-}
-
-/**
- * 分页响应
- */
-export interface PageResponse<T> {
-  records: T[]
-  total: number
-  size: number
-  current: number
-  pages: number
 }
 
 // ============================================================================

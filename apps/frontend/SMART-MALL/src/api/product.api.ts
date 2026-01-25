@@ -29,6 +29,7 @@
  * ============================================================================
  */
 import http from './http'
+import type { PageResponse } from '@/types/api'
 
 // ============================================================================
 // 类型定义
@@ -112,17 +113,6 @@ export interface UpdateStatusRequest {
  */
 export interface UpdateStockRequest {
   stock: number
-}
-
-/**
- * 分页响应
- */
-export interface PageResponse<T> {
-  records: T[]
-  total: number
-  size: number
-  current: number
-  pages: number
 }
 
 // ============================================================================

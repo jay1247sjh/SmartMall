@@ -130,8 +130,8 @@ function handleLogout() {
           :collapse="sidebarCollapsed"
           :collapse-transition="false"
           background-color="transparent"
-          text-color="#9aa0a6"
-          active-text-color="#8ab4f8"
+          :text-color="'var(--el-text-color-secondary)'"
+          :active-text-color="'var(--el-color-primary)'"
         >
           <ElTooltip
             v-for="item in filteredMenuItems"
@@ -195,13 +195,15 @@ function handleLogout() {
 </template>
 
 <style scoped lang="scss">
+@use '@/assets/styles/scss/variables' as *;
+@use '@/assets/styles/scss/mixins' as *;
+
 .dashboard-layout {
   min-height: 100vh;
-  background: #0a0a0a;
-  color: #e8eaed;
+  background: $color-bg-primary;
+  color: $color-text-primary;
   position: relative;
 
-  // 背景装饰
   &::before {
     content: '';
     position: fixed;
@@ -214,12 +216,12 @@ function handleLogout() {
 }
 
 .sidebar {
-  background: rgba(17, 17, 19, 0.8);
+  background: rgba($color-bg-secondary, 0.8);
   backdrop-filter: blur(20px);
-  border-right: 1px solid rgba(255, 255, 255, 0.06);
+  border-right: 1px solid $color-border-subtle;
   display: flex;
   flex-direction: column;
-  transition: width 0.2s;
+  transition: width $duration-normal;
   position: relative;
   z-index: 10;
 
@@ -227,42 +229,42 @@ function handleLogout() {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 16px;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
-    gap: 8px;
+    padding: $space-4;
+    border-bottom: 1px solid $color-border-subtle;
+    gap: $space-2;
     min-height: 68px;
 
     &.collapsed {
       justify-content: center;
-      padding: 16px 12px;
+      padding: $space-4 $space-3;
     }
 
     .logo {
       display: flex;
       align-items: center;
-      gap: 12px;
+      gap: $space-3;
       cursor: pointer;
-      padding: 4px;
-      border-radius: 8px;
-      transition: background 0.2s;
+      padding: $space-1;
+      border-radius: $radius-md;
+      transition: background $duration-normal;
       overflow: hidden;
       flex: 1;
       min-width: 0;
 
       &:hover {
-        background: rgba(255, 255, 255, 0.04);
+        background: $color-bg-hover;
       }
 
       .logo-icon {
-        background: linear-gradient(135deg, rgba(96, 165, 250, 0.15) 0%, rgba(167, 139, 250, 0.15) 100%);
-        border: 1px solid rgba(255, 255, 255, 0.1);
+        background: linear-gradient(135deg, $color-primary-muted 0%, rgba(167, 139, 250, 0.15) 100%);
+        border: 1px solid $color-border-muted;
         flex-shrink: 0;
       }
 
       .logo-text {
-        font-size: 15px;
-        font-weight: 600;
-        background: linear-gradient(135deg, #60a5fa 0%, #a78bfa 100%);
+        font-size: $font-size-lg;
+        font-weight: $font-weight-semibold;
+        background: linear-gradient(135deg, $color-primary 0%, $color-accent-violet 100%);
         background-clip: text;
         -webkit-background-clip: text;
         -webkit-text-fill-color: transparent;
@@ -272,15 +274,15 @@ function handleLogout() {
 
     .collapse-btn {
       flex-shrink: 0;
-      color: #9aa0a6;
-      border-color: rgba(255, 255, 255, 0.1);
+      color: $color-text-secondary;
+      border-color: $color-border-muted;
       background: transparent;
       z-index: 10;
 
       &:hover {
-        background: rgba(255, 255, 255, 0.1);
-        color: #e8eaed;
-        border-color: rgba(255, 255, 255, 0.2);
+        background: $color-border-muted;
+        color: $color-text-primary;
+        border-color: rgba($color-white, 0.2);
       }
     }
   }
@@ -288,7 +290,7 @@ function handleLogout() {
   .sidebar-nav {
     flex: 1;
     overflow-y: auto;
-    padding: 8px;
+    padding: $space-2;
 
     :deep(.el-menu) {
       border-right: none;
@@ -296,25 +298,25 @@ function handleLogout() {
     }
 
     :deep(.el-menu-item) {
-      border-radius: 8px;
-      margin-bottom: 4px;
-      color: #9aa0a6;
+      border-radius: $radius-md;
+      margin-bottom: $space-1;
+      color: $color-text-secondary;
 
       &:hover {
-        background: rgba(255, 255, 255, 0.04);
-        color: #e8eaed;
+        background: $color-bg-hover;
+        color: $color-text-primary;
       }
 
       &.is-active {
-        background: rgba(138, 180, 248, 0.1);
-        color: #8ab4f8;
+        background: rgba($color-primary, 0.1);
+        color: $color-primary;
       }
     }
   }
 
   .sidebar-footer {
-    padding: 12px;
-    border-top: 1px solid rgba(255, 255, 255, 0.06);
+    padding: $space-3;
+    border-top: 1px solid $color-border-subtle;
 
     .logout-btn {
       width: 100%;
@@ -332,34 +334,34 @@ function handleLogout() {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 0 24px;
-    background: rgba(17, 17, 19, 0.6);
+    padding: 0 $space-6;
+    background: rgba($color-bg-secondary, 0.6);
     backdrop-filter: blur(20px);
-    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+    border-bottom: 1px solid $color-border-subtle;
 
     .topbar-left {
       display: flex;
       align-items: center;
-      gap: 12px;
+      gap: $space-3;
 
       .page-title {
-        font-size: 18px;
-        font-weight: 500;
+        font-size: $font-size-xl;
+        font-weight: $font-weight-medium;
         margin: 0;
-        color: #e8eaed;
+        color: $color-text-primary;
       }
     }
 
     .topbar-right {
       display: flex;
       align-items: center;
-      gap: 12px;
+      gap: $space-3;
 
       .user-avatar {
-        background: linear-gradient(135deg, rgba(96, 165, 250, 0.15) 0%, rgba(167, 139, 250, 0.15) 100%);
-        border: 1px solid rgba(255, 255, 255, 0.1);
-        color: #8ab4f8;
-        font-weight: 600;
+        background: linear-gradient(135deg, $color-primary-muted 0%, rgba(167, 139, 250, 0.15) 100%);
+        border: 1px solid $color-border-muted;
+        color: $color-primary;
+        font-weight: $font-weight-semibold;
       }
 
       .user-details {
@@ -367,20 +369,20 @@ function handleLogout() {
         flex-direction: column;
 
         .user-name {
-          font-size: 14px;
-          color: #e8eaed;
+          font-size: $font-size-base;
+          color: $color-text-primary;
         }
 
         .user-role {
-          font-size: 12px;
-          color: #9aa0a6;
+          font-size: $font-size-sm;
+          color: $color-text-secondary;
         }
       }
     }
   }
 
   .content {
-    padding: 24px;
+    padding: $space-6;
     overflow-y: auto;
   }
 }
@@ -396,7 +398,7 @@ function handleLogout() {
     }
 
     .content {
-      padding: 16px;
+      padding: $space-4;
     }
   }
 }

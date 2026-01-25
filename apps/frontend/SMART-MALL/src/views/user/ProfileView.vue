@@ -347,49 +347,51 @@ onMounted(() => {
 </template>
 
 <style scoped lang="scss">
+@use '@/assets/styles/scss/variables' as *;
+@use '@/assets/styles/scss/mixins' as *;
+
 .profile-page {
   max-width: 800px;
   margin: 0 auto;
-  padding: 24px;
+  padding: $space-6;
 
   .message-alert {
-    margin-bottom: 16px;
+    margin-bottom: $space-4;
   }
 
   .profile-card {
-    border-radius: 12px;
-    background: rgba(17, 17, 19, 0.8);
-    border: 1px solid rgba(255, 255, 255, 0.06);
+    @include card-base;
+    border-radius: $radius-lg;
 
     .profile-header {
       display: flex;
       align-items: center;
-      gap: 20px;
+      gap: $space-5;
 
       .profile-avatar {
-        background: linear-gradient(135deg, rgba(96, 165, 250, 0.15) 0%, rgba(167, 139, 250, 0.15) 100%);
-        border: 1px solid rgba(255, 255, 255, 0.1);
-        color: #8ab4f8;
+        background: linear-gradient(135deg, $color-primary-muted 0%, rgba($color-accent-violet, 0.15) 100%);
+        border: 1px solid $color-border-muted;
+        color: $color-accent-blue;
         font-size: 32px;
-        font-weight: 600;
+        font-weight: $font-weight-semibold;
       }
 
       .profile-info {
         display: flex;
         flex-direction: column;
-        gap: 8px;
+        gap: $space-2;
 
         .profile-name {
           margin: 0;
           font-size: 24px;
-          font-weight: 500;
-          color: #e8eaed;
+          font-weight: $font-weight-medium;
+          color: $color-text-primary;
         }
       }
     }
 
     .profile-details {
-      padding: 16px 0;
+      padding: $space-4 0;
     }
 
     .profile-actions {
@@ -399,7 +401,7 @@ onMounted(() => {
   }
 
   @media (max-width: 600px) {
-    padding: 16px;
+    padding: $space-4;
 
     .profile-card {
       .profile-header {
@@ -411,12 +413,12 @@ onMounted(() => {
 }
 
 .password-error {
-  margin-bottom: 16px;
+  margin-bottom: $space-4;
 }
 
 .password-mismatch {
-  color: var(--el-color-danger);
-  font-size: 12px;
-  margin-top: 4px;
+  color: $color-error;
+  font-size: $font-size-sm;
+  margin-top: $space-1;
 }
 </style>

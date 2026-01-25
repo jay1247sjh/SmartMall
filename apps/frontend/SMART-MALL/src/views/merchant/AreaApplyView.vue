@@ -10,34 +10,18 @@
  * - 查看自己的申请历史和状态
  * - 统计可申请区域数、待审批数、已通过数
  *
- * 设计原则：
- * - Tab 切换：可申请区域 / 我的申请
- * - 使用 DataTable 组件展示列表
- * - 模态框提交申请
- * - 状态标签区分不同状态
- *
- * 数据流：
- * - 页面加载时获取可申请区域和申请历史
- * - 提交申请后更新区域状态和申请列表
- * - 申请状态由管理员审批后更新
- *
- * 区域状态说明：
- * - AVAILABLE：可申请（蓝色）
- * - OCCUPIED：已入驻（灰色）
- * - LOCKED：已锁定（黄色）
- *
- * 申请状态说明：
- * - PENDING：待审批（黄色）
- * - APPROVED：已通过（绿色）
- * - REJECTED：已拒绝（红色）
- *
  * 用户角色：
  * - 仅商家（MERCHANT）可访问
  */
 import { ref, computed, onMounted } from 'vue'
-import { DataTable, Modal } from '@/components'
+import { DataTable, Modal, MessageAlert, StatusBadge } from '@/components'
 import { areaPermissionApi } from '@/api'
 import type { AvailableAreaDTO, AreaApplyDTO } from '@/api/area-permission.api'
+import { useMessage, useFormatters } from '@/composables'
+
+// Composables
+const { message, showMessage, clearMessage } = useMessage()
+const { formatDate } = useFormatters()
 
 // ============================================================================
 // State
@@ -55,7 +39,6 @@ const applyReason = ref('')
 
 // 操作状态
 const isProcessing = ref(false)
-const message = ref<{ type: 'success' | 'error'; text: string } | null>(null)
 
 // ============================================================================
 // Computed
@@ -96,22 +79,10 @@ async function loadData() {
     myApplications.value = apps
   } catch (e: any) {
     console.error('加载数据失败:', e)
-    message.value = { type: 'error', text: e.message || '加载数据失败' }
-    setTimeout(() => { message.value = null }, 3000)
+    showMessage('error', e.message || '加载数据失败')
   } finally {
     isLoading.value = false
   }
-}
-
-function formatDate(dateStr: string): string {
-  if (!dateStr) return '-'
-  const date = new Date(dateStr)
-  return date.toLocaleDateString('zh-CN', {
-    month: '2-digit',
-    day: '2-digit',
-    hour: '2-digit',
-    minute: '2-digit',
-  })
 }
 
 function getAreaStatusClass(status: string): string {
@@ -160,7 +131,7 @@ async function submitApplication() {
   if (!selectedArea.value) return
   
   isProcessing.value = true
-  message.value = null
+  clearMessage()
 
   try {
     const newApp = await areaPermissionApi.submitApplication({
@@ -176,10 +147,9 @@ async function submitApplication() {
     }
     
     showApplyModal.value = false
-    message.value = { type: 'success', text: '申请提交成功，请等待审批' }
-    setTimeout(() => { message.value = null }, 3000)
+    showMessage('success', '申请提交成功，请等待审批')
   } catch (e: any) {
-    message.value = { type: 'error', text: e.message || '申请失败' }
+    showMessage('error', e.message || '申请失败')
   } finally {
     isProcessing.value = false
   }
@@ -197,10 +167,7 @@ onMounted(() => {
 <template>
   <div class="area-apply-page">
       <!-- 消息提示 -->
-      <div v-if="message" :class="['message', message.type]">
-        <span>{{ message.type === 'success' ? '✅' : '❌' }}</span>
-        {{ message.text }}
-      </div>
+      <MessageAlert v-if="message" :type="message.type" :text="message.text" @close="clearMessage" />
 
       <!-- 统计卡片 -->
       <div class="stats-row">
@@ -282,7 +249,7 @@ onMounted(() => {
             <span class="reason-text">{{ value || '-' }}</span>
           </template>
           <template #createdAt="{ value }">
-            {{ formatDate(value) }}
+            {{ formatDate(value, 'datetime') }}
           </template>
         </DataTable>
       </div>
@@ -333,283 +300,160 @@ onMounted(() => {
 </template>
 
 
-<style scoped>
+<style scoped lang="scss">
+@use '@/assets/styles/scss/variables' as *;
+@use '@/assets/styles/scss/mixins' as *;
+
 .area-apply-page {
   display: flex;
   flex-direction: column;
-  gap: 20px;
+  gap: $space-5;
 }
 
-/* Message */
-.message {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 12px 16px;
-  border-radius: 8px;
-  font-size: 14px;
-}
-
-.message.success {
-  background: rgba(52, 211, 153, 0.1);
-  color: #34d399;
-  border: 1px solid rgba(52, 211, 153, 0.2);
-}
-
-.message.error {
-  background: rgba(242, 139, 130, 0.1);
-  color: #f28b82;
-  border: 1px solid rgba(242, 139, 130, 0.2);
-}
-
-/* Stats Row */
+// 统计行
 .stats-row {
-  display: flex;
-  gap: 16px;
+  @include stats-row;
+
+  .stat-item {
+    @include stat-item;
+
+    .stat-value {
+      @include stat-value;
+    }
+
+    .stat-label {
+      @include stat-label;
+    }
+  }
 }
 
-.stat-item {
-  flex: 1;
-  background: #111113;
-  border: 1px solid rgba(255, 255, 255, 0.06);
-  border-radius: 12px;
-  padding: 20px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 8px;
-}
-
-.stat-value {
-  font-size: 28px;
-  font-weight: 600;
-  color: #e8eaed;
-}
-
-.stat-label {
-  font-size: 13px;
-  color: #9aa0a6;
-}
-
-/* Tab Bar */
+// Tab 切换
 .tab-bar {
-  display: flex;
-  gap: 8px;
-  padding: 4px;
-  background: #111113;
-  border-radius: 10px;
-  width: fit-content;
+  @include tab-bar;
+
+  .tab-btn {
+    @include tab-btn;
+  }
 }
 
-.tab-btn {
-  padding: 10px 20px;
-  border-radius: 8px;
-  background: transparent;
-  color: #9aa0a6;
-  font-size: 14px;
-  border: none;
-  cursor: pointer;
-  transition: all 0.15s;
-}
-
-.tab-btn:hover {
-  color: #e8eaed;
-}
-
-.tab-btn.active {
-  background: rgba(96, 165, 250, 0.15);
-  color: #60a5fa;
-}
-
-/* Table Card */
+// 表格卡片
 .table-card {
-  background: #111113;
-  border: 1px solid rgba(255, 255, 255, 0.06);
-  border-radius: 12px;
+  @include card-base;
   overflow: hidden;
 }
 
-/* Status Badge */
+// 状态徽章
 .status-badge {
-  display: inline-block;
-  padding: 4px 10px;
-  border-radius: 20px;
-  font-size: 12px;
-  font-weight: 500;
+  @include status-badge;
 }
 
 .status-available {
-  background: rgba(96, 165, 250, 0.15);
-  color: #60a5fa;
+  @include status-variant($color-primary-muted, $color-primary);
 }
 
 .status-locked {
-  background: rgba(251, 191, 36, 0.15);
-  color: #fbbf24;
+  @include status-variant($color-warning-muted, $color-warning);
 }
 
 .status-occupied {
-  background: rgba(156, 163, 175, 0.15);
-  color: #9ca3af;
+  @include status-variant(rgba($color-gray-muted, 0.15), $color-gray-muted);
 }
 
 .status-pending {
-  background: rgba(251, 191, 36, 0.15);
-  color: #fbbf24;
+  @include status-variant($color-warning-muted, $color-warning);
 }
 
 .status-approved {
-  background: rgba(52, 211, 153, 0.15);
-  color: #34d399;
+  @include status-variant($color-success-muted, $color-success);
 }
 
 .status-rejected {
-  background: rgba(242, 139, 130, 0.15);
-  color: #f28b82;
+  @include status-variant($color-error-muted, $color-error);
 }
 
 .status-cell {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: $space-2;
 }
 
 .reject-hint {
-  font-size: 11px;
-  color: #f28b82;
+  font-size: $font-size-xs + 1;
+  color: $color-error;
   cursor: pointer;
   text-decoration: underline;
 }
 
 .text-muted {
-  color: #5f6368;
+  @include text-muted;
 }
 
 .reason-text {
-  display: -webkit-box;
-  -webkit-line-clamp: 1;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
+  @include line-clamp(1);
 }
 
-/* Action Button */
+// 操作按钮
 .action-btn {
-  padding: 6px 14px;
-  border-radius: 6px;
-  font-size: 13px;
-  cursor: pointer;
-  border: none;
-  transition: opacity 0.15s;
+  @include btn-action;
+
+  &.apply {
+    background: rgba($color-primary, 0.2);
+    color: $color-primary;
+  }
 }
 
-.action-btn:hover {
-  opacity: 0.8;
-}
-
-.action-btn.apply {
-  background: rgba(96, 165, 250, 0.2);
-  color: #60a5fa;
-}
-
-/* Apply Form */
+// 申请表单
 .apply-form {
   display: flex;
   flex-direction: column;
-  gap: 20px;
-}
+  gap: $space-5;
 
-.area-info {
-  background: rgba(255, 255, 255, 0.02);
-  border-radius: 10px;
-  padding: 16px;
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
+  .area-info {
+    background: $color-bg-hover;
+    border-radius: $radius-md + 2;
+    padding: $space-4;
+    display: flex;
+    flex-direction: column;
+    gap: $space-3;
 
-.info-row {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
+    .info-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
 
-.info-row label {
-  font-size: 13px;
-  color: #9aa0a6;
-}
+      label {
+        font-size: $font-size-sm + 1;
+        color: $color-text-secondary;
+      }
 
-.info-row span {
-  font-size: 14px;
-  color: #e8eaed;
-  font-weight: 500;
-}
+      span {
+        font-size: $font-size-base;
+        color: $color-text-primary;
+        font-weight: $font-weight-medium;
+      }
+    }
+  }
 
-.form-item {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.form-item label {
-  font-size: 14px;
-  color: #9aa0a6;
+  .form-item {
+    @include form-item;
+  }
 }
 
 .textarea {
-  background: #0a0a0a;
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 8px;
-  padding: 12px 16px;
-  font-size: 14px;
-  color: #e8eaed;
-  resize: vertical;
-  font-family: inherit;
+  @include form-textarea;
 }
 
-.textarea:focus {
-  outline: none;
-  border-color: #60a5fa;
-}
-
-.textarea::placeholder {
-  color: #5f6368;
-}
-
-/* Buttons */
+// 按钮
 .btn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  padding: 10px 20px;
-  border-radius: 8px;
-  font-size: 14px;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.15s;
-  border: none;
-}
-
-.btn:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
+  @include btn-base;
+  padding: $space-2 + 2 $space-5;
 }
 
 .btn-secondary {
-  background: transparent;
-  color: #9aa0a6;
-  border: 1px solid rgba(255, 255, 255, 0.1);
-}
-
-.btn-secondary:hover:not(:disabled) {
-  background: rgba(255, 255, 255, 0.04);
+  @include btn-secondary;
 }
 
 .btn-primary {
-  background: #60a5fa;
-  color: #0a0a0a;
-}
-
-.btn-primary:hover:not(:disabled) {
-  background: #93c5fd;
+  @include btn-primary;
 }
 </style>

@@ -34,9 +34,11 @@ env/
 *~
 
 # Environment
-.env
+# 注意：.env 和 .env.example 不被忽略（不包含敏感信息）
 .env.local
 .env.*.local
+.env.production
+.env.staging
 
 # Logs
 *.log

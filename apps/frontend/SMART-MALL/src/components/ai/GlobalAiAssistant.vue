@@ -592,6 +592,9 @@ onUnmounted(() => {
 
 
 <style scoped lang="scss">
+@use '@/assets/styles/scss/variables' as *;
+@use '@/assets/styles/scss/mixins' as *;
+
 .global-ai-assistant {
   position: fixed;
   right: 24px;
@@ -604,7 +607,7 @@ onUnmounted(() => {
   :deep(.el-badge__content.is-dot) {
     top: 4px;
     right: 4px;
-    background: #ef4444;
+    background: $color-error;
   }
 }
 
@@ -613,21 +616,18 @@ onUnmounted(() => {
   height: 48px;
   border-radius: 50%;
   border: none;
-  background: var(--accent-primary, #3b82f6);
+  background: var(--accent-primary, $color-accent-blue-dark);
   color: white;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: background 0.15s ease;
+  @include flex-center;
+  @include clickable;
 
   &:hover {
-    background: var(--accent-hover, #2563eb);
+    background: var(--accent-hover, $color-accent-blue-deep);
   }
 
   &.active {
-    background: var(--bg-tertiary, #18181b);
-    border: 1px solid var(--border-subtle, #27272a);
+    background: var(--bg-tertiary, $color-bg-tertiary);
+    border: 1px solid var(--border-subtle, $color-border-subtle);
   }
 }
 
@@ -638,18 +638,17 @@ onUnmounted(() => {
   bottom: 64px;
   width: 380px;
   height: 520px;
-  background: var(--bg-secondary, #111113);
-  border: 1px solid var(--border-subtle, #27272a);
-  border-radius: 8px;
-  display: flex;
-  flex-direction: column;
+  background: var(--bg-secondary, $color-bg-secondary);
+  border: 1px solid var(--border-subtle, $color-border-subtle);
+  border-radius: $radius-md;
+  @include flex-column;
   overflow: hidden;
 }
 
 /* 面板动画 */
 .panel-slide-enter-active,
 .panel-slide-leave-active {
-  transition: opacity 0.15s ease, transform 0.15s ease;
+  transition: opacity $duration-normal, transform $duration-normal;
 }
 
 .panel-slide-enter-from,
@@ -660,24 +659,21 @@ onUnmounted(() => {
 
 /* 头部 */
 .panel-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 14px 16px;
-  border-bottom: 1px solid var(--border-subtle, #27272a);
-  background: var(--bg-tertiary, #18181b);
+  @include flex-between;
+  padding: 14px $space-4;
+  border-bottom: 1px solid var(--border-subtle, $color-border-subtle);
+  background: var(--bg-tertiary, $color-bg-tertiary);
 }
 
 .header-title {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 14px;
-  font-weight: 500;
-  color: var(--text-primary, #fafafa);
+  @include flex-center-y;
+  gap: $space-2;
+  font-size: $font-size-base;
+  font-weight: $font-weight-medium;
+  color: var(--text-primary, $color-text-primary);
 
   .ai-icon {
-    color: var(--accent-primary, #3b82f6);
+    color: var(--accent-primary, $color-accent-blue-dark);
   }
 }
 
@@ -687,25 +683,22 @@ onUnmounted(() => {
   background: transparent;
   border: none;
   border-radius: 6px;
-  color: var(--text-secondary, #a1a1aa);
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: background 0.15s;
+  color: var(--text-secondary, $color-text-secondary);
+  @include flex-center;
+  @include clickable;
 
   &:hover {
-    background: var(--bg-tertiary, #18181b);
-    color: var(--text-primary, #fafafa);
+    background: var(--bg-tertiary, $color-bg-tertiary);
+    color: var(--text-primary, $color-text-primary);
   }
 }
 
 /* 快捷操作 */
 .quick-actions {
   display: flex;
-  gap: 8px;
-  padding: 10px 16px;
-  border-bottom: 1px solid var(--border-subtle, #27272a);
+  gap: $space-2;
+  padding: 10px $space-4;
+  border-bottom: 1px solid var(--border-subtle, $color-border-subtle);
   overflow-x: auto;
 
   &::-webkit-scrollbar {
@@ -715,19 +708,18 @@ onUnmounted(() => {
 
 .quick-btn {
   flex-shrink: 0;
-  padding: 6px 12px;
+  padding: 6px $space-3;
   background: transparent;
-  border: 1px solid var(--border-subtle, #27272a);
+  border: 1px solid var(--border-subtle, $color-border-subtle);
   border-radius: 6px;
-  color: var(--text-secondary, #a1a1aa);
-  font-size: 12px;
-  cursor: pointer;
-  transition: all 0.15s;
+  color: var(--text-secondary, $color-text-secondary);
+  font-size: $font-size-sm;
+  @include clickable;
 
   &:hover {
-    background: var(--bg-tertiary, #18181b);
-    border-color: var(--border-muted, #3f3f46);
-    color: var(--text-primary, #fafafa);
+    background: var(--bg-tertiary, $color-bg-tertiary);
+    border-color: var(--border-muted, $color-border-muted);
+    color: var(--text-primary, $color-text-primary);
   }
 }
 
@@ -735,23 +727,11 @@ onUnmounted(() => {
 .messages-container {
   flex: 1;
   overflow-y: auto;
-  padding: 16px;
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
+  padding: $space-4;
+  @include flex-column;
+  gap: $space-3;
 
-  &::-webkit-scrollbar {
-    width: 6px;
-  }
-
-  &::-webkit-scrollbar-track {
-    background: transparent;
-  }
-
-  &::-webkit-scrollbar-thumb {
-    background: rgba(255, 255, 255, 0.1);
-    border-radius: 3px;
-  }
+  @include scrollbar-thin;
 }
 
 /* 消息 */
@@ -770,8 +750,8 @@ onUnmounted(() => {
 .message-content {
   max-width: 85%;
   padding: 10px 14px;
-  border-radius: 8px;
-  font-size: 14px;
+  border-radius: $radius-md;
+  font-size: $font-size-base;
   line-height: 1.5;
 
   p {
@@ -782,54 +762,52 @@ onUnmounted(() => {
 }
 
 .user-message {
-  background: var(--accent-primary, #3b82f6);
-  color: #ffffff;
+  background: var(--accent-primary, $color-accent-blue-dark);
+  color: $color-white;
   border-bottom-right-radius: 2px;
 
   .message-image {
     max-width: 100%;
     max-height: 150px;
     border-radius: 6px;
-    margin-bottom: 8px;
+    margin-bottom: $space-2;
   }
 }
 
 .assistant-message {
-  background: var(--bg-tertiary, #18181b);
-  color: var(--text-primary, #fafafa);
+  background: var(--bg-tertiary, $color-bg-tertiary);
+  color: var(--text-primary, $color-text-primary);
   border-bottom-left-radius: 2px;
 
   /* 处理中状态 - 企业级 Agent 步骤 */
   &.processing {
-    padding: 14px 16px;
+    padding: 14px $space-4;
     min-width: 200px;
     
     /* 进度条 */
     .progress-bar {
       height: 2px;
-      background: var(--border-subtle, #27272a);
+      background: var(--border-subtle, $color-border-subtle);
       border-radius: 1px;
       margin-bottom: 14px;
       overflow: hidden;
       
       .progress-fill {
         height: 100%;
-        background: var(--accent-primary, #3b82f6);
+        background: var(--accent-primary, $color-accent-blue-dark);
         border-radius: 1px;
-        transition: width 0.3s ease;
+        transition: width $duration-slow;
       }
     }
     
     /* Agent 步骤列表 */
     .agent-steps {
-      display: flex;
-      flex-direction: column;
-      gap: 8px;
+      @include flex-column;
+      gap: $space-2;
     }
     
     .agent-step {
-      display: flex;
-      align-items: center;
+      @include flex-center-y;
       gap: 10px;
       font-size: 13px;
       
@@ -837,67 +815,65 @@ onUnmounted(() => {
         width: 6px;
         height: 6px;
         border-radius: 50%;
-        background: var(--border-muted, #3f3f46);
+        background: var(--border-muted, $color-border-muted);
         transition: all 0.2s ease;
         flex-shrink: 0;
       }
       
       .step-text {
-        color: var(--text-muted, #71717a);
+        color: var(--text-muted, $color-text-muted);
         transition: color 0.2s ease;
       }
       
       /* 待处理 */
       &.pending {
         .step-dot {
-          background: var(--border-muted, #3f3f46);
+          background: var(--border-muted, $color-border-muted);
         }
         .step-text {
-          color: var(--text-muted, #71717a);
+          color: var(--text-muted, $color-text-muted);
         }
       }
       
       /* 进行中 */
       &.active {
         .step-dot {
-          background: var(--accent-primary, #3b82f6);
+          background: var(--accent-primary, $color-accent-blue-dark);
           box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
           animation: pulse-dot 1.5s ease-in-out infinite;
         }
         .step-text {
-          color: var(--text-primary, #fafafa);
-          font-weight: 500;
+          color: var(--text-primary, $color-text-primary);
+          font-weight: $font-weight-medium;
         }
       }
       
       /* 已完成 */
       &.done {
         .step-dot {
-          background: var(--success, #22c55e);
+          background: var(--success, $color-success);
         }
         .step-text {
-          color: var(--text-secondary, #a1a1aa);
+          color: var(--text-secondary, $color-text-secondary);
         }
       }
     }
     
     /* 取消按钮 */
     .btn-stop {
-      display: inline-flex;
-      align-items: center;
-      margin-top: 12px;
-      padding: 4px 10px;
+      @include flex-center-y;
+      margin-top: $space-3;
+      padding: $space-1 10px;
       background: transparent;
-      border: 1px solid var(--border-subtle, #27272a);
-      border-radius: 4px;
-      color: var(--text-muted, #71717a);
-      font-size: 12px;
-      cursor: pointer;
-      transition: all 0.15s;
+      border: 1px solid var(--border-subtle, $color-border-subtle);
+      border-radius: $radius-sm;
+      color: var(--text-muted, $color-text-muted);
+      font-size: $font-size-sm;
+      @include clickable;
       
       &:hover {
-        border-color: var(--border-muted, #3f3f46);
-        color: var(--text-secondary, #a1a1aa);
+        border-color: var(--border-muted, $color-border-muted);
+        color: var(--text-secondary, $color-text-secondary);
       }
     }
   }
@@ -919,27 +895,27 @@ onUnmounted(() => {
 /* 确认按钮 */
 .confirm-actions {
   display: flex;
-  gap: 8px;
-  margin-top: 12px;
+  gap: $space-2;
+  margin-top: $space-3;
 }
 
 /* 输入区域 */
 .input-area {
-  padding: 12px 16px;
-  border-top: 1px solid var(--border-subtle, #27272a);
-  background: var(--bg-primary, #0a0a0b);
+  padding: $space-3 $space-4;
+  border-top: 1px solid var(--border-subtle, $color-border-subtle);
+  background: var(--bg-primary, $color-bg-primary);
 }
 
 .pending-image {
   position: relative;
   display: inline-block;
-  margin-bottom: 8px;
+  margin-bottom: $space-2;
 
   img {
     max-width: 100px;
     max-height: 80px;
-    border-radius: 8px;
-    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: $radius-md;
+    border: 1px solid rgba($color-white, 0.1);
   }
 
   .btn-remove {
@@ -948,40 +924,36 @@ onUnmounted(() => {
     right: -6px;
     width: 20px;
     height: 20px;
-    background: #ef4444;
+    background: $color-error;
     border: none;
     border-radius: 50%;
     color: white;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 12px;
+    @include flex-center;
+    @include clickable;
   }
 }
 
 .input-row {
-  display: flex;
-  align-items: flex-end;
-  gap: 8px;
+  @include flex-center-y;
+  gap: $space-2;
 
   .btn-upload {
     flex-shrink: 0;
   }
 
   :deep(.el-textarea__inner) {
-    background: var(--bg-secondary, #111113);
-    border: 1px solid var(--border-subtle, #27272a);
+    background: var(--bg-secondary, $color-bg-secondary);
+    border: 1px solid var(--border-subtle, $color-border-subtle);
     border-radius: 6px;
-    color: var(--text-primary, #fafafa);
-    padding: 10px 12px;
+    color: var(--text-primary, $color-text-primary);
+    padding: 10px $space-3;
 
     &::placeholder {
-      color: var(--text-muted, #71717a);
+      color: var(--text-muted, $color-text-muted);
     }
 
     &:focus {
-      border-color: var(--accent-primary, #3b82f6);
+      border-color: var(--accent-primary, $color-accent-blue-dark);
     }
   }
 }
@@ -995,8 +967,8 @@ onUnmounted(() => {
 /* 响应式 */
 @media (max-width: 480px) {
   .global-ai-assistant {
-    right: 16px;
-    bottom: 16px;
+    right: $space-4;
+    bottom: $space-4;
   }
 
   .ai-chat-panel {

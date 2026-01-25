@@ -120,10 +120,13 @@ function handleMenuSelect(path: string) {
 </template>
 
 <style scoped lang="scss">
+@use '@/assets/styles/scss/variables' as *;
+@use '@/assets/styles/scss/mixins' as *;
+
 .admin-layout {
   height: 100vh;
-  background: #0a0a0a;
-  color: #e8eaed;
+  background: $color-bg-primary;
+  color: $color-text-primary;
   position: relative;
   overflow: hidden;
 
@@ -137,37 +140,33 @@ function handleMenuSelect(path: string) {
   }
 
   .layout-sidebar {
-    background: rgba(17, 17, 19, 0.8);
+    background: rgba($color-bg-secondary, 0.8);
     backdrop-filter: blur(20px);
-    border-right: 1px solid rgba(255, 255, 255, 0.06);
-    display: flex;
-    flex-direction: column;
+    border-right: 1px solid $color-border-subtle;
+    @include flex-column;
     position: relative;
     z-index: 10;
 
     .sidebar-header {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      padding: 20px 16px;
-      border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+      @include flex-center-y;
+      gap: $space-3;
+      padding: $space-5 $space-4;
+      border-bottom: 1px solid $color-border-subtle;
 
       .logo-icon {
         width: 36px;
         height: 36px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        background: linear-gradient(135deg, rgba(96, 165, 250, 0.15) 0%, rgba(167, 139, 250, 0.15) 100%);
-        border: 1px solid rgba(255, 255, 255, 0.1);
+        @include flex-center;
+        background: linear-gradient(135deg, $color-primary-muted 0%, rgba($color-accent-violet, 0.15) 100%);
+        border: 1px solid $color-border-muted;
         border-radius: 10px;
-        color: #8ab4f8;
+        color: $color-accent-blue;
       }
 
       .header-text {
-        font-size: 15px;
-        font-weight: 600;
-        background: linear-gradient(135deg, #60a5fa 0%, #a78bfa 100%);
+        font-size: $font-size-lg;
+        font-weight: $font-weight-semibold;
+        background: $gradient-admin;
         background-clip: text;
         -webkit-background-clip: text;
         -webkit-text-fill-color: transparent;
@@ -178,26 +177,26 @@ function handleMenuSelect(path: string) {
       flex: 1;
       border: none;
       background: transparent;
-      padding: 12px 8px;
+      padding: $space-3 $space-2;
 
       :deep(.el-menu-item) {
         height: 44px;
         line-height: 44px;
         margin-bottom: 2px;
-        border-radius: 8px;
-        color: #9aa0a6;
+        border-radius: $radius-md;
+        color: $color-text-secondary;
 
-        &:hover { background: rgba(255, 255, 255, 0.04); color: #e8eaed; }
-        &.is-active { background: rgba(138, 180, 248, 0.1); color: #8ab4f8; }
+        &:hover { background: $color-bg-hover; color: $color-text-primary; }
+        &.is-active { background: rgba($color-accent-blue, 0.1); color: $color-accent-blue; }
       }
     }
 
     .sidebar-footer {
-      padding: 12px 8px;
-      border-top: 1px solid rgba(255, 255, 255, 0.06);
+      padding: $space-3 $space-2;
+      border-top: 1px solid $color-border-subtle;
 
-      .back-link { width: 100%; justify-content: flex-start; color: #9aa0a6; }
-      .mr-1 { margin-right: 8px; }
+      .back-link { width: 100%; justify-content: flex-start; color: $color-text-secondary; }
+      .mr-1 { margin-right: $space-2; }
     }
   }
 
@@ -213,20 +212,20 @@ function handleMenuSelect(path: string) {
       justify-content: space-between;
       align-items: center;
       height: 60px;
-      background: rgba(17, 17, 19, 0.6);
+      background: rgba($color-bg-secondary, 0.6);
       backdrop-filter: blur(20px);
-      border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+      border-bottom: 1px solid $color-border-subtle;
 
-      .breadcrumb { font-size: 14px; color: #9aa0a6; }
+      .breadcrumb { font-size: $font-size-base; color: $color-text-secondary; }
 
       .user-actions {
         display: flex;
         align-items: center;
-        gap: 16px;
+        gap: $space-4;
 
-        .role-badge { background: linear-gradient(135deg, #60a5fa 0%, #818cf8 100%); border: none; }
-        .username { font-size: 14px; color: #e8eaed; }
-        .mr-1 { margin-right: 4px; }
+        .role-badge { background: $gradient-primary; border: none; }
+        .username { font-size: $font-size-base; color: $color-text-primary; }
+        .mr-1 { margin-right: $space-1; }
       }
     }
 
@@ -235,11 +234,7 @@ function handleMenuSelect(path: string) {
       overflow-y: auto;
       overflow-x: hidden;
       scrollbar-width: thin;
-      scrollbar-color: #60a5fa rgba(30, 41, 59, 0.5);
-
-      &::-webkit-scrollbar { width: 8px; }
-      &::-webkit-scrollbar-track { background: rgba(30, 41, 59, 0.5); border-radius: 4px; }
-      &::-webkit-scrollbar-thumb { background: linear-gradient(180deg, #3b82f6 0%, #60a5fa 50%, #93c5fd 100%); border-radius: 4px; }
+      @include scrollbar-themed;
     }
   }
 }

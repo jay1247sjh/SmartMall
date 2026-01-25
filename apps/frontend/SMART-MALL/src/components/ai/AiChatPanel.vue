@@ -401,15 +401,18 @@ watch(() => props.visible, (visible) => {
 
 
 <style scoped lang="scss">
+@use '@/assets/styles/scss/variables' as *;
+@use '@/assets/styles/scss/mixins' as *;
+
 .ai-chat-panel {
   position: absolute;
   right: 20px;
   bottom: 80px;
   width: 360px;
   height: 500px;
-  background: var(--bg-secondary, #111113);
-  border: 1px solid var(--border-subtle, #27272a);
-  border-radius: 8px;
+  background: var(--bg-secondary, $color-bg-secondary);
+  border: 1px solid var(--border-subtle, $color-border-subtle);
+  border-radius: $radius-md;
   display: flex;
   flex-direction: column;
   overflow: hidden;
@@ -420,21 +423,21 @@ watch(() => props.visible, (visible) => {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 14px 16px;
-  border-bottom: 1px solid var(--border-subtle, #27272a);
-  background: var(--bg-tertiary, #18181b);
+  padding: 14px $space-4;
+  border-bottom: 1px solid var(--border-subtle, $color-border-subtle);
+  background: var(--bg-tertiary, $color-bg-tertiary);
 }
 
 .header-title {
   display: flex;
   align-items: center;
-  gap: 8px;
-  font-size: 14px;
-  font-weight: 500;
-  color: var(--text-primary, #fafafa);
+  gap: $space-2;
+  font-size: $font-size-base;
+  font-weight: $font-weight-medium;
+  color: var(--text-primary, $color-text-primary);
 
   .ai-icon {
-    color: var(--accent-primary, #3b82f6);
+    color: var(--accent-primary, $color-accent-blue-dark);
   }
 }
 
@@ -444,16 +447,13 @@ watch(() => props.visible, (visible) => {
   background: transparent;
   border: none;
   border-radius: 6px;
-  color: var(--text-secondary, #a1a1aa);
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: background 0.15s;
+  color: var(--text-secondary, $color-text-secondary);
+  @include flex-center;
+  @include clickable;
 
   &:hover {
-    background: var(--bg-tertiary, #18181b);
-    color: var(--text-primary, #fafafa);
+    background: var(--bg-tertiary, $color-bg-tertiary);
+    color: var(--text-primary, $color-text-primary);
   }
 }
 
@@ -461,23 +461,11 @@ watch(() => props.visible, (visible) => {
 .messages-container {
   flex: 1;
   overflow-y: auto;
-  padding: 16px;
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
+  padding: $space-4;
+  @include flex-column;
+  gap: $space-3;
 
-  &::-webkit-scrollbar {
-    width: 6px;
-  }
-
-  &::-webkit-scrollbar-track {
-    background: transparent;
-  }
-
-  &::-webkit-scrollbar-thumb {
-    background: rgba(255, 255, 255, 0.1);
-    border-radius: 3px;
-  }
+  @include scrollbar-thin;
 }
 
 /* 消息 */
@@ -496,8 +484,8 @@ watch(() => props.visible, (visible) => {
 .message-content {
   max-width: 85%;
   padding: 10px 14px;
-  border-radius: 8px;
-  font-size: 14px;
+  border-radius: $radius-md;
+  font-size: $font-size-base;
   line-height: 1.5;
 
   p {
@@ -508,28 +496,27 @@ watch(() => props.visible, (visible) => {
 }
 
 .user-message {
-  background: var(--accent-primary, #3b82f6);
-  color: #ffffff;
+  background: var(--accent-primary, $color-accent-blue-dark);
+  color: $color-white;
   border-bottom-right-radius: 2px;
 
   .message-image {
     max-width: 100%;
     max-height: 150px;
     border-radius: 6px;
-    margin-bottom: 8px;
+    margin-bottom: $space-2;
   }
 }
 
 .assistant-message {
-  background: var(--bg-tertiary, #18181b);
-  color: var(--text-primary, #fafafa);
+  background: var(--bg-tertiary, $color-bg-tertiary);
+  color: var(--text-primary, $color-text-primary);
   border-bottom-left-radius: 2px;
 
   &.loading {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    color: var(--text-secondary, #a1a1aa);
+    @include flex-center-y;
+    gap: $space-2;
+    color: var(--text-secondary, $color-text-secondary);
 
     .loading-icon {
       animation: spin 1s linear infinite;
@@ -544,27 +531,27 @@ watch(() => props.visible, (visible) => {
 /* 确认按钮 */
 .confirm-actions {
   display: flex;
-  gap: 8px;
-  margin-top: 12px;
+  gap: $space-2;
+  margin-top: $space-3;
 }
 
 /* 输入区域 */
 .input-area {
-  padding: 12px 16px;
-  border-top: 1px solid var(--border-subtle, #27272a);
-  background: var(--bg-primary, #0a0a0b);
+  padding: $space-3 $space-4;
+  border-top: 1px solid var(--border-subtle, $color-border-subtle);
+  background: var(--bg-primary, $color-bg-primary);
 }
 
 .pending-image {
   position: relative;
   display: inline-block;
-  margin-bottom: 8px;
+  margin-bottom: $space-2;
 
   img {
     max-width: 100px;
     max-height: 80px;
     border-radius: 6px;
-    border: 1px solid var(--border-subtle, #27272a);
+    border: 1px solid var(--border-subtle, $color-border-subtle);
   }
 
   .btn-remove {
@@ -573,40 +560,36 @@ watch(() => props.visible, (visible) => {
     right: -6px;
     width: 20px;
     height: 20px;
-    background: var(--error, #ef4444);
+    background: var(--error, $color-error);
     border: none;
     border-radius: 50%;
     color: white;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 12px;
+    @include flex-center;
+    @include clickable;
   }
 }
 
 .input-row {
-  display: flex;
-  align-items: flex-end;
-  gap: 8px;
+  @include flex-center-y;
+  gap: $space-2;
 
   .btn-upload {
     flex-shrink: 0;
   }
 
   :deep(.el-textarea__inner) {
-    background: var(--bg-secondary, #111113);
-    border: 1px solid var(--border-subtle, #27272a);
+    background: var(--bg-secondary, $color-bg-secondary);
+    border: 1px solid var(--border-subtle, $color-border-subtle);
     border-radius: 6px;
-    color: var(--text-primary, #fafafa);
-    padding: 10px 12px;
+    color: var(--text-primary, $color-text-primary);
+    padding: 10px $space-3;
 
     &::placeholder {
-      color: var(--text-muted, #71717a);
+      color: var(--text-muted, $color-text-muted);
     }
 
     &:focus {
-      border-color: var(--accent-primary, #3b82f6);
+      border-color: var(--accent-primary, $color-accent-blue-dark);
     }
   }
 }

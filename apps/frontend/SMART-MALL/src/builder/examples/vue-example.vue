@@ -235,27 +235,30 @@ const projectInfo = computed(() => {
 </template>
 
 <style scoped lang="scss">
+@use '@/assets/styles/scss/variables' as *;
+@use '@/assets/styles/scss/mixins' as *;
+
 .builder-example {
   display: flex;
   width: 100%;
   height: 100vh;
-  background: #1a1a1a;
+  background: $color-bg-tertiary;
 }
 
 .toolbar {
   width: 250px;
-  background: #2a2a2a;
-  padding: 20px;
+  background: $color-bg-secondary;
+  padding: $space-5;
   overflow-y: auto;
-  color: #fff;
+  color: $color-text-primary;
 
-  .toolbar-section {
+  &-section {
     margin-bottom: 30px;
 
     h3 {
       margin: 0 0 10px 0;
-      font-size: 14px;
-      color: #888;
+      font-size: $font-size-base;
+      color: $color-text-muted;
       text-transform: uppercase;
     }
 
@@ -263,22 +266,22 @@ const projectInfo = computed(() => {
       display: block;
       width: 100%;
       padding: 10px;
-      margin-bottom: 8px;
-      background: #3a3a3a;
-      border: 1px solid #4a4a4a;
-      color: #fff;
+      margin-bottom: $space-2;
+      background: $color-bg-tertiary;
+      border: 1px solid $color-border-muted;
+      color: $color-text-primary;
       cursor: pointer;
-      border-radius: 4px;
-      transition: all 0.2s;
+      border-radius: $radius-sm;
+      transition: all $duration-normal;
 
       &:hover:not(:disabled) {
-        background: #4a4a4a;
-        border-color: #5a5a5a;
+        background: $color-border-muted;
+        border-color: $color-text-muted;
       }
 
       &.active {
-        background: #4a90d9;
-        border-color: #5aa0e9;
+        background: $color-primary;
+        border-color: $color-primary-hover;
       }
 
       &:disabled {
@@ -290,10 +293,10 @@ const projectInfo = computed(() => {
     .info {
       font-size: 13px;
       line-height: 1.8;
-      color: #ccc;
+      color: $color-text-secondary;
 
       div {
-        padding: 4px 0;
+        padding: $space-1 0;
       }
     }
   }
