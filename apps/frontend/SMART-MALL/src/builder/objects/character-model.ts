@@ -129,9 +129,9 @@ export class CharacterController {
   
   // 速度预设
   public static readonly SPEED_PRESETS = {
-    slow: 3,
-    normal: 5,
-    fast: 10,
+    slow: 1,
+    normal: 3,
+    fast: 6,
   } as const
   
   /**

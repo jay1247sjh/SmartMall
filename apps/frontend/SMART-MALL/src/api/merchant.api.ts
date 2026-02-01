@@ -23,20 +23,15 @@
  * 4. 审批通过后，区域状态变为 AUTHORIZED
  * 5. 商家可以开始装修店铺
  *
- * 【当前状态】
- * 此模块目前使用 Mock 数据，TODO 标记处需要对接真实后端。
- * Mock 数据模拟了真实的业务场景，便于前端开发和测试。
- *
- * 【后端对应接口】（待实现）
- * - GET /api/merchant/stats - 商家统计数据
- * - GET /api/merchant/stores - 我的店铺列表
- * - PUT /api/merchant/stores/:id - 更新店铺信息
- * - GET /api/merchant/applications - 我的区域申请
- * - GET /api/merchant/available-areas - 可申请区域
- * - POST /api/merchant/applications - 提交区域申请
+ * 【后端对应接口】
+ * - GET /store/my - 我的店铺列表
+ * - PUT /store/:id - 更新店铺信息
+ * - GET /area/available - 可申请区域
+ * - POST /area/apply - 提交区域申请
+ * - GET /area/apply/my - 我的区域申请
  * ============================================================================
  */
-// import http from './http' // TODO: 启用真实后端时取消注释
+import http from './http'
 
 // ============================================================================
 // 类型定义
@@ -141,6 +136,115 @@ export interface AvailableArea {
 }
 
 // ============================================================================
+// 后端 DTO 类型定义
+// ============================================================================
+
+/**
+ * 后端店铺 DTO 类型（与后端 StoreDTO 对应）
+ */
+interface BackendStoreDTO {
+  storeId: string
+  areaId: string
+  areaName: string
+  floorId: string
+  floorName: string
+  merchantId: string
+  merchantName: string
+  name: string
+  description: string
+  category: string
+  businessHours: string
+  logo?: string
+  cover?: string
+  status: string
+  closeReason?: string
+  createdAt: string
+  approvedAt?: string
+}
+
+/**
+ * 后端可申请区域 DTO 类型（与后端 AvailableAreaDTO 对应）
+ */
+interface BackendAvailableAreaDTO {
+  areaId: string
+  name: string
+  type: string
+  floorId: string
+  floorName: string
+  status: string
+  shape?: unknown
+  properties?: unknown
+}
+
+/**
+ * 后端区域申请 DTO 类型（与后端 AreaApplyDTO 对应）
+ */
+interface BackendAreaApplyDTO {
+  applyId: string
+  areaId: string
+  areaName: string
+  floorName: string
+  merchantId: string
+  merchantName: string
+  status: string
+  applyReason: string
+  rejectReason?: string
+  createdAt: string
+  approvedAt?: string
+  rejectedAt?: string
+}
+
+/**
+ * 将后端店铺 DTO 转换为前端类型
+ */
+function mapBackendStoreToFrontend(dto: BackendStoreDTO): Store {
+  return {
+    id: parseInt(dto.storeId) || 0,
+    name: dto.name,
+    description: dto.description,
+    category: dto.category,
+    logo: dto.logo,
+    cover: dto.cover,
+    businessHours: dto.businessHours,
+    status: dto.status as 'ACTIVE' | 'INACTIVE' | 'PENDING',
+    areaId: parseInt(dto.areaId) || 0,
+    areaName: dto.areaName,
+    floorName: dto.floorName,
+  }
+}
+
+/**
+ * 将后端可申请区域 DTO 转换为前端类型
+ */
+function mapBackendAreaToFrontend(dto: BackendAvailableAreaDTO): AvailableArea {
+  return {
+    id: parseInt(dto.areaId) || 0,
+    name: dto.name,
+    floorId: parseInt(dto.floorId) || 0,
+    floorName: dto.floorName,
+    size: 100, // 后端未提供 size，使用默认值
+    status: dto.status as 'LOCKED' | 'PENDING' | 'AUTHORIZED' | 'OCCUPIED',
+    position: { x: 0, y: 0 }, // 后端未提供 position，使用默认值
+  }
+}
+
+/**
+ * 将后端区域申请 DTO 转换为前端类型
+ */
+function mapBackendApplyToFrontend(dto: BackendAreaApplyDTO): AreaApplication {
+  return {
+    id: parseInt(dto.applyId) || 0,
+    areaId: parseInt(dto.areaId) || 0,
+    areaName: dto.areaName,
+    floorName: dto.floorName,
+    reason: dto.applyReason,
+    status: dto.status as 'PENDING' | 'APPROVED' | 'REJECTED',
+    rejectReason: dto.rejectReason,
+    createdAt: dto.createdAt,
+  }
+}
+
+// ============================================================================
 // API 方法
 // ============================================================================
 
@@ -151,10 +255,12 @@ export interface AvailableArea {
  * 数据实时计算，反映当前状态。
  *
  * @returns 商家统计数据
+ * 
+ * TODO: 后端尚未实现 /merchant/stats 接口，暂时使用 Mock 数据
  */
 export async function getStats(): Promise<MerchantStats> {
-  // TODO: 对接真实后端
-  // return http.get('/api/merchant/stats')
+  // TODO: 后端实现后启用
+  // return http.get('/merchant/stats')
   
   // Mock 数据：模拟一个有 2 家店铺的商家
   return Promise.resolve({
@@ -174,38 +280,8 @@ export async function getStats(): Promise<MerchantStats> {
  * @returns 店铺列表
  */
 export async function getMyStores(): Promise<Store[]> {
-  // TODO: 对接真实后端
-  // return http.get('/api/merchant/stores')
-  
-  // Mock 数据：模拟星巴克在商城开了两家店
-  return Promise.resolve([
-    {
-      id: 1,
-      name: '星巴克咖啡 (旗舰店)',
-      description: '提供优质咖啡和轻食',
-      category: '餐饮',
-      logo: undefined,
-      cover: undefined,
-      businessHours: '08:00-22:00',
-      status: 'ACTIVE',
-      areaId: 1001,
-      areaName: 'A-101',
-      floorName: '1F',
-    },
-    {
-      id: 2,
-      name: '星巴克咖啡 (二店)',
-      description: '提供优质咖啡和轻食',
-      category: '餐饮',
-      logo: undefined,
-      cover: undefined,
-      businessHours: '09:00-21:00',
-      status: 'ACTIVE',
-      areaId: 2001,
-      areaName: 'B-201',
-      floorName: '2F',
-    },
-  ])
+  const data = await http.get<BackendStoreDTO[]>('/store/my')
+  return data.map(mapBackendStoreToFrontend)
 }
 
 /**
@@ -219,22 +295,8 @@ export async function getMyStores(): Promise<Store[]> {
  * @returns 更新后的店铺信息
  */
 export async function updateStore(id: number, data: UpdateStoreRequest): Promise<Store> {
-  // TODO: 对接真实后端
-  // return http.put(`/api/merchant/stores/${id}`, data)
-  
-  return Promise.resolve({
-    id,
-    name: data.name || '星巴克咖啡',
-    description: data.description || '提供优质咖啡和轻食',
-    category: data.category || '餐饮',
-    logo: data.logo,
-    cover: data.cover,
-    businessHours: data.businessHours || '08:00-22:00',
-    status: 'ACTIVE',
-    areaId: 1001,
-    areaName: 'A-101',
-    floorName: '1F',
-  })
+  const result = await http.put<BackendStoreDTO>(`/store/${id}`, data)
+  return mapBackendStoreToFrontend(result)
 }
 
 /**
@@ -246,31 +308,8 @@ export async function updateStore(id: number, data: UpdateStoreRequest): Promise
  * @returns 申请列表
  */
 export async function getMyApplications(): Promise<AreaApplication[]> {
-  // TODO: 对接真实后端
-  // return http.get('/api/merchant/applications')
-  
-  // Mock 数据：一个待审批，一个被拒绝
-  return Promise.resolve([
-    {
-      id: 1,
-      areaId: 3001,
-      areaName: 'C-301',
-      floorName: '3F',
-      reason: '希望在三楼开设新店铺',
-      status: 'PENDING',
-      createdAt: '2024-12-28T10:30:00Z',
-    },
-    {
-      id: 2,
-      areaId: 1002,
-      areaName: 'A-102',
-      floorName: '1F',
-      reason: '扩展店铺面积',
-      status: 'REJECTED',
-      rejectReason: '该区域已被其他商家预定',
-      createdAt: '2024-12-25T14:20:00Z',
-    },
-  ])
+  const data = await http.get<BackendAreaApplyDTO[]>('/area/apply/my')
+  return data.map(mapBackendApplyToFrontend)
 }
 
 /**
@@ -288,18 +327,8 @@ export async function getMyApplications(): Promise<AreaApplication[]> {
  * @returns 区域列表
  */
 export async function getAvailableAreas(): Promise<AvailableArea[]> {
-  // TODO: 对接真实后端
-  // return http.get('/api/merchant/available-areas')
-  
-  // Mock 数据：模拟三层楼的区域分布
-  return Promise.resolve([
-    { id: 1001, name: 'A-101', floorId: 1, floorName: '1F', size: 100, status: 'OCCUPIED', position: { x: 0, y: 0 } },
-    { id: 1002, name: 'A-102', floorId: 1, floorName: '1F', size: 80, status: 'LOCKED', position: { x: 100, y: 0 } },
-    { id: 1003, name: 'A-103', floorId: 1, floorName: '1F', size: 120, status: 'PENDING', position: { x: 200, y: 0 } },
-    { id: 2001, name: 'B-201', floorId: 2, floorName: '2F', size: 150, status: 'AUTHORIZED', position: { x: 0, y: 0 } },
-    { id: 2002, name: 'B-202', floorId: 2, floorName: '2F', size: 90, status: 'LOCKED', position: { x: 150, y: 0 } },
-    { id: 3001, name: 'C-301', floorId: 3, floorName: '3F', size: 200, status: 'LOCKED', position: { x: 0, y: 0 } },
-  ])
+  const data = await http.get<BackendAvailableAreaDTO[]>('/area/available')
+  return data.map(mapBackendAreaToFrontend)
 }
 
 /**
@@ -313,18 +342,11 @@ export async function getAvailableAreas(): Promise<AvailableArea[]> {
  * @returns 创建的申请记录
  */
 export async function applyForArea(areaId: number, reason: string): Promise<AreaApplication> {
-  // TODO: 对接真实后端
-  // return http.post('/api/merchant/applications', { areaId, reason })
-  
-  return Promise.resolve({
-    id: Date.now(), // 使用时间戳作为临时 ID
-    areaId,
-    areaName: 'C-301',
-    floorName: '3F',
-    reason,
-    status: 'PENDING',
-    createdAt: new Date().toISOString(),
+  const result = await http.post<BackendAreaApplyDTO>('/area/apply', {
+    areaId: String(areaId),
+    applyReason: reason,
   })
+  return mapBackendApplyToFrontend(result)
 }
 
 // ============================================================================

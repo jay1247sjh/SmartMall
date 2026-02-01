@@ -104,7 +104,7 @@ import router from './router'
  * - _base.scss: 基础重置样式
  * - main.scss: 主入口，包含 Element Plus 覆盖样式
  */
-import './assets/styles/scss/main.scss'
+import './assets/styles/scss/index.scss'
 
 // ============================================================================
 // 应用初始化

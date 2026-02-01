@@ -2,6 +2,9 @@
  * Modal 模态框组件样式
  */
 
+@use '../variables' as *;
+@use '../mixins' as *;
+
 .modal {
   &-overlay {
     @include modal-overlay;

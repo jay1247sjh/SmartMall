@@ -623,3 +623,150 @@
     transform: translateY(-2px);
   }
 }
+
+
+// ============================================================================
+// 补充缺失的 Mixins（供 _utilities.scss 使用）
+// ============================================================================
+
+/// Flex 起始对齐
+@mixin flex-start {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+}
+
+/// 绝对定位填充
+@mixin absolute-fill {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+}
+
+/// 文本截断
+@mixin text-truncate {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/// 渐变文本
+@mixin text-gradient {
+  background: linear-gradient(135deg, $color-primary, $color-accent-blue);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/// 图标按钮
+@mixin btn-icon {
+  @include btn-base;
+  padding: $space-2;
+  background: transparent;
+  color: $color-text-secondary;
+  
+  &:hover:not(:disabled) {
+    background: $color-bg-hover;
+    color: $color-text-primary;
+  }
+}
+
+/// 基础输入框
+@mixin input-base {
+  @include form-control;
+}
+
+/// 卡片悬停效果
+@mixin card-hover {
+  @include transition-base;
+  
+  &:hover {
+    border-color: $color-border-muted;
+    transform: translateY(-2px);
+  }
+}
+
+/// 卡片激活状态
+@mixin card-active {
+  border-color: $color-primary;
+  box-shadow: 0 0 0 2px rgba($color-primary, 0.2);
+}
+
+/// 面板基础样式
+@mixin panel-base {
+  background: $color-bg-secondary;
+  border: 1px solid $color-border-subtle;
+  border-radius: $radius-lg;
+}
+
+/// 面板头部
+@mixin panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: $space-4 $space-5;
+  border-bottom: 1px solid $color-border-subtle;
+}
+
+/// 面板内容
+@mixin panel-content {
+  padding: $space-4 $space-5;
+}
+
+/// 模态框遮罩
+@mixin modal-overlay {
+  @include dialog-overlay;
+}
+
+/// 模态框基础
+@mixin modal-base {
+  @include dialog-box;
+}
+
+/// 淡入动画
+@mixin fade-in {
+  animation: fadeIn $duration-normal $ease-default;
+}
+
+/// 向下滑入
+@mixin slide-down {
+  animation: slideDown $duration-normal $ease-default;
+}
+
+/// 向上滑入
+@mixin slide-up {
+  animation: slideUp $duration-normal $ease-default;
+}
+
+/// 玻璃效果
+@mixin glass-effect {
+  background: rgba($color-bg-secondary, 0.8);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba($color-border-subtle, 0.5);
+}
+
+/// 焦点环
+@mixin focus-ring {
+  &:focus {
+    outline: none;
+    box-shadow: 0 0 0 2px rgba($color-primary, 0.4);
+  }
+}
+
+/// 自定义滚动条
+@mixin scrollbar-custom {
+  @include scrollbar-thin;
+}
+
+
+/// 从右侧滑入
+@mixin slide-in-right {
+  animation: slideInRight $duration-normal $ease-default;
+}
+
+/// 从左侧滑入
+@mixin slide-in-left {
+  animation: slideInLeft $duration-normal $ease-default;
+}

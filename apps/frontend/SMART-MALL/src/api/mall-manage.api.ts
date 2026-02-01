@@ -25,7 +25,7 @@
  * - ARCHIVED: 归档版本，历史记录
  * 
  * 【当前状态】
- * ⚠️ 后端接口尚未实现，当前使用 Mock 数据。
+ * ⚠️ 后端尚未实现楼层/区域/版本管理接口，当前使用 Mock 数据。
  * 待后端实现后，取消注释真实 API 调用即可。
  * 
  * 【与其他模块的关系】
@@ -35,7 +35,7 @@
  * 
  * ============================================================================
  */
-// import http from './http' // TODO: 启用真实后端时取消注释
+import http from './http'
 
 // ============================================================================
 // 类型定义
@@ -137,10 +137,13 @@ export interface LayoutVersion {
  * 获取商城所有楼层及其区域信息。
  * 
  * @returns 楼层列表（包含区域）
+ * 
+ * TODO: 后端尚未实现 /mall/floors 接口，暂时使用 Mock 数据
  */
 export async function getFloors(): Promise<Floor[]> {
-  // TODO: 对接真实后端
-  // return http.get('/api/mall/floors')
+  // TODO: 后端实现后启用
+  // return http.get('/mall/floors')
+  void http // 避免 unused import 警告
   
   return Promise.resolve([
     {
@@ -181,10 +184,12 @@ export async function getFloors(): Promise<Floor[]> {
  * 
  * @param data 楼层信息
  * @returns 创建的楼层
+ * 
+ * TODO: 后端尚未实现 /mall/floors 接口，暂时使用 Mock 数据
  */
 export async function createFloor(data: CreateFloorRequest): Promise<Floor> {
-  // TODO: 对接真实后端
-  // return http.post('/api/mall/floors', data)
+  // TODO: 后端实现后启用
+  // return http.post('/mall/floors', data)
   
   return Promise.resolve({
     id: Date.now(),
@@ -201,10 +206,12 @@ export async function createFloor(data: CreateFloorRequest): Promise<Floor> {
  * @param id 楼层 ID
  * @param data 要更新的字段
  * @returns 更新后的楼层
+ * 
+ * TODO: 后端尚未实现 /mall/floors/{id} 接口，暂时使用 Mock 数据
  */
 export async function updateFloor(id: number, data: Partial<CreateFloorRequest>): Promise<Floor> {
-  // TODO: 对接真实后端
-  // return http.put(`/api/mall/floors/${id}`, data)
+  // TODO: 后端实现后启用
+  // return http.put(`/mall/floors/${id}`, data)
   
   return Promise.resolve({
     id,
@@ -221,10 +228,12 @@ export async function updateFloor(id: number, data: Partial<CreateFloorRequest>)
  * ⚠️ 删除楼层会同时删除楼层内的所有区域。
  * 
  * @param _id 楼层 ID
+ * 
+ * TODO: 后端尚未实现 /mall/floors/{id} 接口，暂时使用 Mock 数据
  */
 export async function deleteFloor(_id: number): Promise<void> {
-  // TODO: 对接真实后端
-  // return http.delete(`/api/mall/floors/${_id}`)
+  // TODO: 后端实现后启用
+  // return http.delete(`/mall/floors/${_id}`)
   
   return Promise.resolve()
 }
@@ -241,10 +250,12 @@ export async function deleteFloor(_id: number): Promise<void> {
  * @param _floorId 楼层 ID
  * @param data 区域信息
  * @returns 创建的区域
+ * 
+ * TODO: 后端尚未实现 /mall/floors/{floorId}/areas 接口，暂时使用 Mock 数据
  */
 export async function createArea(_floorId: number, data: CreateAreaRequest): Promise<Area> {
-  // TODO: 对接真实后端
-  // return http.post(`/api/mall/floors/${_floorId}/areas`, data)
+  // TODO: 后端实现后启用
+  // return http.post(`/mall/floors/${_floorId}/areas`, data)
   
   return Promise.resolve({
     id: Date.now(),
@@ -261,10 +272,12 @@ export async function createArea(_floorId: number, data: CreateAreaRequest): Pro
  * @param id 区域 ID
  * @param data 要更新的字段
  * @returns 更新后的区域
+ * 
+ * TODO: 后端尚未实现 /mall/areas/{id} 接口，暂时使用 Mock 数据
  */
 export async function updateArea(id: number, data: Partial<CreateAreaRequest>): Promise<Area> {
-  // TODO: 对接真实后端
-  // return http.put(`/api/mall/areas/${id}`, data)
+  // TODO: 后端实现后启用
+  // return http.put(`/mall/areas/${id}`, data)
   
   return Promise.resolve({
     id,
@@ -281,10 +294,12 @@ export async function updateArea(id: number, data: Partial<CreateAreaRequest>): 
  * ⚠️ 已分配给商家的区域不能删除。
  * 
  * @param _id 区域 ID
+ * 
+ * TODO: 后端尚未实现 /mall/areas/{id} 接口，暂时使用 Mock 数据
  */
 export async function deleteArea(_id: number): Promise<void> {
-  // TODO: 对接真实后端
-  // return http.delete(`/api/mall/areas/${_id}`)
+  // TODO: 后端实现后启用
+  // return http.delete(`/mall/areas/${_id}`)
   
   return Promise.resolve()
 }
@@ -299,10 +314,12 @@ export async function deleteArea(_id: number): Promise<void> {
  * 获取商城布局的所有版本。
  * 
  * @returns 版本列表
+ * 
+ * TODO: 后端尚未实现 /mall/versions 接口，暂时使用 Mock 数据
  */
 export async function getVersions(): Promise<LayoutVersion[]> {
-  // TODO: 对接真实后端
-  // return http.get('/api/mall/versions')
+  // TODO: 后端实现后启用
+  // return http.get('/mall/versions')
   
   return Promise.resolve([
     {
@@ -342,10 +359,12 @@ export async function getVersions(): Promise<LayoutVersion[]> {
  * 发布后，当前 ACTIVE 版本会变为 ARCHIVED。
  * 
  * @param _id 版本 ID
+ * 
+ * TODO: 后端尚未实现 /mall/versions/{id}/publish 接口，暂时使用 Mock 数据
  */
 export async function publishVersion(_id: number): Promise<void> {
-  // TODO: 对接真实后端
-  // return http.post(`/api/mall/versions/${_id}/publish`)
+  // TODO: 后端实现后启用
+  // return http.post(`/mall/versions/${_id}/publish`)
   
   return Promise.resolve()
 }
@@ -356,10 +375,12 @@ export async function publishVersion(_id: number): Promise<void> {
  * 将商城布局回滚到指定的历史版本。
  * 
  * @param _id 版本 ID
+ * 
+ * TODO: 后端尚未实现 /mall/versions/{id}/rollback 接口，暂时使用 Mock 数据
  */
 export async function rollbackVersion(_id: number): Promise<void> {
-  // TODO: 对接真实后端
-  // return http.post(`/api/mall/versions/${_id}/rollback`)
+  // TODO: 后端实现后启用
+  // return http.post(`/mall/versions/${_id}/rollback`)
   
   return Promise.resolve()
 }

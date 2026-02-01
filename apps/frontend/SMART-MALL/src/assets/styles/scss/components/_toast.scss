@@ -2,6 +2,9 @@
  * Toast 提示组件样式
  */
 
+@use '../variables' as *;
+@use '../mixins' as *;
+
 .toast {
   position: fixed;
   @include flex-start;

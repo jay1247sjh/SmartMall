@@ -2,6 +2,9 @@
  * Status Bar 状态栏组件样式
  */
 
+@use '../variables' as *;
+@use '../mixins' as *;
+
 .status-bar {
   @include flex-between;
   position: absolute;

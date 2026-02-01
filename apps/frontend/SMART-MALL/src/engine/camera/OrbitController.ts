@@ -223,6 +223,36 @@ export class OrbitController {
     return this.camera
   }
 
+  /**
+   * 设置目标点（相机看向的位置）
+   *
+   * @param x - X 坐标
+   * @param y - Y 坐标
+   * @param z - Z 坐标
+   *
+   * @example
+   * ```typescript
+   * // 让相机看向原点
+   * orbitController.setTarget(0, 0, 0)
+   *
+   * // 让相机看向某个店铺位置
+   * orbitController.setTarget(10, 0, 20)
+   * ```
+   */
+  public setTarget(x: number, y: number, z: number): void {
+    this.controls.target.set(x, y, z)
+    this.controls.update()
+  }
+
+  /**
+   * 获取当前目标点
+   *
+   * @returns 目标点坐标
+   */
+  public getTarget(): THREE.Vector3 {
+    return this.controls.target.clone()
+  }
+
   // ==========================================================================
   // 资源清理
   // ==========================================================================

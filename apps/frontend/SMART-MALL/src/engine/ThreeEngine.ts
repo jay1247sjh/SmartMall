@@ -643,4 +643,58 @@ export class ThreeEngine {
   public getRaycasterManager(): RaycasterManager {
     return this.raycasterManager
   }
+
+  // ==========================================================================
+  // 相机位置控制方法
+  // ==========================================================================
+
+  /**
+   * 设置相机位置
+   *
+   * @param x - X 坐标
+   * @param y - Y 坐标（高度）
+   * @param z - Z 坐标
+   */
+  public setCameraPosition(x: number, y: number, z: number): void {
+    this.camera.position.set(x, y, z)
+    
+    // 如果是轨道模式，需要更新控制器
+    if (this.currentMode === 'orbit' && this.orbitController) {
+      this.orbitController.update()
+    }
+  }
+
+  /**
+   * 设置相机目标点（相机看向的位置）
+   *
+   * @param x - X 坐标
+   * @param y - Y 坐标
+   * @param z - Z 坐标
+   */
+  public setCameraTarget(x: number, y: number, z: number): void {
+    if (this.currentMode === 'orbit' && this.orbitController) {
+      // 轨道模式：设置控制器的目标点
+      this.orbitController.setTarget(x, y, z)
+    } else {
+      // 跟随模式或无控制器：直接让相机看向目标点
+      this.camera.lookAt(x, y, z)
+    }
+  }
+
+  /**
+   * 获取相机目标点（相机看向的位置）
+   *
+   * @returns 目标点坐标
+   */
+  public getCameraTarget(): THREE.Vector3 {
+    if (this.currentMode === 'orbit' && this.orbitController) {
+      // 轨道模式：从控制器获取目标点
+      return this.orbitController.getTarget()
+    } else {
+      // 跟随模式或无控制器：从相机方向计算目标点
+      const direction = new THREE.Vector3()
+      this.camera.getWorldDirection(direction)
+      return this.camera.position.clone().add(direction.multiplyScalar(10))
+    }
+  }
 }

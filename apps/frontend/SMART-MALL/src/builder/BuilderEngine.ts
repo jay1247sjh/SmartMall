@@ -21,8 +21,9 @@ import { ToolManager } from './managers/ToolManager'
 import { HistoryManager } from './managers/HistoryManager'
 import { ConfigurationError, ValidationError, ImportExportError, ErrorCode } from './core/errors'
 import { OptionsValidator, validateProjectStructure } from './core/validators'
-import { PerformanceMonitor, type PerformanceConfig } from './core/performance'
+import { PerformanceMonitor } from './core/performance'
 import { exportProject, importProject } from './io/project-io'
+import { getAllMaterialPresets, type MaterialPreset } from './materials'
 
 // ============================================================================
 // 类型定义
@@ -479,28 +480,80 @@ export class BuilderEngine {
   }
 
   // ==========================================================================
-  // 区域操作方法（占位符）
+  // 区域操作方法
   // ==========================================================================
+
+  /** 当前选中的区域 ID */
+  private selectedAreaId: string | null = null
+
+  /** 当前楼层 ID */
+  private currentFloorId: string | null = null
 
   /**
    * 创建区域
    * 
    * @param definition - 区域定义
+   * @param floorId - 目标楼层 ID（可选，默认使用当前楼层）
    * @returns 区域 ID
+   * 
+   * @example
+   * ```typescript
+   * const areaId = engine.createArea({
+   *   id: 'area-1',
+   *   name: '店铺A',
+   *   type: 'retail',
+   *   shape: { vertices: [...], isClosed: true },
+   *   color: '#ff0000',
+   *   properties: { area: 100, perimeter: 40 },
+   *   visible: true,
+   *   locked: false
+   * })
+   * ```
    */
-  public createArea(definition: AreaDefinition): string {
-    // TODO: 实现区域创建逻辑
-    throw new Error('Not implemented')
+  public createArea(definition: AreaDefinition, floorId?: string): string {
+    const { project, floor } = this.getTargetFloor(floorId)
+
+    // 添加区域到楼层
+    floor.areas.push({ ...definition })
+
+    // 更新项目
+    this.projectManager.loadProject(project)
+    this.saveHistory()
+
+    // 触发事件
+    this.emit('area-created', definition)
+
+    return definition.id
   }
 
   /**
    * 删除区域
    * 
    * @param areaId - 区域 ID
+   * @param floorId - 目标楼层 ID（可选，默认使用当前楼层）
+   * 
+   * @example
+   * ```typescript
+   * engine.deleteArea('area-1')
+   * ```
    */
-  public deleteArea(areaId: string): void {
-    // TODO: 实现区域删除逻辑
-    throw new Error('Not implemented')
+  public deleteArea(areaId: string, floorId?: string): void {
+    const { project, floor, index } = this.getTargetArea(areaId, floorId)
+
+    const deletedArea = floor.areas[index]
+    floor.areas.splice(index, 1)
+
+    // 如果删除的是选中的区域，清除选中状态
+    if (this.selectedAreaId === areaId) {
+      this.selectedAreaId = null
+    }
+
+    // 更新项目
+    this.projectManager.loadProject(project)
+    this.saveHistory()
+
+    // 触发事件
+    this.emit('area-deleted', deletedArea)
   }
 
   /**
@@ -508,41 +561,124 @@ export class BuilderEngine {
    * 
    * @param areaId - 区域 ID
    * @param updates - 要更新的属性
+   * @param floorId - 目标楼层 ID（可选，默认使用当前楼层）
+   * 
+   * @example
+   * ```typescript
+   * engine.updateArea('area-1', { name: '新名称', color: '#00ff00' })
+   * ```
    */
-  public updateArea(areaId: string, updates: Partial<AreaDefinition>): void {
-    // TODO: 实现区域更新逻辑
-    throw new Error('Not implemented')
+  public updateArea(areaId: string, updates: Partial<AreaDefinition>, floorId?: string): void {
+    const { project, floor, index } = this.getTargetArea(areaId, floorId)
+
+    // 更新区域属性
+    floor.areas[index] = {
+      ...floor.areas[index],
+      ...updates,
+      id: areaId, // 确保 ID 不被覆盖
+    }
+
+    // 更新项目
+    this.projectManager.loadProject(project)
+    this.saveHistory()
+
+    // 触发事件
+    this.emit('area-updated', floor.areas[index])
   }
 
   /**
    * 移动区域
    * 
    * @param areaId - 区域 ID
-   * @param offset - 偏移量
+   * @param offset - 偏移量 { x, y }
+   * @param floorId - 目标楼层 ID（可选，默认使用当前楼层）
+   * 
+   * @example
+   * ```typescript
+   * engine.moveArea('area-1', { x: 10, y: 5 })
+   * ```
    */
-  public moveArea(areaId: string, offset: Vector2D): void {
-    // TODO: 实现区域移动逻辑
-    throw new Error('Not implemented')
+  public moveArea(areaId: string, offset: Vector2D, floorId?: string): void {
+    const { project, area } = this.getTargetArea(areaId, floorId)
+
+    // 移动所有顶点
+    area.shape.vertices = area.shape.vertices.map(v => ({
+      x: v.x + offset.x,
+      y: v.y + offset.y,
+    }))
+
+    // 更新项目
+    this.projectManager.loadProject(project)
+    this.saveHistory()
+
+    // 触发事件
+    this.emit('area-updated', area)
   }
 
   /**
    * 选中区域
    * 
    * @param areaId - 区域 ID，null 表示取消选中
+   * 
+   * @example
+   * ```typescript
+   * // 选中区域
+   * engine.selectArea('area-1')
+   * 
+   * // 取消选中
+   * engine.selectArea(null)
+   * ```
    */
   public selectArea(areaId: string | null): void {
-    // TODO: 实现区域选择逻辑
-    throw new Error('Not implemented')
+    const previousId = this.selectedAreaId
+    this.selectedAreaId = areaId
+
+    if (areaId !== previousId) {
+      const area = areaId ? this.findAreaById(areaId) : null
+      this.emit('area-selected', area)
+    }
   }
 
   /**
    * 获取选中的区域
    * 
    * @returns 选中的区域，如果没有选中则返回 null
+   * 
+   * @example
+   * ```typescript
+   * const area = engine.getSelectedArea()
+   * if (area) {
+   *   console.log('Selected:', area.name)
+   * }
+   * ```
    */
   public getSelectedArea(): AreaDefinition | null {
-    // TODO: 实现获取选中区域逻辑
-    throw new Error('Not implemented')
+    if (!this.selectedAreaId) return null
+    return this.findAreaById(this.selectedAreaId)
+  }
+
+  /**
+   * 获取选中的区域 ID
+   * 
+   * @returns 选中的区域 ID，如果没有选中则返回 null
+   */
+  public getSelectedAreaId(): string | null {
+    return this.selectedAreaId
+  }
+
+  /**
+   * 根据 ID 查找区域（在所有楼层中搜索）
+   * 
+   * @param areaId - 区域 ID
+   * @returns 区域定义，如果未找到则返回 null
+   */
+  private findAreaById(areaId: string): AreaDefinition | null {
+    const project = this.projectManager.getProject()
+    for (const floor of project.floors) {
+      const area = floor.areas.find(a => a.id === areaId)
+      if (area) return area
+    }
+    return null
   }
 
   // ==========================================================================
@@ -620,7 +756,7 @@ export class BuilderEngine {
   }
 
   // ==========================================================================
-  // 楼层管理方法（占位符）
+  // 楼层管理方法
   // ==========================================================================
 
   /**
@@ -628,54 +764,218 @@ export class BuilderEngine {
    * 
    * @param floor - 楼层定义
    * @returns 楼层 ID
+   * 
+   * @example
+   * ```typescript
+   * const floorId = engine.addFloor({
+   *   id: 'floor-2',
+   *   name: '2F',
+   *   level: 2,
+   *   height: 4,
+   *   inheritOutline: true,
+   *   areas: [],
+   *   visible: true,
+   *   locked: false
+   * })
+   * ```
    */
   public addFloor(floor: FloorDefinition): string {
-    // TODO: 实现添加楼层逻辑
-    throw new Error('Not implemented')
+    const project = this.projectManager.getProject()
+
+    // 检查楼层 ID 是否已存在
+    if (project.floors.some(f => f.id === floor.id)) {
+      throw new ValidationError('Floor ID already exists', { floorId: floor.id })
+    }
+
+    // 添加楼层并按 level 排序
+    project.floors.push({ ...floor })
+    project.floors.sort((a, b) => a.level - b.level)
+
+    // 更新项目
+    this.projectManager.loadProject(project)
+    this.saveHistory()
+
+    // 触发事件
+    this.emit('floor-changed', floor)
+
+    return floor.id
   }
 
   /**
    * 删除楼层
    * 
    * @param floorId - 楼层 ID
+   * 
+   * @example
+   * ```typescript
+   * engine.removeFloor('floor-2')
+   * ```
    */
   public removeFloor(floorId: string): void {
-    // TODO: 实现删除楼层逻辑
-    throw new Error('Not implemented')
+    const project = this.projectManager.getProject()
+
+    // 至少保留一个楼层
+    if (project.floors.length <= 1) {
+      throw new ValidationError('Cannot delete the last floor', { floorId })
+    }
+
+    const index = project.floors.findIndex(f => f.id === floorId)
+    if (index === -1) {
+      throw new ValidationError('Floor not found', { floorId })
+    }
+
+    const deletedFloor = project.floors[index]
+    project.floors.splice(index, 1)
+
+    // 如果删除的是当前楼层，切换到第一个楼层
+    if (this.currentFloorId === floorId) {
+      this.currentFloorId = project.floors[0]?.id || null
+    }
+
+    // 更新项目
+    this.projectManager.loadProject(project)
+    this.saveHistory()
+
+    // 触发事件
+    this.emit('floor-changed', deletedFloor)
   }
 
   /**
    * 设置当前楼层
    * 
    * @param floorId - 楼层 ID
+   * 
+   * @example
+   * ```typescript
+   * engine.setCurrentFloor('floor-2')
+   * ```
    */
   public setCurrentFloor(floorId: string): void {
-    // TODO: 实现设置当前楼层逻辑
-    throw new Error('Not implemented')
+    const project = this.projectManager.getProject()
+    const floor = project.floors.find(f => f.id === floorId)
+
+    if (!floor) {
+      throw new ValidationError('Floor not found', { floorId })
+    }
+
+    if (this.currentFloorId !== floorId) {
+      this.currentFloorId = floorId
+      this.emit('floor-changed', floor)
+    }
   }
 
   /**
    * 获取当前楼层
    * 
    * @returns 当前楼层，如果没有则返回 null
+   * 
+   * @example
+   * ```typescript
+   * const floor = engine.getCurrentFloor()
+   * if (floor) {
+   *   console.log('Current floor:', floor.name)
+   * }
+   * ```
    */
   public getCurrentFloor(): FloorDefinition | null {
-    // TODO: 实现获取当前楼层逻辑
-    throw new Error('Not implemented')
+    if (!this.currentFloorId) return null
+    const project = this.projectManager.getProject()
+    return project.floors.find(f => f.id === this.currentFloorId) || null
+  }
+
+  /**
+   * 获取当前楼层 ID
+   * 
+   * @returns 当前楼层 ID，如果没有则返回 null
+   */
+  public getCurrentFloorId(): string | null {
+    return this.currentFloorId
   }
 
   /**
    * 获取所有楼层
    * 
-   * @returns 楼层列表
+   * @returns 楼层列表（按 level 排序）
+   * 
+   * @example
+   * ```typescript
+   * const floors = engine.getFloors()
+   * floors.forEach(f => console.log(f.name))
+   * ```
    */
   public getFloors(): FloorDefinition[] {
-    // TODO: 实现获取楼层列表逻辑
-    throw new Error('Not implemented')
+    const project = this.projectManager.getProject()
+    return [...project.floors].sort((a, b) => a.level - b.level)
+  }
+
+  /**
+   * 更新楼层属性
+   * 
+   * @param floorId - 楼层 ID
+   * @param updates - 要更新的属性
+   * 
+   * @example
+   * ```typescript
+   * engine.updateFloor('floor-1', { name: '1F 大厅', height: 5 })
+   * ```
+   */
+  public updateFloor(floorId: string, updates: Partial<FloorDefinition>): void {
+    const project = this.projectManager.getProject()
+    const index = project.floors.findIndex(f => f.id === floorId)
+
+    if (index === -1) {
+      throw new ValidationError('Floor not found', { floorId })
+    }
+
+    // 更新楼层属性
+    project.floors[index] = {
+      ...project.floors[index],
+      ...updates,
+      id: floorId, // 确保 ID 不被覆盖
+    }
+
+    // 如果更新了 level，重新排序
+    if (updates.level !== undefined) {
+      project.floors.sort((a, b) => a.level - b.level)
+    }
+
+    // 更新项目
+    this.projectManager.loadProject(project)
+    this.saveHistory()
+
+    // 触发事件
+    this.emit('floor-changed', project.floors.find(f => f.id === floorId))
+  }
+
+  /**
+   * 切换楼层可见性
+   * 
+   * @param floorId - 楼层 ID
+   * 
+   * @example
+   * ```typescript
+   * engine.toggleFloorVisibility('floor-2')
+   * ```
+   */
+  public toggleFloorVisibility(floorId: string): void {
+    const project = this.projectManager.getProject()
+    const floor = project.floors.find(f => f.id === floorId)
+
+    if (!floor) {
+      throw new ValidationError('Floor not found', { floorId })
+    }
+
+    floor.visible = !floor.visible
+
+    // 更新项目
+    this.projectManager.loadProject(project)
+
+    // 触发事件
+    this.emit('floor-changed', floor)
   }
 
   // ==========================================================================
-  // 材质系统方法（占位符）
+  // 材质系统方法
   // ==========================================================================
 
   /**
@@ -683,66 +983,247 @@ export class BuilderEngine {
    * 
    * @param areaId - 区域 ID
    * @param type - 区域类型
+   * @param floorId - 目标楼层 ID（可选，默认使用当前楼层）
+   * 
+   * @example
+   * ```typescript
+   * engine.setAreaType('area-1', 'retail')
+   * ```
    */
-  public setAreaType(areaId: string, type: AreaType): void {
-    // TODO: 实现设置区域类型逻辑
-    throw new Error('Not implemented')
+  public setAreaType(areaId: string, type: AreaType, floorId?: string): void {
+    this.updateArea(areaId, { type }, floorId)
   }
 
   /**
    * 获取材质预设列表
    * 
+   * 返回所有可用的材质预设，包括区域类型和基础设施类型。
+   * 
    * @returns 材质预设列表
+   * 
+   * @example
+   * ```typescript
+   * const presets = engine.getMaterialPresets()
+   * presets.forEach(p => console.log(p.name, p.color))
+   * ```
    */
-  public getMaterialPresets(): any[] {
-    // TODO: 实现获取材质预设逻辑
-    throw new Error('Not implemented')
+  public getMaterialPresets(): MaterialPreset[] {
+    return getAllMaterialPresets()
   }
 
   // ==========================================================================
-  // 网格吸附方法（占位符）
+  // 网格吸附方法
   // ==========================================================================
 
   /**
    * 设置网格吸附
    * 
    * @param enabled - 是否启用
+   * 
+   * @example
+   * ```typescript
+   * engine.setSnapToGrid(true)
+   * ```
    */
   public setSnapToGrid(enabled: boolean): void {
-    // TODO: 实现设置网格吸附逻辑
-    throw new Error('Not implemented')
+    this.options.snapToGrid = enabled
+  }
+
+  /**
+   * 获取网格吸附状态
+   * 
+   * @returns 是否启用网格吸附
+   */
+  public isSnapToGridEnabled(): boolean {
+    return this.options.snapToGrid ?? true
   }
 
   /**
    * 设置网格大小
    * 
-   * @param size - 网格大小
+   * @param size - 网格大小（米）
+   * 
+   * @example
+   * ```typescript
+   * engine.setGridSize(0.5) // 0.5米网格
+   * ```
    */
   public setGridSize(size: number): void {
-    // TODO: 实现设置网格大小逻辑
-    throw new Error('Not implemented')
+    if (size <= 0) {
+      throw new ValidationError('Grid size must be positive', { size })
+    }
+    this.options.gridSize = size
+  }
+
+  /**
+   * 获取网格大小
+   * 
+   * @returns 网格大小（米）
+   */
+  public getGridSize(): number {
+    return this.options.gridSize ?? 1
+  }
+
+  /**
+   * 将坐标对齐到网格
+   * 
+   * @param point - 原始坐标
+   * @returns 对齐后的坐标
+   * 
+   * @example
+   * ```typescript
+   * const snapped = engine.snapToGrid({ x: 10.3, y: 5.7 })
+   * // 如果网格大小为 1，返回 { x: 10, y: 6 }
+   * ```
+   */
+  public snapToGrid(point: Vector2D): Vector2D {
+    if (!this.options.snapToGrid) return point
+
+    const gridSize = this.options.gridSize ?? 1
+    return {
+      x: Math.round(point.x / gridSize) * gridSize,
+      y: Math.round(point.y / gridSize) * gridSize,
+    }
   }
 
   // ==========================================================================
-  // 相机控制方法（占位符）
+  // 相机控制方法
   // ==========================================================================
 
   /**
    * 重置相机到默认位置
+   * 
+   * 将相机移动到俯视整个商城的位置。
+   * 
+   * @example
+   * ```typescript
+   * engine.resetCamera()
+   * ```
    */
   public resetCamera(): void {
-    // TODO: 实现重置相机逻辑
-    throw new Error('Not implemented')
+    // 获取商城轮廓的边界框来计算合适的相机位置
+    const project = this.projectManager.getProject()
+    const outline = project.outline
+
+    if (outline && outline.vertices.length >= 3) {
+      // 计算轮廓中心
+      let centerX = 0
+      let centerY = 0
+      for (const v of outline.vertices) {
+        centerX += v.x
+        centerY += v.y
+      }
+      centerX /= outline.vertices.length
+      centerY /= outline.vertices.length
+
+      // 计算轮廓范围
+      let maxDist = 0
+      for (const v of outline.vertices) {
+        const dist = Math.sqrt(
+          Math.pow(v.x - centerX, 2) + Math.pow(v.y - centerY, 2)
+        )
+        maxDist = Math.max(maxDist, dist)
+      }
+
+      // 设置相机位置（俯视角度）
+      const cameraHeight = Math.max(maxDist * 1.5, 50)
+      this.threeEngine.setCameraPosition(centerX, cameraHeight, centerY + cameraHeight * 0.5)
+      this.threeEngine.setCameraTarget(centerX, 0, centerY)
+    } else {
+      // 默认位置
+      this.threeEngine.setCameraPosition(0, 100, 60)
+      this.threeEngine.setCameraTarget(0, 0, 0)
+    }
+
+    this.threeEngine.requestRender()
   }
 
   /**
    * 聚焦到指定区域
    * 
+   * 将相机移动到能够清晰看到指定区域的位置。
+   * 
    * @param areaId - 区域 ID
+   * 
+   * @example
+   * ```typescript
+   * engine.focusOnArea('area-1')
+   * ```
    */
   public focusOnArea(areaId: string): void {
-    // TODO: 实现聚焦区域逻辑
-    throw new Error('Not implemented')
+    const area = this.findAreaById(areaId)
+    if (!area) {
+      throw new ValidationError('Area not found', { areaId })
+    }
+
+    // 计算区域中心
+    const vertices = area.shape.vertices
+    if (vertices.length === 0) return
+
+    let centerX = 0
+    let centerY = 0
+    for (const v of vertices) {
+      centerX += v.x
+      centerY += v.y
+    }
+    centerX /= vertices.length
+    centerY /= vertices.length
+
+    // 计算区域范围
+    let maxDist = 0
+    for (const v of vertices) {
+      const dist = Math.sqrt(
+        Math.pow(v.x - centerX, 2) + Math.pow(v.y - centerY, 2)
+      )
+      maxDist = Math.max(maxDist, dist)
+    }
+
+    // 设置相机位置（斜向俯视）
+    const cameraHeight = Math.max(maxDist * 2, 20)
+    const cameraOffset = cameraHeight * 0.6
+
+    this.threeEngine.setCameraPosition(
+      centerX + cameraOffset,
+      cameraHeight,
+      -centerY + cameraOffset // 注意：Three.js 中 z 轴方向
+    )
+    this.threeEngine.setCameraTarget(centerX, 0, -centerY)
+
+    this.threeEngine.requestRender()
+  }
+
+  /**
+   * 设置相机位置
+   * 
+   * @param x - X 坐标
+   * @param y - Y 坐标（高度）
+   * @param z - Z 坐标
+   * 
+   * @example
+   * ```typescript
+   * engine.setCameraPosition(0, 50, 50)
+   * ```
+   */
+  public setCameraPosition(x: number, y: number, z: number): void {
+    this.threeEngine.setCameraPosition(x, y, z)
+    this.threeEngine.requestRender()
+  }
+
+  /**
+   * 设置相机目标点
+   * 
+   * @param x - X 坐标
+   * @param y - Y 坐标
+   * @param z - Z 坐标
+   * 
+   * @example
+   * ```typescript
+   * engine.setCameraTarget(0, 0, 0)
+   * ```
+   */
+  public setCameraTarget(x: number, y: number, z: number): void {
+    this.threeEngine.setCameraTarget(x, y, z)
+    this.threeEngine.requestRender()
   }
 
   // ==========================================================================
@@ -887,6 +1368,50 @@ export class BuilderEngine {
   // ==========================================================================
   // 私有工具方法
   // ==========================================================================
+
+  /**
+   * 获取目标楼层（验证并返回）
+   * 
+   * @param floorId - 楼层 ID（可选，默认使用当前楼层）
+   * @returns 包含项目和楼层的对象
+   * @throws {ValidationError} 当没有选中楼层或楼层不存在时
+   */
+  private getTargetFloor(floorId?: string): { project: MallProject; floor: FloorDefinition } {
+    const targetFloorId = floorId || this.currentFloorId
+    if (!targetFloorId) {
+      throw new ValidationError('No floor selected', { floorId: targetFloorId })
+    }
+
+    const project = this.projectManager.getProject()
+    const floor = project.floors.find(f => f.id === targetFloorId)
+    if (!floor) {
+      throw new ValidationError('Floor not found', { floorId: targetFloorId })
+    }
+
+    return { project, floor }
+  }
+
+  /**
+   * 获取目标区域（验证并返回）
+   * 
+   * @param areaId - 区域 ID
+   * @param floorId - 楼层 ID（可选，默认使用当前楼层）
+   * @returns 包含项目、楼层、区域和索引的对象
+   * @throws {ValidationError} 当区域不存在时
+   */
+  private getTargetArea(areaId: string, floorId?: string): { 
+    project: MallProject
+    floor: FloorDefinition
+    area: AreaDefinition
+    index: number 
+  } {
+    const { project, floor } = this.getTargetFloor(floorId)
+    const index = floor.areas.findIndex(a => a.id === areaId)
+    if (index === -1) {
+      throw new ValidationError('Area not found', { areaId })
+    }
+    return { project, floor, area: floor.areas[index], index }
+  }
 
   /**
    * 保存当前状态到历史记录

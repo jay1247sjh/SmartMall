@@ -13,6 +13,105 @@
 
 ### Changed - 变更
 
+#### API 模块 Mock 数据转真实接口 🔄 重构
+
+**admin.api.ts - 管理员 API**
+- ✅ `getApprovalList()` - 对接 `/admin/area/apply/pending` 获取待审批列表
+- ✅ `approveRequest(id)` - 对接 `/admin/area/apply/{id}/approve` 审批通过
+- ✅ `rejectRequest(id, reason)` - 对接 `/admin/area/apply/{id}/reject` 审批驳回
+- ⏳ `getStats()` - 后端未实现，保留 Mock
+- ⏳ `getUserList()` / `getUserDetail()` / `freezeUser()` / `activateUser()` - 后端未实现，保留 Mock
+
+**merchant.api.ts - 商家 API**
+- ✅ `getMyStores()` - 对接 `/store/my` 获取我的店铺
+- ✅ `updateStore(id, data)` - 对接 `PUT /store/{id}` 更新店铺
+- ✅ `getMyApplications()` - 对接 `/area/apply/my` 获取我的申请
+- ✅ `getAvailableAreas()` - 对接 `/area/available` 获取可申请区域
+- ✅ `applyForArea(areaId, reason)` - 对接 `POST /area/apply` 提交申请
+- ⏳ `getStats()` - 后端未实现，保留 Mock
+
+**mall-manage.api.ts - 商城管理 API**
+- ⏳ 楼层/区域/版本管理接口 - 后端未实现，保留 Mock，更新注释
+
+**类型映射函数**
+- ✅ 新增后端 DTO 类型定义（BackendStoreDTO, BackendAreaApplyDTO, BackendAvailableAreaDTO）
+- ✅ 新增类型转换函数（mapBackendStoreToFrontend, mapBackendApplyToFrontend, mapBackendAreaToFrontend）
+
+#### 代码优化
+
+**useSearch.ts 优化**
+- ✅ 提取 `easeInOutQuad` 缓动函数为命名常量，便于复用和测试
+- ✅ 新增 `StorePosition` 和 `SearchResultWithPosition` 类型定义，提升类型安全
+- ✅ 移除非空断言 `engine!.value!`，改用局部变量 `currentEngine` 提前检查
+- ✅ 添加 `onUnmounted` 生命周期钩子，组件卸载时自动清理飞行动画
+- ✅ 优化返回类型定义，使用 `Ref<T>` 替代 `ReturnType<typeof ref<T>>`
+- ✅ 添加函数返回类型注解（`: void`）
+- ✅ 代码结构重组：类型定义、常量定义、接口定义、实现分区
+
+**useMall3DScene.ts 优化**
+- ✅ 修复 `clearHighlights` 中未使用的循环变量警告（`id` → `_`）
+
+### Added - 新增功能
+
+#### 相机飞向店铺功能 ⭐ 新增
+
+**useSearch Composable 增强 (`views/mall3d/useSearch.ts`)**
+- ✅ `flyToStore(storeId, config?)` - 相机飞向指定店铺
+  - 根据店铺 ID 查找位置
+  - 平滑动画过渡
+- ✅ `flyToPosition(position, config?)` - 相机飞向指定位置
+  - 支持 THREE.Vector3 目标位置
+  - 可配置飞行参数
+- ✅ `isFlying` - 飞行状态标志
+- ✅ `cancelFlyAnimation()` - 取消飞行动画
+- ✅ 飞行配置选项 `FlyToConfig`：
+  - `duration` - 飞行时长（默认 1000ms）
+  - `offset` - 相机偏移（默认 x:15, y:20, z:15）
+  - `easing` - 缓动函数（默认 easeInOutQuad）
+- ✅ 选择搜索结果时自动飞向店铺
+
+**useMall3DScene Composable 增强 (`views/mall3d/useMall3DScene.ts`)**
+- ✅ `highlightObject(id, highlight?)` - 高亮/取消高亮指定对象
+  - 黄色高亮 + 自发光效果
+  - 自动保存和恢复原始颜色
+- ✅ `highlightObjects(ids, highlight?)` - 批量高亮多个对象
+- ✅ `clearHighlights()` - 清除所有高亮
+
+**Mall3DView.vue AI 事件处理**
+- ✅ `handleAiNavigate` - AI 导航到指定位置（使用 flyToPosition）
+- ✅ `handleAiHighlight` - AI 高亮店铺（3秒后自动取消）
+
+**ThreeEngine 相机控制方法 (`engine/ThreeEngine.ts`)**
+- ✅ `setCameraPosition(x, y, z)` - 设置相机位置
+- ✅ `setCameraTarget(x, y, z)` - 设置相机目标点
+- ✅ `getCameraTarget()` - 获取当前相机目标点
+
+**OrbitController 目标点控制 (`engine/camera/OrbitController.ts`)**
+- ✅ `setTarget(x, y, z)` - 设置轨道控制器目标点
+- ✅ `getTarget()` - 获取当前目标点
+
+### Changed - 变更
+
+#### 代码优化
+
+**飞行动画优化 (`views/mall3d/useSearch.ts`)**
+- ✅ 使用 `getCameraTarget()` 获取准确的起始目标点，而非硬编码 (0,0,0)
+- ✅ 提取 `cancelFlyAnimation()` 为独立方法，支持外部调用
+
+**高亮功能优化 (`views/mall3d/useMall3DScene.ts`)**
+- ✅ 提取 `applyHighlight()` 私有方法，减少代码重复
+- ✅ 新增 `highlightObjects()` 批量高亮方法，提升多对象高亮性能
+
+**deepClone 函数优化 (`builder/utils/clone.ts`)**
+- ✅ 将 `JSON.parse(JSON.stringify())` 改为 `structuredClone()`
+- ✅ 性能更好，支持更多类型（Date、Map、Set 等）
+
+**BuilderEngine 代码重构 (`builder/BuilderEngine.ts`)**
+- ✅ 添加 `getTargetFloor()` 私有辅助方法 - 验证并获取目标楼层
+- ✅ 添加 `getTargetArea()` 私有辅助方法 - 验证并获取目标区域
+- ✅ 重构 `createArea`、`deleteArea`、`updateArea`、`moveArea` 使用辅助方法
+- ✅ 移除未使用的 `PerformanceConfig` 类型导入
+
 #### 相机工厂重构
 - ✅ 新增 `engine/camera/cameraFactory.ts` - 统一相机创建逻辑
   - `createPerspectiveCamera()` - 工厂函数，支持配置 FOV、裁剪面、初始位置

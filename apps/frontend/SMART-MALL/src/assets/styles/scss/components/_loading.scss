@@ -2,6 +2,9 @@
  * Loading 加载组件样式
  */
 
+@use '../variables' as *;
+@use '../mixins' as *;
+
 .loading {
   &-overlay {
     @include absolute-fill;

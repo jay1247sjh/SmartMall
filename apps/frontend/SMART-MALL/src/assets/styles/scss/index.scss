@@ -6,14 +6,17 @@
  * @import '@/assets/styles/scss/index.scss';
  */
 
-// 1. Mixins - 可复用的样式混入
-@import './mixins';
+// 1. 变量 - 设计令牌（使用 @use 以便转发）
+@use 'variables' as *;
 
-// 2. 动画 - 动画定义
-@import './animations';
+// 2. Mixins - 可复用的样式混入
+@use 'mixins' as *;
 
-// 3. 工具类 - 快速样式类
-@import './utilities';
+// 3. 动画 - 动画定义
+@import 'animations';
 
-// 4. 通用组件样式
-@import './components/index';
+// 4. 工具类 - 快速样式类
+@import 'utilities';
+
+// 5. 通用组件样式
+@import 'components/index';

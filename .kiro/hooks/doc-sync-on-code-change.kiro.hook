@@ -1,0 +1,20 @@
+{
+  "enabled": true,
+  "name": "Documentation Sync on Code Change",
+  "description": "Monitors code changes in frontend/backend directories and updates related documentation in docs/ and study/ folders based on actual file diffs, following strict analysis principles",
+  "version": "1",
+  "when": {
+    "type": "fileEdited",
+    "patterns": [
+      "apps/frontend/**/*.ts",
+      "apps/frontend/**/*.vue",
+      "apps/frontend/**/*.js",
+      "apps/backend/**/*.java",
+      "apps/backend/**/*.kt"
+    ]
+  },
+  "then": {
+    "type": "askAgent",
+    "prompt": "【文档同步任务】\n\n检测到代码变更，请按以下规则更新文档：\n\n**触发文件**: {{filePath}}\n\n**分析原则**:\n1. 基于真实的文件变更（diff）进行分析，不允许凭空推测或补全未出现的功能\n2. 仅总结「已经发生变化的事实」，避免描述未来规划或猜测意图\n3. 如果变更内容不足以形成有效结论，请明确标注\"不确定\"\n\n**文档更新目标**:\n- 前端文档: apps/frontend/SMART-MALL/docs/ 和 study/\n- 后端文档: apps/backend/SMART-MALL/docs/ 和 study/\n- 仅修改与本次代码变更直接相关的文档\n- 不新增无关文档，不删除原有内容\n\n**更新规则**:\n- docs 文档: 偏向\"是什么 + 为什么 + 对外接口/职责变化\"，语言保持正式、客观、工程化\n- study 文档: 偏向\"我学到了什么 / 为什么这样设计 / 注意点\"，允许更口语化，但需基于事实\n\n**输出要求**:\n- 清晰标注每一处文档更新对应的代码变更来源\n- 如无需要更新的文档，请明确输出\"本次变更无需更新 docs / study 文档\"\n\n**安全约束**:\n- 不修改任何代码文件\n- 不自动提交\n- 不跨目录更新\n\n如果文档更新存在歧义或可能误导，请放弃修改并输出分析原因。"
+  }
+}

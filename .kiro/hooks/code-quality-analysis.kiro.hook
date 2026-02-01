@@ -1,0 +1,20 @@
+{
+  "enabled": true,
+  "name": "Code Quality Analysis",
+  "description": "Analyzes changed files for readability, structure, performance risks, resource management, and type safety issues. Provides optimization suggestions without modifying code.",
+  "version": "1",
+  "when": {
+    "type": "fileEdited",
+    "patterns": [
+      "*.ts",
+      "*.tsx",
+      "*.vue",
+      "*.java",
+      "*.py"
+    ]
+  },
+  "then": {
+    "type": "askAgent",
+    "prompt": "对刚刚变更的文件执行\"代码质量与优化分析\"，但不要修改任何代码。\n\n【分析范围】\n- 仅分析本次发生变更的文件\n- 不扫描整个项目\n- 不对未变更代码提出修改建议\n\n【分析维度】\n1. 可读性：命名是否清晰、职责是否单一\n2. 结构性：是否存在重复逻辑、过深嵌套\n3. 性能风险：明显的 O(n²)、不必要的重复计算、阻塞调用\n4. 资源管理：未释放的监听、定时器、对象、连接\n5. 类型与边界：空值、异常分支是否明确处理\n\n【输出形式】\n按文件列出发现的问题，对每一条问题给出：\n- 问题描述\n- 风险等级（低 / 中 / 高）\n- 推荐的优化思路（不直接给完整代码）\n\n【安全约束】\n- 不修改任何代码文件\n- 不重排代码结构\n- 不假设业务意图\n\n如果代码质量良好，简单确认即可。"
+  }
+}

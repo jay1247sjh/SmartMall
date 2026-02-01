@@ -24,6 +24,9 @@ export interface UseMall3DSceneReturn {
   switchFloor: (floorId: number) => Promise<void>
   clearMall: () => void
   dispose: () => void
+  highlightObject: (id: string, highlight?: boolean) => void
+  highlightObjects: (ids: string[], highlight?: boolean) => void
+  clearHighlights: () => void
 }
 
 /** 示例店铺位置配置 */
@@ -48,6 +51,10 @@ export function useMall3DScene(options: UseMall3DSceneOptions): UseMall3DSceneRe
   const currentFloor = ref(1)
   const mallData = ref<GeneratedMallData | null>(null)
   const showImportSuccess = ref(false)
+
+  // 高亮状态：存储原始材质以便恢复
+  const highlightedObjects = new Map<string, { mesh: THREE.Mesh; originalColor: number }>()
+  const HIGHLIGHT_COLOR = 0xffff00 // 黄色高亮
 
   /**
    * 更新加载状态
@@ -334,7 +341,94 @@ export function useMall3DScene(options: UseMall3DSceneOptions): UseMall3DSceneRe
    * 销毁引擎
    */
   function dispose() {
+    clearHighlights()
     engine.value?.dispose()
+  }
+
+  /**
+   * 高亮指定对象
+   * 
+   * @param id - 对象 ID（店铺名称或区域名称）
+   * @param highlight - 是否高亮，默认 true
+   */
+  function highlightObject(id: string, highlight: boolean = true): void {
+    if (!engine.value) return
+
+    const scene = engine.value.getScene()
+
+    // 查找匹配的对象
+    scene.traverse(obj => {
+      if (obj instanceof THREE.Mesh && obj.userData?.name === id) {
+        applyHighlight(obj, id, highlight)
+      }
+    })
+
+    engine.value.requestRender()
+  }
+
+  /**
+   * 批量高亮对象
+   * 
+   * @param ids - 对象 ID 列表
+   * @param highlight - 是否高亮，默认 true
+   */
+  function highlightObjects(ids: string[], highlight: boolean = true): void {
+    if (!engine.value || ids.length === 0) return
+
+    const idSet = new Set(ids)
+    const scene = engine.value.getScene()
+
+    // 查找匹配的对象
+    scene.traverse(obj => {
+      if (obj instanceof THREE.Mesh && obj.userData?.name && idSet.has(obj.userData.name)) {
+        applyHighlight(obj, obj.userData.name, highlight)
+      }
+    })
+
+    engine.value.requestRender()
+  }
+
+  /**
+   * 应用高亮效果到单个对象
+   */
+  function applyHighlight(mesh: THREE.Mesh, id: string, highlight: boolean): void {
+    const material = mesh.material as THREE.MeshStandardMaterial
+
+    if (highlight) {
+      // 保存原始颜色并高亮
+      if (!highlightedObjects.has(id)) {
+        highlightedObjects.set(id, {
+          mesh,
+          originalColor: material.color.getHex(),
+        })
+      }
+      material.color.setHex(HIGHLIGHT_COLOR)
+      material.emissive.setHex(0x444400) // 添加自发光效果
+    } else {
+      // 恢复原始颜色
+      const saved = highlightedObjects.get(id)
+      if (saved) {
+        material.color.setHex(saved.originalColor)
+        material.emissive.setHex(0x000000)
+        highlightedObjects.delete(id)
+      }
+    }
+  }
+
+  /**
+   * 清除所有高亮
+   */
+  function clearHighlights(): void {
+    if (!engine.value) return
+
+    for (const [, { mesh, originalColor }] of highlightedObjects) {
+      const material = mesh.material as THREE.MeshStandardMaterial
+      material.color.setHex(originalColor)
+      material.emissive.setHex(0x000000)
+    }
+    highlightedObjects.clear()
+
+    engine.value.requestRender()
   }
 
   return {
@@ -348,5 +442,8 @@ export function useMall3DScene(options: UseMall3DSceneOptions): UseMall3DSceneRe
     switchFloor,
     clearMall,
     dispose,
+    highlightObject,
+    highlightObjects,
+    clearHighlights,
   }
 }

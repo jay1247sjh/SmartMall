@@ -2,6 +2,9 @@
  * Toolbar 工具栏组件样式
  */
 
+@use '../variables' as *;
+@use '../mixins' as *;
+
 .toolbar {
   @include flex-between;
   position: absolute;

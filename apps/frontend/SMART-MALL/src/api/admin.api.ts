@@ -161,18 +161,56 @@ export interface UserDetail extends UserInfo {
  * 数据实时计算，反映当前系统状态。
  *
  * @returns 管理员统计数据
+ * 
+ * TODO: 后端尚未实现 /admin/stats 接口，暂时使用 Mock 数据
  */
 export async function getStats(): Promise<AdminStats> {
-  // TODO: 对接真实后端
-  // return http.get('/api/admin/stats')
+  // TODO: 后端实现后启用
+  // return http.get('/admin/stats')
   
   // Mock 数据：模拟一个中等规模商城的运营数据
   return Promise.resolve({
-    merchantCount: 128,    // 128 家入驻商家
-    storeCount: 256,       // 256 家店铺（部分商家有多店）
-    pendingApprovals: 5,   // 5 个待审批申请
-    onlineUsers: 42,       // 42 个在线用户
+    merchantCount: 128,
+    storeCount: 256,
+    pendingApprovals: 5,
+    onlineUsers: 42,
   })
+}
+
+/**
+ * 后端区域申请 DTO 类型（与后端 AreaApplyDTO 对应）
+ */
+interface BackendAreaApplyDTO {
+  applyId: string
+  areaId: string
+  areaName: string
+  floorName: string
+  merchantId: string
+  merchantName: string
+  status: string
+  applyReason: string
+  rejectReason?: string
+  createdAt: string
+  approvedAt?: string
+  rejectedAt?: string
+}
+
+/**
+ * 将后端 DTO 转换为前端类型
+ */
+function mapBackendApplyToFrontend(dto: BackendAreaApplyDTO): ApprovalRequest {
+  return {
+    id: parseInt(dto.applyId) || 0,
+    merchantId: parseInt(dto.merchantId) || 0,
+    merchantName: dto.merchantName,
+    areaId: parseInt(dto.areaId) || 0,
+    areaName: dto.areaName,
+    floorName: dto.floorName,
+    reason: dto.applyReason,
+    status: dto.status as 'PENDING' | 'APPROVED' | 'REJECTED',
+    rejectReason: dto.rejectReason,
+    createdAt: dto.createdAt,
+  }
 }
 
 /**
@@ -185,52 +223,14 @@ export async function getStats(): Promise<AdminStats> {
  * @returns 审批请求列表
  */
 export async function getApprovalList(params?: ApprovalListParams): Promise<ApprovalRequest[]> {
-  // TODO: 对接真实后端
-  // return http.get('/api/admin/approvals', { params })
-  
-  // Mock 数据：模拟不同状态的审批申请
-  const mockData: ApprovalRequest[] = [
-    {
-      id: 1,
-      merchantId: 101,
-      merchantName: '星巴克咖啡',
-      areaId: 1001,
-      areaName: 'A-101',
-      floorName: '1F',
-      reason: '希望在一楼开设新店铺，主营咖啡饮品',
-      status: 'PENDING',
-      createdAt: '2024-12-28T10:30:00Z',
-    },
-    {
-      id: 2,
-      merchantId: 102,
-      merchantName: '优衣库',
-      areaId: 1002,
-      areaName: 'B-201',
-      floorName: '2F',
-      reason: '扩展店铺面积，增加服装展示区',
-      status: 'PENDING',
-      createdAt: '2024-12-27T14:20:00Z',
-    },
-    {
-      id: 3,
-      merchantId: 103,
-      merchantName: '海底捞',
-      areaId: 1003,
-      areaName: 'C-301',
-      floorName: '3F',
-      reason: '开设餐饮店铺',
-      status: 'APPROVED',
-      createdAt: '2024-12-26T09:15:00Z',
-    },
-  ]
-  
-  // 按状态筛选
-  if (params?.status && params.status !== 'ALL') {
-    return mockData.filter(item => item.status === params.status)
+  // 后端只提供待审批列表接口，如果需要全部状态需要后端扩展
+  if (!params?.status || params.status === 'ALL' || params.status === 'PENDING') {
+    const data = await http.get<BackendAreaApplyDTO[]>('/admin/area/apply/pending')
+    return data.map(mapBackendApplyToFrontend)
   }
   
-  return Promise.resolve(mockData)
+  // 其他状态暂时返回空数组（后端未提供按状态查询的接口）
+  return []
 }
 
 /**
@@ -242,10 +242,7 @@ export async function getApprovalList(params?: ApprovalListParams): Promise<Appr
  * @param id - 审批请求 ID
  */
 export async function approveRequest(id: number): Promise<void> {
-  // TODO: 对接真实后端
-  // return http.post(`/api/admin/approvals/${id}/approve`)
-  
-  return Promise.resolve()
+  return http.post(`/admin/area/apply/${id}/approve`)
 }
 
 /**
@@ -258,10 +255,7 @@ export async function approveRequest(id: number): Promise<void> {
  * @param reason - 拒绝原因
  */
 export async function rejectRequest(id: number, reason: string): Promise<void> {
-  // TODO: 对接真实后端
-  // return http.post(`/api/admin/approvals/${id}/reject`, { reason })
-  
-  return Promise.resolve()
+  return http.post(`/admin/area/apply/${id}/reject`, { reason })
 }
 
 // ============================================================================
@@ -356,10 +350,12 @@ const mockUsers: UserDetail[] = [
  *
  * @param params - 查询参数
  * @returns 用户列表响应
+ * 
+ * TODO: 后端尚未实现 /admin/users 接口，暂时使用 Mock 数据
  */
 export async function getUserList(params?: UserListParams): Promise<UserListResponse> {
-  // TODO: 对接真实后端
-  // return http.get('/api/admin/users', { params })
+  // TODO: 后端实现后启用
+  // return http.get('/admin/users', { params })
   
   let filtered = [...mockUsers]
   
@@ -400,10 +396,12 @@ export async function getUserList(params?: UserListParams): Promise<UserListResp
  *
  * @param userId - 用户 ID
  * @returns 用户详情
+ * 
+ * TODO: 后端尚未实现 /admin/users/{userId} 接口，暂时使用 Mock 数据
  */
 export async function getUserDetail(userId: string): Promise<UserDetail> {
-  // TODO: 对接真实后端
-  // return http.get(`/api/admin/users/${userId}`)
+  // TODO: 后端实现后启用
+  // return http.get(`/admin/users/${userId}`)
   
   const user = mockUsers.find(u => u.userId === userId)
   if (!user) {
@@ -418,10 +416,12 @@ export async function getUserDetail(userId: string): Promise<UserDetail> {
  * 将用户状态设置为 FROZEN，用户将无法登录系统。
  *
  * @param userId - 用户 ID
+ * 
+ * TODO: 后端尚未实现 /admin/users/{userId}/freeze 接口，暂时使用 Mock 数据
  */
 export async function freezeUser(userId: string): Promise<void> {
-  // TODO: 对接真实后端
-  // return http.post(`/api/admin/users/${userId}/freeze`)
+  // TODO: 后端实现后启用
+  // return http.post(`/admin/users/${userId}/freeze`)
   
   const user = mockUsers.find(u => u.userId === userId)
   if (user) {
@@ -436,10 +436,12 @@ export async function freezeUser(userId: string): Promise<void> {
  * 将用户状态设置为 ACTIVE，恢复用户的登录权限。
  *
  * @param userId - 用户 ID
+ * 
+ * TODO: 后端尚未实现 /admin/users/{userId}/activate 接口，暂时使用 Mock 数据
  */
 export async function activateUser(userId: string): Promise<void> {
-  // TODO: 对接真实后端
-  // return http.post(`/api/admin/users/${userId}/activate`)
+  // TODO: 后端实现后启用
+  // return http.post(`/admin/users/${userId}/activate`)
   
   const user = mockUsers.find(u => u.userId === userId)
   if (user) {

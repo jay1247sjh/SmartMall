@@ -2,6 +2,9 @@
  * Panel 面板组件样式
  */
 
+@use '../variables' as *;
+@use '../mixins' as *;
+
 .panel {
   @include panel-base;
   @include flex-column;

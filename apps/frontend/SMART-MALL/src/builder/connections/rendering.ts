@@ -7,6 +7,7 @@
 import * as THREE from 'three'
 import type { VerticalConnection, ConnectionRenderOptions } from './types'
 import { getConnectionTypeColor } from './vertical'
+import type { Point2D } from '@smart-mall/shared-types'
 
 /**
  * 默认渲染选项
@@ -173,7 +174,7 @@ export function clearConnectionIndicators(scene: THREE.Scene): void {
 /**
  * 获取区域中心点
  */
-export function getAreaCenter(vertices: { x: number; y: number }[]): { x: number; z: number } {
+export function getAreaCenter(vertices: Point2D[]): { x: number; z: number } {
   if (vertices.length === 0) {
     return { x: 0, z: 0 }
   }

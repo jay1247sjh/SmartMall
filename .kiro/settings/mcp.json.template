@@ -1,0 +1,27 @@
+{
+  "mcpServers": {
+    "filesystem": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-filesystem", "<YOUR_PROJECT_PATH>"],
+      "disabled": false,
+      "autoApprove": ["read_file", "list_directory"],
+      "env": {}
+    },
+    "git": {
+      "command": "uvx",
+      "args": ["mcp-server-git", "--repository", "<YOUR_PROJECT_PATH>"],
+      "disabled": false,
+      "autoApprove": ["git_status", "git_diff_unstaged", "git_log"],
+      "env": {
+        "FASTMCP_LOG_LEVEL": "ERROR"
+      }
+    },
+    "postgres": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-postgres", "postgresql://<username>:<password>@localhost:5433/smartmall"],
+      "disabled": false,
+      "autoApprove": ["list_tables", "describe_table"],
+      "env": {}
+    }
+  }
+}

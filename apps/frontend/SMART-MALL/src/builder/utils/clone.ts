@@ -7,8 +7,11 @@
 /**
  * 深拷贝对象
  * 
- * 使用 JSON 序列化/反序列化实现深拷贝
- * 注意：不支持函数、Symbol、循环引用等特殊类型
+ * 使用 structuredClone API 实现深拷贝（现代浏览器原生支持）
+ * 相比 JSON.parse(JSON.stringify()) 的优势：
+ * - 性能更好
+ * - 支持更多类型（Date、RegExp、Map、Set、ArrayBuffer 等）
+ * - 支持循环引用
  * 
  * @param obj - 要拷贝的对象
  * @returns 拷贝后的对象
@@ -22,7 +25,7 @@
  * ```
  */
 export function deepClone<T>(obj: T): T {
-  return JSON.parse(JSON.stringify(obj))
+  return structuredClone(obj)
 }
 
 /**

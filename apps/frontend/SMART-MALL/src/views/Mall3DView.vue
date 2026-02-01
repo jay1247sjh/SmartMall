@@ -16,6 +16,7 @@
  */
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
+import * as THREE from 'three'
 import { useUserStore } from '@/stores'
 import { AiChatPanel } from '@/components'
 import { useMall3DScene, useSearch } from './mall3d'
@@ -43,6 +44,7 @@ const containerRef = ref<HTMLElement | null>(null)
 
 // 3D 场景
 const {
+  engine,
   loading,
   floors,
   currentFloor,
@@ -52,19 +54,24 @@ const {
   switchFloor,
   clearMall,
   dispose,
+  highlightObject,
+  clearHighlights,
 } = useMall3DScene({ containerRef })
 
-// 搜索
+// 搜索（传入 engine 引用以支持相机飞行）
 const {
   query: searchQuery,
   results: searchResults,
   showResults: showSearchResults,
   selectedStore,
   showStorePanel,
+  isFlying,
   handleSearch,
   selectResult: selectSearchResult,
   closeStorePanel,
-} = useSearch()
+  flyToStore,
+  flyToPosition,
+} = useSearch({ engine })
 
 // UI 状态
 const showFloorSelector = ref(false)
@@ -159,12 +166,22 @@ function handleEnterStore() {
 // AI 事件处理
 function handleAiNavigate(payload: AiNavigatePayload) {
   console.log('AI Navigate:', payload)
-  // TODO: engine.flyTo(payload.position)
+  if (payload.position) {
+    flyToPosition(new THREE.Vector3(
+      payload.position.x,
+      payload.position.y ?? 0,
+      payload.position.z
+    ))
+  }
 }
 
 function handleAiHighlight(payload: AiHighlightPayload) {
   console.log('AI Highlight:', payload)
-  // TODO: engine.highlight(payload.id)
+  if (payload.type === 'store') {
+    highlightObject(payload.id, true)
+    // 3秒后自动取消高亮
+    setTimeout(() => highlightObject(payload.id, false), 3000)
+  }
 }
 
 function handleAiShowDetail(payload: AiShowDetailPayload) {
