@@ -354,7 +354,7 @@ export class CharacterController {
     let t = ((point.x - segStart.x) * dx + (point.y - segStart.y) * dy) / lengthSquared
     t = Math.max(0, Math.min(1, t))
     
-    // 计算投影点
+    // 计算投影点（点到线的最短距离）
     const projX = segStart.x + t * dx
     const projY = segStart.y + t * dy
     
@@ -545,11 +545,14 @@ export class CharacterController {
     if (this.velocity.length() > 0.01 && isMoving) {
       const moveDir = forward.clone().multiplyScalar(-this.velocity.z)
         .add(right.clone().multiplyScalar(this.velocity.x))
-      if (moveDir.length() > 0.01) {
-        const targetAngle = Math.atan2(moveDir.x, moveDir.z)
-        const currentAngle = this.character.rotation.y
-        const angleDiff = targetAngle - currentAngle
+      // 角色朝向自动调整逻辑
+      if (moveDir.length() > 0.01) {  // 检查移动向量长度，避免静止时的微小抖动
+        const targetAngle = Math.atan2(moveDir.x, moveDir.z)  // 计算目标移动方向的角度（弧度制）
+        const currentAngle = this.character.rotation.y        // 获取角色当前的 Y 轴旋转角度
+        const angleDiff = targetAngle - currentAngle          // 计算当前朝向与目标方向的角度差
+        // 将角度差规范化到 [-π, π] 范围内，避免角度溢出问题
         const normalizedDiff = Math.atan2(Math.sin(angleDiff), Math.cos(angleDiff))
+        // 以 10% 的比例逐步调整角色朝向，实现平滑转向效果
         this.character.rotation.y += normalizedDiff * 0.1
       }
     }
