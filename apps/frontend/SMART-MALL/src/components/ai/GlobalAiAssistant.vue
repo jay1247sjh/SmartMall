@@ -251,10 +251,8 @@ async function sendMessage() {
   startProcessing()
 
   try {
-    const userId = userStore.currentUser?.userId || 'anonymous'
     const response = await intelligenceApi.chat(
       text, 
-      userId, 
       imageUrl || undefined, 
       { current_floor: route.path },
       abortController.value.signal

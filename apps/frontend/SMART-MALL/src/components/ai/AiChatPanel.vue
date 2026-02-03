@@ -197,8 +197,7 @@ async function sendMessage() {
   isSending.value = true
 
   try {
-    const userId = userStore.currentUser?.userId || 'anonymous'
-    const response = await intelligenceApi.chat(text, userId, imageUrl || undefined)
+    const response = await intelligenceApi.chat(text, imageUrl || undefined)
     handleResponse(response)
   } catch (error) {
     console.error('Chat error:', error)
@@ -223,8 +222,7 @@ async function confirmAction(confirmed: boolean) {
   isSending.value = true
 
   try {
-    const userId = userStore.currentUser?.userId || 'anonymous'
-    const response = await intelligenceApi.confirm(action, args, confirmed, userId)
+    const response = await intelligenceApi.confirm(action, args, confirmed)
     handleResponse(response)
   } catch (error) {
     console.error('Confirm error:', error)

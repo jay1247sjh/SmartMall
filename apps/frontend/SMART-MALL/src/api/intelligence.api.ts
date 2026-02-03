@@ -96,7 +96,6 @@ export const intelligenceApi = {
    * 发送对话消息
    * 
    * @param message - 用户消息
-   * @param userId - 用户 ID（已废弃，从 token 获取）
    * @param imageUrl - 图片 URL（可选）
    * @param context - 上下文信息（可选）
    * @param signal - AbortSignal 用于取消请求（可选）
@@ -104,7 +103,6 @@ export const intelligenceApi = {
    */
   async chat(
     message: string,
-    _userId: string,
     imageUrl?: string,
     context?: {
       current_floor?: string
@@ -134,14 +132,12 @@ export const intelligenceApi = {
    * @param action - 操作名称
    * @param args - 操作参数
    * @param confirmed - 是否确认
-   * @param userId - 用户 ID（已废弃，从 token 获取）
    * @returns 确认响应
    */
   async confirm(
     action: string,
     args: Record<string, unknown>,
-    confirmed: boolean,
-    _userId: string
+    confirmed: boolean
   ): Promise<ChatResponse> {
     const request: ConfirmRequest = {
       action,
