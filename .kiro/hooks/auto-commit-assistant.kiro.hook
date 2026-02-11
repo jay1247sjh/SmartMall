@@ -1,7 +1,7 @@
 {
   "enabled": true,
   "name": "Auto Commit Assistant",
-  "description": "分析 git diff 变更，生成符合约定式提交规范的 commit message，并自动分组提交不相关的变更",
+  "description": "不允许自动触发，当我要求分析并提交内容时，分析 git diff 变更，生成符合约定式提交规范的 commit message，并自动分组提交不相关的变更",
   "version": "1",
   "when": {
     "type": "agentStop"
