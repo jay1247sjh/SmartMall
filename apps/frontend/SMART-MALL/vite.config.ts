@@ -13,11 +13,19 @@ export default defineConfig({
     port: 5173,
     // API 代理配置
     proxy: {
+      // AI 服务 API - 运行在 8000 端口
+      // 楼层管理等 AI 服务直接接口
+      '/intelligence-api': {
+        target: 'http://localhost:9001',
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/intelligence-api/, '/api'),
+      },
       // 后端 API - 运行在 8081 端口
       // 所有 /api 请求都转发到 Java 后端，包括 AI 相关接口
       '/api': {
         target: 'http://localhost:8081',
         changeOrigin: true,
+        timeout: 120000,  // 代理超时 120s，AI 请求可能较慢
       }
     }
   },

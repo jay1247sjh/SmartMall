@@ -557,8 +557,9 @@ onUnmounted(() => {
               :show-file-list="false"
               :before-upload="handleImageUpload"
               accept="image/*"
+              :disabled="aiStore.isSending"
             >
-              <ElButton :icon="Picture" circle class="btn-upload" />
+              <ElButton :icon="Picture" circle class="btn-upload" :disabled="aiStore.isSending" />
             </ElUpload>
 
             <!-- 文本输入 -->
@@ -568,7 +569,8 @@ onUnmounted(() => {
               type="textarea"
               :rows="1"
               :autosize="{ minRows: 1, maxRows: 4 }"
-              placeholder="输入消息，如「打开商品管理」..."
+              :placeholder="aiStore.isSending ? 'AI 正在思考中...' : '输入消息，如「打开商品管理」...'"
+              :disabled="aiStore.isSending"
               resize="none"
               @keydown="handleKeydown"
             />
@@ -952,6 +954,12 @@ onUnmounted(() => {
 
     &:focus {
       border-color: var(--accent-primary, $color-accent-blue-dark);
+    }
+
+    &:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+      background: var(--bg-tertiary, $color-bg-tertiary);
     }
   }
 }

@@ -378,7 +378,19 @@ instance.interceptors.request.use(
     cancelRequest(requestId)
     
     // 创建新的 AbortController 用于取消请求
+    // 如果调用方已传入 signal（如手动取消），需要同时监听两个信号
     const controller = new AbortController()
+    const callerSignal = config.signal as AbortSignal | undefined
+    
+    if (callerSignal) {
+      // 调用方的 signal 触发时，也取消内部 controller
+      if (callerSignal.aborted) {
+        controller.abort()
+      } else {
+        callerSignal.addEventListener('abort', () => controller.abort(), { once: true })
+      }
+    }
+    
     config.signal = controller.signal
     pendingRequests.set(requestId, controller)
 

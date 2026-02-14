@@ -178,37 +178,53 @@ public class IntelligenceServiceClient {
             
             // 解析 actions
             JsonNode actions = result.path("actions");
-            log.info("[{}] Actions array: {}", requestId, actions);
+            log.info("[{}] Intent: {}, Actions array: {}", requestId, intent, actions);
+            
+            // 提取 actionType：优先从 actions 数组，否则用 intent 字段
+            String actionType = "";
+            JsonNode firstAction = null;
             if (actions.isArray() && !actions.isEmpty()) {
-                JsonNode firstAction = actions.get(0);
-                String actionType = firstAction.path("action").asText();
-                log.info("[{}] First action type: {}", requestId, actionType);
-                
-                if ("NAVIGATE_TO_PAGE".equals(actionType)) {
-                    response.setType("navigate");
+                firstAction = actions.get(0);
+                actionType = firstAction.path("action").asText("");
+            }
+            
+            // 如果 actions 为空，用 intent 作为 actionType（兼容不同 LLM 输出格式）
+            if (actionType.isEmpty() && intent != null && !intent.isEmpty()) {
+                actionType = intent;
+                log.info("[{}] No action in actions array, falling back to intent: {}", requestId, intent);
+            }
+            
+            log.info("[{}] Resolved action type: {}", requestId, actionType);
+            
+            // 大小写不敏感匹配
+            String normalizedAction = actionType.toUpperCase().replace("-", "_").replace(" ", "_");
+            
+            if ("NAVIGATE_TO_PAGE".equals(normalizedAction)) {
+                response.setType("navigate");
+                if (firstAction != null) {
                     JsonNode target = firstAction.path("target");
                     response.setNavigateTo(target.path("id").asText());
                     JsonNode params = firstAction.path("params");
                     response.setNavigateLabel(params.path("label").asText());
-                } else if ("GENERATE_MALL".equals(actionType)) {
-                    // 调用商城生成 API
-                    JsonNode params = firstAction.path("params");
-                    String description = params.path("description").asText();
-                    
-                    // 如果 LLM 没有返回 description，使用原始用户输入
-                    if (description == null || description.isEmpty()) {
-                        log.warn("[{}] GENERATE_MALL action missing description in params, using original message", requestId);
-                        description = originalMessage;
-                    }
-                    
-                    log.info("[{}] Generating mall with description: {}", requestId, description);
-                    return generateMallLayout(requestId, description);
-                } else {
-                    response.setType("text");
-                    response.setAction(actionType);
                 }
+            } else if ("GENERATE_MALL".equals(normalizedAction)) {
+                // 调用商城生成 API
+                String description = originalMessage;
+                if (firstAction != null) {
+                    JsonNode params = firstAction.path("params");
+                    String paramDesc = params.path("description").asText("");
+                    if (!paramDesc.isEmpty()) {
+                        description = paramDesc;
+                    }
+                }
+                
+                log.info("[{}] Generating mall with description: {}", requestId, description);
+                return generateMallLayout(requestId, description);
+            } else if (!actionType.isEmpty()) {
+                response.setType("text");
+                response.setAction(actionType);
             } else {
-                log.warn("[{}] No actions in response, setting type to text", requestId);
+                log.warn("[{}] No actions and no intent in response, setting type to text", requestId);
                 response.setType("text");
             }
         } else {

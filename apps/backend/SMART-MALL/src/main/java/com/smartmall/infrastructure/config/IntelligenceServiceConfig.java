@@ -3,6 +3,7 @@ package com.smartmall.infrastructure.config;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.client.SimpleClientHttpRequestFactory;
 import org.springframework.web.client.RestTemplate;
 
 /**
@@ -16,12 +17,15 @@ public class IntelligenceServiceConfig {
     @Value("${intelligence.service.url:http://localhost:9001}")
     private String intelligenceServiceUrl;
     
-    @Value("${intelligence.service.timeout:30000}")
+    @Value("${intelligence.service.timeout:60000}")
     private int timeout;
     
     @Bean
     public RestTemplate intelligenceRestTemplate() {
-        return new RestTemplate();
+        SimpleClientHttpRequestFactory factory = new SimpleClientHttpRequestFactory();
+        factory.setConnectTimeout(10000);
+        factory.setReadTimeout(timeout);
+        return new RestTemplate(factory);
     }
     
     public String getIntelligenceServiceUrl() {

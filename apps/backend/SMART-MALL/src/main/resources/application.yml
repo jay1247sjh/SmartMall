@@ -69,7 +69,7 @@ jwt:
 intelligence:
   service:
     url: ${INTELLIGENCE_SERVICE_URL:http://localhost:9001}
-    timeout: 30000
+    timeout: 60000
 
 # SpringDoc OpenAPI 配置
 springdoc:
