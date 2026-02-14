@@ -132,11 +132,11 @@ export function createAreaWalls(
     metalness: 0.1,
   } as THREE.MeshStandardMaterialParameters)
 
-  // 入口门面材质（玻璃效果）
+  // 入口门面材质（中性玻璃效果，不使用品牌色）
   const glassMaterial = new THREE.MeshStandardMaterial({
-    color: color,
+    color: 0x4a4a5a,
     transparent: true,
-    opacity: 0.4,
+    opacity: 0.3,
     roughness: 0.1,
     metalness: 0.3,
   } as THREE.MeshStandardMaterialParameters)
@@ -345,18 +345,19 @@ export function useRendering() {
     } else if (isFacility) {
       renderFacilityModel(scene, area, yPosition, isSelected, fullHeight)
     } else {
-      // 普通区域
+      // 普通区域 — 统一中性色，不按品牌区分
       const wallHeight = fullHeight ? 2.8 : 0.45
       const wallThickness = 0.1
+      const uniformColor = 0x2a2a3a
 
       const mesh = createPolygonMesh3D(
         area.shape,
         { depth: 0.1, bevelEnabled: false },
         {
-          color: isOverlapping ? 0xff0000 : color,
+          color: isOverlapping ? 0xff0000 : uniformColor,
           opacity: isSelected ? 0.9 : 0.7,
           transparent: true,
-          emissive: isSelected ? color : 0x000000,
+          emissive: isSelected ? uniformColor : 0x000000,
           emissiveIntensity: isSelected ? 0.3 : 0,
         }
       )
@@ -368,8 +369,9 @@ export function useRendering() {
       scene.add(mesh)
 
       const isShopType = [AreaType.RETAIL, AreaType.FOOD, AreaType.SERVICE, AreaType.ANCHOR].includes(area.type)
+        || area.type === 'store'  // AI 生成的区域使用 "store" 类型
       if (isShopType && area.shape.vertices.length >= 3) {
-        const wallGroup = createAreaWalls(area, yPosition, wallHeight, wallThickness, color, isSelected)
+        const wallGroup = createAreaWalls(area, yPosition, wallHeight, wallThickness, uniformColor, isSelected)
         wallGroup.userData = { isArea: true, areaId: area.id }
         scene.add(wallGroup)
       }
@@ -495,10 +497,11 @@ export function useRendering() {
     if (isRoamingMode && currentFloorId) {
       const roamingEnv = createRoamingEnvironment(project, {
         currentFloorId: currentFloorId,
-        wallColor: 0x6a6a7a,
-        floorColor: 0x4a4a5a,
-        ceilingColor: 0x555565,
-        wallThickness: 0.5,
+        wallHeight: 6,
+        wallColor: 0xf0f0f0,
+        floorColor: 0xf5f5f5,
+        ceilingColor: 0xfafafa,
+        wallThickness: 0.3,
       })
       scene.add(roamingEnv)
     } else {

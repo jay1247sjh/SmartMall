@@ -7,3 +7,6 @@ export * from './types'
 
 // 多边形操作
 export * from './polygon'
+
+// 碰撞数据提取
+export * from './collision'

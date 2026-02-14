@@ -36,8 +36,8 @@ export function calculateArea(polygon: Polygon): number {
 
   for (let i = 0; i < n; i++) {
     const j = (i + 1) % n
-    area += vertices[i].x * vertices[j].y
-    area -= vertices[j].x * vertices[i].y
+    area += vertices[i]!.x * vertices[j]!.y
+    area -= vertices[j]!.x * vertices[i]!.y
   }
 
   return Math.abs(area) / 2
@@ -59,7 +59,7 @@ export function calculatePerimeter(polygon: Polygon): number {
 
   for (let i = 0; i < limit; i++) {
     const j = (i + 1) % n
-    perimeter += distance(vertices[i], vertices[j])
+    perimeter += distance(vertices[i]!, vertices[j]!)
   }
 
   return perimeter
@@ -86,13 +86,13 @@ export function getBoundingBox(polygon: Polygon): BoundingBox {
     return { minX: 0, minY: 0, maxX: 0, maxY: 0 }
   }
 
-  let minX = vertices[0].x
-  let minY = vertices[0].y
-  let maxX = vertices[0].x
-  let maxY = vertices[0].y
+  let minX = vertices[0]!.x
+  let minY = vertices[0]!.y
+  let maxX = vertices[0]!.x
+  let maxY = vertices[0]!.y
 
   for (let i = 1; i < vertices.length; i++) {
-    const v = vertices[i]
+    const v = vertices[i]!
     if (v.x < minX) minX = v.x
     if (v.y < minY) minY = v.y
     if (v.x > maxX) maxX = v.x
@@ -143,8 +143,8 @@ export function isPointInside(point: Point2D, polygon: Polygon): boolean {
   const n = vertices.length
 
   for (let i = 0, j = n - 1; i < n; j = i++) {
-    const vi = vertices[i]
-    const vj = vertices[j]
+    const vi = vertices[i]!
+    const vj = vertices[j]!
 
     // 检查点是否在边的 Y 范围内
     if ((vi.y > point.y) !== (vj.y > point.y)) {
@@ -170,7 +170,7 @@ export function isPointOnEdge(point: Point2D, polygon: Polygon, tolerance: numbe
 
   for (let i = 0; i < n; i++) {
     const j = (i + 1) % n
-    if (isPointOnSegment(point, vertices[i], vertices[j], tolerance)) {
+    if (isPointOnSegment(point, vertices[i]!, vertices[j]!, tolerance)) {
       return true
     }
   }
@@ -244,7 +244,7 @@ export function getEdges(polygon: Polygon): LineSegment[] {
 
   for (let i = 0; i < n; i++) {
     const j = (i + 1) % n
-    edges.push({ start: vertices[i], end: vertices[j] })
+    edges.push({ start: vertices[i]!, end: vertices[j]! })
   }
 
   return edges
@@ -529,7 +529,7 @@ export function isSelfIntersecting(polygon: Polygon): boolean {
       // 跳过首尾相邻的边
       if (i === 0 && j === n - 1) continue
 
-      const result = segmentsIntersect(edges[i], edges[j])
+      const result = segmentsIntersect(edges[i]!, edges[j]!)
       if (result.intersects && result.type === 'point') {
         return true
       }
