@@ -82,6 +82,8 @@ export const componentMap: Record<string, (() => Promise<Component>) | Component
   // Mall3DView 使用异步组件优化（400+ 行，包含 3D 渲染）
   'Mall3DView': AsyncMall3DView,
   'LoginView': () => import('@/views/LoginView.vue'),
+  // BuilderView 使用异步组件优化（包含 Three.js）
+  'BuilderView': AsyncMallBuilderView,
 
   // ===== 管理员页面 =====
   'AdminDashboard': () => import('@/views/admin/DashboardView.vue'),

@@ -44,7 +44,7 @@ public class MallBuilderController {
     
     @Operation(summary = "获取项目详情")
     @GetMapping("/{projectId}")
-    public ApiResponse<ProjectResponse> getProject(@PathVariable String projectId) {
+    public ApiResponse<ProjectResponse> getProject(@PathVariable("projectId") String projectId) {
         ProjectResponse response = mallBuilderService.getProjectById(projectId);
         return ApiResponse.success(response);
     }
@@ -52,7 +52,7 @@ public class MallBuilderController {
     @Operation(summary = "更新项目")
     @PutMapping("/{projectId}")
     public ApiResponse<ProjectResponse> updateProject(
-            @PathVariable String projectId,
+            @PathVariable("projectId") String projectId,
             @Valid @RequestBody UpdateProjectRequest request) {
         String userId = getCurrentUserId();
         ProjectResponse response = mallBuilderService.updateProject(projectId, request, userId);
@@ -61,7 +61,7 @@ public class MallBuilderController {
     
     @Operation(summary = "删除项目")
     @DeleteMapping("/{projectId}")
-    public ApiResponse<Void> deleteProject(@PathVariable String projectId) {
+    public ApiResponse<Void> deleteProject(@PathVariable("projectId") String projectId) {
         String userId = getCurrentUserId();
         mallBuilderService.deleteProject(projectId, userId);
         return ApiResponse.success();

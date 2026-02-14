@@ -90,6 +90,32 @@ public class MallBuilderService {
     }
     
     /**
+     * 获取已发布的商城项目（公开接口）
+     * MVP：返回最新更新的非删除项目，包含完整楼层和区域数据
+     */
+    public ProjectResponse getPublishedMall() {
+        LambdaQueryWrapper<MallProject> wrapper = new LambdaQueryWrapper<>();
+        wrapper.eq(MallProject::getIsDeleted, false)
+               .orderByDesc(MallProject::getUpdateTime)
+               .last("LIMIT 1");
+        
+        MallProject project = projectMapper.selectOne(wrapper);
+        if (project == null) {
+            throw new BusinessException(ResultCode.MALL_NOT_FOUND, "暂无已发布的商城数据");
+        }
+        
+        // 加载楼层和区域
+        List<Floor> floors = getFloorsByProjectId(project.getProjectId());
+        for (Floor floor : floors) {
+            List<Area> areas = getAreasByFloorId(floor.getFloorId());
+            floor.setAreas(areas);
+        }
+        project.setFloors(floors);
+        
+        return convertToResponse(project);
+    }
+
+    /**
      * 获取项目详情
      */
     public ProjectResponse getProjectById(String projectId) {
@@ -271,6 +297,51 @@ public class MallBuilderService {
         if (obj == null) return null;
         return objectMapper.convertValue(obj, Map.class);
     }
+    /**
+     * 将存储的形状数据转换为 OutlineDTO
+     * 兼容两种格式：
+     * 1. GeoJSON: {"type":"Polygon","coordinates":[[[x1,y1],[x2,y2],...]]}
+     * 2. 原生格式: {"vertices":[{"x":x1,"y":y1},...], "isClosed":true}
+     */
+    @SuppressWarnings("unchecked")
+    private OutlineDTO convertToOutlineDTO(Object shapeData) {
+        if (shapeData == null) return null;
+
+        Map<String, Object> map;
+        if (shapeData instanceof Map) {
+            map = (Map<String, Object>) shapeData;
+        } else {
+            map = objectMapper.convertValue(shapeData, Map.class);
+        }
+
+        // 如果包含 coordinates 字段，说明是 GeoJSON 格式
+        if (map.containsKey("coordinates")) {
+            OutlineDTO dto = new OutlineDTO();
+            List<List<List<Number>>> coordinates = (List<List<List<Number>>>) map.get("coordinates");
+            if (coordinates != null && !coordinates.isEmpty()) {
+                List<List<Number>> ring = coordinates.get(0);
+                List<OutlineDTO.VertexDTO> vertices = new java.util.ArrayList<>();
+                for (int i = 0; i < ring.size(); i++) {
+                    // GeoJSON 闭合多边形首尾点相同，跳过最后一个重复点
+                    if (i == ring.size() - 1 && ring.size() > 1
+                            && ring.get(i).get(0).doubleValue() == ring.get(0).get(0).doubleValue()
+                            && ring.get(i).get(1).doubleValue() == ring.get(0).get(1).doubleValue()) {
+                        continue;
+                    }
+                    OutlineDTO.VertexDTO vertex = new OutlineDTO.VertexDTO();
+                    vertex.setX(ring.get(i).get(0).doubleValue());
+                    vertex.setY(ring.get(i).get(1).doubleValue());
+                    vertices.add(vertex);
+                }
+                dto.setVertices(vertices);
+                dto.setIsClosed(true);
+            }
+            return dto;
+        }
+
+        // 原生格式，直接转换
+        return objectMapper.convertValue(map, OutlineDTO.class);
+    }
     
     private String generateId() {
         return UUID.randomUUID().toString().replace("-", "").substring(0, 32);
@@ -281,7 +352,7 @@ public class MallBuilderService {
         response.setProjectId(project.getProjectId());
         response.setName(project.getName());
         response.setDescription(project.getDescription());
-        response.setOutline(objectMapper.convertValue(project.getOutline(), OutlineDTO.class));
+        response.setOutline(convertToOutlineDTO(project.getOutline()));
         response.setSettings(objectMapper.convertValue(project.getSettings(), SettingsDTO.class));
         response.setVersion(project.getVersion());
         response.setCreatedAt(project.getCreateTime());
@@ -302,7 +373,7 @@ public class MallBuilderService {
         response.setName(floor.getName());
         response.setLevel(floor.getLevel());
         response.setHeight(floor.getHeight());
-        response.setShape(objectMapper.convertValue(floor.getShape(), OutlineDTO.class));
+        response.setShape(convertToOutlineDTO(floor.getShape()));
         response.setInheritOutline(floor.getInheritOutline());
         response.setColor(floor.getColor());
         response.setVisible(floor.getVisible());
@@ -323,7 +394,7 @@ public class MallBuilderService {
         response.setAreaId(area.getAreaId());
         response.setName(area.getName());
         response.setType(area.getType());
-        response.setShape(objectMapper.convertValue(area.getShape(), OutlineDTO.class));
+        response.setShape(convertToOutlineDTO(area.getShape()));
         response.setColor(area.getColor());
         response.setProperties(area.getProperties());
         response.setMerchantId(area.getMerchantId());

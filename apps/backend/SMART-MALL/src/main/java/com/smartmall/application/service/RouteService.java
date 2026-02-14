@@ -70,7 +70,7 @@ public class RouteService {
                     .build())
                 .build(),
             RouteDTO.builder()
-                .path("/builder")
+                .path("/builder/:projectId?")
                 .name("Builder")
                 .component("BuilderView")
                 .meta(RouteMeta.builder()

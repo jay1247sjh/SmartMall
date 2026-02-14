@@ -45,6 +45,7 @@
 
 import { http } from './http'
 import type { MallInfo, FloorInfo, AreaInfo, StoreInfo, ProductInfo } from '@/stores'
+import type { MallProject } from '@/builder'
 
 // ============================================================================
 // 类型定义
@@ -201,6 +202,19 @@ export const mallApi = {
    */
   getAvailableAreas(mallId: string): Promise<AvailableArea[]> {
     return http.get<AvailableArea[]>(`/mall/${mallId}/areas/available`)
+  },
+
+  /**
+   * 获取已发布的商城项目数据
+   *
+   * 用于 Mall3D 漫游模式，获取完整的商城建模数据。
+   * 包含轮廓、楼层、区域等完整结构信息。
+   * 此接口为公开接口，无需认证。
+   *
+   * @returns 已发布的商城项目数据
+   */
+  getPublishedMall(): Promise<MallProject> {
+    return http.get<MallProject>('/public/mall/published')
   },
 }
 
