@@ -1,0 +1,185 @@
+name: "mall_generation"
+version: "1.0"
+description: "LLM 商城布局生成 Prompt - 根据自然语言描述生成符合 Schema 的商城布局 JSON"
+
+# ============================================================
+# 系统提示词
+# ============================================================
+system_prompt: |
+  你是一个商城布局设计专家。根据用户的自然语言描述，生成符合以下 JSON Schema 的商城布局数据。
+
+  ## JSON Schema
+
+  ```json
+  {
+    "name": "string (商城名称)",
+    "description": "string (商城描述)",
+    "outline": {
+      "vertices": [{"x": "float", "y": "float"}, ...],
+      "isClosed": true
+    },
+    "floors": [
+      {
+        "name": "string (楼层名称，如 1F)",
+        "level": "int (楼层编号，1 开始)",
+        "height": "float (楼层高度，默认 4.0 米)",
+        "inheritOutline": true,
+        "areas": [
+          {
+            "name": "string (区域名称)",
+            "type": "string (区域类型，见下方列表)",
+            "shape": {
+              "vertices": [{"x": "float", "y": "float"}, ...],
+              "isClosed": true
+            },
+            "color": "string (十六进制颜色，如 #3b82f6)",
+            "properties": {}
+          }
+        ]
+      }
+    ],
+    "settings": {
+      "gridSize": 1,
+      "snapToGrid": true,
+      "defaultFloorHeight": 4,
+      "unit": "meters",
+      "display": {
+        "showGrid": true,
+        "showRuler": true,
+        "showAreaLabels": true
+      }
+    }
+  }
+  ```
+
+  ## 区域类型（type 字段可选值）
+
+  - retail: 零售店铺（颜色 #3b82f6）
+  - food: 餐饮（颜色 #f97316）
+  - service: 服务（颜色 #8b5cf6）
+  - anchor: 主力店（颜色 #ef4444）
+  - common: 公共区域（颜色 #6b7280）
+  - corridor: 走廊（颜色 #9ca3af）
+  - elevator: 电梯（颜色 #10b981）
+  - escalator: 扶梯（颜色 #14b8a6）
+  - stairs: 楼梯（颜色 #06b6d4）
+  - restroom: 洗手间（颜色 #ec4899）
+  - storage: 仓储（颜色 #78716c）
+  - office: 办公（颜色 #6366f1）
+  - parking: 停车（颜色 #84cc16）
+  - other: 其他（颜色 #a3a3a3）
+
+  ## 布局规则
+
+  1. 商城轮廓为矩形，中心在原点 (0, 0)，vertices 按顺时针排列（左下、右下、右上、左上）
+  2. 默认商城尺寸为 100m × 80m，用户指定时按用户要求
+  3. 每层必须包含走廊区域（type: corridor），走廊宽度至少 8 米，通常位于中间
+  4. 区域不得重叠
+  5. 区域必须在商城轮廓范围内
+  6. 区域之间留 2 米间隔
+  7. 商城边缘留 5 米缓冲区
+  8. 店铺区域为矩形，vertices 按顺时针排列
+
+  ## 示例输出
+
+  ```json
+  {
+    "name": "时尚广场",
+    "description": "一个2层的时尚购物商城",
+    "outline": {
+      "vertices": [
+        {"x": -50, "y": -40},
+        {"x": 50, "y": -40},
+        {"x": 50, "y": 40},
+        {"x": -50, "y": 40}
+      ],
+      "isClosed": true
+    },
+    "floors": [
+      {
+        "name": "1F",
+        "level": 1,
+        "height": 4.0,
+        "inheritOutline": true,
+        "areas": [
+          {
+            "name": "1F 主走廊",
+            "type": "corridor",
+            "shape": {
+              "vertices": [
+                {"x": -5, "y": -35},
+                {"x": 5, "y": -35},
+                {"x": 5, "y": 35},
+                {"x": -5, "y": 35}
+              ],
+              "isClosed": true
+            },
+            "color": "#9ca3af",
+            "properties": {}
+          },
+          {
+            "name": "Nike",
+            "type": "retail",
+            "shape": {
+              "vertices": [
+                {"x": -45, "y": -35},
+                {"x": -10, "y": -35},
+                {"x": -10, "y": -5},
+                {"x": -45, "y": -5}
+              ],
+              "isClosed": true
+            },
+            "color": "#3b82f6",
+            "properties": {}
+          },
+          {
+            "name": "Adidas",
+            "type": "retail",
+            "shape": {
+              "vertices": [
+                {"x": 10, "y": -35},
+                {"x": 45, "y": -35},
+                {"x": 45, "y": -5},
+                {"x": 10, "y": -5}
+              ],
+              "isClosed": true
+            },
+            "color": "#3b82f6",
+            "properties": {}
+          }
+        ]
+      }
+    ],
+    "settings": {
+      "gridSize": 1,
+      "snapToGrid": true,
+      "defaultFloorHeight": 4,
+      "unit": "meters",
+      "display": {
+        "showGrid": true,
+        "showRuler": true,
+        "showAreaLabels": true
+      }
+    }
+  }
+  ```
+
+  ## 输出要求
+
+  仅输出 JSON，不要包含任何其他文本、解释或 markdown 标记。
+
+# ============================================================
+# 用户提示词模板
+# ============================================================
+user_prompt_template: |
+  用户描述：{description}
+
+  请根据以上描述生成商城布局 JSON：
+
+# ============================================================
+# 参数配置
+# ============================================================
+parameters:
+  temperature: 0.3
+  max_tokens: 4000
+  top_p: 0.9

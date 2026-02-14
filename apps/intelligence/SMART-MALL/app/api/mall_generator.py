@@ -75,22 +75,22 @@ class GenerateMallResponse(BaseModel):
 
 # 预定义的店铺类型和颜色
 STORE_TYPES = {
-    "服装": {"type": "store", "color": "#3b82f6", "category": "fashion"},
-    "运动": {"type": "store", "color": "#22c55e", "category": "sports"},
-    "餐饮": {"type": "store", "color": "#f97316", "category": "food"},
-    "餐厅": {"type": "store", "color": "#f97316", "category": "food"},
-    "美食": {"type": "store", "color": "#f97316", "category": "food"},
-    "咖啡": {"type": "store", "color": "#a855f7", "category": "cafe"},
-    "数码": {"type": "store", "color": "#06b6d4", "category": "electronics"},
-    "电子": {"type": "store", "color": "#06b6d4", "category": "electronics"},
-    "珠宝": {"type": "store", "color": "#eab308", "category": "jewelry"},
-    "化妆品": {"type": "store", "color": "#ec4899", "category": "cosmetics"},
-    "超市": {"type": "store", "color": "#84cc16", "category": "supermarket"},
-    "电影院": {"type": "facility", "color": "#6366f1", "category": "entertainment"},
-    "游戏厅": {"type": "facility", "color": "#8b5cf6", "category": "entertainment"},
-    "卫生间": {"type": "facility", "color": "#64748b", "category": "facility"},
-    "电梯": {"type": "facility", "color": "#475569", "category": "facility"},
-    "入口": {"type": "entrance", "color": "#10b981", "category": "entrance"},
+    "服装": {"type": "retail", "color": "#3b82f6", "category": "fashion"},
+    "运动": {"type": "retail", "color": "#22c55e", "category": "sports"},
+    "餐饮": {"type": "food", "color": "#f97316", "category": "food"},
+    "餐厅": {"type": "food", "color": "#f97316", "category": "food"},
+    "美食": {"type": "food", "color": "#f97316", "category": "food"},
+    "咖啡": {"type": "food", "color": "#a855f7", "category": "cafe"},
+    "数码": {"type": "retail", "color": "#06b6d4", "category": "electronics"},
+    "电子": {"type": "retail", "color": "#06b6d4", "category": "electronics"},
+    "珠宝": {"type": "retail", "color": "#eab308", "category": "jewelry"},
+    "化妆品": {"type": "retail", "color": "#ec4899", "category": "cosmetics"},
+    "超市": {"type": "anchor", "color": "#84cc16", "category": "supermarket"},
+    "电影院": {"type": "anchor", "color": "#6366f1", "category": "entertainment"},
+    "游戏厅": {"type": "retail", "color": "#8b5cf6", "category": "entertainment"},
+    "卫生间": {"type": "restroom", "color": "#64748b", "category": "facility"},
+    "电梯": {"type": "elevator", "color": "#475569", "category": "facility"},
+    "入口": {"type": "common", "color": "#10b981", "category": "entrance"},
     "走廊": {"type": "corridor", "color": "#94a3b8", "category": "corridor"},
 }
 
@@ -223,10 +223,10 @@ def get_store_info(store_name: str) -> Dict[str, Any]:
                 "category": type_info["category"],
             }
     
-    # 默认为普通店铺
+    # 默认为零售店铺
     return {
         "name": store_name,
-        "type": "store",
+        "type": "retail",
         "color": "#3b82f6",
         "category": "general",
     }
@@ -239,13 +239,17 @@ def generate_mall_layout(parsed_info: Dict[str, Any]) -> MallLayoutData:
     height = parsed_info["mall_size"]["height"]
     floor_count = parsed_info["floor_count"]
     
-    # 生成商城轮廓（矩形）
+    # 居中偏移：让商城中心在 (0, 0)
+    ox = -width / 2
+    oy = -height / 2
+    
+    # 生成商城轮廓（矩形，居中）
     outline = Outline(
         vertices=[
-            Vertex(x=0, y=0),
-            Vertex(x=width, y=0),
-            Vertex(x=width, y=height),
-            Vertex(x=0, y=height),
+            Vertex(x=ox, y=oy),
+            Vertex(x=ox + width, y=oy),
+            Vertex(x=ox + width, y=oy + height),
+            Vertex(x=ox, y=oy + height),
         ],
         isClosed=True
     )
@@ -268,16 +272,16 @@ def generate_mall_layout(parsed_info: Dict[str, Any]) -> MallLayoutData:
         store_height = (height - 10) / max(store_count, 1)  # 上下各留 5 米
         store_width = usable_width - 5  # 左右各留 2.5 米
         
-        # 生成走廊
+        # 生成走廊（居中坐标）
         areas.append(AreaData(
             name=f"{level}F 主走廊",
             type="corridor",
             shape=Outline(
                 vertices=[
-                    Vertex(x=usable_width, y=5),
-                    Vertex(x=usable_width + corridor_width, y=5),
-                    Vertex(x=usable_width + corridor_width, y=height - 5),
-                    Vertex(x=usable_width, y=height - 5),
+                    Vertex(x=ox + usable_width, y=oy + 5),
+                    Vertex(x=ox + usable_width + corridor_width, y=oy + 5),
+                    Vertex(x=ox + usable_width + corridor_width, y=oy + height - 5),
+                    Vertex(x=ox + usable_width, y=oy + height - 5),
                 ],
                 isClosed=True
             ),
@@ -293,13 +297,13 @@ def generate_mall_layout(parsed_info: Dict[str, Any]) -> MallLayoutData:
             row = i // 2
             
             if side == 0:  # 左侧
-                x1 = 5
-                x2 = 5 + store_width
+                x1 = ox + 5
+                x2 = ox + 5 + store_width
             else:  # 右侧
-                x1 = usable_width + corridor_width + 5
-                x2 = width - 5
+                x1 = ox + usable_width + corridor_width + 5
+                x2 = ox + width - 5
             
-            y1 = 5 + row * store_height
+            y1 = oy + 5 + row * store_height
             y2 = y1 + store_height - 2  # 留 2 米间隔
             
             areas.append(AreaData(
@@ -328,10 +332,10 @@ def generate_mall_layout(parsed_info: Dict[str, Any]) -> MallLayoutData:
                 type="store",
                 shape=Outline(
                     vertices=[
-                        Vertex(x=5, y=5),
-                        Vertex(x=usable_width - 5, y=5),
-                        Vertex(x=usable_width - 5, y=height - 5),
-                        Vertex(x=5, y=height - 5),
+                        Vertex(x=ox + 5, y=oy + 5),
+                        Vertex(x=ox + usable_width - 5, y=oy + 5),
+                        Vertex(x=ox + usable_width - 5, y=oy + height - 5),
+                        Vertex(x=ox + 5, y=oy + height - 5),
                     ],
                     isClosed=True
                 ),
@@ -371,38 +375,44 @@ def generate_mall_layout(parsed_info: Dict[str, Any]) -> MallLayoutData:
 async def generate_mall_from_text(request: GenerateMallRequest) -> GenerateMallResponse:
     """
     通过自然语言描述生成商城布局
-    
+
+    优先使用 LLM 生成，失败时自动降级到规则生成器。
+    响应的 parseInfo.generationMethod 标明使用的生成方式。
+
     示例输入：
     - "创建一个3层商城，1楼有Nike、Adidas，2楼有星巴克、麦当劳，3楼是电影院"
     - "生成100x80的商城，2层，1F:Zara/H&M/优衣库，2F:海底捞/西贝"
     """
     try:
         logger.info(f"Generating mall from description: {request.description}")
-        
-        # 解析描述
-        parsed_info = parse_mall_description(request.description)
-        logger.info(f"Parsed info: {parsed_info}")
-        
-        # 生成布局
-        layout = generate_mall_layout(parsed_info)
-        
+
+        from app.services.mall_generation_service import MallGenerationService
+
+        service = MallGenerationService()
+        layout, method = await service.generate(request.description)
+
+        logger.info(
+            f"Mall generated: {layout.name}, "
+            f"{len(layout.floors)} floors, method={method}"
+        )
+
         return GenerateMallResponse(
             success=True,
             message=f"成功生成商城布局：{layout.name}，共 {len(layout.floors)} 层",
             data=layout,
             parseInfo={
-                "parsedFloorCount": parsed_info["floor_count"],
-                "parsedStores": parsed_info["floors"],
-                "mallSize": parsed_info["mall_size"],
+                "generationMethod": method,
+                "floorCount": len(layout.floors),
             }
         )
-        
+
     except Exception as e:
         logger.error(f"Failed to generate mall: {e}")
         return GenerateMallResponse(
             success=False,
             message=f"生成失败：{str(e)}",
-            data=None
+            data=None,
+            parseInfo={"generationMethod": "error"}
         )
 
 

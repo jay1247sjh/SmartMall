@@ -16,11 +16,27 @@
  * ============================================================================
  */
 
+import axios from 'axios'
 import { http } from './http'
+import type { MallLayoutData } from '@/builder/converters/layout-converter'
 
 // ============================================================================
 // 类型定义
 // ============================================================================
+
+/** 商城生成请求 */
+export interface GenerateMallRequest {
+  description: string
+  userId?: string
+}
+
+/** 商城生成响应 */
+export interface GenerateMallResponse {
+  success: boolean
+  message: string
+  data: MallLayoutData | null
+  parseInfo?: Record<string, unknown>
+}
 
 /** 工具调用结果 */
 export interface ToolResult {
@@ -174,6 +190,25 @@ export const intelligenceApi = {
    */
   async healthCheck(): Promise<{ status: string; service: string }> {
     return http.get<{ status: string; service: string }>('/ai/health')
+  },
+
+  /**
+   * AI 生成商城布局
+   *
+   * 直接调用 Intelligence Service 的 /mall/generate 端点。
+   * 通过 Vite 代理 /intelligence-api → Python 服务 (8000)。
+   * 注意：不能使用 http.post（baseURL 为 /api），需要直接用 axios。
+   *
+   * @param description - 自然语言描述
+   * @returns 生成响应（包含 MallLayoutData）
+   */
+  async generateMall(description: string): Promise<GenerateMallResponse> {
+    const { data } = await axios.post<GenerateMallResponse>(
+      '/intelligence-api/mall/generate',
+      { description } as GenerateMallRequest,
+      { timeout: 60000 },
+    )
+    return data
   },
 }
 

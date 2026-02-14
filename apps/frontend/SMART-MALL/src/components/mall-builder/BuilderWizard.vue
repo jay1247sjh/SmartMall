@@ -2,42 +2,22 @@
 /**
  * BuilderWizard 组件
  *
- * 商城建模器项目创建向导，用于选择模板和创建新项目。
- *
- * 功能：
- * - 项目名称输入
- * - 模板选择（支持多种预设模板）
- * - 自定义绘制选项
- * - 创建/取消操作
- *
- * @example
- * ```vue
- * <BuilderWizard
- *   :visible="showWizard"
- *   :templates="templates"
- *   v-model:selectedTemplate="selectedTemplate"
- *   v-model:projectName="projectName"
- *   @create="handleCreate"
- *   @createCustom="handleCreateCustom"
- *   @cancel="handleCancel"
- * />
- * ```
+ * 商城建模器项目创建向导，支持模板选择、自定义绘制和 AI 生成。
  */
 
-import type { MallTemplate } from '@/builder'
+import { ref } from 'vue'
+import type { MallTemplate, MallProject } from '@/builder'
+import { convertMallLayoutToProject } from '@/builder/converters/layout-converter'
+import { intelligenceApi } from '@/api/intelligence.api'
 
 // ============================================================================
 // 类型定义
 // ============================================================================
 
 export interface BuilderWizardProps {
-  /** 是否显示向导 */
   visible: boolean
-  /** 可用模板列表 */
   templates: MallTemplate[]
-  /** 当前选中的模板 */
   selectedTemplate: MallTemplate | null
-  /** 项目名称 */
   projectName: string
 }
 
@@ -46,12 +26,9 @@ export interface BuilderWizardEmits {
   (e: 'update:projectName', name: string): void
   (e: 'create'): void
   (e: 'createCustom'): void
+  (e: 'createFromAI', project: MallProject): void
   (e: 'cancel'): void
 }
-
-// ============================================================================
-// Props & Emits
-// ============================================================================
 
 const props = withDefaults(defineProps<BuilderWizardProps>(), {
   visible: false,
@@ -63,35 +40,43 @@ const props = withDefaults(defineProps<BuilderWizardProps>(), {
 const emit = defineEmits<BuilderWizardEmits>()
 
 // ============================================================================
+// AI 生成状态
+// ============================================================================
+
+const wizardMode = ref<'template' | 'ai'>('template')
+const aiDescription = ref('')
+const aiLoading = ref(false)
+const aiError = ref('')
+
+// ============================================================================
 // 方法
 // ============================================================================
 
-/**
- * 处理项目名称输入
- */
 function handleProjectNameInput(event: Event) {
   const target = event.target as HTMLInputElement
   emit('update:projectName', target.value)
 }
 
-/**
- * 选择模板
- */
 function handleSelectTemplate(template: MallTemplate) {
+  wizardMode.value = 'template'
   emit('update:selectedTemplate', template)
 }
 
-/**
- * 选择自定义绘制
- */
 function handleSelectCustom() {
+  wizardMode.value = 'template'
   emit('update:selectedTemplate', null)
 }
 
-/**
- * 处理创建按钮点击
- */
+function handleSelectAI() {
+  wizardMode.value = 'ai'
+  aiError.value = ''
+}
+
 function handleCreate() {
+  if (wizardMode.value === 'ai') {
+    handleAIGenerate()
+    return
+  }
   if (props.selectedTemplate) {
     emit('create')
   } else {
@@ -99,24 +84,41 @@ function handleCreate() {
   }
 }
 
-/**
- * 处理取消按钮点击
- */
 function handleCancel() {
   emit('cancel')
 }
 
-/**
- * 检查是否可以创建项目
- */
+async function handleAIGenerate() {
+  if (!aiDescription.value.trim()) return
+  aiLoading.value = true
+  aiError.value = ''
+  try {
+    const response = await intelligenceApi.generateMall(aiDescription.value.trim())
+    if (response.success && response.data) {
+      const project = convertMallLayoutToProject(response.data)
+      project.name = props.projectName || project.name
+      emit('createFromAI', project)
+    } else {
+      aiError.value = response.message || 'AI 生成失败，请重试或选择模板创建'
+    }
+  } catch {
+    aiError.value = '网络连接失败，请检查网络后重试'
+  } finally {
+    aiLoading.value = false
+  }
+}
+
 function canCreate(): boolean {
+  if (wizardMode.value === 'ai') {
+    return props.projectName.trim().length > 0 && aiDescription.value.trim().length > 0 && !aiLoading.value
+  }
   return props.projectName.trim().length > 0
 }
 
-/**
- * 获取创建按钮文本
- */
 function getCreateButtonText(): string {
+  if (wizardMode.value === 'ai') {
+    return aiLoading.value ? '生成中...' : 'AI 生成'
+  }
   return props.selectedTemplate ? '创建项目' : '开始绘制'
 }
 </script>
@@ -127,7 +129,7 @@ function getCreateButtonText(): string {
       <!-- 向导头部 -->
       <div class="wizard-header">
         <h2>创建新项目</h2>
-        <p>选择一个模板开始，或创建自定义商城</p>
+        <p>选择一个模板开始，或使用 AI 智能生成</p>
       </div>
 
       <!-- 向导主体 -->
@@ -146,69 +148,63 @@ function getCreateButtonText(): string {
 
         <!-- 模板选择区域 -->
         <div class="template-section">
-          <label>选择模板</label>
+          <label>选择创建方式</label>
           <div class="template-grid">
+            <!-- AI 生成卡片 -->
+            <div
+              :class="['template-card', 'ai-card', { active: wizardMode === 'ai' }]"
+              @click="handleSelectAI"
+            >
+              <div class="template-icon">
+                <svg viewBox="0 0 48 48" fill="none">
+                  <circle cx="24" cy="24" r="16" stroke="currentColor" stroke-width="2" />
+                  <path d="M18 20a2 2 0 1 1 4 0 2 2 0 0 1-4 0z" fill="currentColor" />
+                  <path d="M26 20a2 2 0 1 1 4 0 2 2 0 0 1-4 0z" fill="currentColor" />
+                  <path d="M18 28c0 0 2 4 6 4s6-4 6-4" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+                </svg>
+              </div>
+              <div class="template-name">AI 生成</div>
+              <div class="template-desc">自然语言描述生成布局</div>
+            </div>
+
             <!-- 预设模板卡片 -->
             <div
               v-for="template in templates"
               :key="template.id"
-              :class="['template-card', { active: selectedTemplate?.id === template.id }]"
+              :class="['template-card', { active: wizardMode === 'template' && selectedTemplate?.id === template.id }]"
               @click="handleSelectTemplate(template)"
             >
               <div class="template-icon">
                 <svg viewBox="0 0 48 48" fill="none">
-                  <!-- 矩形模板 -->
                   <rect
                     v-if="template.type === 'rectangle'"
-                    x="8"
-                    y="12"
-                    width="32"
-                    height="24"
-                    rx="2"
-                    stroke="currentColor"
-                    stroke-width="2"
+                    x="8" y="12" width="32" height="24" rx="2"
+                    stroke="currentColor" stroke-width="2"
                   />
-                  <!-- L形模板 -->
                   <path
                     v-else-if="template.type === 'l-shape'"
                     d="M8 12h20v12h12v12H8V12z"
-                    stroke="currentColor"
-                    stroke-width="2"
+                    stroke="currentColor" stroke-width="2"
                   />
-                  <!-- U形模板 -->
                   <path
                     v-else-if="template.type === 'u-shape'"
                     d="M8 12h32v24H28V24H20v12H8V12z"
-                    stroke="currentColor"
-                    stroke-width="2"
+                    stroke="currentColor" stroke-width="2"
                   />
-                  <!-- T形模板 -->
                   <path
                     v-else-if="template.type === 't-shape'"
                     d="M8 12h32v12H28v12H20V24H8V12z"
-                    stroke="currentColor"
-                    stroke-width="2"
+                    stroke="currentColor" stroke-width="2"
                   />
-                  <!-- 圆形模板 -->
                   <circle
                     v-else-if="template.type === 'circle'"
-                    cx="24"
-                    cy="24"
-                    r="14"
-                    stroke="currentColor"
-                    stroke-width="2"
+                    cx="24" cy="24" r="14"
+                    stroke="currentColor" stroke-width="2"
                   />
-                  <!-- 默认/其他模板 -->
                   <rect
                     v-else
-                    x="8"
-                    y="12"
-                    width="32"
-                    height="24"
-                    rx="2"
-                    stroke="currentColor"
-                    stroke-width="2"
-                    stroke-dasharray="4 2"
+                    x="8" y="12" width="32" height="24" rx="2"
+                    stroke="currentColor" stroke-width="2" stroke-dasharray="4 2"
                   />
                 </svg>
               </div>
@@ -218,32 +214,44 @@ function getCreateButtonText(): string {
 
             <!-- 自定义绘制卡片 -->
             <div
-              :class="['template-card', 'custom', { active: selectedTemplate === null }]"
+              :class="['template-card', 'custom', { active: wizardMode === 'template' && selectedTemplate === null }]"
               @click="handleSelectCustom"
             >
               <div class="template-icon">
                 <svg viewBox="0 0 48 48" fill="none">
-                  <path
-                    d="M24 16v16M16 24h16"
-                    stroke="currentColor"
-                    stroke-width="2"
-                    stroke-linecap="round"
-                  />
-                  <rect
-                    x="8"
-                    y="8"
-                    width="32"
-                    height="32"
-                    rx="4"
-                    stroke="currentColor"
-                    stroke-width="2"
-                    stroke-dasharray="4 2"
-                  />
+                  <path d="M24 16v16M16 24h16" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+                  <rect x="8" y="8" width="32" height="32" rx="4" stroke="currentColor" stroke-width="2" stroke-dasharray="4 2" />
                 </svg>
               </div>
               <div class="template-name">自定义绘制</div>
               <div class="template-desc">手动绘制商城轮廓</div>
             </div>
+          </div>
+        </div>
+
+        <!-- AI 描述输入区域 -->
+        <div v-if="wizardMode === 'ai'" class="ai-section">
+          <label>描述你的商城</label>
+          <textarea
+            v-model="aiDescription"
+            class="ai-textarea"
+            placeholder="例如：创建一个3层商城，1楼有Nike、Adidas、Zara，2楼有星巴克、海底捞，3楼是电影院和游戏厅"
+            rows="4"
+            :disabled="aiLoading"
+          />
+          <div v-if="aiError" class="ai-error">
+            <svg viewBox="0 0 16 16" fill="none" class="error-icon">
+              <circle cx="8" cy="8" r="7" stroke="currentColor" stroke-width="1.5" />
+              <path d="M8 5v4M8 11h.01" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" />
+            </svg>
+            <span>{{ aiError }}</span>
+          </div>
+          <div class="ai-hint">
+            <svg viewBox="0 0 16 16" fill="none" class="hint-icon">
+              <circle cx="8" cy="8" r="7" stroke="currentColor" stroke-width="1.5" />
+              <path d="M8 7v5M8 5h.01" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" />
+            </svg>
+            <span>支持指定楼层数、店铺品牌、商城尺寸等信息</span>
           </div>
         </div>
       </div>
@@ -256,6 +264,9 @@ function getCreateButtonText(): string {
           :disabled="!canCreate()"
           @click="handleCreate"
         >
+          <svg v-if="aiLoading" class="loading-spinner" viewBox="0 0 16 16" fill="none">
+            <circle cx="8" cy="8" r="6" stroke="currentColor" stroke-width="2" stroke-dasharray="28" stroke-dashoffset="8" />
+          </svg>
           {{ getCreateButtonText() }}
         </button>
       </div>
@@ -305,7 +316,7 @@ function getCreateButtonText(): string {
 
   h2 {
     font-size: $font-size-2xl;
-    font-weight: $font-semibold;
+    font-weight: $font-weight-semibold;
     color: $color-text-primary;
     margin: 0 0 $space-2 0;
   }
@@ -336,7 +347,7 @@ function getCreateButtonText(): string {
   label {
     display: block;
     font-size: $font-size-sm;
-    font-weight: $font-medium;
+    font-weight: $font-weight-medium;
     color: $color-text-secondary;
     margin-bottom: $space-2;
   }
@@ -369,7 +380,7 @@ function getCreateButtonText(): string {
   label {
     display: block;
     font-size: $font-size-sm;
-    font-weight: $font-medium;
+    font-weight: $font-weight-medium;
     color: $color-text-secondary;
     margin-bottom: $space-3;
   }
@@ -404,11 +415,20 @@ function getCreateButtonText(): string {
   &.active {
     background: rgba($color-primary, 0.1);
     border-color: $color-primary;
-    box-shadow: 0 0 0 4px rgba($color-primary, 0.1);
   }
 
   &.custom {
     border-style: dashed;
+  }
+
+  &.ai-card {
+    border-color: rgba($color-primary, 0.3);
+    background: rgba($color-primary, 0.04);
+
+    &.active {
+      background: rgba($color-primary, 0.12);
+      border-color: $color-primary;
+    }
   }
 }
 
@@ -430,7 +450,7 @@ function getCreateButtonText(): string {
 
 .template-name {
   font-size: $font-size-base;
-  font-weight: $font-medium;
+  font-weight: $font-weight-medium;
   color: $color-text-primary;
   margin-bottom: $space-1;
   text-align: center;
@@ -440,6 +460,83 @@ function getCreateButtonText(): string {
   font-size: $font-size-sm;
   color: $color-text-muted;
   text-align: center;
+}
+
+// ============================================================================
+// AI 描述区域
+// ============================================================================
+.ai-section {
+  margin-top: $space-6;
+
+  label {
+    display: block;
+    font-size: $font-size-sm;
+    font-weight: $font-weight-medium;
+    color: $color-text-secondary;
+    margin-bottom: $space-2;
+  }
+}
+
+.ai-textarea {
+  width: 100%;
+  padding: $space-3 $space-4;
+  background: $color-bg-tertiary;
+  border: 1px solid $color-border-muted;
+  border-radius: $radius-md;
+  color: $color-text-primary;
+  font-size: $font-size-base;
+  font-family: inherit;
+  resize: vertical;
+  min-height: 100px;
+  transition: border-color $duration-normal;
+
+  &:focus {
+    outline: none;
+    border-color: $color-primary;
+  }
+
+  &::placeholder {
+    color: $color-text-muted;
+  }
+
+  &:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+}
+
+.ai-error {
+  display: flex;
+  align-items: center;
+  gap: $space-2;
+  margin-top: $space-2;
+  padding: $space-2 $space-3;
+  background: rgba(239, 68, 68, 0.1);
+  border: 1px solid rgba(239, 68, 68, 0.2);
+  border-radius: $radius-md;
+  color: #ef4444;
+  font-size: $font-size-sm;
+
+  .error-icon {
+    width: 16px;
+    height: 16px;
+    flex-shrink: 0;
+  }
+}
+
+.ai-hint {
+  display: flex;
+  align-items: center;
+  gap: $space-2;
+  margin-top: $space-2;
+  color: $color-text-muted;
+  font-size: $font-size-sm;
+
+  .hint-icon {
+    width: 14px;
+    height: 14px;
+    flex-shrink: 0;
+  }
 }
 
 // ============================================================================
@@ -454,61 +551,72 @@ function getCreateButtonText(): string {
 }
 
 // ============================================================================
-// 按钮样式
+// 按钮
 // ============================================================================
 .btn-secondary {
   padding: $space-2 $space-4;
   background: transparent;
-  border: 1px solid $color-border-muted;
+  border: 1px solid $color-border-subtle;
   border-radius: $radius-md;
-  color: $color-text-secondary;
+  color: $color-text-primary;
   font-size: $font-size-base;
   cursor: pointer;
   transition: all $duration-normal;
 
   &:hover {
-    background: rgba($color-white, 0.05);
-    border-color: $color-text-secondary;
-    color: $color-text-primary;
+    background: $color-bg-tertiary;
+    border-color: $color-border-muted;
   }
 }
 
 .btn-primary {
+  display: inline-flex;
+  align-items: center;
+  gap: $space-2;
   padding: $space-2 $space-4;
   background: $color-primary;
-  border: 1px solid $color-primary;
+  border: none;
   border-radius: $radius-md;
-  color: $color-white;
+  color: #fff;
   font-size: $font-size-base;
+  font-weight: $font-weight-medium;
   cursor: pointer;
-  transition: all $duration-normal;
+  transition: background $duration-normal;
 
-  &:hover:not(:disabled) {
-    background: lighten($color-primary, 5%);
+  &:hover {
+    background: $color-primary-hover;
   }
 
   &:disabled {
-    opacity: 0.5;
+    background: $color-bg-tertiary;
+    color: $color-text-disabled;
     cursor: not-allowed;
   }
 }
 
 // ============================================================================
-// 动画
+// 加载动画
 // ============================================================================
+.loading-spinner {
+  width: 16px;
+  height: 16px;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
 @keyframes fadeIn {
-  from {
-    opacity: 0;
-  }
-  to {
-    opacity: 1;
-  }
+  from { opacity: 0; }
+  to { opacity: 1; }
 }
 
 @keyframes slideDown {
   from {
     opacity: 0;
-    transform: translateY(-20px);
+    transform: translateY(-12px);
   }
   to {
     opacity: 1;
