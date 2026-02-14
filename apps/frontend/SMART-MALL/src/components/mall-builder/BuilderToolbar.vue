@@ -41,11 +41,11 @@
 // ============================================================================
 
 /** 绘制工具类型 */
-export type DrawingTool = 'select' | 'draw-rect' | 'draw-poly' | 'draw-outline'
+export type DrawingTool = 'select' | 'pan' | 'draw-rect' | 'draw-poly' | 'draw-outline'
 
 /** 工具按钮配置 */
 interface ToolButtonConfig {
-  tool?: DrawingTool | 'pan'
+  tool?: DrawingTool
   title?: string
   icon?: string
   divider?: boolean
@@ -125,7 +125,7 @@ function handleBack() {
  * 处理工具选择
  */
 function handleSelectTool(tool: string) {
-  if (tool === 'select' || tool === 'draw-rect' || tool === 'draw-poly' || tool === 'draw-outline') {
+  if (tool === 'select' || tool === 'pan' || tool === 'draw-rect' || tool === 'draw-poly' || tool === 'draw-outline') {
     emit('selectTool', tool as DrawingTool)
   }
 }
@@ -392,6 +392,8 @@ function isToolActive(tool: string | undefined): boolean {
 .toolbar-left {
   @include flex-center-y;
   gap: $space-3;
+  flex-shrink: 0;
+  min-width: 0;
 }
 
 .btn-back {
@@ -424,11 +426,18 @@ function isToolActive(tool: string | undefined): boolean {
   color: $color-text-primary;
   font-size: $font-size-base;
   font-weight: $font-weight-medium;
+  white-space: nowrap;
+  flex-shrink: 0;
 
   svg {
     width: 18px;
     height: 18px;
     color: $color-primary;
+    flex-shrink: 0;
+  }
+
+  span {
+    white-space: nowrap;
   }
 }
 

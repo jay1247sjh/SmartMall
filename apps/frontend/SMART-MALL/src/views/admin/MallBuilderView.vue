@@ -42,6 +42,7 @@ import {
   exportProject,
   importProject,
 } from '@/builder'
+import { extractWallSegments } from '@/builder/geometry/collision'
 
 // 导入子组件
 import {
@@ -51,6 +52,7 @@ import {
   MaterialPanel,
   PropertyPanel,
   SceneLegend,
+  AddFloorDialog,
   type LegendItem,
 } from '@/components/mall-builder'
 
@@ -106,7 +108,12 @@ const drawing = useDrawing(
 const connections = useVerticalConnections(() => project.value)
 
 // 漫游模式
-const roaming = useRoamingMode()
+const roaming = useRoamingMode({
+  mouseSensitivity: 0.003,
+  cameraDistance: 4,
+  cameraHeight: 1.2,
+  smoothness: 1,
+})
 
 // ============================================================================
 // 本地状态
@@ -211,10 +218,11 @@ async function initEngine() {
       orbitEnabled: false,
     })
 
+    // 启动渲染循环
+    engine.value.start()
+
     loadProgress.value = 60
     setupInteraction()
-    document.addEventListener('pointerlockchange', roaming.handlePointerLockChange)
-
     loadProgress.value = 100
     setTimeout(() => { isLoading.value = false }, 300)
   } catch (error) {
@@ -238,16 +246,19 @@ function setupInteraction() {
 
 function handleMouseDown(e: MouseEvent) {
   if (viewMode.value === 'orbit') return
+  if (drawing.currentTool.value === 'pan') return
   drawing.handleMouseDown(e)
 }
 
 function handleMouseMove(e: MouseEvent) {
   if (viewMode.value === 'orbit') return
+  if (drawing.currentTool.value === 'pan') return
   drawing.handleMouseMove(e)
 }
 
 function handleMouseUp(e: MouseEvent) {
   if (viewMode.value === 'orbit') return
+  if (drawing.currentTool.value === 'pan') return
   drawing.handleMouseUp(
     e,
     project.value,
@@ -259,6 +270,7 @@ function handleMouseUp(e: MouseEvent) {
 
 function handleClick(e: MouseEvent) {
   if (viewMode.value === 'orbit') return
+  if (drawing.currentTool.value === 'pan') return
   if (drawing.currentTool.value === 'select') {
     const intersect = raycastAreas(e.clientX, e.clientY)
     if (intersect) {
@@ -292,6 +304,10 @@ function handleAreaCreated(area: AreaDefinition) {
 }
 
 function handleOutlineUpdated() {
+  // 轮廓变更时标记需要重新定位相机，renderProject 中的 updateSceneCenter 会处理
+  if (engine.value) {
+    engine.value.invalidateSceneCenter()
+  }
   renderProject()
   saveHistory()
 }
@@ -338,6 +354,7 @@ function createCustomProject() {
   
   showWizard.value = false
   drawing.setTool('draw-outline')
+  renderProject()  // 渲染空项目（显示网格和基础场景）
   saveHistory()
 }
 
@@ -347,19 +364,18 @@ function renderProject(renderAllFloors: boolean = false) {
   const useFullHeight = viewMode.value === 'orbit'
   const isRoamingMode = viewMode.value === 'orbit'
 
-  // 计算商城轮廓中心
+  // 计算商城轮廓中心（作为备用值）
   let outlineCenter = { x: 0, z: 0 }
   if (project.value.outline?.vertices?.length >= 3) {
     outlineCenter = getAreaCenter(project.value.outline.vertices)
   }
 
-  // 更新场景中心
+  // 先清空场景对象
   if (engine.value) {
-    engine.value.updateSceneCenter(outlineCenter.x, outlineCenter.z)
     engine.value.clearSceneObjects()
   }
 
-  // 使用 useRendering composable 渲染项目
+  // 渲染项目（将业务对象添加到场景）
   rendering.renderProject(
     scene.value,
     project.value,
@@ -372,6 +388,11 @@ function renderProject(renderAllFloors: boolean = false) {
       isRoamingMode,
     }
   )
+
+  // 渲染完成后，基于场景中实际对象的 BoundingBox 更新中心
+  if (engine.value) {
+    engine.value.updateSceneCenter(outlineCenter.x, outlineCenter.z)
+  }
   
   // 只在编辑模式下显示连接指示器
   if (viewMode.value === 'edit') {
@@ -478,11 +499,20 @@ function redo() {
 // 楼层管理
 // ============================================================================
 
-function addFloor() {
+const existingLevels = computed(() =>
+  project.value?.floors.map(f => f.level) ?? []
+)
+
+function handleFloorCreated(data: { name: string; level: number; height: number; layoutDescription: string }) {
   if (!project.value) return
-  
+
+  // 使用 composable 的 newFloorForm 来创建楼层
+  floorMgmt.newFloorForm.name = data.name
+  floorMgmt.newFloorForm.level = data.level
+  floorMgmt.newFloorForm.height = data.height
+
   const newFloor = floorMgmt.confirmAddFloor()
-  
+
   if (newFloor) {
     renderProject()
     saveHistory()
@@ -490,7 +520,7 @@ function addFloor() {
 }
 
 function openAddFloorModal() {
-  floorMgmt.openAddFloorModal()
+  floorMgmt.showAddFloorModal.value = true
 }
 
 function deleteFloor(floorId: string) {
@@ -597,8 +627,23 @@ function toggleOrbitMode() {
   }
 }
 
+/**
+ * 计算当前楼层的 Y 坐标位置
+ * 漫游模式下角色需要站在正确的楼层高度上
+ */
+function getCurrentFloorYPosition(): number {
+  if (!project.value) return 0
+  const floorIndex = project.value.floors.findIndex(f => f.id === floorMgmt.currentFloorId.value)
+  if (floorIndex < 0) return 0
+  const floorHeights = project.value.floors.map(f => f.height)
+  return calculateFloorYPosition(floorIndex, floorHeights)
+}
+
+// canvas click handler 引用（漫游模式下点击画面触发 pointer lock）
+let roamCanvasClickHandler: (() => void) | null = null
+
 function enterRoamMode() {
-  if (!camera.value || !controls.value || !scene.value || !project.value) return
+  if (!engine.value || !camera.value || !controls.value || !scene.value || !project.value) return
   
   // 保存当前相机状态
   savedCameraState.value = {
@@ -609,18 +654,50 @@ function enterRoamMode() {
   viewMode.value = 'orbit'
   controls.value.enabled = false
   
-  // 初始化角色控制器
+  // 保持暗色主题背景
+  if (scene.value) {
+    scene.value.background = new THREE.Color(0x0a0a0a)
+  }
+  
+  // 隐藏建模器网格和地板（漫游环境有自己的地板）
+  const grid = scene.value.getObjectByName('mall-builder-grid')
+  const ground = scene.value.getObjectByName('mall-builder-ground')
+  if (grid) grid.visible = false
+  if (ground) ground.visible = false
+  
+  // 先渲染漫游场景（clearSceneObjects 会清除所有非基础对象）
+  renderProject()
+  
+  // 渲染完成后再添加角色，避免被 clearSceneObjects 清除
   const startPos = getAreaCenter(project.value.outline.vertices)
-  const controller = new CharacterController(scene.value, startPos.x, 0, startPos.z)
+  const floorY = getCurrentFloorYPosition()
+  const controller = new CharacterController()
+  controller.setPosition(startPos.x, floorY, startPos.z)
+  scene.value.add(controller.character)
   roaming.setCharacterController(controller)
   
-  // 请求指针锁定
-  containerRef.value?.requestPointerLock()
+  // 设置碰撞边界
+  if (project.value.outline?.vertices?.length >= 3) {
+    controller.setBoundary(project.value.outline.vertices)
+  }
   
-  // 开始漫游动画循环
-  roaming.startRoamLoop(camera.value)
+  // 提取当前楼层墙壁碰撞数据
+  const currentFloor = project.value.floors.find(f => f.id === floorMgmt.currentFloorId.value)
+  if (currentFloor) {
+    const wallSegments = extractWallSegments(currentFloor)
+    controller.setWallSegments(wallSegments)
+  }
   
-  renderProject()
+  // 通过 composable 启动漫游（内部调用引擎接口）
+  roaming.startRoaming(engine.value, controller.character)
+
+  // 设置初始相机角度：yaw 在角色背后（characterYaw + π），pitch 略微俯视
+  engine.value.setCameraAngles(controller.getRotationY() + Math.PI, -0.1)
+
+  // 注册 canvas click handler：用户点击画面时请求 pointer lock
+  const canvas = engine.value.getRenderer().domElement
+  roamCanvasClickHandler = () => engine.value?.requestPointerLock()
+  canvas.addEventListener('click', roamCanvasClickHandler)
 }
 
 function exitRoamMode() {
@@ -628,11 +705,36 @@ function exitRoamMode() {
   
   viewMode.value = 'edit'
   
-  // 停止漫游动画
-  roaming.stopRoamLoop()
+  // 恢复场景背景色
+  if (scene.value) {
+    scene.value.background = new THREE.Color(0x0a0a0a)
+  }
   
-  // 退出指针锁定
-  document.exitPointerLock()
+  // 移除 canvas click handler
+  if (roamCanvasClickHandler && engine.value) {
+    const canvas = engine.value.getRenderer().domElement
+    canvas.removeEventListener('click', roamCanvasClickHandler)
+    roamCanvasClickHandler = null
+  }
+  
+  // 移除角色模型
+  const controller = roaming.getCharacterController()
+  if (controller && scene.value) {
+    scene.value.remove(controller.character)
+    controller.dispose()
+  }
+  
+  // 通过 composable 停止漫游（内部调用引擎接口）
+  roaming.stopRoaming()
+  roaming.setCharacterController(null)
+  
+  // 恢复建模器网格和地板
+  if (scene.value) {
+    const grid = scene.value.getObjectByName('mall-builder-grid')
+    const ground = scene.value.getObjectByName('mall-builder-ground')
+    if (grid) grid.visible = true
+    if (ground) ground.visible = true
+  }
   
   // 恢复相机状态
   if (savedCameraState.value) {
@@ -643,6 +745,63 @@ function exitRoamMode() {
   
   controls.value.enabled = true
   renderProject()
+}
+
+/**
+ * 漫游模式下切换楼层
+ * 需要重建角色和漫游环境，保持漫游状态不中断
+ */
+function handleRoamingFloorSwitch() {
+  if (!engine.value || !scene.value || !project.value) return
+
+  // 移除旧角色
+  const oldController = roaming.getCharacterController()
+  if (oldController && scene.value) {
+    scene.value.remove(oldController.character)
+    oldController.dispose()
+    roaming.setCharacterController(null)
+  }
+
+  // 重新渲染场景（会重建漫游环境）
+  renderProject()
+
+  // 保持暗色背景（renderProject 不会重设，但以防万一）
+  scene.value.background = new THREE.Color(0x0a0a0a)
+
+  // 隐藏建模器网格和地板
+  const grid = scene.value.getObjectByName('mall-builder-grid')
+  const ground = scene.value.getObjectByName('mall-builder-ground')
+  if (grid) grid.visible = false
+  if (ground) ground.visible = false
+
+  // 重新创建角色
+  const startPos = getAreaCenter(project.value.outline.vertices)
+  const floorY = getCurrentFloorYPosition()
+  const controller = new CharacterController()
+  controller.setPosition(startPos.x, floorY, startPos.z)
+  scene.value.add(controller.character)
+  roaming.setCharacterController(controller)
+
+  // 设置碰撞边界
+  if (project.value.outline?.vertices?.length >= 3) {
+    controller.setBoundary(project.value.outline.vertices)
+  }
+
+  // 提取新楼层墙壁碰撞数据
+  const currentFloor = project.value.floors.find(f => f.id === floorMgmt.currentFloorId.value)
+  if (currentFloor) {
+    const wallSegments = extractWallSegments(currentFloor)
+    controller.setWallSegments(wallSegments)
+  }
+
+  // 更新跟随目标到新角色
+  engine.value.setFollowTarget(controller.character, {
+    distance: 4,
+    lookAtHeightOffset: 1.2,
+    smoothness: 1,
+    mouseSensitivity: 0.003,
+    pitchLimit: { min: -0.3, max: 1.0 },
+  })
 }
 
 // ============================================================================
@@ -711,23 +870,23 @@ async function handleSave() {
 // ============================================================================
 
 onMounted(async () => {
-  initEngine()
+  await initEngine()
   window.addEventListener('keydown', handleKeydown)
   window.addEventListener('keyup', handleKeyup)
   
   const projectIdFromUrl = route.params.projectId as string | undefined
   if (projectIdFromUrl) {
-    try {
-      const loaded = await projectMgmt.loadFromServer(projectIdFromUrl)
-      if (loaded) {
-        project.value = loaded
-        floorMgmt.initFloor(loaded)
-        showWizard.value = false
-        renderProject()
-        saveHistory()
-      }
-    } catch (err) {
-      console.error('从 URL 加载项目失败:', err)
+    const loaded = await projectMgmt.loadFromServer(projectIdFromUrl)
+    if (loaded) {
+      project.value = loaded
+      floorMgmt.initFloor(loaded)
+      showWizard.value = false
+      renderProject()
+      saveHistory()
+    } else {
+      // 项目不存在或加载失败，清除 URL 中的 projectId 并显示向导
+      console.warn('项目加载失败，显示创建向导')
+      router.replace({ name: 'Builder' })
       showWizard.value = true
     }
   }
@@ -736,7 +895,6 @@ onMounted(async () => {
 onUnmounted(() => {
   window.removeEventListener('keydown', handleKeydown)
   window.removeEventListener('keyup', handleKeyup)
-  document.removeEventListener('pointerlockchange', roaming.handlePointerLockChange)
   roaming.dispose()
   
   if (engine.value) {
@@ -748,7 +906,12 @@ onUnmounted(() => {
 })
 
 watch(() => floorMgmt.currentFloorId.value, () => {
-  renderProject()
+  if (viewMode.value === 'orbit') {
+    // 漫游模式下切换楼层：需要重建角色和漫游环境
+    handleRoamingFloorSwitch()
+  } else {
+    renderProject()
+  }
 })
 
 // ============================================================================
@@ -772,8 +935,21 @@ function handleProjectNameUpdate(name: string) {
 /**
  * 处理工具选择
  */
-function handleSelectTool(tool: 'select' | 'draw-rect' | 'draw-poly' | 'draw-outline') {
+function handleSelectTool(tool: 'select' | 'pan' | 'draw-rect' | 'draw-poly' | 'draw-outline') {
   drawing.setTool(tool)
+}
+
+/**
+ * 处理 AI 生成的项目
+ */
+function handleCreateFromAI(aiProject: MallProject) {
+  project.value = aiProject
+  floorMgmt.initFloor(aiProject)
+  router.replace({ params: { projectId: aiProject.id } })
+
+  showWizard.value = false
+  renderProject()
+  saveHistory()
 }
 
 /**
@@ -821,6 +997,7 @@ function handleAreaUpdate(updatedArea: AreaDefinition) {
       @update:projectName="handleProjectNameUpdate"
       @create="createNewProject"
       @createCustom="createCustomProject"
+      @createFromAI="handleCreateFromAI"
       @cancel="goBack"
     />
 
@@ -906,64 +1083,18 @@ function handleAreaUpdate(updatedArea: AreaDefinition) {
         </button>
       </div>
 
-      <!-- 底部状态栏 -->
-      <footer class="status-bar">
-        <div class="status-left">
-          <span class="status-item">
-            <svg viewBox="0 0 16 16" fill="none">
-              <rect x="2" y="2" width="12" height="12" rx="2" stroke="currentColor" stroke-width="1.5"/>
-            </svg>
-            {{ floorMgmt.currentFloor.value?.name || '-' }}
-          </span>
-          <span class="status-item">
-            区域: {{ floorMgmt.currentFloor.value?.areas.length || 0 }}
-          </span>
-        </div>
-        <div class="status-right">
-          <span class="status-item">
-            网格: {{ gridSize }}m
-          </span>
-          <span class="status-item">
-            对齐: {{ snapEnabled ? '开' : '关' }}
-          </span>
-        </div>
-      </footer>
+      <!-- 底部状态栏（已隐藏） -->
     </template>
 
     <!-- 3D 渲染容器 -->
     <div ref="containerRef" class="canvas-container"></div>
 
     <!-- 添加楼层弹窗 -->
-    <div v-if="floorMgmt.showAddFloorModal.value" class="modal-overlay" @click.self="floorMgmt.showAddFloorModal.value = false">
-      <div class="modal">
-        <div class="modal-header">
-          <h3>添加楼层</h3>
-          <button class="btn-icon" @click="floorMgmt.showAddFloorModal.value = false">
-            <svg viewBox="0 0 20 20" fill="none">
-              <path d="M5 5l10 10M15 5L5 15" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
-            </svg>
-          </button>
-        </div>
-        <div class="modal-body">
-          <div class="form-group">
-            <label>楼层名称</label>
-            <input v-model="floorMgmt.newFloorForm.name" type="text" class="input" placeholder="如：2F" />
-          </div>
-          <div class="form-group">
-            <label>楼层编号</label>
-            <input v-model.number="floorMgmt.newFloorForm.level" type="number" class="input" />
-          </div>
-          <div class="form-group">
-            <label>楼层高度 (m)</label>
-            <input v-model.number="floorMgmt.newFloorForm.height" type="number" class="input" step="0.5" />
-          </div>
-        </div>
-        <div class="modal-footer">
-          <button class="btn-secondary" @click="floorMgmt.showAddFloorModal.value = false">取消</button>
-          <button class="btn-primary" @click="addFloor">添加</button>
-        </div>
-      </div>
-    </div>
+    <AddFloorDialog
+      v-model:visible="floorMgmt.showAddFloorModal.value"
+      :existingLevels="existingLevels"
+      @created="handleFloorCreated"
+    />
 
     <!-- 离开确认弹窗 -->
     <div v-if="showLeaveConfirm" class="modal-overlay" @click.self="cancelLeave">

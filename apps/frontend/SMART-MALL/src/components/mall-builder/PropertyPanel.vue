@@ -435,12 +435,12 @@ function handleTypeChange(event: Event) {
   gap: $space-2;
   width: 100%;
   padding: $space-2 $space-4;
-  background: rgba($color-danger, 0.1);
-  border: 1px solid rgba($color-danger, 0.2);
+  background: rgba($color-error, 0.1);
+  border: 1px solid rgba($color-error, 0.2);
   border-radius: $radius-md;
   font-size: $font-size-sm;
   font-weight: $font-weight-medium;
-  color: $color-danger;
+  color: $color-error;
   cursor: pointer;
   transition: all $duration-normal;
 
@@ -450,12 +450,12 @@ function handleTypeChange(event: Event) {
   }
 
   &:hover {
-    background: rgba($color-danger, 0.2);
-    border-color: rgba($color-danger, 0.3);
+    background: rgba($color-error, 0.2);
+    border-color: rgba($color-error, 0.3);
   }
 
   &:active {
-    background: rgba($color-danger, 0.25);
+    background: rgba($color-error, 0.25);
   }
 }
 </style>

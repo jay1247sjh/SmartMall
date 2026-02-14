@@ -200,6 +200,7 @@ function getCollapseIconPath(): string {
   left: $space-4;
   top: 72px;
   width: 200px;
+  max-height: calc(100vh - 360px);
   background: linear-gradient(
     to bottom,
     rgba($color-bg-primary, 0.95),
@@ -210,6 +211,9 @@ function getCollapseIconPath(): string {
   border-radius: $radius-xl;
   z-index: 50;
   transition: width $duration-normal;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
 
   &.collapsed {
     width: 48px;
@@ -290,8 +294,9 @@ function getCollapseIconPath(): string {
   @include flex-column;
   gap: $space-1;
   padding: $space-2;
-  max-height: 300px;
   overflow-y: auto;
+  flex: 1;
+  min-height: 0;
   @include scrollbar-custom;
 }
 

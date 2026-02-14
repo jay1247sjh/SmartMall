@@ -141,7 +141,7 @@ function hasItems(): boolean {
   left: $space-4;
   bottom: 52px;
   min-width: 140px;
-  max-width: 200px;
+  max-width: 180px;
   background: linear-gradient(
     to bottom,
     rgba($color-bg-primary, 0.95),
@@ -150,7 +150,7 @@ function hasItems(): boolean {
   backdrop-filter: blur(8px);
   border: 1px solid $color-border-subtle;
   border-radius: $radius-lg;
-  z-index: 50;
+  z-index: 40;
   overflow: hidden;
 
   // ============================================================================
@@ -186,7 +186,7 @@ function hasItems(): boolean {
     @include flex-column;
     gap: $space-1;
     padding: $space-2 $space-3;
-    max-height: 200px;
+    max-height: 180px;
     overflow-y: auto;
     @include scrollbar-custom;
   }

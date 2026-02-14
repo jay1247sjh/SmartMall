@@ -339,8 +339,8 @@ function hasSelectedMaterial(): boolean {
     color: $color-text-muted;
 
     &:hover {
-      color: $color-danger;
-      background: rgba($color-danger, 0.1);
+      color: $color-error;
+      background: rgba($color-error, 0.1);
     }
   }
 }

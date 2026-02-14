@@ -55,3 +55,9 @@ export type {
   SceneLegendProps,
   LegendItem,
 } from './SceneLegend.vue'
+
+export { default as AddFloorDialog } from './AddFloorDialog.vue'
+export type {
+  AddFloorDialogProps,
+  AddFloorDialogEmits,
+} from './AddFloorDialog.vue'

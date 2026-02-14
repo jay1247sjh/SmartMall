@@ -112,6 +112,9 @@ export class MallBuilderEngine extends ThreeEngine {
   /** 配置选项 */
   private builderOptions: MallBuilderEngineOptions
 
+  /** 场景中心是否已初始化（防止每次 renderProject 都重置相机） */
+  private sceneCenterInitialized = false
+
   // ==========================================================================
   // 构造函数
   // ==========================================================================
@@ -133,6 +136,13 @@ export class MallBuilderEngine extends ThreeEngine {
 
     // 保存配置
     this.builderOptions = options
+
+    // 销毁父类创建的 OrbitController，MallBuilderEngine 使用自己的 builderOrbitControls
+    // 两个 OrbitControls 绑定同一个 camera + DOM 会互相冲突
+    if (this.orbitController) {
+      this.orbitController.dispose()
+      this.orbitController = null
+    }
 
     // 配置建模器专用的相机和控制器
     this.setupBuilderCamera()
@@ -196,6 +206,16 @@ export class MallBuilderEngine extends ThreeEngine {
     // 启用屏幕空间平移（更自然的平移体验）
     controls.screenSpacePanning = true
 
+    // 鼠标按钮映射：左键旋转，禁用右键平移
+    controls.mouseButtons = {
+      LEFT: THREE.MOUSE.ROTATE,
+      MIDDLE: THREE.MOUSE.DOLLY,
+      RIGHT: null as unknown as THREE.MOUSE,
+    }
+
+    // 禁用键盘平移（方向键）
+    controls.enablePan = false
+
     // 设置缩放距离限制
     controls.minDistance = opts.minDistance ?? 10
     controls.maxDistance = opts.maxDistance ?? 500
@@ -216,6 +236,13 @@ export class MallBuilderEngine extends ThreeEngine {
     // 当控制器变化时请求渲染
     controls.addEventListener('change', () => {
       this.requestRender()
+    })
+
+    // 阻尼模式需要每帧调用 update()，注册到渲染循环
+    this.onRender(() => {
+      if (this.builderOrbitControls?.enabled) {
+        this.builderOrbitControls.update()
+      }
     })
   }
 
@@ -306,32 +333,100 @@ export class MallBuilderEngine extends ThreeEngine {
   /**
    * 更新场景中心位置
    *
-   * 当商城轮廓改变时，调用此方法将网格、地板和相机目标点
-   * 移动到新的中心位置
+   * 通过计算场景中所有可渲染业务对象的并集边界框（BoundingBox）
+   * 来动态确定商城的几何中心，并将网格、地板和轨道目标点移动到该中心。
    *
-   * @param centerX - 中心点 X 坐标
-   * @param centerZ - 中心点 Z 坐标
+   * @param centerX - 备用中心点 X 坐标（当场景无业务对象时使用）
+   * @param centerZ - 备用中心点 Z 坐标（当场景无业务对象时使用）
    */
   public updateSceneCenter(centerX: number, centerZ: number): void {
-    // 更新网格位置
+    // 计算场景中所有业务对象的并集边界框
+    const center = this.computeSceneBoundingBoxCenter()
+    const cx = center ? center.x : centerX
+    const cz = center ? center.z : centerZ
+
+    // 更新网格位置（每次都更新）
     if (this.gridHelper) {
-      this.gridHelper.position.x = centerX
-      this.gridHelper.position.z = centerZ
+      this.gridHelper.position.x = cx
+      this.gridHelper.position.z = cz
     }
 
-    // 更新地板位置
+    // 更新地板位置（每次都更新）
     if (this.groundMesh) {
-      this.groundMesh.position.x = centerX
-      this.groundMesh.position.z = centerZ
+      this.groundMesh.position.x = cx
+      this.groundMesh.position.z = cz
     }
 
-    // 更新轨道控制器目标点
+    // 更新轨道控制器目标点（旋转中心），但不移动相机位置
+    // 这样旋转中心始终跟随商城 BoundingBox 中心，而相机位置保持用户手动调整的状态
     if (this.builderOrbitControls) {
-      this.builderOrbitControls.target.set(centerX, 6, centerZ)
+      // 使用固定的楼层高度作为 Y 轴目标，而非 BoundingBox 垂直中心（那会在建筑半高处）
+      const targetY = 6
+      this.builderOrbitControls.target.set(cx, targetY, cz)
+
+      // 只在首次初始化时重新定位相机，避免每次 renderProject 都重置用户的手动调整
+      if (!this.sceneCenterInitialized) {
+        const offset = new THREE.Vector3(0, 100, 60) // 默认相机偏移
+        this.camera.position.set(cx + offset.x, offset.y, cz + offset.z)
+        this.sceneCenterInitialized = true
+      }
+
       this.builderOrbitControls.update()
     }
 
     this.requestRender()
+  }
+
+  /**
+   * 标记场景中心需要重新初始化
+   *
+   * 下次 updateSceneCenter 调用时会重新定位相机。
+   * 在商城轮廓变更等需要重新居中的场景下调用。
+   */
+  public invalidateSceneCenter(): void {
+    this.sceneCenterInitialized = false
+  }
+
+  /**
+   * 计算场景中所有业务对象的并集边界框中心
+   *
+   * 排除基础设施对象（网格、地板、灯光），只计算商城模型的几何中心。
+   *
+   * @returns 边界框中心点，如果没有业务对象返回 null
+   */
+  private computeSceneBoundingBoxCenter(): THREE.Vector3 | null {
+    const infraNames = [
+      'mall-builder-grid',
+      'mall-builder-ground',
+      'mall-builder-ambient-light',
+      'mall-builder-directional-light',
+      'draw-preview-outline',
+      'draw-preview-mesh',
+    ]
+
+    const box = new THREE.Box3()
+    let hasObjects = false
+
+    this.scene.traverse((object) => {
+      if (object === this.scene) return
+      if (infraNames.some(n => object.name?.startsWith(n))) return
+      if (!(object instanceof THREE.Mesh) && !(object instanceof THREE.Line)) return
+      if (!object.geometry) return
+
+      object.geometry.computeBoundingBox()
+      if (object.geometry.boundingBox) {
+        const worldBox = object.geometry.boundingBox.clone()
+        worldBox.applyMatrix4(object.matrixWorld)
+        box.union(worldBox)
+        hasObjects = true
+      }
+    })
+
+    if (!hasObjects) return null
+
+    const center = new THREE.Vector3()
+    box.getCenter(center)
+    return center
   }
 
   /**
