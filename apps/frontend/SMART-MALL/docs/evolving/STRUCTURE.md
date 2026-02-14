@@ -269,7 +269,7 @@ views/
 ├── ForgotPasswordView.vue   # 忘记密码页面
 ├── ResetPasswordView.vue    # 重置密码页面
 ├── MallView.vue             # 商城主页/仪表盘
-├── Mall3DView.vue           # 3D 商城浏览页面
+├── Mall3DView.vue           # 3D 商城漫游页面（第三人称漫游模式）
 ├── layouts/                 # 布局组件
 │   ├── AdminLayout.vue      # 管理员布局
 │   ├── MerchantLayout.vue   # 商家布局
@@ -483,14 +483,27 @@ components/
 
 | 别名 | 路径 | 用途 |
 |------|------|------|
-| `@/` | `src/` | 通用导入 |
-| `@engine/` | `src/engine/` | 渲染引擎层 |
-| `@domain/` | `src/domain/` | 领域场景层 |
-| `@orchestrator/` | `src/orchestrator/` | 业务协调层 |
-| `@protocol/` | `src/protocol/` | 协议定义 |
-| `@shared/` | `src/shared/` | 共享模块 |
-| `@stores/` | `src/stores/` | 状态管理 |
-| `@builder/` | `src/builder/` | 建模器模块 |
+| `@` | `src/` | 根目录别名 |
+| `@types` | `src/types/` | 类型定义 |
+| `@domain` | `src/domain/` | 领域场景层 |
+| `@stores` | `src/stores/` | Pinia 状态管理 |
+| `@agent` | `src/agent/` | AI Agent 模块 |
+| `@components` | `src/components/` | Vue 组件 |
+| `@views` | `src/views/` | 页面视图 |
+| `@api` | `src/api/` | API 接口 |
+| `@engine` | `src/engine/` | 3D 引擎层 |
+| `@builder` | `src/builder/` | 建模器模块 |
+| `@protocol` | `src/protocol/` | 协议层 |
+| `@shared` | `src/shared/` | 共享模块 |
+
+### 5.1 开发服务器代理配置
+
+`vite.config.ts` 中配置了 API 代理：
+
+| 路径前缀 | 目标地址 | 说明 |
+|----------|----------|------|
+| `/intelligence-api` | `http://localhost:9001` | AI 服务 API（重写为 `/api`） |
+| `/api` | `http://localhost:8081` | Java 后端 API（超时 120s） |
 
 ---
 
@@ -550,7 +563,7 @@ components/
 | `views/ForgotPasswordView.vue` | ✅ 完成 | 忘记密码页面 |
 | `views/ResetPasswordView.vue` | ✅ 完成 | 重置密码页面 |
 | `views/MallView.vue` | ✅ 完成 | 商城主页/仪表盘 |
-| `views/Mall3DView.vue` | ✅ 完成 | 3D 商城浏览 |
+| `views/Mall3DView.vue` | ✅ 完成 | 3D 商城漫游（第三人称漫游模式，WASD 移动 + 鼠标视角） |
 | `views/layouts/AdminLayout.vue` | ✅ 完成 | 管理员布局 |
 | `views/layouts/MerchantLayout.vue` | ✅ 完成 | 商家布局 |
 | `views/layouts/MainLayout.vue` | ✅ 完成 | 主布局 |

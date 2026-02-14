@@ -94,6 +94,7 @@ CREATE TABLE IF NOT EXISTS area (
     status          VARCHAR(20) DEFAULT 'AVAILABLE',  -- 区域状态
     visible         BOOLEAN DEFAULT TRUE,
     locked          BOOLEAN DEFAULT FALSE,
+    version         INTEGER DEFAULT 0,
     created_at      TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at      TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     is_deleted      BOOLEAN NOT NULL DEFAULT FALSE

@@ -13,6 +13,23 @@
 
 ### Changed - 变更
 
+#### Mall3DView.vue 漫游模式改造
+
+**Mall3DView.vue - 从轨道相机模式改造为第三人称漫游模式**
+- ✅ 替换 `useMall3DScene` composable 为 `useMall3DRoaming`
+- ✅ 移除轨道模式 UI 组件（MallTopBar、FloorSelector、StorePanel、MiniMap、ControlsHint、MallInfoPanel、ImportSuccessToast）
+- ✅ 移除 AI 聊天面板（AiChatPanel）及相关事件处理（navigate、highlight、showDetail）
+- ✅ 移除搜索功能（useSearch composable）
+- ✅ 新增 Pointer Lock 提示覆盖层（WASD 移动 · 鼠标控制视角 · ESC 退出）
+- ✅ 新增错误状态 UI（错误图标 + 重新加载 / 返回按钮）
+- ✅ 根组件 class 从 `mall-3d-page` 改为 `mall-3d-roaming`
+- ✅ 渲染容器 class 从 `three-container` 改为 `scene-container`
+- ✅ 样式从内联 `<style>` 块移至独立管理（diff 中删除了原有样式块）
+
+**变更原因**:
+- 实现沉浸式第三人称漫游体验，替代原有的轨道相机浏览模式
+- 简化页面结构，聚焦漫游核心交互（WASD + 鼠标）
+
 #### 商城建模器渲染模式优化
 
 **MallBuilderView.vue 渲染高度调整**
@@ -21,9 +38,15 @@
 - ✅ 编辑模式下使用扁平化渲染，便于俯视编辑操作
 - ✅ 漫游模式下使用完整高度，保持沉浸式 3D 体验
 
+**MallBuilderView.vue 漫游模式楼层切换**
+- ✅ 楼层切换 watcher 增加视图模式判断
+- ✅ 漫游模式（`orbit`）下切换楼层调用 `handleRoamingFloorSwitch()` 重建角色和漫游环境
+- ✅ 编辑模式下保持原有 `renderProject()` 行为不变
+
 **变更原因**:
 - 编辑模式使用扁平化渲染更利于区域绘制和布局调整
 - 漫游模式保留完整高度以呈现真实的商城空间感
+- 漫游模式切换楼层需要重建角色位置和碰撞环境，单纯重新渲染项目不够
 
 #### API 模块 Mock 数据转真实接口 🔄 重构
 

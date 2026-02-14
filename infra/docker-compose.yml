@@ -112,6 +112,20 @@ services:
       timeout: 20s
       retries: 3
 
+  # Attu - Milvus GUI 管理工具
+  attu:
+    image: zilliz/attu:v2.4
+    container_name: smartmall-attu
+    restart: unless-stopped
+    environment:
+      MILVUS_URL: smartmall-milvus:19530
+    ports:
+      - "8001:3000"
+    depends_on:
+      - milvus
+    networks:
+      - smartmall-network
+
   # 后端服务（开发时可选，先用本地运行）
   # backend:
   #   build:
