@@ -1,209 +1,63 @@
 <script setup lang="ts">
 /**
- * 3D 商城入口页面
- * 
- * 展示 3D 可视化商城空间，支持楼层切换、店铺搜索、AI 导购等功能。
- * 
- * 【3D 交互】鼠标拖拽旋转 | 滚轮缩放 | 右键平移 | 点击店铺查看详情
- * 【AI 功能】文字对话 | 图片识别 | 场景联动
- * 
- * 重构说明：
- * - 将 UI 元素拆分为独立子组件，保持 3D 渲染逻辑在主组件
- * - 子组件通过 Props 和 Emits 与主组件通信
- * - 样式已移至各子组件，主组件仅保留布局和加载相关样式
- * 
- * @validates Requirements 1.8, 1.9
+ * 3D 商城漫游页面
+ *
+ * 第三人称漫游模式：WASD 移动角色，鼠标控制视角，沉浸式探索商城。
+ * 替代原有的轨道相机模式，移除楼层选择器、搜索栏、迷你地图等轨道模式 UI。
+ *
+ * @validates Requirements 1.1, 4.3, 4.5, 5.1, 5.2, 5.3, 7.5
  */
-import { ref, computed, onMounted, onUnmounted } from 'vue'
+import { ref, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
-import * as THREE from 'three'
-import { useUserStore } from '@/stores'
-import { AiChatPanel } from '@/components'
-import { useMall3DScene, useSearch } from './mall3d'
-import type { AiNavigatePayload, AiHighlightPayload, AiShowDetailPayload } from '@/protocol/ai.protocol'
-
-// 导入 Mall3D 子组件
-import {
-  MallTopBar,
-  FloorSelector,
-  StorePanel,
-  MiniMap,
-  ControlsHint,
-  ImportSuccessToast,
-  MallInfoPanel,
-} from '@/components/mall3d'
-import type { SearchResult, Floor as FloorType, StoreDetail } from '@/components/mall3d'
+import { useMall3DRoaming } from './mall3d'
 
 // ============================================================================
 // 状态
 // ============================================================================
 
 const router = useRouter()
-const userStore = useUserStore()
 const containerRef = ref<HTMLElement | null>(null)
 
-// 3D 场景
 const {
-  engine,
   loading,
-  floors,
-  currentFloor,
-  mallData,
-  showImportSuccess,
+  error,
+  isPointerLocked,
   initScene,
-  switchFloor,
-  clearMall,
-  dispose,
-  highlightObject,
-  clearHighlights,
-} = useMall3DScene({ containerRef })
-
-// 搜索（传入 engine 引用以支持相机飞行）
-const {
-  query: searchQuery,
-  results: searchResults,
-  showResults: showSearchResults,
-  selectedStore,
-  showStorePanel,
-  isFlying,
-  handleSearch,
-  selectResult: selectSearchResult,
-  closeStorePanel,
-  flyToStore,
-  flyToPosition,
-} = useSearch({ engine })
-
-// UI 状态
-const showFloorSelector = ref(false)
-const showMinimap = ref(true)
-const showAiChat = ref(false)
-
-// ============================================================================
-// 计算属性
-// ============================================================================
-
-/** 当前用户名 */
-const username = computed(() => userStore.currentUser?.username ?? '')
-
-/** 当前楼层名称（用于迷你地图显示） */
-const currentFloorName = computed(() => {
-  const floor = floors.value.find(f => f.id === currentFloor.value)
-  return floor?.name ?? ''
-})
-
-/** 转换楼层数据为子组件所需格式 */
-const floorList = computed<FloorType[]>(() => {
-  return floors.value.map(f => ({
-    id: f.id,
-    name: f.name,
-    label: f.label ?? '',
-  }))
-})
-
-/** 转换选中店铺数据为子组件所需格式 */
-const storeDetail = computed<StoreDetail | null>(() => {
-  if (!selectedStore.value) return null
-  return {
-    id: selectedStore.value.id,
-    name: selectedStore.value.name,
-    floor: selectedStore.value.floor,
-    area: selectedStore.value.area,
-    category: selectedStore.value.category ?? '餐饮',
-    openTime: selectedStore.value.openTime ?? '08:00',
-    closeTime: selectedStore.value.closeTime ?? '22:00',
-  }
-})
-
-/** 转换搜索结果为子组件所需格式 */
-const searchResultList = computed<SearchResult[]>(() => {
-  if (!searchResults.value) return []
-  return searchResults.value.map(r => ({
-    id: r.id,
-    name: r.name,
-    floor: r.floor ?? '',
-    area: r.area ?? '',
-  }))
-})
+  dispose: disposeScene,
+} = useMall3DRoaming({ containerRef })
 
 // ============================================================================
 // 方法
 // ============================================================================
 
-/** 返回上一页 */
-const goBack = () => router.push('/mall')
-
-/** 选择楼层 */
-function selectFloor(floorId: number) {
-  switchFloor(floorId)
-  showFloorSelector.value = false
+/** 重新加载（错误恢复） */
+function retryInit() {
+  disposeScene()
+  initScene()
 }
 
-/** 切换迷你地图显示 */
-const toggleMinimap = () => (showMinimap.value = !showMinimap.value)
-
-/** 关闭迷你地图 */
-const closeMinimap = () => (showMinimap.value = false)
-
-/** 切换 AI 聊天面板 */
-const toggleAiChat = () => (showAiChat.value = !showAiChat.value)
-
-/** 关闭导入成功提示 */
-const closeImportToast = () => (showImportSuccess.value = false)
-
-/** 处理搜索结果选择 */
-function handleSelectResult(result: SearchResult) {
-  selectSearchResult(result)
-}
-
-/** 处理进入店铺 */
-function handleEnterStore() {
-  if (selectedStore.value) {
-    console.log('进入店铺:', selectedStore.value.id)
-    // TODO: 实现进入店铺逻辑
-  }
-}
-
-// AI 事件处理
-function handleAiNavigate(payload: AiNavigatePayload) {
-  console.log('AI Navigate:', payload)
-  if (payload.position) {
-    flyToPosition(new THREE.Vector3(
-      payload.position.x,
-      payload.position.y ?? 0,
-      payload.position.z
-    ))
-  }
-}
-
-function handleAiHighlight(payload: AiHighlightPayload) {
-  console.log('AI Highlight:', payload)
-  if (payload.type === 'store') {
-    highlightObject(payload.id, true)
-    // 3秒后自动取消高亮
-    setTimeout(() => highlightObject(payload.id, false), 3000)
-  }
-}
-
-function handleAiShowDetail(payload: AiShowDetailPayload) {
-  console.log('AI Show Detail:', payload)
-  if (payload.type === 'store') {
-    selectedStore.value = { id: payload.id, name: '店铺详情' }
-    showStorePanel.value = true
-  }
+/** 返回商城列表 */
+function goBack() {
+  router.push('/mall')
 }
 
 // ============================================================================
 // 生命周期
 // ============================================================================
 
-onMounted(initScene)
-onUnmounted(dispose)
+onMounted(() => {
+  initScene()
+})
+
+onUnmounted(() => {
+  disposeScene()
+})
 </script>
 
 <template>
-  <div class="mall-3d-page">
+  <div class="mall-3d-roaming">
     <!-- 3D 渲染容器 -->
-    <div ref="containerRef" class="three-container" />
+    <div ref="containerRef" class="scene-container" />
 
     <!-- 加载界面 -->
     <div v-if="loading.isLoading" class="loading-overlay">
@@ -217,77 +71,31 @@ onUnmounted(dispose)
       </div>
     </div>
 
-    <!-- UI 覆盖层 -->
-    <div v-else class="ui-overlay">
-      <!-- AI 导入成功提示 -->
-      <Transition name="fade">
-        <ImportSuccessToast
-          v-if="showImportSuccess && mallData"
-          :visible="showImportSuccess"
-          :mall-name="mallData.name"
-          @close="closeImportToast"
-        />
-      </Transition>
+    <!-- 错误状态 -->
+    <div v-else-if="error" class="error-overlay">
+      <div class="error-content">
+        <svg class="error-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+          <circle cx="12" cy="12" r="10" />
+          <line x1="12" y1="8" x2="12" y2="12" />
+          <line x1="12" y1="16" x2="12.01" y2="16" />
+        </svg>
+        <p class="error-title">{{ error }}</p>
+        <div class="error-actions">
+          <button class="btn-retry" @click="retryInit">重新加载</button>
+          <button class="btn-back" @click="goBack">返回</button>
+        </div>
+      </div>
+    </div>
 
-      <!-- 商城信息面板（AI 生成） -->
-      <MallInfoPanel
-        :mall-data="mallData"
-        @clear="clearMall"
-      />
-
-      <!-- 顶部栏 -->
-      <MallTopBar
-        :username="username"
-        :search-query="searchQuery"
-        :search-results="searchResultList"
-        :show-search-results="showSearchResults"
-        @back="goBack"
-        @update:search-query="(v) => (searchQuery = v)"
-        @search="handleSearch"
-        @select-result="handleSelectResult"
-      />
-
-      <!-- 楼层选择器 -->
-      <FloorSelector
-        :floors="floorList"
-        :current-floor-id="currentFloor"
-        v-model:visible="showFloorSelector"
-        @select="selectFloor"
-      />
-
-      <!-- 迷你地图 -->
-      <MiniMap
-        :visible="showMinimap"
-        :current-floor-name="currentFloorName"
-        @close="closeMinimap"
-        @toggle="toggleMinimap"
-      />
-
-      <!-- 店铺详情面板 -->
-      <StorePanel
-        :visible="showStorePanel"
-        :store="storeDetail"
-        @close="closeStorePanel"
-        @enter="handleEnterStore"
-      />
-
-      <!-- 操作提示 -->
-      <ControlsHint />
-
-      <!-- AI 聊天按钮 -->
-      <button v-if="!showAiChat" class="btn-ai-chat" @click="toggleAiChat">
-        <span class="ai-icon">🤖</span>
-        <span class="ai-label">小智</span>
-      </button>
-
-      <!-- AI 聊天面板 -->
-      <AiChatPanel
-        :visible="showAiChat"
-        @close="showAiChat = false"
-        @navigate="handleAiNavigate"
-        @highlight="handleAiHighlight"
-        @show-detail="handleAiShowDetail"
-      />
+    <!-- Pointer Lock 提示（场景就绪但未锁定时显示） -->
+    <div
+      v-if="!loading.isLoading && !error && !isPointerLocked"
+      class="pointer-lock-hint"
+    >
+      <div class="hint-content">
+        <p class="hint-title">点击画面开始漫游</p>
+        <p class="hint-sub">WASD 移动 · 鼠标控制视角 · ESC 退出</p>
+      </div>
     </div>
   </div>
 </template>
@@ -299,14 +107,14 @@ onUnmounted(dispose)
 // ============================================================================
 // 基础布局
 // ============================================================================
-.mall-3d-page {
+.mall-3d-roaming {
   position: relative;
   width: 100%;
   height: 100vh;
   background: $color-bg-primary;
   overflow: hidden;
 
-  .three-container {
+  .scene-container {
     width: 100%;
     height: 100%;
   }
@@ -363,67 +171,83 @@ onUnmounted(dispose)
 }
 
 @keyframes spin {
-  to { transform: rotate(360deg); }
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 // ============================================================================
-// UI 覆盖层
+// 错误状态
 // ============================================================================
-.ui-overlay {
+.error-overlay {
   position: absolute;
   inset: 0;
-  pointer-events: none;
+  background: $color-bg-primary;
+  @include flex-center;
+  z-index: 100;
 
-  > * {
-    pointer-events: auto;
+  .error-content {
+    @include flex-column-center;
+    gap: $space-5;
+  }
+
+  .error-icon {
+    width: 48px;
+    height: 48px;
+    color: $color-text-muted;
+  }
+
+  .error-title {
+    font-size: $font-size-base;
+    color: $color-text-secondary;
+    text-align: center;
+    max-width: 320px;
+    margin: 0;
+  }
+
+  .error-actions {
+    @include flex-center;
+    gap: $space-3;
+  }
+
+  .btn-retry {
+    @include btn-primary;
+    @include btn-sm;
+  }
+
+  .btn-back {
+    @include btn-secondary;
+    @include btn-sm;
   }
 }
 
 // ============================================================================
-// AI 聊天按钮
+// Pointer Lock 提示
 // ============================================================================
-.btn-ai-chat {
+.pointer-lock-hint {
   position: absolute;
-  right: $space-5;
-  bottom: 80px;
-  @include flex-center-y;
-  gap: $space-2;
-  padding: $space-3 $space-5;
-  background: linear-gradient(135deg, $color-primary 0%, $color-accent-blue-dark 100%);
-  border: none;
-  border-radius: 24px;
-  color: white;
-  font-size: $font-size-base;
-  font-weight: $font-weight-medium;
-  cursor: pointer;
-  box-shadow: 0 4px 16px rgba($color-primary, 0.4);
-  @include transition-fast;
-  @include hover-lift;
+  inset: 0;
+  @include flex-center;
+  background: rgba($color-black, 0.4);
+  z-index: 5;
+  pointer-events: none;
+  @include transition-slow;
 
-  &:hover {
-    box-shadow: 0 6px 20px rgba($color-primary, 0.5);
+  .hint-content {
+    text-align: center;
   }
 
-  .ai-icon {
-    font-size: $font-size-xl;
+  .hint-title {
+    font-size: $font-size-2xl;
+    font-weight: $font-weight-medium;
+    color: $color-text-primary;
+    margin: 0 0 $space-2;
   }
 
-  .ai-label {
-    font-weight: $font-weight-semibold;
+  .hint-sub {
+    font-size: $font-size-base;
+    color: $color-text-secondary;
+    margin: 0;
   }
-}
-
-// ============================================================================
-// 动画（用于 ImportSuccessToast 的 Transition）
-// ============================================================================
-.fade-enter-active,
-.fade-leave-active {
-  transition: opacity $duration-slow $ease-default, transform $duration-slow $ease-default;
-}
-
-.fade-enter-from,
-.fade-leave-to {
-  opacity: 0;
-  transform: translateX(-50%) translateY(-10px);
 }
 </style>
