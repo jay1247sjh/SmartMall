@@ -400,26 +400,46 @@ if (canMove) {
 ### 问题 10：角色是如何面向移动方向的？
 
 ```typescript
-if (this.velocity.length() > 0.01 && isMoving) {
-  const moveDir = forward.clone().multiplyScalar(-this.velocity.z)
-    .add(right.clone().multiplyScalar(this.velocity.x))
-  
-  if (moveDir.length() > 0.01) {
-    const targetAngle = Math.atan2(moveDir.x, moveDir.z)
+// 使用输入意图（direction）而非 velocity 计算目标朝向，
+// 避免阻尼衰减和帧率波动导致 velocity 方向抖动引起角色突然转身
+if (isMoving) {
+  const intentDir = forward.clone().multiplyScalar(this.direction.z)
+    .add(right.clone().multiplyScalar(this.direction.x))
+  if (intentDir.length() > 0.01) {
+    const targetAngle = Math.atan2(intentDir.x, intentDir.z)
     const currentAngle = this.character.rotation.y
     const angleDiff = targetAngle - currentAngle
+    // 规范化到 [-π, π]
     const normalizedDiff = Math.atan2(Math.sin(angleDiff), Math.cos(angleDiff))
+    // 平滑转向（每帧 10%）
     this.character.rotation.y += normalizedDiff * 0.1
+    // 归一化 rotation.y 到 [-π, π]，防止累积越界导致角度跳变抖动
+    this.character.rotation.y = Math.atan2(
+      Math.sin(this.character.rotation.y),
+      Math.cos(this.character.rotation.y)
+    )
   }
 }
 ```
 
-**为什么不直接 `this.character.rotation.y = targetAngle`？为什么要乘以 0.1？**
+**为什么用 `direction`（输入意图）而不是 `velocity`（实际速度）来计算朝向？**
 
 ---
 
 <details>
 <summary>💡 点击查看引导</summary>
+
+旧实现用 `velocity` 计算朝向，存在一个问题：
+- `velocity` 受阻尼衰减影响，松开按键后会逐帧衰减到 0
+- 衰减过程中 `velocity` 的方向可能因浮点精度和帧率波动而抖动
+- 这会导致角色在停下来的瞬间突然转身
+
+改用 `direction`（键盘输入的原始方向意图）：
+- `direction` 只有按键按下时才有值，松开立刻归零
+- 不受阻尼和帧率影响，方向稳定
+- `isMoving` 为 false 时不会进入朝向计算，避免了抖动
+
+**为什么不直接 `this.character.rotation.y = targetAngle`？为什么要乘以 0.1？**
 
 直接设置的问题：
 - 角色会"瞬间"转向
@@ -436,6 +456,10 @@ if (this.velocity.length() > 0.01 && isMoving) {
 - `atan2(sin, cos)` 把角度归一化到 [-π, π]
 
 **这叫"插值转向"**：用线性插值实现平滑旋转。
+
+**为什么还要对 `rotation.y` 本身做归一化？**
+
+`rotation.y += normalizedDiff * 0.1` 是累加操作，长时间旋转后 `rotation.y` 可能超出 `[-π, π]` 范围（比如累积到 10π）。虽然 `normalizedDiff` 本身是归一化的，但 `currentAngle` 越界后，下一帧的 `angleDiff = targetAngle - currentAngle` 会产生异常大的值，导致角色突然跳转或抖动。每帧归一化 `rotation.y` 可以防止这种累积越界。
 
 </details>
 

@@ -366,6 +366,7 @@ export function createCeiling(
   options: {
     color?: number
     opacity?: number
+    transparent?: boolean
   } = {}
 ): THREE.Mesh {
   const shape = polygonToShape(outline)
@@ -373,6 +374,12 @@ export function createCeiling(
   
   const ceilingColor = options.color ?? 0xfafafa
   const material = createCeilingMaterial(ceilingColor)
+  
+  // 应用透明度设置（允许相机视角不被天花板完全遮挡）
+  if (options.transparent) {
+    material.transparent = true
+    material.opacity = options.opacity ?? 1
+  }
   
   const ceiling = new THREE.Mesh(geometry, material)
   ceiling.rotation.x = Math.PI / 2

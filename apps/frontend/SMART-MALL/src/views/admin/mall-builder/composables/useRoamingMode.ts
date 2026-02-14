@@ -1,34 +1,34 @@
 /**
  * 漫游模式 Composable
  * 管理第三人称漫游控制
+ *
+ * 重构后职责：业务协调（WASD 键盘输入、速度控制、角色控制器生命周期）
+ * 相机控制已统一到引擎层 CameraController
  */
 import { ref } from 'vue'
 import * as THREE from 'three'
 import type { CharacterController } from '@/builder'
-import type { ViewMode, SavedCameraState } from './useMallBuilderState'
+import type { ThreeEngine } from '@/engine/ThreeEngine'
 
 export interface RoamingConfig {
   mouseSensitivity: number
   cameraDistance: number
   cameraHeight: number
+  smoothness: number
 }
 
 export function useRoamingMode(config: RoamingConfig = {
   mouseSensitivity: 0.003,
   cameraDistance: 10,
   cameraHeight: 4,
+  smoothness: 1,
 }) {
   // 漫游控制器
   let characterController: CharacterController | null = null
-  let roamAnimationId: number | null = null
-  let prevTime = performance.now()
 
-  // 相机角度
-  const cameraPitch = ref(0.3)
-  const cameraYaw = ref(0)
-
-  // 指针锁定状态
-  const isPointerLocked = ref(false)
+  // 引擎引用
+  let engine: ThreeEngine | null = null
+  let unregisterRenderCallback: (() => void) | null = null
 
   // 移动速度预设
   const walkSpeedPreset = ref<'slow' | 'normal' | 'fast'>('normal')
@@ -40,46 +40,96 @@ export function useRoamingMode(config: RoamingConfig = {
   }
 
   /**
-   * 处理指针锁定状态变化
+   * 启动漫游模式
+   * 1. 切换相机模式到 follow
+   * 2. 设置跟随目标，映射 RoamingConfig → ThirdPersonCameraConfig
+   * 3. 注册角色更新回调（通过 onRender）
+   *
+   * 注意：Pointer lock 不在此处请求，由调用方在 canvas click handler 中触发，
+   * 以满足浏览器要求的"用户手势触发"约束。
    */
-  function handlePointerLockChange() {
-    isPointerLocked.value = !!document.pointerLockElement
-    if (document.pointerLockElement) {
-      console.log('鼠标已锁定')
-    } else {
-      console.log('鼠标已解锁，点击画布可重新锁定')
+  function startRoaming(eng: ThreeEngine, target: THREE.Object3D): void {
+    if (!eng) {
+      console.warn('[useRoamingMode] startRoaming: engine is null')
+      return
     }
+    engine = eng
+
+    // 1. 切换相机模式到 follow
+    engine.setCameraMode('follow')
+
+    // 2. 设置跟随目标
+    engine.setFollowTarget(target, {
+      distance: config.cameraDistance,
+      lookAtHeightOffset: config.cameraHeight,
+      smoothness: config.smoothness,
+      mouseSensitivity: config.mouseSensitivity,
+      pitchLimit: { min: -0.3, max: 1.0 },
+    })
+
+    // 3. 注册角色更新回调
+    unregisterRenderCallback = engine.onRender((delta: number) => {
+      if (!characterController) return
+      // 从引擎获取当前 yaw 角度，传给角色控制器
+      const yaw = engine!.getCameraYaw()
+      characterController.update(delta, yaw)
+
+      // 当指针未锁定且角色静止时，相机自动校正到角色背后
+      // 仅在角色不移动时校正，避免移动中的反馈环路：
+      // camera yaw → 移动方向 → 角色旋转 → 校正 camera yaw → 循环
+      const isCharacterMoving = characterController.moveForward
+        || characterController.moveBackward
+        || characterController.moveLeft
+        || characterController.moveRight
+      if (!engine!.isPointerLocked() && !isCharacterMoving) {
+        const characterYaw = characterController.getRotationY()
+        // 相机需要在角色背后：目标 yaw = characterYaw + π
+        const targetYaw = characterYaw + Math.PI
+        const currentYaw = engine!.getCameraYaw()
+        // 计算角度差并规范化到 [-π, π]
+        const diff = Math.atan2(
+          Math.sin(targetYaw - currentYaw),
+          Math.cos(targetYaw - currentYaw)
+        )
+        // 平滑插值跟随（每帧 1.5% 靠近目标角度，柔和校正）
+        // 直接在当前 yaw 上加 diff，保持同一"圈数"，避免跨圈跳变
+        if (Math.abs(diff) > 0.01) {
+          const currentPitch = engine!.getCameraPitch()
+          engine!.setCameraAngles(currentYaw + diff * 0.015, currentPitch)
+        }
+      }
+
+      // 确保持续渲染
+      engine!.requestRender()
+    })
   }
 
   /**
-   * 处理漫游模式的鼠标移动
+   * 停止漫游模式
+   * 1. 注销角色更新回调
+   * 2. 清除跟随目标
+   * 3. 退出指针锁定
+   * 4. 切换相机模式回 orbit
    */
-  function handleRoamMouseMove(e: MouseEvent) {
-    if (!document.pointerLockElement) return
+  function stopRoaming(): void {
+    // 1. 注销角色更新回调
+    if (unregisterRenderCallback) {
+      unregisterRenderCallback()
+      unregisterRenderCallback = null
+    }
 
-    const movementX = e.movementX || 0
-    const movementY = e.movementY || 0
+    if (!engine) return
 
-    if (movementX === 0 && movementY === 0) return
+    // 2. 清除跟随目标
+    engine.clearFollowTarget()
 
-    // 更新相机偏航角（左右看）
-    cameraYaw.value -= movementX * config.mouseSensitivity
+    // 3. 退出指针锁定
+    engine.exitPointerLock()
 
-    // 更新相机俯仰角（上下看）
-    cameraPitch.value += movementY * config.mouseSensitivity
-    cameraPitch.value = Math.max(-0.3, Math.min(1.0, cameraPitch.value))
-  }
+    // 4. 切换相机模式回 orbit
+    engine.setCameraMode('orbit')
 
-  /**
-   * 处理画布点击以锁定鼠标
-   */
-  function handleCanvasClickForPointerLock(e: MouseEvent, canvas: HTMLCanvasElement) {
-    if (document.pointerLockElement) return
-
-    e.stopPropagation()
-    e.preventDefault()
-
-    canvas.requestPointerLock()
+    engine = null
   }
 
   /**
@@ -135,58 +185,6 @@ export function useRoamingMode(config: RoamingConfig = {
   }
 
   /**
-   * 开始漫游动画循环
-   */
-  function startRoamLoop(camera: THREE.PerspectiveCamera) {
-    prevTime = performance.now()
-
-    function animateRoam() {
-      roamAnimationId = requestAnimationFrame(animateRoam)
-
-      if (!characterController) return
-
-      const time = performance.now()
-      const delta = (time - prevTime) / 1000
-      prevTime = time
-
-      // 更新角色
-      characterController.update(delta, cameraYaw.value)
-
-      // 计算相机位置（第三人称跟随）
-      const charPos = characterController.getPosition()
-      const yaw = cameraYaw.value
-      const pitch = cameraPitch.value
-
-      // 球面坐标计算相机位置
-      const horizontalDist = config.cameraDistance * Math.cos(pitch)
-      const verticalOffset = config.cameraDistance * Math.sin(pitch) + config.cameraHeight
-
-      const cameraX = charPos.x + Math.sin(yaw) * horizontalDist
-      const cameraY = charPos.y + verticalOffset
-      const cameraZ = charPos.z + Math.cos(yaw) * horizontalDist
-
-      camera.position.set(cameraX, cameraY, cameraZ)
-
-      // 相机看向角色头部位置
-      const lookAtPos = charPos.clone()
-      lookAtPos.y += 1.5
-      camera.lookAt(lookAtPos)
-    }
-
-    animateRoam()
-  }
-
-  /**
-   * 停止漫游动画循环
-   */
-  function stopRoamLoop() {
-    if (roamAnimationId !== null) {
-      cancelAnimationFrame(roamAnimationId)
-      roamAnimationId = null
-    }
-  }
-
-  /**
    * 切换移动速度预设
    */
   function cycleWalkSpeed() {
@@ -228,7 +226,7 @@ export function useRoamingMode(config: RoamingConfig = {
    * 清理资源
    */
   function dispose() {
-    stopRoamLoop()
+    stopRoaming()
     if (characterController) {
       characterController.dispose()
       characterController = null
@@ -237,23 +235,17 @@ export function useRoamingMode(config: RoamingConfig = {
 
   return {
     // 状态
-    cameraPitch,
-    cameraYaw,
-    isPointerLocked,
     walkSpeedPreset,
     speedPresets,
     speedPresetLabels,
 
-    // 事件处理
-    handlePointerLockChange,
-    handleRoamMouseMove,
-    handleCanvasClickForPointerLock,
+    // 漫游控制
+    startRoaming,
+    stopRoaming,
+
+    // 键盘事件
     handleRoamKeyDown,
     handleRoamKeyUp,
-
-    // 动画控制
-    startRoamLoop,
-    stopRoamLoop,
 
     // 速度控制
     cycleWalkSpeed,
