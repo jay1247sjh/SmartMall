@@ -697,4 +697,51 @@ export class ThreeEngine {
       return this.camera.position.clone().add(direction.multiplyScalar(10))
     }
   }
+
+  // ==========================================================================
+  // CameraController 委托方法
+  // ==========================================================================
+
+  /**
+   * 请求指针锁定（委托给 CameraController）
+   */
+  public requestPointerLock(): void {
+    this.cameraController?.requestPointerLock()
+  }
+
+  /**
+   * 退出指针锁定（委托给 CameraController）
+   */
+  public exitPointerLock(): void {
+    this.cameraController?.exitPointerLock()
+  }
+
+  /**
+   * 查询指针锁定状态（委托给 CameraController）
+   */
+  public isPointerLocked(): boolean {
+    return this.cameraController?.isLocked() ?? false
+  }
+
+  /**
+   * 获取当前相机偏航角（委托给 CameraController）
+   */
+  public getCameraYaw(): number {
+    return this.cameraController?.getYaw() ?? 0
+  }
+
+  /**
+   * 获取当前相机俯仰角（委托给 CameraController）
+   */
+  public getCameraPitch(): number {
+    return this.cameraController?.getPitch() ?? 0.3
+  }
+
+  /**
+   * 设置相机角度（委托给 CameraController）
+   */
+  public setCameraAngles(yaw: number, pitch: number): void {
+    this.cameraController?.setAngles(yaw, pitch)
+  }
+
 }

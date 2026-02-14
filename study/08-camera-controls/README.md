@@ -145,7 +145,12 @@ private updateFollowCamera(): void {
 ### 问题 4：`lerp` 是什么？为什么需要它？
 
 ```typescript
-this.camera.position.lerp(idealPosition, smoothness)
+// smoothness >= 1 时直接设置位置（无延迟），否则 lerp 插值
+if (smoothness >= 1) {
+  this.camera.position.copy(idealPosition)
+} else {
+  this.camera.position.lerp(idealPosition, smoothness)
+}
 ```
 
 **如果直接 `this.camera.position.copy(idealPosition)` 会怎样？**
@@ -180,7 +185,11 @@ position.lerp(target, 0.1)
 **`smoothness` 的影响**：
 - 0.1：平滑跟随，有延迟
 - 0.5：快速跟随，轻微延迟
-- 1.0：立即跟随，无延迟
+- 1.0（及以上）：立即跟随，无延迟（直接 `copy`，跳过 `lerp`）
+
+**为什么 `smoothness >= 1` 时用 `copy` 而不是 `lerp`？**
+
+`lerp(target, 1.0)` 理论上等于直接到达目标，但浮点精度可能导致微小偏差。用 `copy` 更直接、更精确，也避免了不必要的插值计算。
 
 </details>
 
@@ -222,8 +231,10 @@ private handleMouseMove = (event: MouseEvent): void => {
   if (!this.isPointerLocked) return
   
   // movementX/Y 是相对移动量，不是绝对位置
+  // yaw 允许自由累积，sin/cos 是周期函数不受影响
   this.yaw -= event.movementX * mouseSensitivity
-  this.pitch -= event.movementY * mouseSensitivity
+  // 鼠标向上移动（movementY 为负），pitch 减小，相机降低，视角向上看
+  this.pitch += event.movementY * mouseSensitivity
 }
 ```
 
@@ -238,43 +249,63 @@ private handleMouseMove = (event: MouseEvent): void => {
 
 ---
 
-### 问题 6：为什么鼠标移动要取反？
+### 问题 6：为什么鼠标移动方向要这样处理？
 
 ```typescript
 this.yaw -= event.movementX * mouseSensitivity
-this.pitch -= event.movementY * mouseSensitivity
+this.pitch += event.movementY * mouseSensitivity
 ```
 
-**为什么是 `-=` 而不是 `+=`？**
+**Yaw 为什么是 `-=`？Pitch 为什么是 `+=`？**
 
 ---
 
 <details>
 <summary>💡 点击查看引导</summary>
 
-这是"自然映射"的问题：
+这是"自然映射"的问题，水平和垂直方向的映射逻辑不同：
 
-**鼠标向右移动**：
+**鼠标向右移动（Yaw）**：
 - `movementX > 0`
 - 用户期望：视角向右转
 - 相机向右转 = yaw 减小
 - 所以：`yaw -= movementX`
 
-**鼠标向下移动**：
+**鼠标向上移动（Pitch）**：
+- `movementY < 0`（浏览器坐标系 Y 轴向下为正）
+- 用户期望：视角向上看
+- 相机向上看 = pitch 减小（球面坐标中 pitch 减小 → 相机降低 → 视角抬升）
+- `movementY` 为负，`pitch += 负值` = pitch 减小 ✅
+- 所以：`pitch += movementY`
+
+**鼠标向下移动（Pitch）**：
 - `movementY > 0`
 - 用户期望：视角向下看
-- 相机向下看 = pitch 减小
-- 所以：`pitch -= movementY`
+- 相机向下看 = pitch 增大
+- `movementY` 为正，`pitch += 正值` = pitch 增大 ✅
 
-**类比**：
-- 想象你拿着一个球
-- 手向右推，球向右滚
-- 但你看到的画面向左移动
+**关键理解**：
+- Yaw 取反是因为"鼠标右移 → 场景左转 → yaw 减小"
+- Pitch 不取反是因为浏览器 Y 轴方向与球面坐标 pitch 方向天然匹配
 
 **有些游戏有"反转 Y 轴"选项**：
 ```typescript
-// 反转 Y 轴
-this.pitch += event.movementY * mouseSensitivity
+// 反转 Y 轴（飞行模拟器风格）
+this.pitch -= event.movementY * mouseSensitivity
+```
+
+**为什么不需要归一化 Yaw？**
+
+每帧累加 `yaw -= movementX * sensitivity`，长时间旋转后 yaw 值会无限增长（比如转了 100 圈后 yaw = 628.3）。但 `Math.sin` / `Math.cos` 是周期函数，对任意值都能正确计算，所以实际渲染不受影响。
+
+之前的实现使用 `atan2(sin(θ), cos(θ))` 将 yaw 归一化到 `[-π, π]`，但这在某些场景下（如自动校正、插值动画直接比较 yaw 数值时）反而会因为 `-π` 到 `π` 的跳变产生异常行为。移除归一化后，yaw 自由累积，避免了这类跳变问题。
+
+```typescript
+// 旧写法（已移除）：归一化到 [-π, π]，可能导致跳变
+// this.yaw = Math.atan2(Math.sin(this.yaw), Math.cos(this.yaw))
+
+// 新写法：yaw 自由累积，sin/cos 周期性保证渲染正确
+this.yaw -= event.movementX * mouseSensitivity
 ```
 
 </details>

@@ -370,12 +370,13 @@ export class CameraController {
     // 水平旋转（Yaw）
     // movementX: 鼠标水平移动量（像素）
     // 负号：鼠标向右移动，相机向右转（yaw 减小）
+    // yaw 允许自由累积，sin/cos 是周期函数不受影响
     this.yaw -= event.movementX * mouseSensitivity
 
     // 垂直旋转（Pitch）
     // movementY: 鼠标垂直移动量（像素）
-    // 负号：鼠标向下移动，相机向下看（pitch 减小）
-    this.pitch -= event.movementY * mouseSensitivity
+    // 鼠标向上移动（movementY 为负），pitch 减小，相机降低，视角向上看
+    this.pitch += event.movementY * mouseSensitivity
 
     // 限制垂直角度，防止相机翻转或穿透地面
     // Math.max(min, ...) 确保不低于最小值
@@ -501,14 +502,36 @@ export class CameraController {
     )
 
     // 4. 平滑插值到理想位置
-    //    lerp(target, alpha) 表示：当前位置向目标位置移动 alpha 的距离
-    //    smoothness = 0.1 表示每帧移动 10% 的距离
-    this.camera.position.lerp(idealPosition, smoothness)
+    //    smoothness >= 1 时直接设置位置（无延迟），否则 lerp 插值
+    if (smoothness >= 1) {
+      this.camera.position.copy(idealPosition)
+    } else {
+      this.camera.position.lerp(idealPosition, smoothness)
+    }
 
     // 5. 让相机看向目标（通常是角色的头部）
+    //    不使用 camera.lookAt()，因为当相机接近目标正上方时
+    //    lookAt 的 world up (0,1,0) 和 forward 向量平行，
+    //    导致万向锁（gimbal lock），视角突然翻转。
+    //    改用手动构建旋转矩阵，以 yaw 方向作为稳定的 up 参考。
     const lookAtPosition = targetPosition.clone()
-    lookAtPosition.y += lookAtHeightOffset // 向上偏移到头部高度
-    this.camera.lookAt(lookAtPosition)
+    lookAtPosition.y += lookAtHeightOffset
+
+    const forward = new THREE.Vector3().subVectors(lookAtPosition, this.camera.position).normalize()
+    // 用 yaw 方向构建一个稳定的 right 向量，避免万向锁
+    const worldUp = new THREE.Vector3(0, 1, 0)
+    const right = new THREE.Vector3().crossVectors(forward, worldUp)
+
+    if (right.lengthSq() < 0.0001) {
+      // forward 几乎和 worldUp 平行（极端俯视），用 yaw 方向作为 fallback right
+      right.set(Math.cos(this.yaw), 0, -Math.sin(this.yaw))
+    }
+    right.normalize()
+
+    const up = new THREE.Vector3().crossVectors(right, forward).normalize()
+    const m = new THREE.Matrix4()
+    m.makeBasis(right, up, forward.negate())
+    this.camera.quaternion.setFromRotationMatrix(m)
 
     // 6. 通知外部相机发生变化（触发渲染）
     this.notifyChange()
