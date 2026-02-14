@@ -38,6 +38,8 @@ class QwenProvider(LLMBase):
         "qwen-plus": {"vision": False, "function_calling": True},
         "qwen-max": {"vision": False, "function_calling": True},
         "qwen-turbo": {"vision": False, "function_calling": True},
+        # OpenRouter 模型
+        "stepfun/step-3.5-flash:free": {"vision": False, "function_calling": True},
     }
     
     def __init__(

@@ -173,14 +173,28 @@ async def recognize_intent(
     
     # 解析 JSON 响应
     content = response.content.strip()
+    logger.info(f"Raw LLM response: {content[:500]}")
     
     # 处理可能的 markdown 代码块
     if content.startswith("```"):
         lines = content.split("\n")
         content = "\n".join(lines[1:-1])
     
+    # 处理可能的思考标签（某些模型会输出 <think>...</think>）
+    import re
+    content = re.sub(r'<think>.*?</think>', '', content, flags=re.DOTALL).strip()
+    
+    # 尝试从文本中提取 JSON（模型可能在 JSON 前后添加额外文本）
+    if not content.startswith("{"):
+        json_match = re.search(r'\{[\s\S]*\}', content)
+        if json_match:
+            content = json_match.group()
+    
+    logger.info(f"Cleaned content for JSON parse: {content[:500]}")
+    
     try:
         result = json.loads(content)
+        logger.info(f"Parsed intent result: intent={result.get('intent')}, action_type={result.get('action', {}).get('type') if isinstance(result.get('action'), dict) else 'N/A'}")
         return result
     except json.JSONDecodeError as e:
         logger.error(f"Failed to parse LLM response: {content}")
@@ -214,31 +228,48 @@ async def process_natural_language(
         
         # 构建 Action 列表
         actions = []
-        if result.get("action"):
-            action_data = result["action"]
+        action_data = result.get("action")
+        
+        # 兼容：某些模型可能返回 "actions" (复数) 而非 "action"
+        if not action_data and result.get("actions"):
+            actions_list = result["actions"]
+            if isinstance(actions_list, list) and len(actions_list) > 0:
+                action_data = actions_list[0]
+        
+        if action_data and isinstance(action_data, dict):
             target = None
-            if action_data.get("target"):
+            target_data = action_data.get("target")
+            if target_data and isinstance(target_data, dict):
                 target = ActionTarget(
-                    type=action_data["target"].get("type", ""),
-                    id=action_data["target"].get("id", "")
+                    type=target_data.get("type", ""),
+                    id=target_data.get("id", "")
                 )
             actions.append(Action(
-                action=action_data.get("type", result["intent"]),
+                action=action_data.get("type", result.get("intent", "")),
                 target=target,
                 params=action_data.get("params")
             ))
+        
+        logger.info(f"[{request.requestId}] Built actions: {[a.action for a in actions]}, intent: {result.get('intent')}")
+        
+        # 安全提取 response 字段
+        response_data = result.get("response", {})
+        if not isinstance(response_data, dict):
+            response_data = {"text": str(response_data)}
+        response_text = response_data.get("text", "")
+        response_suggestions = response_data.get("suggestions", [])
         
         return AIResponse(
             requestId=request.requestId,
             timestamp=datetime.utcnow().isoformat() + "Z",
             status="SUCCESS",
             result=AIResult(
-                intent=result["intent"],
+                intent=result.get("intent", "UNKNOWN"),
                 confidence=result.get("confidence", 0.9),
                 actions=actions,
                 response=ResponseContent(
-                    text=result["response"]["text"],
-                    suggestions=result["response"].get("suggestions", [])
+                    text=response_text,
+                    suggestions=response_suggestions
                 )
             ),
             metadata=Metadata(
