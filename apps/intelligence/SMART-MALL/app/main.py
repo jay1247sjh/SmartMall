@@ -28,6 +28,7 @@ from app.api.embedding import router as embedding_router
 from app.api.chat import router as chat_router
 from app.api.rag import router as rag_router
 from app.api.mall_generator import router as mall_generator_router
+from app.api.floors import router as floors_router
 from app.core.config import settings
 
 # 配置日志
@@ -98,6 +99,7 @@ app.include_router(embedding_router, prefix="/api", tags=["Embedding"])
 app.include_router(chat_router, prefix="/api", tags=["Chat"])
 app.include_router(rag_router, prefix="/api", tags=["RAG"])
 app.include_router(mall_generator_router, prefix="/api", tags=["Mall Generator"])
+app.include_router(floors_router, prefix="/api", tags=["Floors"])
 
 
 @app.get("/")

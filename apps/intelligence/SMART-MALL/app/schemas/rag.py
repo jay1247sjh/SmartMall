@@ -153,3 +153,48 @@ class NavigateResponse(BaseModel):
     success: bool
     store: Optional[StoreSearchItem] = None
     message: str
+
+
+# ============ 楼层管理 ============
+
+class HeightRange(BaseModel):
+    """楼层高度区间"""
+    min_y: float = Field(..., description="Y轴最小值")
+    max_y: float = Field(..., description="Y轴最大值")
+
+
+class FloorCreateRequest(BaseModel):
+    """创建楼层请求"""
+    floor_name: str = Field(..., min_length=1, max_length=50)
+    height_range: HeightRange
+    layout_description: str = Field("", max_length=2000)
+    store_ids: Optional[List[str]] = None
+
+
+class FloorUpdateRequest(BaseModel):
+    """更新楼层请求"""
+    floor_name: Optional[str] = Field(None, min_length=1, max_length=50)
+    height_range: Optional[HeightRange] = None
+    layout_description: Optional[str] = Field(None, max_length=2000)
+    store_ids: Optional[List[str]] = None
+
+
+class FloorItem(BaseModel):
+    """楼层数据项"""
+    floor_id: str
+    floor_name: str
+    height_range: HeightRange
+    layout_description: str
+    store_ids: List[str] = []
+
+
+class FloorSearchRequest(BaseModel):
+    """楼层语义搜索请求"""
+    query: str = Field(..., min_length=1, max_length=500)
+    top_k: Optional[int] = Field(5, ge=1, le=20)
+    score_threshold: Optional[float] = Field(0.5, ge=0, le=1)
+
+
+class FloorSearchItem(FloorItem):
+    """楼层搜索结果项"""
+    score: float
