@@ -1,73 +1,118 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 /**
  * 布局版本管理页面
- * 管理商城布局的版本发布和回滚
+ * 管理商城布局的版本激活、恢复、删除和描述编辑
+ * 版本列表按大版本号分组展示
  */
 import { ref, computed, onMounted } from 'vue'
-import { DataTable, Modal, MessageAlert, StatusBadge, ActionButton } from '@/components'
-import { useMessage, useFormatters, useStatusConfig } from '@/composables'
-import { mallManageApi } from '@/api'
-import type { LayoutVersion } from '@/api/mall-manage.api'
+import { useRouter } from 'vue-router'
+import { useI18n } from 'vue-i18n'
+import { DataTable, Modal, ConfirmModal, MessageAlert, StatusBadge, ActionButton } from '@/components'
+import { useMessage, useFormatters } from '@/composables'
+import {
+  getVersions,
+  activateVersion,
+  restoreVersion,
+  deleteVersion,
+  updateVersionDescription,
+} from '@/api/mall-manage.api'
+import type { LayoutVersionItem } from '@/api/mall-manage.api'
 
 // ============================================================================
-// Types & Constants
+// Types
 // ============================================================================
 
-interface OverviewCard {
-  key: string
-  icon: string
+interface VersionGroup {
+  majorVersion: string
   label: string
-  getValue: () => string | number
+  versions: LayoutVersionItem[]
+  collapsed: boolean
 }
+
+type ConfirmAction = 'activate' | 'restore' | 'delete'
 
 // ============================================================================
 // Composables
 // ============================================================================
 
+const router = useRouter()
+const { t } = useI18n()
 const { message, success, error } = useMessage()
 const { formatDateTime } = useFormatters()
-const { getStatusText, getStatusClass } = useStatusConfig('version')
 
 // ============================================================================
 // State
 // ============================================================================
 
 const isLoading = ref(true)
-const versions = ref<LayoutVersion[]>([])
-const showDetailModal = ref(false)
-const selectedVersion = ref<LayoutVersion | null>(null)
+const versions = ref<LayoutVersionItem[]>([])
 const isProcessing = ref(false)
+
+// Detail modal
+const showDetailModal = ref(false)
+const selectedVersion = ref<LayoutVersionItem | null>(null)
+const editingDescription = ref('')
+const isSavingDescription = ref(false)
+
+// Confirm modal
+const showConfirmModal = ref(false)
+const confirmAction = ref<ConfirmAction>('activate')
+const confirmTarget = ref<LayoutVersionItem | null>(null)
+
+// Restore success navigation
+const showRestoreSuccess = ref(false)
 
 // ============================================================================
 // Computed
 // ============================================================================
 
 const activeVersion = computed(() => versions.value.find(v => v.status === 'ACTIVE'))
-const draftVersion = computed(() => versions.value.find(v => v.status === 'DRAFT'))
+const archivedCount = computed(() => versions.value.filter(v => v.status === 'ARCHIVED').length)
 
-const overviewCards = computed<OverviewCard[]>(() => [
-  { key: 'active', icon: '🟢', label: '当前版本', getValue: () => activeVersion.value?.version || '-' },
-  { key: 'draft', icon: '📝', label: '草稿版本', getValue: () => draftVersion.value?.version || '-' },
-  { key: 'total', icon: '📦', label: '版本总数', getValue: () => versions.value.length },
+const columns = computed(() => [
+  { key: 'versionNumber', title: t('admin.versionNumber'), minWidth: '100' },
+  { key: 'status', title: t('admin.status'), minWidth: '100' },
+  { key: 'description', title: t('admin.description'), minWidth: '160' },
+  { key: 'changeCount', title: t('admin.changeCount'), minWidth: '80' },
+  { key: 'creatorId', title: t('admin.creator'), minWidth: '100' },
+  { key: 'createdAt', title: t('admin.createdAt'), minWidth: '150' },
+  { key: 'actions', title: t('admin.actions'), minWidth: '260' },
 ])
 
-const columns = [
-  { key: 'version', title: '版本号', minWidth: '100' },
-  { key: 'status', title: '状态', minWidth: '80' },
-  { key: 'description', title: '描述', minWidth: '150' },
-  { key: 'changeCount', title: '变更数', minWidth: '80' },
-  { key: 'createdBy', title: '创建者', minWidth: '100' },
-  { key: 'createdAt', title: '创建时间', minWidth: '140' },
-  { key: 'actions', title: '操作', minWidth: '120' },
-]
+const groupedVersions = computed<VersionGroup[]>(() => {
+  const groups = new Map<string, LayoutVersionItem[]>()
+  for (const v of versions.value) {
+    const major = v.versionNumber.match(/^v(\d+)\./)?.[1] || '0'
+    if (!groups.has(major)) groups.set(major, [])
+    groups.get(major)!.push(v)
+  }
+  return Array.from(groups.entries())
+    .sort((a, b) => Number(b[0]) - Number(a[0]))
+    .map(([major, items]) => ({
+      majorVersion: major,
+      label: `v${major}.x`,
+      versions: items,
+      collapsed: false,
+    }))
+})
 
-const detailFields = computed(() => [
-  { key: 'version', label: '版本号', isTitle: true },
-  { key: 'description', label: '描述' },
-  { key: 'changeCount', label: '变更数量', format: (v: number) => `${v} 项变更` },
-  { key: 'createdBy', label: '创建者' },
-  { key: 'createdAt', label: '创建时间', format: formatDateTime },
-])
+const confirmMessages = computed<Record<ConfirmAction, (v: LayoutVersionItem) => string>>(() => ({
+  activate: (v) => t('admin.confirmActivate', { version: v.versionNumber }),
+  restore: (v) => t('admin.confirmRestore', { version: v.versionNumber }),
+  delete: (v) => t('admin.confirmDelete', { version: v.versionNumber }),
+}))
+
+const confirmTitles = computed<Record<ConfirmAction, string>>(() => ({
+  activate: t('admin.activateVersion'),
+  restore: t('admin.restoreVersion'),
+  delete: t('admin.deleteVersion'),
+}))
+
+const confirmVariants: Record<ConfirmAction, 'primary' | 'danger' | 'warning'> = {
+  activate: 'primary',
+  restore: 'warning',
+  delete: 'danger',
+}
 
 // ============================================================================
 // Methods
@@ -76,52 +121,130 @@ const detailFields = computed(() => [
 async function loadData() {
   isLoading.value = true
   try {
-    versions.value = await mallManageApi.getVersions()
-  } catch (e) {
-    console.error('加载数据失败:', e)
+    versions.value = await getVersions()
+  } catch (e: any) {
+    error(e.message || t('admin.loadVersionsFailed'))
   } finally {
     isLoading.value = false
   }
 }
 
-function viewDetail(version: LayoutVersion) {
-  selectedVersion.value = version
-  showDetailModal.value = true
+// --- Preview ---
+function handlePreview(version: LayoutVersionItem) {
+  router.push({ path: '/admin/mall-builder/preview', query: { versionId: version.versionId, versionNumber: version.versionNumber } })
 }
 
-async function updateVersionStatus(version: LayoutVersion, action: 'publish' | 'rollback') {
-  const actionText = action === 'publish' ? '发布' : '回滚到'
-  const confirmMsg = action === 'publish' 
-    ? `确定发布版本 "${version.version}" 吗？发布后将成为当前生效版本。`
-    : `确定回滚到版本 "${version.version}" 吗？当前版本将被归档。`
-  
-  if (!confirm(confirmMsg)) return
-  
+// --- Confirm actions ---
+function requestConfirm(action: ConfirmAction, version: LayoutVersionItem) {
+  confirmAction.value = action
+  confirmTarget.value = version
+  showConfirmModal.value = true
+}
+
+async function handleConfirm() {
+  const version = confirmTarget.value
+  if (!version) return
+
+  showConfirmModal.value = false
   isProcessing.value = true
+
   try {
-    action === 'publish' 
-      ? await mallManageApi.publishVersion(version.id)
-      : await mallManageApi.rollbackVersion(version.id)
-    
-    versions.value.forEach(v => { if (v.status === 'ACTIVE') v.status = 'ARCHIVED' })
-    const target = versions.value.find(v => v.id === version.id)
-    if (target) target.status = 'ACTIVE'
-    
-    success(`${actionText}版本 ${version.version} 成功`)
-  } catch (e: any) {
-    error(e.message || `${actionText}失败`)
+    switch (confirmAction.value) {
+      case 'activate':
+        await handleActivate(version)
+        break
+      case 'restore':
+        await handleRestore(version)
+        break
+      case 'delete':
+        await handleDelete(version)
+        break
+    }
   } finally {
     isProcessing.value = false
   }
 }
 
-const publishVersion = (v: LayoutVersion) => updateVersionStatus(v, 'publish')
-const rollbackVersion = (v: LayoutVersion) => updateVersionStatus(v, 'rollback')
+async function handleActivate(version: LayoutVersionItem) {
+  try {
+    const updated = await activateVersion(version.versionId)
+    // Update local state: old ACTIVE → ARCHIVED, target → ACTIVE
+    versions.value = versions.value.map(v => {
+      if (v.versionId === updated.versionId) return updated
+      if (v.status === 'ACTIVE') return { ...v, status: 'ARCHIVED' as const }
+      return v
+    })
+    success(t('admin.versionActivated', { version: version.versionNumber }))
+  } catch (e: any) {
+    error(e.message || t('admin.activateFailed'))
+  }
+}
 
-function getFieldValue(field: any): string {
-  if (!selectedVersion.value) return ''
-  const value = selectedVersion.value[field.key as keyof LayoutVersion]
-  return field.format ? field.format(value) : String(value ?? '')
+async function handleRestore(version: LayoutVersionItem) {
+  try {
+    await restoreVersion(version.versionId)
+    success(t('admin.versionRestored', { version: version.versionNumber }))
+    showRestoreSuccess.value = true
+  } catch (e: any) {
+    error(e.message || t('admin.restoreFailed'))
+  }
+}
+
+async function handleDelete(version: LayoutVersionItem) {
+  try {
+    await deleteVersion(version.versionId)
+    versions.value = versions.value.filter(v => v.versionId !== version.versionId)
+    success(t('admin.versionDeleted', { version: version.versionNumber }))
+  } catch (e: any) {
+    error(e.message || t('admin.deleteFailed'))
+  }
+}
+
+function goToBuilder() {
+  showRestoreSuccess.value = false
+  router.push('/admin/mall-builder')
+}
+
+// --- Detail modal ---
+function openDetail(version: LayoutVersionItem) {
+  selectedVersion.value = version
+  editingDescription.value = version.description || ''
+  showDetailModal.value = true
+}
+
+async function saveDescription() {
+  if (!selectedVersion.value) return
+  isSavingDescription.value = true
+  const originalDesc = selectedVersion.value.description
+  try {
+    const updated = await updateVersionDescription(selectedVersion.value.versionId, editingDescription.value)
+    // Update in list
+    const idx = versions.value.findIndex(v => v.versionId === updated.versionId)
+    if (idx !== -1) versions.value[idx] = updated
+    selectedVersion.value = updated
+    success(t('admin.descriptionUpdated'))
+  } catch (e: any) {
+    editingDescription.value = originalDesc
+    error(e.message || t('admin.descriptionUpdateFailed'))
+  } finally {
+    isSavingDescription.value = false
+  }
+}
+
+function canActivate(v: LayoutVersionItem) {
+  return v.status === 'PUBLISHED' || v.status === 'ARCHIVED'
+}
+
+function canRestore(v: LayoutVersionItem) {
+  return v.status === 'PUBLISHED' || v.status === 'ARCHIVED'
+}
+
+function canDelete(v: LayoutVersionItem) {
+  return v.status !== 'ACTIVE'
+}
+
+function toggleGroup(group: VersionGroup) {
+  group.collapsed = !group.collapsed
 }
 
 // ============================================================================
@@ -135,83 +258,174 @@ onMounted(loadData)
   <main class="version-page">
     <MessageAlert v-if="message" :type="message.type" :text="message.text" />
 
+    <!-- Restore success banner -->
+    <aside v-if="showRestoreSuccess" class="restore-banner" role="status">
+      <span class="restore-text">{{ t('admin.draftCreated') }}</span>
+      <button class="btn btn-nav" @click="goToBuilder">{{ t('admin.goToBuilderEdit') }}</button>
+      <button class="btn-dismiss" :aria-label="t('common.close')" @click="showRestoreSuccess = false">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
+          <path d="M18 6L6 18M6 6l12 12" />
+        </svg>
+      </button>
+    </aside>
+
     <!-- 版本概览 -->
-    <section class="overview-cards" aria-label="版本概览">
-      <article v-for="card in overviewCards" :key="card.key" class="overview-card">
-        <span class="card-icon" aria-hidden="true">{{ card.icon }}</span>
+    <section class="overview-cards" :aria-label="t('admin.versionOverview')">
+      <article class="overview-card">
+        <div class="card-indicator indicator-active"></div>
         <div class="card-content">
-          <span class="card-label">{{ card.label }}</span>
-          <strong class="card-value">{{ card.getValue() }}</strong>
+          <span class="card-label">{{ t('admin.currentVersion') }}</span>
+          <strong class="card-value">{{ activeVersion?.versionNumber || '-' }}</strong>
+        </div>
+      </article>
+      <article class="overview-card">
+        <div class="card-indicator indicator-total"></div>
+        <div class="card-content">
+          <span class="card-label">{{ t('admin.totalVersions') }}</span>
+          <strong class="card-value">{{ versions.length }}</strong>
+        </div>
+      </article>
+      <article class="overview-card">
+        <div class="card-indicator indicator-archived"></div>
+        <div class="card-content">
+          <span class="card-label">{{ t('admin.archived') }}</span>
+          <strong class="card-value">{{ archivedCount }}</strong>
         </div>
       </article>
     </section>
 
-    <!-- 版本列表 -->
-    <section class="version-table" aria-label="版本列表">
-      <DataTable
-        :columns="columns"
-        :data="versions"
-        :loading="isLoading"
-        empty-text="暂无版本记录"
-        @row-click="viewDetail"
-      >
-        <template #version="{ value, row }">
-          <div class="version-cell">
-            <span class="version-text">{{ value }}</span>
-            <mark v-if="row.status === 'ACTIVE'" class="current-tag">当前</mark>
-          </div>
-        </template>
-        <template #status="{ value }">
-          <StatusBadge :status="value" domain="version" />
-        </template>
-        <template #createdAt="{ value }">
-          <time :datetime="value">{{ formatDateTime(value) }}</time>
-        </template>
-        <template #actions="{ row }">
-          <nav class="action-btns" @click.stop>
-            <ActionButton v-if="row.status === 'DRAFT'" variant="publish" :disabled="isProcessing" @click="publishVersion(row)">
-              发布
-            </ActionButton>
-            <ActionButton v-if="row.status === 'ARCHIVED'" variant="rollback" :disabled="isProcessing" @click="rollbackVersion(row)">
-              回滚
-            </ActionButton>
-            <ActionButton variant="view" @click="viewDetail(row)">详情</ActionButton>
-          </nav>
-        </template>
-      </DataTable>
+    <!-- 版本列表（按大版本号分组） -->
+    <section class="version-groups" :aria-label="t('admin.versionList')">
+      <div v-if="isLoading" class="loading-state">{{ t('common.loading') }}</div>
+      <div v-else-if="groupedVersions.length === 0" class="empty-state">{{ t('admin.noVersionRecords') }}</div>
+
+      <div v-for="group in groupedVersions" :key="group.majorVersion" class="version-group">
+        <button class="group-header" @click="toggleGroup(group)">
+          <svg
+            class="chevron-icon"
+            :class="{ collapsed: group.collapsed }"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            width="16"
+            height="16"
+          >
+            <path d="M6 9l6 6 6-6" />
+          </svg>
+          <span class="group-label">{{ group.label }}</span>
+          <span class="group-count">{{ t('admin.versionCount', { count: group.versions.length }) }}</span>
+        </button>
+
+        <div v-show="!group.collapsed" class="group-content">
+          <DataTable
+            :columns="columns"
+            :data="group.versions"
+            :loading="false"
+            :empty-text="t('admin.noVersions')"
+          >
+            <template #versionNumber="{ value, row }">
+              <div class="version-cell">
+                <span class="version-text">{{ value }}</span>
+                <mark v-if="row.status === 'ACTIVE'" class="current-tag">{{ t('admin.current') }}</mark>
+              </div>
+            </template>
+            <template #status="{ value }">
+              <StatusBadge :status="value" domain="version" />
+            </template>
+            <template #description="{ value }">
+              <span class="desc-text">{{ value || '-' }}</span>
+            </template>
+            <template #createdAt="{ value }">
+              <time :datetime="value">{{ formatDateTime(value) }}</time>
+            </template>
+            <template #actions="{ row }">
+              <nav class="action-btns" @click.stop>
+                <ActionButton variant="view" @click="handlePreview(row)">{{ t('admin.preview') }}</ActionButton>
+                <ActionButton
+                  v-if="canActivate(row)"
+                  variant="publish"
+                  :disabled="isProcessing"
+                  @click="requestConfirm('activate', row)"
+                >{{ t('admin.activate') }}</ActionButton>
+                <ActionButton
+                  v-if="canRestore(row)"
+                  variant="rollback"
+                  :disabled="isProcessing"
+                  @click="requestConfirm('restore', row)"
+                >{{ t('admin.restore') }}</ActionButton>
+                <ActionButton
+                  variant="delete"
+                  :disabled="!canDelete(row) || isProcessing"
+                  @click="requestConfirm('delete', row)"
+                >{{ t('admin.delete') }}</ActionButton>
+                <ActionButton variant="view" @click="openDetail(row)">{{ t('admin.detail') }}</ActionButton>
+              </nav>
+            </template>
+          </DataTable>
+        </div>
+      </div>
     </section>
 
-    <!-- 详情弹窗 -->
-    <Modal v-model:visible="showDetailModal" title="版本详情" width="500px">
+    <!-- 详情弹窗（可编辑描述） -->
+    <Modal v-model:visible="showDetailModal" :title="t('admin.versionDetail')" width="520px">
       <dl v-if="selectedVersion" class="detail-content">
         <div class="detail-item">
-          <dt>状态</dt>
+          <dt>{{ t('admin.versionNumber') }}</dt>
+          <dd class="version-value">{{ selectedVersion.versionNumber }}</dd>
+        </div>
+        <div class="detail-item">
+          <dt>{{ t('admin.status') }}</dt>
           <dd><StatusBadge :status="selectedVersion.status" domain="version" /></dd>
         </div>
-        <div v-for="field in detailFields" :key="field.key" class="detail-item">
-          <dt>{{ field.label }}</dt>
-          <dd :class="{ 'version-value': field.isTitle }">{{ getFieldValue(field) }}</dd>
+        <div class="detail-item">
+          <dt>{{ t('admin.description') }}</dt>
+          <dd>
+            <textarea
+              v-model="editingDescription"
+              class="desc-textarea"
+              rows="3"
+              :placeholder="t('admin.descriptionPlaceholder')"
+            />
+          </dd>
+        </div>
+        <div class="detail-item">
+          <dt>{{ t('admin.changeCount') }}</dt>
+          <dd>{{ t('admin.changes', { count: selectedVersion.changeCount }) }}</dd>
+        </div>
+        <div class="detail-item">
+          <dt>{{ t('admin.creator') }}</dt>
+          <dd>{{ selectedVersion.creatorId }}</dd>
+        </div>
+        <div class="detail-item">
+          <dt>{{ t('admin.createdAt') }}</dt>
+          <dd>{{ formatDateTime(selectedVersion.createdAt) }}</dd>
         </div>
       </dl>
 
       <template #footer>
-        <footer class="modal-actions">
-          <button
-            v-if="selectedVersion?.status === 'DRAFT'"
-            class="btn btn-publish"
-            :disabled="isProcessing"
-            @click="selectedVersion && publishVersion(selectedVersion)"
-          >发布此版本</button>
-          <button
-            v-if="selectedVersion?.status === 'ARCHIVED'"
-            class="btn btn-rollback"
-            :disabled="isProcessing"
-            @click="selectedVersion && rollbackVersion(selectedVersion)"
-          >回滚到此版本</button>
-          <button class="btn btn-secondary" @click="showDetailModal = false">关闭</button>
-        </footer>
+        <button
+          class="btn btn-primary"
+          :disabled="isSavingDescription"
+          @click="saveDescription"
+        >{{ isSavingDescription ? t('admin.saving') : t('admin.saveDescription') }}</button>
+        <button class="btn btn-secondary" @click="showDetailModal = false">{{ t('common.close') }}</button>
       </template>
     </Modal>
+
+    <!-- 二次确认弹窗 -->
+    <ConfirmModal
+      v-model:visible="showConfirmModal"
+      :title="confirmTitles[confirmAction]"
+      :confirm-text="confirmTitles[confirmAction]"
+      :confirm-variant="confirmVariants[confirmAction]"
+      :processing="isProcessing"
+      @confirm="handleConfirm"
+    >
+      <p v-if="confirmTarget" class="confirm-message">
+        {{ confirmMessages[confirmAction](confirmTarget) }}
+      </p>
+    </ConfirmModal>
   </main>
 </template>
 
@@ -219,12 +433,68 @@ onMounted(loadData)
 @use '@/assets/styles/scss/variables' as *;
 @use '@/assets/styles/scss/mixins' as *;
 
+// ============================================================================
+// Page Layout
+// ============================================================================
+
 .version-page {
   @include flex-column;
   gap: $space-5;
 }
 
-// Overview Cards - 使用 stats-row mixin
+// ============================================================================
+// Restore Success Banner
+// ============================================================================
+
+.restore-banner {
+  @include flex-center-y;
+  gap: $space-3;
+  padding: $space-3 $space-4;
+  background: rgba(var(--success-rgb), 0.15);
+  border: 1px solid rgba(var(--success-rgb), 0.2);
+  border-radius: $radius-md;
+  color: var(--success);
+
+  .restore-text {
+    flex: 1;
+    font-size: $font-size-base;
+  }
+
+  .btn-nav {
+    padding: $space-1 + 2 $space-3;
+    font-size: $font-size-sm;
+    background: rgba(var(--success-rgb), 0.2);
+    color: var(--success);
+    border: none;
+    border-radius: $radius-sm;
+    cursor: pointer;
+    transition: background $duration-normal;
+
+    &:hover {
+      background: rgba(var(--success-rgb), 0.3);
+    }
+  }
+
+  .btn-dismiss {
+    background: none;
+    border: none;
+    color: var(--success);
+    cursor: pointer;
+    padding: $space-1;
+    line-height: 1;
+    opacity: 0.7;
+    transition: opacity $duration-normal;
+
+    &:hover {
+      opacity: 1;
+    }
+  }
+}
+
+// ============================================================================
+// Overview Cards
+// ============================================================================
+
 .overview-cards {
   @include stats-row;
 }
@@ -235,8 +505,22 @@ onMounted(loadData)
   align-items: center;
   gap: $space-4;
 
-  .card-icon {
-    font-size: 28px;
+  .card-indicator {
+    width: 4px;
+    height: 36px;
+    border-radius: 2px;
+
+    &.indicator-active {
+      background: var(--success);
+    }
+
+    &.indicator-total {
+      background: var(--accent-primary);
+    }
+
+    &.indicator-archived {
+      background: var(--text-muted);
+    }
   }
 
   .card-content {
@@ -249,14 +533,84 @@ onMounted(loadData)
 
     .card-value {
       @include stat-value;
+      font-size: 22px;
     }
   }
 }
 
-// Version Table - 使用 table-container mixin
-.version-table {
-  @include table-container;
+// ============================================================================
+// Version Groups
+// ============================================================================
+
+.version-groups {
+  @include flex-column;
+  gap: $space-4;
 }
+
+.loading-state,
+.empty-state {
+  @include flex-center;
+  padding: $space-10;
+  color: var(--text-muted);
+  font-size: $font-size-base;
+}
+
+.version-group {
+  @include card-base;
+  overflow: hidden;
+}
+
+.group-header {
+  @include flex-center-y;
+  gap: $space-3;
+  width: 100%;
+  padding: $space-4 $space-5;
+  background: transparent;
+  border: none;
+  border-bottom: 1px solid var(--border-subtle);
+  cursor: pointer;
+  transition: background $duration-normal;
+
+  &:hover {
+    background: rgba(var(--text-primary-rgb), 0.04);
+  }
+
+  .chevron-icon {
+    color: var(--text-secondary);
+    transition: transform $duration-normal;
+    flex-shrink: 0;
+
+    &.collapsed {
+      transform: rotate(-90deg);
+    }
+  }
+
+  .group-label {
+    font-size: $font-size-lg;
+    font-weight: $font-weight-semibold;
+    color: var(--text-primary);
+  }
+
+  .group-count {
+    font-size: $font-size-sm;
+    color: var(--text-muted);
+    margin-left: auto;
+  }
+}
+
+.group-content {
+  // DataTable inside group — remove extra border/radius
+  :deep(.data-table-wrapper) {
+    .data-table {
+      border: none;
+      border-radius: 0;
+    }
+  }
+}
+
+// ============================================================================
+// Version Table Cells
+// ============================================================================
 
 .version-cell {
   @include flex-center-y;
@@ -264,20 +618,30 @@ onMounted(loadData)
 
   .version-text {
     font-weight: $font-weight-medium;
-    color: $color-text-primary;
+    color: var(--text-primary);
   }
 
   .current-tag {
     @include status-badge;
-    @include status-variant($color-success-muted, $color-success);
+    @include status-variant(rgba(var(--success-rgb), 0.15), var(--success));
+    font-size: $font-size-xs;
   }
+}
+
+.desc-text {
+  @include line-clamp(1);
+  color: var(--text-secondary);
 }
 
 .action-btns {
   @include action-btns;
+  flex-wrap: wrap;
 }
 
+// ============================================================================
 // Detail Modal
+// ============================================================================
+
 .detail-content {
   @include flex-column;
   gap: $space-5;
@@ -288,12 +652,12 @@ onMounted(loadData)
 
     dt {
       font-size: $font-size-sm;
-      color: $color-text-secondary;
+      color: var(--text-secondary);
     }
 
     dd {
-      font-size: $font-size-lg;
-      color: $color-text-primary;
+      font-size: $font-size-base;
+      color: var(--text-primary);
       margin: 0;
       line-height: 1.6;
 
@@ -305,32 +669,36 @@ onMounted(loadData)
   }
 }
 
-.modal-actions {
-  @include dialog-footer;
-  padding: 0;
-  border-top: none;
+.desc-textarea {
+  @include form-textarea;
+  min-height: 72px;
 }
 
-// Buttons - 使用 btn mixins
+// ============================================================================
+// Confirm Modal
+// ============================================================================
+
+.confirm-message {
+  margin: 0;
+  font-size: $font-size-base;
+  color: var(--text-primary);
+  line-height: 1.6;
+}
+
+// ============================================================================
+// Buttons
+// ============================================================================
+
 .btn {
   @include btn-base;
   padding: $space-2 + 2 $space-5;
 
+  &-primary {
+    @include btn-primary;
+  }
+
   &-secondary {
     @include btn-secondary;
-  }
-
-  &-publish {
-    @include btn-success;
-  }
-
-  &-rollback {
-    background: $color-warning;
-    color: $color-bg-primary;
-
-    &:hover:not(:disabled) {
-      background: $color-warning-hover;
-    }
   }
 }
 </style>

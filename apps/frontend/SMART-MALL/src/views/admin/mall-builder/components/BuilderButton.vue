@@ -1,4 +1,4 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 /**
  * BuilderButton - Mall Builder 专用按钮组件
  * 统一的按钮样式
@@ -64,33 +64,33 @@ function handleClick(e: MouseEvent) {
 }
 
 .btn-primary {
-  background: linear-gradient(135deg, $color-primary, $color-accent-blue-dark);
-  color: $color-text-primary;
+  background: linear-gradient(135deg, var(--accent-primary), var(--accent-muted));
+  color: var(--text-primary);
 
   &:hover:not(:disabled) {
-    background: linear-gradient(135deg, $color-accent-blue-dark, $color-accent-blue-darker);
+    background: linear-gradient(135deg, var(--accent-muted), #4285f4);
     transform: translateY(-1px);
   }
 }
 
 .btn-secondary {
-  background: $color-bg-tertiary;
-  color: $color-text-secondary;
-  border: 1px solid $color-border-muted;
+  background: var(--bg-tertiary);
+  color: var(--text-secondary);
+  border: 1px solid var(--border-muted);
 
   &:hover:not(:disabled) {
-    background: $color-border-muted;
-    color: $color-text-primary;
+    background: var(--border-muted);
+    color: var(--text-primary);
   }
 }
 
 .btn-danger {
-  background: $color-error-muted;
-  color: $color-error;
-  border: 1px solid rgba($color-error, 0.2);
+  background: rgba(var(--error-rgb), 0.15);
+  color: var(--error);
+  border: 1px solid rgba(var(--error-rgb), 0.2);
 
   &:hover:not(:disabled) {
-    background: rgba($color-error, 0.2);
+    background: rgba(var(--error-rgb), 0.2);
   }
 }
 
@@ -99,12 +99,12 @@ function handleClick(e: MouseEvent) {
   height: 32px;
   padding: 0;
   background: transparent;
-  color: $color-text-disabled;
+  color: var(--text-disabled);
   border-radius: 6px;
 
   &:hover:not(:disabled) {
-    background: $color-bg-tertiary;
-    color: $color-text-primary;
+    background: var(--bg-tertiary);
+    color: var(--text-primary);
   }
 }
 
@@ -113,17 +113,17 @@ function handleClick(e: MouseEvent) {
   height: 24px;
   padding: 0;
   background: transparent;
-  color: $color-text-disabled;
+  color: var(--text-disabled);
   border-radius: $radius-sm;
 
   &:hover:not(:disabled) {
-    background: $color-bg-tertiary;
-    color: $color-text-primary;
+    background: var(--bg-tertiary);
+    color: var(--text-primary);
   }
 
   &.danger:hover:not(:disabled) {
-    background: $color-error-muted;
-    color: $color-error;
+    background: rgba(var(--error-rgb), 0.15);
+    color: var(--error);
   }
 
   svg {

@@ -1,219 +1,85 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 /**
- * 商城管理视图
+ * 商城管理视图（只读展示）
  *
- * 这是管理员管理商城结构的核心页面，用于配置楼层和区域。
- *
- * 业务职责：
- * - 楼层管理：添加、编辑、删除楼层
- * - 区域管理：在楼层下添加、编辑、删除区域
- * - 区域状态管理：查看区域的授权状态（锁定、待审批、已授权、已入驻）
- * - 区域类型配置：设置区域类型（餐饮、零售、服装等）
- *
- * 设计原则：
- * - 左右分栏布局：左侧楼层列表，右侧区域详情
- * - 使用 Element Plus 组件构建一致的 UI
- * - 使用 HTML5 语义化标签
- * - 操作确认：删除前弹出确认对话框
- *
- * 数据流：
- * - 页面加载时获取所有楼层数据
- * - 选择楼层后显示该楼层的区域列表
- * - 增删改操作通过 API 同步到后端
- *
- * 区域状态说明：
- * - LOCKED：锁定状态，不可申请
- * - PENDING：有商家申请中，待审批
- * - AUTHORIZED：已授权给商家，待入驻
- * - OCCUPIED：已入驻，有店铺运营
- *
- * 用户角色：
- * - 仅管理员（ADMIN）可访问
+ * 展示建模器已发布的商城结构数据，包括楼层和区域信息。
+ * 所有编辑操作在建模器中完成，本页面仅用于运营查看。
  */
-import { ref, onMounted } from 'vue'
+import { ref, computed, onMounted } from 'vue'
+import { useI18n } from 'vue-i18n'
 import {
   ElRow,
   ElCol,
   ElCard,
-  ElButton,
-  ElIcon,
   ElTable,
   ElTableColumn,
   ElEmpty,
   ElTag,
-  ElDialog,
-  ElForm,
-  ElFormItem,
-  ElInput,
-  ElInputNumber,
-  ElSelect,
-  ElOption,
-  ElMessage,
-  ElMessageBox,
+  ElButton,
   ElSkeleton,
-  ElSpace,
+  ElMessage,
 } from 'element-plus'
-import { Plus, Edit, Delete } from '@element-plus/icons-vue'
+import { useRouter } from 'vue-router'
 import { mallManageApi } from '@/api'
-import type { Floor, Area, CreateFloorRequest, CreateAreaRequest } from '@/api/mall-manage.api'
-import { useStatusConfig } from '@/composables'
+import type { ProjectResponse, FloorResponse, AreaResponse } from '@/api/mall-builder.api'
 
-const { getStatusConfig } = useStatusConfig()
+const router = useRouter()
+const { t } = useI18n()
 
 const isLoading = ref(true)
-const floors = ref<Floor[]>([])
-const selectedFloor = ref<Floor | null>(null)
+const projectData = ref<ProjectResponse | null>(null)
+const selectedFloorId = ref<string | null>(null)
 
-const showFloorModal = ref(false)
-const floorForm = ref<CreateFloorRequest>({ name: '', level: 1, description: '' })
-const editingFloorId = ref<number | null>(null)
+const floors = computed<FloorResponse[]>(() => projectData.value?.floors ?? [])
 
-const showAreaModal = ref(false)
-const areaForm = ref<CreateAreaRequest>({ name: '', type: '餐饮', bounds: { x: 0, y: 0, width: 100, height: 80 } })
-const editingAreaId = ref<number | null>(null)
+const selectedFloor = computed<FloorResponse | null>(() => {
+  if (!selectedFloorId.value) return null
+  return floors.value.find(f => f.floorId === selectedFloorId.value) ?? null
+})
 
-const isProcessing = ref(false)
+const currentAreas = computed<AreaResponse[]>(() => selectedFloor.value?.areas ?? [])
 
-const areaTypes = ['餐饮', '零售', '服装', '娱乐', '服务', '其他']
+function getStatusTagType(status?: string): '' | 'success' | 'warning' | 'info' | 'danger' {
+  switch (status) {
+    case 'OCCUPIED': return 'success'
+    case 'PENDING': return 'warning'
+    case 'LOCKED': return 'info'
+    case 'AUTHORIZED': return ''
+    default: return 'info'
+  }
+}
+
+function getStatusLabel(status?: string): string {
+  switch (status) {
+    case 'AVAILABLE': return t('admin.statusAvailable')
+    case 'LOCKED': return t('admin.statusLocked')
+    case 'PENDING': return t('admin.statusPending')
+    case 'AUTHORIZED': return t('admin.statusAuthorized')
+    case 'OCCUPIED': return t('admin.statusOccupied')
+    default: return status || t('admin.statusUnknown')
+  }
+}
+
+function selectFloor(floor: FloorResponse) {
+  selectedFloorId.value = floor.floorId
+}
+
+function goToBuilder() {
+  router.push('/admin/builder')
+}
 
 async function loadData() {
   isLoading.value = true
   try {
-    floors.value = await mallManageApi.getFloors()
-    if (floors.value.length > 0 && !selectedFloor.value) {
-      selectedFloor.value = floors.value[0]
+    projectData.value = await mallManageApi.getPublishedMallData()
+    if (floors.value.length > 0) {
+      selectedFloorId.value = floors.value[0].floorId
     }
   } catch (e) {
-    console.error('加载数据失败:', e)
+    console.error('Failed to load mall data:', e)
+    ElMessage.error(t('admin.loadMallDataFailed'))
   } finally {
     isLoading.value = false
-  }
-}
-
-function selectFloor(floor: Floor) {
-  selectedFloor.value = floor
-}
-
-function getAreaStatusConfig(status: string) {
-  return getStatusConfig(status, 'area')
-}
-
-function formatBounds(bounds: Area['bounds']): string {
-  return `${bounds.width} × ${bounds.height}`
-}
-
-function openAddFloorModal() {
-  editingFloorId.value = null
-  floorForm.value = { name: '', level: floors.value.length + 1, description: '' }
-  showFloorModal.value = true
-}
-
-function openEditFloorModal(floor: Floor) {
-  editingFloorId.value = floor.id
-  floorForm.value = { name: floor.name, level: floor.level, description: floor.description || '' }
-  showFloorModal.value = true
-}
-
-async function saveFloor() {
-  if (!floorForm.value.name.trim()) return
-  isProcessing.value = true
-
-  try {
-    if (editingFloorId.value) {
-      await mallManageApi.updateFloor(editingFloorId.value, floorForm.value)
-      const index = floors.value.findIndex(f => f.id === editingFloorId.value)
-      if (index !== -1) {
-        floors.value[index] = { ...floors.value[index], ...floorForm.value }
-      }
-      ElMessage.success('楼层更新成功')
-    } else {
-      const newFloor = await mallManageApi.createFloor(floorForm.value)
-      floors.value.push(newFloor)
-      ElMessage.success('楼层创建成功')
-    }
-    showFloorModal.value = false
-  } catch (e: any) {
-    ElMessage.error(e.message || '操作失败')
-  } finally {
-    isProcessing.value = false
-  }
-}
-
-async function deleteFloor(floor: Floor) {
-  try {
-    await ElMessageBox.confirm(`确定删除楼层 "${floor.name}" 吗？`, '确认删除', {
-      type: 'warning',
-    })
-    isProcessing.value = true
-    await mallManageApi.deleteFloor(floor.id)
-    floors.value = floors.value.filter(f => f.id !== floor.id)
-    if (selectedFloor.value?.id === floor.id) {
-      selectedFloor.value = floors.value[0] || null
-    }
-    ElMessage.success('楼层删除成功')
-  } catch (e: any) {
-    if (e !== 'cancel') {
-      ElMessage.error(e.message || '删除失败')
-    }
-  } finally {
-    isProcessing.value = false
-  }
-}
-
-function openAddAreaModal() {
-  if (!selectedFloor.value) return
-  editingAreaId.value = null
-  areaForm.value = { name: '', type: '餐饮', bounds: { x: 0, y: 0, width: 100, height: 80 } }
-  showAreaModal.value = true
-}
-
-function openEditAreaModal(area: Area) {
-  editingAreaId.value = area.id
-  areaForm.value = { name: area.name, type: area.type, bounds: { ...area.bounds } }
-  showAreaModal.value = true
-}
-
-async function saveArea() {
-  if (!areaForm.value.name.trim() || !selectedFloor.value) return
-  isProcessing.value = true
-
-  try {
-    if (editingAreaId.value) {
-      await mallManageApi.updateArea(editingAreaId.value, areaForm.value)
-      const areaIndex = selectedFloor.value.areas.findIndex(a => a.id === editingAreaId.value)
-      if (areaIndex !== -1) {
-        selectedFloor.value.areas[areaIndex] = { ...selectedFloor.value.areas[areaIndex], ...areaForm.value }
-      }
-      ElMessage.success('区域更新成功')
-    } else {
-      const newArea = await mallManageApi.createArea(selectedFloor.value.id, areaForm.value)
-      selectedFloor.value.areas.push(newArea)
-      ElMessage.success('区域创建成功')
-    }
-    showAreaModal.value = false
-  } catch (e: any) {
-    ElMessage.error(e.message || '操作失败')
-  } finally {
-    isProcessing.value = false
-  }
-}
-
-async function deleteArea(area: Area) {
-  if (!selectedFloor.value) return
-  try {
-    await ElMessageBox.confirm(`确定删除区域 "${area.name}" 吗？`, '确认删除', {
-      type: 'warning',
-    })
-    isProcessing.value = true
-    await mallManageApi.deleteArea(area.id)
-    selectedFloor.value.areas = selectedFloor.value.areas.filter(a => a.id !== area.id)
-    ElMessage.success('区域删除成功')
-  } catch (e: any) {
-    if (e !== 'cancel') {
-      ElMessage.error(e.message || '删除失败')
-    }
-  } finally {
-    isProcessing.value = false
   }
 }
 
@@ -224,41 +90,43 @@ onMounted(() => {
 
 <template>
   <article class="mall-manage-page">
-    <ElRow :gutter="20" class="content-grid">
+    <!-- 加载状态 -->
+    <div v-if="isLoading" class="loading-state">
+      <ElSkeleton :rows="8" animated />
+    </div>
+
+    <!-- 空状态：无已发布数据 -->
+    <div v-else-if="!projectData" class="empty-state">
+      <ElEmpty :description="t('admin.noPublishedData')">
+        <ElButton type="primary" @click="goToBuilder">
+          {{ t('admin.goToBuilder') }}
+        </ElButton>
+      </ElEmpty>
+    </div>
+
+    <!-- 数据展示 -->
+    <ElRow v-else :gutter="20" class="content-grid">
       <!-- 左侧：楼层列表 -->
       <ElCol :span="6">
         <ElCard shadow="never" class="floor-panel">
           <template #header>
             <header class="panel-header">
-              <h3>楼层结构</h3>
-              <ElButton type="primary" circle size="small" @click="openAddFloorModal">
-                <ElIcon><Plus /></ElIcon>
-              </ElButton>
+              <h3>{{ t('admin.floorStructure') }}</h3>
+              <span class="floor-count">{{ t('admin.floorCount', { count: floors.length }) }}</span>
             </header>
           </template>
 
-          <ElSkeleton v-if="isLoading" :rows="5" animated />
-
-          <nav v-else class="floor-list">
+          <nav class="floor-list">
             <article
               v-for="floor in floors"
-              :key="floor.id"
-              :class="['floor-item', { active: selectedFloor?.id === floor.id }]"
+              :key="floor.floorId"
+              :class="['floor-item', { active: selectedFloorId === floor.floorId }]"
               @click="selectFloor(floor)"
             >
               <hgroup class="floor-info">
                 <h4 class="floor-name">{{ floor.name }}</h4>
-                <p class="floor-desc">{{ floor.description }}</p>
-                <small class="floor-count">{{ floor.areas.length }} 个区域</small>
+                <small class="floor-area-count">{{ t('admin.areaCount', { count: (floor.areas ?? []).length }) }}</small>
               </hgroup>
-              <ElSpace class="floor-actions" @click.stop>
-                <ElButton text size="small" type="primary" @click="openEditFloorModal(floor)">
-                  <ElIcon><Edit /></ElIcon>
-                </ElButton>
-                <ElButton text size="small" type="danger" @click="deleteFloor(floor)">
-                  <ElIcon><Delete /></ElIcon>
-                </ElButton>
-              </ElSpace>
             </article>
           </nav>
         </ElCard>
@@ -269,142 +137,41 @@ onMounted(() => {
         <ElCard shadow="never" class="area-panel">
           <template #header>
             <header class="panel-header">
-              <h3>{{ selectedFloor ? `${selectedFloor.name} - 区域列表` : '请选择楼层' }}</h3>
-              <ElButton v-if="selectedFloor" type="primary" @click="openAddAreaModal">
-                <ElIcon class="mr-1"><Plus /></ElIcon>
-                添加区域
-              </ElButton>
+              <h3>{{ selectedFloor ? `${selectedFloor.name} - ${t('admin.areaList')}` : t('admin.selectFloor') }}</h3>
             </header>
           </template>
 
           <ElTable
             v-if="selectedFloor"
-            :data="selectedFloor.areas"
-            v-loading="isLoading"
+            :data="currentAreas"
             stripe
             class="area-table"
           >
-            <ElTableColumn prop="name" label="区域编号" width="120" />
-            <ElTableColumn prop="type" label="类型" width="100" />
-            <ElTableColumn prop="status" label="状态" width="100">
+            <ElTableColumn prop="name" :label="t('admin.areaName')" min-width="120" />
+            <ElTableColumn prop="type" :label="t('admin.areaType')" width="100" />
+            <ElTableColumn :label="t('admin.status')" width="100">
               <template #default="{ row }">
-                <ElTag :type="getAreaStatusConfig(row.status).tagType" size="small">
-                  {{ getAreaStatusConfig(row.status).label }}
+                <ElTag :type="getStatusTagType(row.status)" size="small">
+                  {{ getStatusLabel(row.status) }}
                 </ElTag>
               </template>
             </ElTableColumn>
-            <ElTableColumn prop="merchantName" label="授权商家">
+            <ElTableColumn :label="t('admin.merchantId')" min-width="140">
               <template #default="{ row }">
-                <span v-if="row.merchantName">{{ row.merchantName }}</span>
+                <span v-if="row.merchantId">{{ row.merchantId }}</span>
                 <span v-else class="text-muted">-</span>
-              </template>
-            </ElTableColumn>
-            <ElTableColumn prop="bounds" label="尺寸" width="100">
-              <template #default="{ row }">
-                {{ formatBounds(row.bounds) }}
-              </template>
-            </ElTableColumn>
-            <ElTableColumn label="操作" width="120" fixed="right">
-              <template #default="{ row }">
-                <ElSpace>
-                  <ElButton text size="small" type="primary" @click="openEditAreaModal(row)">
-                    编辑
-                  </ElButton>
-                  <ElButton text size="small" type="danger" @click="deleteArea(row)">
-                    删除
-                  </ElButton>
-                </ElSpace>
               </template>
             </ElTableColumn>
 
             <template #empty>
-              <ElEmpty description="暂无区域" />
+              <ElEmpty :description="t('admin.noAreasInFloor')" />
             </template>
           </ElTable>
 
-          <ElEmpty v-else description="请从左侧选择一个楼层查看区域" />
+          <ElEmpty v-else :description="t('admin.selectFloorToView')" />
         </ElCard>
       </ElCol>
     </ElRow>
-
-    <!-- 楼层弹窗 -->
-    <ElDialog
-      v-model="showFloorModal"
-      :title="editingFloorId ? '编辑楼层' : '添加楼层'"
-      width="400px"
-      destroy-on-close
-    >
-      <ElForm label-position="top">
-        <ElFormItem label="楼层名称">
-          <ElInput v-model="floorForm.name" placeholder="如：1F" />
-        </ElFormItem>
-        <ElFormItem label="楼层序号">
-          <ElInputNumber v-model="floorForm.level" :min="1" style="width: 100%" />
-        </ElFormItem>
-        <ElFormItem label="描述">
-          <ElInput v-model="floorForm.description" placeholder="如：一楼 - 餐饮美食" />
-        </ElFormItem>
-      </ElForm>
-
-      <template #footer>
-        <ElSpace>
-          <ElButton @click="showFloorModal = false">取消</ElButton>
-          <ElButton
-            type="primary"
-            :disabled="!floorForm.name.trim()"
-            :loading="isProcessing"
-            @click="saveFloor"
-          >
-            保存
-          </ElButton>
-        </ElSpace>
-      </template>
-    </ElDialog>
-
-    <!-- 区域弹窗 -->
-    <ElDialog
-      v-model="showAreaModal"
-      :title="editingAreaId ? '编辑区域' : '添加区域'"
-      width="450px"
-      destroy-on-close
-    >
-      <ElForm label-position="top">
-        <ElFormItem label="区域编号">
-          <ElInput v-model="areaForm.name" placeholder="如：A-101" />
-        </ElFormItem>
-        <ElFormItem label="区域类型">
-          <ElSelect v-model="areaForm.type" style="width: 100%">
-            <ElOption v-for="t in areaTypes" :key="t" :label="t" :value="t" />
-          </ElSelect>
-        </ElFormItem>
-        <ElRow :gutter="16">
-          <ElCol :span="12">
-            <ElFormItem label="宽度">
-              <ElInputNumber v-model="areaForm.bounds.width" :min="1" style="width: 100%" />
-            </ElFormItem>
-          </ElCol>
-          <ElCol :span="12">
-            <ElFormItem label="高度">
-              <ElInputNumber v-model="areaForm.bounds.height" :min="1" style="width: 100%" />
-            </ElFormItem>
-          </ElCol>
-        </ElRow>
-      </ElForm>
-
-      <template #footer>
-        <ElSpace>
-          <ElButton @click="showAreaModal = false">取消</ElButton>
-          <ElButton
-            type="primary"
-            :disabled="!areaForm.name.trim()"
-            :loading="isProcessing"
-            @click="saveArea"
-          >
-            保存
-          </ElButton>
-        </ElSpace>
-      </template>
-    </ElDialog>
   </article>
 </template>
 
@@ -414,6 +181,13 @@ onMounted(() => {
 
 .mall-manage-page {
   height: 100%;
+
+  .loading-state,
+  .empty-state {
+    @include flex-column-center;
+    height: 100%;
+    padding: $space-8;
+  }
 
   .content-grid {
     height: 100%;
@@ -428,6 +202,11 @@ onMounted(() => {
       @include card-header;
       padding: 0;
       border-bottom: none;
+
+      .floor-count {
+        font-size: $font-size-sm;
+        color: var(--text-muted);
+      }
     }
   }
 
@@ -444,12 +223,12 @@ onMounted(() => {
       transition: all $duration-normal;
 
       &:hover {
-        background: $color-bg-hover;
+        background: rgba(var(--text-primary-rgb), 0.04);
       }
 
       &.active {
-        background: rgba($color-primary, 0.1);
-        border-color: rgba($color-primary, 0.3);
+        background: rgba(var(--accent-primary-rgb), 0.1);
+        border-color: rgba(var(--accent-primary-rgb), 0.3);
       }
 
       .floor-info {
@@ -457,32 +236,18 @@ onMounted(() => {
           font-size: $font-size-lg;
           font-weight: $font-weight-semibold;
           margin: 0 0 $space-1 0;
-          color: $color-text-primary;
+          color: var(--text-primary);
         }
 
-        .floor-desc {
-          font-size: $font-size-sm + 1;
-          color: $color-text-secondary;
-          margin: 0 0 $space-1 0;
-        }
-
-        .floor-count {
+        .floor-area-count {
           font-size: $font-size-sm;
-          color: $color-text-disabled;
+          color: var(--text-disabled);
         }
-      }
-
-      .floor-actions {
-        margin-top: $space-2 + 2;
       }
     }
   }
 
   .area-panel {
-    .mr-1 {
-      margin-right: $space-1;
-    }
-
     .area-table {
       border-radius: $radius-md;
 

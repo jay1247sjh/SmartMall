@@ -19,7 +19,8 @@
  * - UserTable: 用户列表表格和分页
  * - UserDetailDrawer: 用户详情抽屉
  */
-import { ref, reactive, onMounted } from 'vue'
+import { ref, reactive, computed, onMounted } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { adminApi } from '@/api'
 import type { UserInfo, UserListParams } from '@/api/admin.api'
@@ -27,6 +28,8 @@ import UserDetailDrawer from '@/components/admin/UserDetailDrawer.vue'
 import { UserSearchForm, UserTable } from '@/components/user'
 import type { UserSearchParams } from '@/components/user'
 import type { SelectOption } from '@/types/ui'
+
+const { t } = useI18n()
 
 // ============================================================================
 // 用户列表数据
@@ -68,20 +71,20 @@ const selectedUserId = ref<string | null>(null)
 // ============================================================================
 
 // 用户类型选项
-const userTypeOptions: SelectOption[] = [
-  { label: '全部', value: 'ALL' },
-  { label: '管理员', value: 'ADMIN' },
-  { label: '商家', value: 'MERCHANT' },
-  { label: '普通用户', value: 'USER' },
-]
+const userTypeOptions = computed<SelectOption[]>(() => [
+  { label: t('admin.userMgmt.all'), value: 'ALL' },
+  { label: t('roles.admin'), value: 'ADMIN' },
+  { label: t('roles.merchant'), value: 'MERCHANT' },
+  { label: t('roles.user'), value: 'USER' },
+])
 
 // 用户状态选项
-const statusOptions: SelectOption[] = [
-  { label: '全部', value: 'ALL' },
-  { label: '正常', value: 'ACTIVE' },
-  { label: '冻结', value: 'FROZEN' },
-  { label: '已删除', value: 'DELETED' },
-]
+const statusOptions = computed<SelectOption[]>(() => [
+  { label: t('admin.userMgmt.all'), value: 'ALL' },
+  { label: t('admin.userMgmt.statusActive'), value: 'ACTIVE' },
+  { label: t('admin.userMgmt.statusFrozen'), value: 'FROZEN' },
+  { label: t('admin.userMgmt.statusDeleted'), value: 'DELETED' },
+])
 
 // ============================================================================
 // 数据加载
@@ -98,8 +101,8 @@ async function loadUsers() {
     users.value = res.list
     total.value = res.total
   } catch (e) {
-    error.value = (e as Error).message || '加载用户列表失败'
-    console.error('加载用户列表失败:', e)
+    error.value = (e as Error).message || t('admin.userMgmt.loadUsersFailed')
+    console.error('Load user list failed:', e)
   } finally {
     isLoading.value = false
   }
@@ -178,16 +181,16 @@ function handleRowClick(user: UserInfo) {
 async function handleFreezeUser(user: UserInfo) {
   try {
     await ElMessageBox.confirm(
-      `确定要冻结用户 "${user.username}" 吗？冻结后该用户将无法登录系统。`,
-      '确认冻结',
+      t('admin.userMgmt.confirmFreezeMsg', { username: user.username }),
+      t('admin.userMgmt.confirmFreeze'),
       { type: 'warning' }
     )
     await adminApi.freezeUser(user.userId)
-    ElMessage.success('用户已冻结')
+    ElMessage.success(t('admin.userMgmt.userFrozen'))
     await loadUsers()
   } catch (e) {
     if (e !== 'cancel') {
-      ElMessage.error('操作失败：' + ((e as Error).message || '未知错误'))
+      ElMessage.error(t('admin.userMgmt.operationFailed') + ((e as Error).message || t('admin.userMgmt.unknownError')))
     }
   }
 }
@@ -198,16 +201,16 @@ async function handleFreezeUser(user: UserInfo) {
 async function handleActivateUser(user: UserInfo) {
   try {
     await ElMessageBox.confirm(
-      `确定要激活用户 "${user.username}" 吗？激活后该用户可以正常登录系统。`,
-      '确认激活',
+      t('admin.userMgmt.confirmActivateMsg', { username: user.username }),
+      t('admin.userMgmt.confirmActivate'),
       { type: 'info' }
     )
     await adminApi.activateUser(user.userId)
-    ElMessage.success('用户已激活')
+    ElMessage.success(t('admin.userMgmt.userActivated'))
     await loadUsers()
   } catch (e) {
     if (e !== 'cancel') {
-      ElMessage.error('操作失败：' + ((e as Error).message || '未知错误'))
+      ElMessage.error(t('admin.userMgmt.operationFailed') + ((e as Error).message || t('admin.userMgmt.unknownError')))
     }
   }
 }

@@ -1,4 +1,4 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 /**
  * 管理员店铺管理视图
  * 管理员查看和管理所有店铺的页面
@@ -304,8 +304,8 @@ watch([() => filters.value.status, () => filters.value.category], handleSearch)
 
   .page-btn {
     @include pagination-btn;
-    background: $color-bg-tertiary;
-    border: 1px solid $color-border-muted;
+    background: var(--bg-tertiary);
+    border: 1px solid var(--border-muted);
   }
 
   .page-info {
@@ -314,7 +314,7 @@ watch([() => filters.value.status, () => filters.value.category], handleSearch)
 }
 
 .warning-text {
-  color: $color-error;
+  color: var(--error);
   font-size: $font-size-base;
   margin: 0;
 }

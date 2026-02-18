@@ -21,6 +21,7 @@ export function useProjectManagement() {
   // 服务器项目状态
   const serverProjectId = ref<string | null>(null)
   const isSaving = ref(false)
+  const isPublishing = ref(false)
   const saveMessage = ref<string | null>(null)
   const showProjectListModal = ref(false)
   const projectList = ref<{
@@ -170,6 +171,21 @@ export function useProjectManagement() {
   }
 
   /**
+   * 从版本快照加载项目（预览模式，只读）
+   */
+  async function loadFromVersionSnapshot(versionId: string): Promise<MallProject | null> {
+    try {
+      const { getVersionSnapshot } = await import('@/api/mall-manage.api')
+      const { toMallProject } = await import('@/api/mall-builder.api')
+      const snapshot = await getVersionSnapshot(versionId)
+      return toMallProject(snapshot)
+    } catch (err) {
+      console.error('加载版本快照失败:', err)
+      return null
+    }
+  }
+
+  /**
    * 删除服务器上的项目
    */
   async function deleteFromServer(projectId: string): Promise<boolean> {
@@ -225,6 +241,32 @@ export function useProjectManagement() {
   }
 
   /**
+   * 发布项目到服务器
+   */
+  async function publishToServer(projectId: string): Promise<boolean> {
+    if (isPublishing.value) return false
+
+    isPublishing.value = true
+    saveMessage.value = null
+
+    try {
+      const { mallBuilderApi } = await import('@/api/mall-builder.api')
+      await mallBuilderApi.publishProject(projectId)
+      saveMessage.value = '发布成功'
+      setTimeout(() => { saveMessage.value = null }, 2000)
+      return true
+    } catch (err: unknown) {
+      console.error('发布失败:', err)
+      const errorMessage = err instanceof Error ? err.message : '发布失败，请重试'
+      saveMessage.value = errorMessage
+      setTimeout(() => { saveMessage.value = null }, 3000)
+      return false
+    } finally {
+      isPublishing.value = false
+    }
+  }
+
+  /**
    * 获取 URL 中的项目 ID
    */
   function getProjectIdFromUrl(): string | undefined {
@@ -235,6 +277,7 @@ export function useProjectManagement() {
     // 状态
     serverProjectId,
     isSaving,
+    isPublishing,
     saveMessage,
     showProjectListModal,
     projectList,
@@ -249,8 +292,10 @@ export function useProjectManagement() {
     markSaved,
     checkUnsavedChanges,
     saveToServer,
+    publishToServer,
     loadProjectList,
     loadFromServer,
+    loadFromVersionSnapshot,
     deleteFromServer,
     exportData,
     importData,

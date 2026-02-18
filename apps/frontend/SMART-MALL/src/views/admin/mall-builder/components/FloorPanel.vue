@@ -3,6 +3,9 @@
  * FloorPanel - 左侧楼层面板组件
  */
 import type { MallProject, FloorDefinition } from '@/builder'
+import { useI18n } from 'vue-i18n'
+
+const { t } = useI18n()
 
 interface Props {
   project: MallProject | null
@@ -33,8 +36,8 @@ const emit = defineEmits<{
 <template>
   <aside class="floor-panel">
     <div class="panel-header">
-      <h3>楼层</h3>
-      <button class="btn-icon" @click="emit('addFloor')" title="添加楼层">
+      <h3>{{ t('builder.floors') }}</h3>
+      <button class="btn-icon" @click="emit('addFloor')" :title="t('builder.addFloor')">
         <svg viewBox="0 0 20 20" fill="none">
           <path d="M10 4v12M4 10h12" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
         </svg>
@@ -49,10 +52,10 @@ const emit = defineEmits<{
       >
         <div class="floor-info">
           <span class="floor-name">{{ floor.name }}</span>
-          <span class="floor-count">{{ floor.areas.length }} 区域</span>
+          <span class="floor-count">{{ floor.areas.length }} {{ t('builder.areas') }}</span>
         </div>
         <div class="floor-actions">
-          <button class="btn-mini" @click.stop="emit('toggleFloorVisibility', floor.id)" :title="floor.visible ? '隐藏' : '显示'">
+          <button class="btn-mini" @click.stop="emit('toggleFloorVisibility', floor.id)" :title="floor.visible ? t('builder.hide') : t('builder.show')">
             <svg v-if="floor.visible" viewBox="0 0 20 20" fill="none">
               <path d="M10 4C5 4 2 10 2 10s3 6 8 6 8-6 8-6-3-6-8-6z" stroke="currentColor" stroke-width="1.5"/>
               <circle cx="10" cy="10" r="3" stroke="currentColor" stroke-width="1.5"/>
@@ -61,7 +64,7 @@ const emit = defineEmits<{
               <path d="M3 3l14 14M10 4c-2 0-3.5.8-4.8 2" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
             </svg>
           </button>
-          <button class="btn-mini danger" @click.stop="emit('deleteFloor', floor.id)" :disabled="(project?.floors.length || 0) <= 1" title="删除楼层">
+          <button class="btn-mini danger" @click.stop="emit('deleteFloor', floor.id)" :disabled="(project?.floors.length || 0) <= 1" :title="t('builder.deleteFloor')">
             <svg viewBox="0 0 20 20" fill="none">
               <path d="M5 6h10M8 6V4h4v2M6 6v10a1 1 0 001 1h6a1 1 0 001-1V6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
             </svg>
@@ -73,11 +76,11 @@ const emit = defineEmits<{
     <!-- 背景图片控制 -->
     <div class="panel-section">
       <div class="section-header">
-        <h4>背景图片</h4>
+        <h4>{{ t('builder.backgroundImage') }}</h4>
       </div>
       <div v-if="backgroundImage" class="bg-controls">
         <div class="control-row">
-          <label>透明度</label>
+          <label>{{ t('builder.opacity') }}</label>
           <input 
             type="range" 
             :value="backgroundImage.opacity" 
@@ -88,7 +91,7 @@ const emit = defineEmits<{
           />
         </div>
         <div class="control-row">
-          <label>缩放</label>
+          <label>{{ t('builder.scale') }}</label>
           <input 
             type="range" 
             :value="backgroundImage.scale"
@@ -98,14 +101,14 @@ const emit = defineEmits<{
             step="0.1" 
           />
         </div>
-        <button class="btn-small danger" @click="emit('removeBackgroundImage')">移除图片</button>
+        <button class="btn-small danger" @click="emit('removeBackgroundImage')">{{ t('builder.removeImage') }}</button>
       </div>
       <label v-else class="upload-btn">
         <svg viewBox="0 0 20 20" fill="none">
           <path d="M4 16l4-4 3 3 5-5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
           <rect x="2" y="2" width="16" height="16" rx="2" stroke="currentColor" stroke-width="1.5"/>
         </svg>
-        <span>导入参考图</span>
+        <span>{{ t('builder.importRefImage') }}</span>
         <input type="file" accept="image/*" @change="emit('uploadBackgroundImage', $event)" style="display: none" />
       </label>
     </div>

@@ -4,7 +4,7 @@
  */
 import { ref, shallowRef } from 'vue'
 import * as THREE from 'three'
-import type { MallBuilderEngine } from '@/orchestrator/mall-builder/MallBuilderEngine'
+import type { MallBuilderEngine } from '@/engine/mall-builder/MallBuilderEngine'
 import type { MallProject, FloorDefinition, AreaDefinition, MaterialPreset } from '@/builder'
 import { AreaType, AREA_TYPE_COLORS } from '@smart-mall/shared-types'
 import {

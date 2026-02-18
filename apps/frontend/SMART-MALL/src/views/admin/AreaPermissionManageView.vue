@@ -1,4 +1,4 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 /**
  * 管理员区域权限管理视图
  * 管理员查看和管理所有区域权限
@@ -182,7 +182,7 @@ onMounted(loadData)
 }
 
 .permission-info {
-  background: $color-bg-hover;
+  background: rgba(var(--text-primary-rgb), 0.04);
   border-radius: $radius-md + 2;
   padding: $space-4;
 
@@ -193,12 +193,12 @@ onMounted(loadData)
 
     label {
       font-size: $font-size-sm + 1;
-      color: $color-text-secondary;
+      color: var(--text-secondary);
     }
 
     span {
       font-size: $font-size-base;
-      color: $color-text-primary;
+      color: var(--text-primary);
       font-weight: $font-weight-medium;
     }
   }

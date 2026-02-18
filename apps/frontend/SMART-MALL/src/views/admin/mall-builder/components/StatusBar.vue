@@ -3,6 +3,9 @@
  * StatusBar - 底部状态栏组件
  */
 import type { FloorDefinition } from '@/builder'
+import { useI18n } from 'vue-i18n'
+
+const { t } = useI18n()
 
 interface Props {
   currentFloor: FloorDefinition | null
@@ -26,16 +29,16 @@ const emit = defineEmits<{
         {{ currentFloor?.name || '-' }}
       </span>
       <span class="status-divider"></span>
-      <span class="status-item">{{ currentFloor?.areas.length || 0 }} 个区域</span>
+      <span class="status-item">{{ currentFloor?.areas.length || 0 }} {{ t('builder.areas') }}</span>
     </div>
     <div class="status-center">
       <span class="status-hint">
-        <kbd>V</kbd> 选择
-        <kbd>R</kbd> 矩形
-        <kbd>P</kbd> 多边形
-        <kbd>O</kbd> 观察
-        <kbd>Del</kbd> 删除
-        <kbd>Ctrl+Z</kbd> 撤销
+        <kbd>V</kbd> {{ t('builder.selectTool') }}
+        <kbd>R</kbd> {{ t('builder.rectTool') }}
+        <kbd>P</kbd> {{ t('builder.polygonTool') }}
+        <kbd>O</kbd> {{ t('builder.observeTool') }}
+        <kbd>Del</kbd> {{ t('builder.deleteTool') }}
+        <kbd>Ctrl+Z</kbd> {{ t('builder.undoTool') }}
       </span>
     </div>
     <div class="status-right">
@@ -45,7 +48,7 @@ const emit = defineEmits<{
           :checked="snapEnabled" 
           @change="emit('update:snapEnabled', ($event.target as HTMLInputElement).checked)" 
         />
-        <span>对齐网格</span>
+        <span>{{ t('builder.snapToGrid') }}</span>
       </label>
     </div>
   </footer>

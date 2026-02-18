@@ -4,6 +4,9 @@
  */
 import type { AreaDefinition, AreaType } from '@/builder'
 import { areaTypes } from '../config/areaTypes'
+import { useI18n } from 'vue-i18n'
+
+const { t } = useI18n()
 
 interface Props {
   selectedArea: AreaDefinition | null
@@ -26,17 +29,17 @@ function handleNameInput(e: Event) {
 <template>
   <aside class="property-panel">
     <div class="panel-header">
-      <h3>属性</h3>
+      <h3>{{ t('builder.properties') }}</h3>
     </div>
     
     <div v-if="selectedArea" class="property-content">
       <div class="property-section">
-        <label>区域名称</label>
+        <label>{{ t('builder.areaName') }}</label>
         <input type="text" class="input" :value="selectedArea.name" @input="handleNameInput" />
       </div>
 
       <div class="property-section">
-        <label>区域类型</label>
+        <label>{{ t('builder.areaType') }}</label>
         <div class="type-grid">
           <button
             v-for="type in areaTypes"
@@ -52,14 +55,14 @@ function handleNameInput(e: Event) {
       </div>
 
       <div class="property-section">
-        <label>面积 / 周长</label>
+        <label>{{ t('builder.areaPerimeter') }}</label>
         <div class="size-info">
           <div class="size-item">
-            <span class="size-label">面积</span>
+            <span class="size-label">{{ t('builder.area') }}</span>
             <span class="size-value">{{ selectedArea.properties.area?.toFixed(1) || '0' }} m²</span>
           </div>
           <div class="size-item">
-            <span class="size-label">周长</span>
+            <span class="size-label">{{ t('builder.perimeter') }}</span>
             <span class="size-value">{{ selectedArea.properties.perimeter?.toFixed(1) || '0' }} m</span>
           </div>
         </div>
@@ -70,7 +73,7 @@ function handleNameInput(e: Event) {
           <svg viewBox="0 0 20 20" fill="none">
             <path d="M5 6h10M8 6V4h4v2M6 6v10a1 1 0 001 1h6a1 1 0 001-1V6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
           </svg>
-          <span>删除区域</span>
+          <span>{{ t('builder.deleteArea') }}</span>
         </button>
       </div>
     </div>
@@ -80,8 +83,8 @@ function handleNameInput(e: Event) {
         <rect x="8" y="8" width="32" height="32" rx="4" stroke="currentColor" stroke-width="2" stroke-dasharray="4 4"/>
         <path d="M18 24h12M24 18v12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
       </svg>
-      <p>选择一个区域查看属性</p>
-      <p class="hint">或使用绘制工具创建新区域</p>
+      <p>{{ t('builder.selectAreaHint') }}</p>
+      <p class="hint">{{ t('builder.drawAreaHint') }}</p>
     </div>
   </aside>
 </template>

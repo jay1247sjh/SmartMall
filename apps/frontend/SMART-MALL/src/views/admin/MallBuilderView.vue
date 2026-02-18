@@ -14,8 +14,9 @@
  */
 import { ref, computed, onMounted, onUnmounted, watch, shallowRef } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
+import { useI18n } from 'vue-i18n'
 import * as THREE from 'three'
-import { MallBuilderEngine } from '@/orchestrator/mall-builder/MallBuilderEngine'
+import { MallBuilderEngine } from '@/engine/mall-builder/MallBuilderEngine'
 
 // 导入 builder 模块
 import {
@@ -75,6 +76,7 @@ import { areaTypes } from './mall-builder/config/areaTypes'
 
 const router = useRouter()
 const route = useRoute()
+const { t } = useI18n()
 
 // 容器引用
 const containerRef = ref<HTMLElement | null>(null)
@@ -131,6 +133,11 @@ const newProjectName = ref('我的商城')
 // 视图模式
 const viewMode = ref<'edit' | 'orbit'>('edit')
 const savedCameraState = ref<{ position: THREE.Vector3; target: THREE.Vector3 } | null>(null)
+
+// 预览模式
+const isPreviewMode = ref(false)
+const previewVersionNumber = ref<string | null>(null)
+const previewError = ref<string | null>(null)
 
 // 选中状态
 const selectedAreaId = ref<string | null>(null)
@@ -817,6 +824,12 @@ function handleKeydown(e: KeyboardEvent) {
     }
     return
   }
+
+  // 预览模式：仅允许漫游切换，屏蔽编辑快捷键
+  if (isPreviewMode.value) {
+    if (e.key === 'o' || e.key === 'O') toggleOrbitMode()
+    return
+  }
   
   if (e.key === 'Delete' || e.key === 'Backspace') {
     if (selectedArea.value) deleteSelectedArea()
@@ -865,6 +878,24 @@ async function handleSave() {
   }
 }
 
+async function handlePublish() {
+  if (!project.value || !projectMgmt.serverProjectId.value) {
+    // 未保存过的项目需要先保存
+    if (project.value) {
+      const saved = await projectMgmt.saveToServer(project.value)
+      if (!saved) return
+    } else {
+      return
+    }
+  }
+  
+  try {
+    await projectMgmt.publishToServer(projectMgmt.serverProjectId.value!)
+  } catch (error) {
+    console.error('发布失败:', error)
+  }
+}
+
 // ============================================================================
 // 生命周期
 // ============================================================================
@@ -873,7 +904,28 @@ onMounted(async () => {
   await initEngine()
   window.addEventListener('keydown', handleKeydown)
   window.addEventListener('keyup', handleKeyup)
-  
+
+  // 检测预览模式（版本快照）
+  const versionId = route.query.versionId as string | undefined
+  const versionNumber = route.query.versionNumber as string | undefined
+  if (versionId) {
+    const loaded = await projectMgmt.loadFromVersionSnapshot(versionId)
+    if (loaded) {
+      project.value = loaded
+      floorMgmt.initFloor(loaded)
+      isPreviewMode.value = true
+      previewVersionNumber.value = versionNumber || null
+      showWizard.value = false
+      renderProject()
+    } else {
+      console.warn('版本快照加载失败')
+      previewError.value = '无法加载版本快照数据，请返回版本列表重试'
+      isPreviewMode.value = true
+      showWizard.value = false
+    }
+    return
+  }
+
   const projectIdFromUrl = route.params.projectId as string | undefined
   if (projectIdFromUrl) {
     const loaded = await projectMgmt.loadFromServer(projectIdFromUrl)
@@ -979,11 +1031,11 @@ function handleAreaUpdate(updatedArea: AreaDefinition) {
             <path d="M2 12l10 5 10-5" stroke="currentColor" stroke-width="1.5"/>
           </svg>
         </div>
-        <div class="loading-title">商城建模器</div>
+        <div class="loading-title">{{ t('admin.mallBuilder') }}</div>
         <div class="loading-bar">
           <div class="loading-progress" :style="{ width: `${loadProgress}%` }"></div>
         </div>
-        <div class="loading-text">正在初始化 3D 引擎...</div>
+        <div class="loading-text">{{ t('admin.initEngine') }}</div>
       </div>
     </div>
 
@@ -1003,14 +1055,52 @@ function handleAreaUpdate(updatedArea: AreaDefinition) {
 
     <!-- 主界面 -->
     <template v-if="!showWizard && !isLoading">
+      <!-- 预览模式工具栏 -->
+      <div v-if="isPreviewMode" class="preview-toolbar">
+        <button class="btn-back" @click="router.push('/admin/layout-version')">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
+            <path d="M19 12H5M12 19l-7-7 7-7"/>
+          </svg>
+          {{ t('admin.backToVersionList') }}
+        </button>
+        <div class="preview-info">
+          <span class="preview-badge">{{ t('admin.previewMode') }}</span>
+          <span v-if="previewVersionNumber" class="preview-version">{{ previewVersionNumber }}</span>
+        </div>
+        <div class="preview-actions">
+          <button class="btn-secondary" @click="toggleOrbitMode">
+            {{ viewMode === 'orbit' ? t('admin.exitRoam') : t('admin.roamMode') }}
+          </button>
+        </div>
+      </div>
+
+      <!-- 预览加载失败提示 -->
+      <div v-if="previewError" class="preview-error-overlay">
+        <div class="preview-error-card">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="32" height="32" class="error-icon">
+            <circle cx="12" cy="12" r="10"/>
+            <path d="M12 8v4M12 16h.01"/>
+          </svg>
+          <p class="error-text">{{ previewError }}</p>
+          <button class="btn-back" @click="router.push('/admin/layout-version')">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
+              <path d="M19 12H5M12 19l-7-7 7-7"/>
+            </svg>
+            {{ t('admin.backToVersionList') }}
+          </button>
+        </div>
+      </div>
+
       <!-- 顶部工具栏 (使用子组件) -->
       <BuilderToolbar
-        :projectName="project?.name || '商城布局'"
+        v-else
+        :projectName="project?.name || t('admin.mallLayout')"
         :currentTool="drawing.currentTool.value"
         :viewMode="viewMode"
         :canUndo="history.canUndo.value"
         :canRedo="history.canRedo.value"
         :isSaving="projectMgmt.isSaving.value"
+        :isPublishing="projectMgmt.isPublishing.value"
         @back="goBack"
         @selectTool="handleSelectTool"
         @resetOutline="resetOutline"
@@ -1021,11 +1111,12 @@ function handleAreaUpdate(updatedArea: AreaDefinition) {
         @export="handleExport"
         @import="handleImport"
         @save="handleSave"
+        @publish="handlePublish"
       />
 
       <!-- 左侧楼层面板 (使用子组件) -->
       <FloorPanel
-        v-if="showFloorPanel && viewMode === 'edit'"
+        v-if="showFloorPanel && (viewMode === 'edit' || isPreviewMode) && !(isPreviewMode && viewMode === 'orbit')"
         :floors="project?.floors || []"
         :currentFloorId="floorMgmt.currentFloorId.value"
         v-model:collapsed="leftPanelCollapsed"
@@ -1036,7 +1127,7 @@ function handleAreaUpdate(updatedArea: AreaDefinition) {
 
       <!-- 右侧属性面板 (使用子组件) -->
       <PropertyPanel
-        v-if="showPropertyPanel && viewMode === 'edit'"
+        v-if="showPropertyPanel && viewMode === 'edit' && !isPreviewMode"
         :area="selectedArea"
         :areaTypes="areaTypes"
         @update:area="handleAreaUpdate"
@@ -1046,7 +1137,7 @@ function handleAreaUpdate(updatedArea: AreaDefinition) {
 
       <!-- 材质面板 (使用子组件) -->
       <MaterialPanel
-        v-if="showMaterialPanel && viewMode === 'edit' && !selectedArea"
+        v-if="showMaterialPanel && viewMode === 'edit' && !selectedArea && !isPreviewMode"
         :categories="categories"
         :expandedCategories="expandedCategories"
         :selectedMaterialId="selectedMaterialId"
@@ -1057,7 +1148,7 @@ function handleAreaUpdate(updatedArea: AreaDefinition) {
 
       <!-- 场景图例 (使用子组件) -->
       <SceneLegend
-        v-if="viewMode === 'edit'"
+        v-if="viewMode === 'edit' || (isPreviewMode && viewMode !== 'orbit')"
         :visible="showSceneLegend"
         :items="legendItems"
       />
@@ -1067,19 +1158,19 @@ function handleAreaUpdate(updatedArea: AreaDefinition) {
         <div class="roaming-controls">
           <div class="control-hint">
             <span class="key">W A S D</span>
-            <span>移动</span>
+            <span>{{ t('admin.roamMove') }}</span>
           </div>
           <div class="control-hint">
-            <span class="key">鼠标</span>
-            <span>转向</span>
+            <span class="key">{{ t('admin.roamMouse') }}</span>
+            <span>{{ t('admin.roamLook') }}</span>
           </div>
           <div class="control-hint">
             <span class="key">ESC</span>
-            <span>退出</span>
+            <span>{{ t('admin.roamExit') }}</span>
           </div>
         </div>
         <button class="btn-exit-roam" @click="exitRoamMode">
-          退出漫游
+          {{ t('admin.exitRoam') }}
         </button>
       </div>
 
@@ -1100,14 +1191,14 @@ function handleAreaUpdate(updatedArea: AreaDefinition) {
     <div v-if="showLeaveConfirm" class="modal-overlay" @click.self="cancelLeave">
       <div class="modal">
         <div class="modal-header">
-          <h3>未保存的更改</h3>
+          <h3>{{ t('admin.unsavedChanges') }}</h3>
         </div>
         <div class="modal-body">
-          <p>您有未保存的更改，确定要离开吗？</p>
+          <p>{{ t('admin.unsavedConfirm') }}</p>
         </div>
         <div class="modal-footer">
-          <button class="btn-secondary" @click="cancelLeave">取消</button>
-          <button class="btn-danger" @click="confirmLeave">离开</button>
+          <button class="btn-secondary" @click="cancelLeave">{{ t('common.cancel') }}</button>
+          <button class="btn-danger" @click="confirmLeave">{{ t('admin.leave') }}</button>
         </div>
       </div>
     </div>
@@ -1116,7 +1207,7 @@ function handleAreaUpdate(updatedArea: AreaDefinition) {
     <div v-if="showHelpPanel" class="modal-overlay" @click.self="showHelpPanel = false">
       <div class="modal help-modal">
         <div class="modal-header">
-          <h3>快捷键帮助</h3>
+          <h3>{{ t('admin.hotkeyHelp') }}</h3>
           <button class="btn-icon" @click="showHelpPanel = false">
             <svg viewBox="0 0 20 20" fill="none">
               <path d="M5 5l10 10M15 5L5 15" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
@@ -1125,30 +1216,30 @@ function handleAreaUpdate(updatedArea: AreaDefinition) {
         </div>
         <div class="modal-body">
           <div class="help-section">
-            <h4>工具快捷键</h4>
+            <h4>{{ t('admin.hotkeyTools') }}</h4>
             <ul>
-              <li><kbd>V</kbd> 选择工具</li>
-              <li><kbd>R</kbd> 矩形绘制</li>
-              <li><kbd>P</kbd> 多边形绘制</li>
-              <li><kbd>O</kbd> 漫游模式</li>
+              <li><kbd>V</kbd> {{ t('admin.hotkeySelect') }}</li>
+              <li><kbd>R</kbd> {{ t('admin.hotkeyRect') }}</li>
+              <li><kbd>P</kbd> {{ t('admin.hotkeyPolygon') }}</li>
+              <li><kbd>O</kbd> {{ t('admin.roamMode') }}</li>
             </ul>
           </div>
           <div class="help-section">
-            <h4>编辑快捷键</h4>
+            <h4>{{ t('admin.hotkeyEdit') }}</h4>
             <ul>
-              <li><kbd>Ctrl+Z</kbd> 撤销</li>
-              <li><kbd>Ctrl+Shift+Z</kbd> 重做</li>
-              <li><kbd>Ctrl+S</kbd> 保存</li>
-              <li><kbd>Delete</kbd> 删除选中</li>
-              <li><kbd>Esc</kbd> 取消/取消选择</li>
+              <li><kbd>Ctrl+Z</kbd> {{ t('admin.hotkeyUndo') }}</li>
+              <li><kbd>Ctrl+Shift+Z</kbd> {{ t('admin.hotkeyRedo') }}</li>
+              <li><kbd>Ctrl+S</kbd> {{ t('admin.hotkeySave') }}</li>
+              <li><kbd>Delete</kbd> {{ t('admin.hotkeyDelete') }}</li>
+              <li><kbd>Esc</kbd> {{ t('admin.hotkeyCancel') }}</li>
             </ul>
           </div>
           <div class="help-section">
-            <h4>漫游模式</h4>
+            <h4>{{ t('admin.roamMode') }}</h4>
             <ul>
-              <li><kbd>W A S D</kbd> 移动</li>
-              <li><kbd>鼠标</kbd> 转向</li>
-              <li><kbd>Esc</kbd> 退出漫游</li>
+              <li><kbd>W A S D</kbd> {{ t('admin.roamMove') }}</li>
+              <li><kbd>{{ t('admin.roamMouse') }}</kbd> {{ t('admin.roamLook') }}</li>
+              <li><kbd>Esc</kbd> {{ t('admin.exitRoam') }}</li>
             </ul>
           </div>
         </div>
@@ -1159,7 +1250,7 @@ function handleAreaUpdate(updatedArea: AreaDefinition) {
     <div v-if="connections.showFloorConnectionModal.value" class="modal-overlay" @click.self="connections.closeConnectionModal">
       <div class="modal">
         <div class="modal-header">
-          <h3>设置{{ connections.pendingConnectionTypeName.value }}连接楼层</h3>
+          <h3>{{ t('admin.setConnectionFloor', { type: connections.pendingConnectionTypeName.value }) }}</h3>
           <button class="btn-icon" @click="connections.closeConnectionModal">
             <svg viewBox="0 0 20 20" fill="none">
               <path d="M5 5l10 10M15 5L5 15" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
@@ -1167,7 +1258,7 @@ function handleAreaUpdate(updatedArea: AreaDefinition) {
           </button>
         </div>
         <div class="modal-body">
-          <p class="modal-hint">选择此{{ connections.pendingConnectionTypeName.value }}连接的楼层：</p>
+          <p class="modal-hint">{{ t('admin.selectConnectionFloor', { type: connections.pendingConnectionTypeName.value }) }}</p>
           <div class="floor-checkbox-list">
             <label 
               v-for="floor in project?.floors" 
@@ -1181,18 +1272,18 @@ function handleAreaUpdate(updatedArea: AreaDefinition) {
                 :disabled="floor.id === floorMgmt.currentFloorId.value"
               />
               <span>{{ floor.name }}</span>
-              <span v-if="floor.id === floorMgmt.currentFloorId.value" class="current-badge">当前</span>
+              <span v-if="floor.id === floorMgmt.currentFloorId.value" class="current-badge">{{ t('admin.current') }}</span>
             </label>
           </div>
         </div>
         <div class="modal-footer">
-          <button class="btn-secondary" @click="connections.closeConnectionModal">取消</button>
+          <button class="btn-secondary" @click="connections.closeConnectionModal">{{ t('common.cancel') }}</button>
           <button 
             class="btn-primary" 
             @click="connections.confirmConnection"
             :disabled="!connections.canConfirmConnection.value"
           >
-            确认
+            {{ t('common.confirm') }}
           </button>
         </div>
       </div>
@@ -1201,3 +1292,127 @@ function handleAreaUpdate(updatedArea: AreaDefinition) {
 </template>
 
 <style scoped lang="scss" src="@/assets/styles/views/admin/mall-builder.scss"></style>
+
+<style scoped lang="scss">
+// ============================================================================
+// Preview Mode
+// ============================================================================
+.preview-toolbar {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  background: rgba(10, 10, 11, 0.9);
+  backdrop-filter: blur(12px);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.btn-back {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  background: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 6px;
+  color: #a1a1aa;
+  font-size: 13px;
+  cursor: pointer;
+  transition: all 0.15s;
+
+  &:hover {
+    background: rgba(255, 255, 255, 0.05);
+    color: #e8eaed;
+    border-color: rgba(255, 255, 255, 0.2);
+  }
+
+  svg {
+    flex-shrink: 0;
+  }
+}
+
+.preview-info {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.preview-badge {
+  padding: 4px 10px;
+  background: rgba(59, 130, 246, 0.15);
+  border: 1px solid rgba(59, 130, 246, 0.3);
+  border-radius: 4px;
+  color: #60a5fa;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.preview-version {
+  color: #a1a1aa;
+  font-size: 13px;
+  font-family: 'SF Mono', 'Fira Code', 'Consolas', monospace;
+}
+
+.preview-actions {
+  display: flex;
+  gap: 8px;
+
+  .btn-secondary {
+    padding: 8px 14px;
+    background: transparent;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 6px;
+    color: #a1a1aa;
+    font-size: 13px;
+    cursor: pointer;
+    transition: all 0.15s;
+
+    &:hover {
+      background: rgba(255, 255, 255, 0.05);
+      color: #e8eaed;
+    }
+  }
+}
+
+// ============================================================================
+// Preview Error
+// ============================================================================
+.preview-error-overlay {
+  position: absolute;
+  top: 60px;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 90;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(10, 10, 11, 0.95);
+}
+
+.preview-error-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  padding: 32px;
+  max-width: 360px;
+  text-align: center;
+
+  .error-icon {
+    color: #ef4444;
+  }
+
+  .error-text {
+    color: #a1a1aa;
+    font-size: 14px;
+    line-height: 1.5;
+    margin: 0;
+  }
+}
+</style>

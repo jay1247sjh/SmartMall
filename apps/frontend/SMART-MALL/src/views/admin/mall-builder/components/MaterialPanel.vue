@@ -5,6 +5,9 @@
 import type { MaterialPreset, MaterialCategory } from '@/builder'
 import { getAllMaterialPresets, getMaterialPresetsByCategory, getAllCategories, getCategoryDisplayName } from '@/builder'
 import { computed } from 'vue'
+import { useI18n } from 'vue-i18n'
+
+const { t } = useI18n()
 
 interface Props {
   selectedMaterialId: string | null
@@ -31,12 +34,12 @@ function getSelectedMaterial(): MaterialPreset | null {
 <template>
   <aside class="material-panel">
     <div class="panel-header">
-      <h3>材质</h3>
+      <h3>{{ t('builder.material') }}</h3>
       <button 
         v-if="selectedMaterialId" 
         class="btn-icon clear" 
         @click="emit('clearSelection')" 
-        title="清除选择"
+        :title="t('builder.clearSelection')"
       >
         <svg viewBox="0 0 20 20" fill="none">
           <path d="M5 5l10 10M15 5L5 15" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
@@ -50,7 +53,7 @@ function getSelectedMaterial(): MaterialPreset | null {
           <path d="M10 6v4M10 14h.01" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
           <circle cx="10" cy="10" r="8" stroke="currentColor" stroke-width="1.5"/>
         </svg>
-        <span>{{ getSelectedMaterial()?.isInfrastructure ? '点击场景放置' : '已选择材质，使用绘制工具放置' }}</span>
+        <span>{{ getSelectedMaterial()?.isInfrastructure ? t('builder.clickToPlace') : t('builder.materialSelectedHint') }}</span>
       </div>
       
       <div 

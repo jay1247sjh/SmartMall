@@ -2,6 +2,11 @@
 /**
  * RoamingIndicator - 漫游模式指示器组件
  */
+import { useI18n } from 'vue-i18n'
+import { computed } from 'vue'
+
+const { t } = useI18n()
+
 interface Props {
   isPointerLocked: boolean
   walkSpeedPreset: 'slow' | 'normal' | 'fast'
@@ -15,11 +20,11 @@ const emit = defineEmits<{
 }>()
 
 const speedPresets: ('slow' | 'normal' | 'fast')[] = ['slow', 'normal', 'fast']
-const speedPresetLabels: Record<'slow' | 'normal' | 'fast', string> = {
-  slow: '慢速',
-  normal: '正常',
-  fast: '快速',
-}
+const speedPresetLabels = computed<Record<'slow' | 'normal' | 'fast', string>>(() => ({
+  slow: t('builder.speedSlow'),
+  normal: t('builder.speedNormal'),
+  fast: t('builder.speedFast'),
+}))
 </script>
 
 <template>
@@ -29,13 +34,13 @@ const speedPresetLabels: Record<'slow' | 'normal' | 'fast', string> = {
       <circle cx="10" cy="10" r="2" fill="currentColor"/>
       <path d="M10 5v2M10 13v2M5 10h2M13 10h2" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
     </svg>
-    <span>漫游模式</span>
-    <span v-if="isPointerLocked" class="orbit-hint">WASD 移动 / 鼠标转向 / ESC 退出</span>
-    <span v-else class="orbit-hint pointer-lock-hint">点击画布锁定鼠标以控制视角</span>
+    <span>{{ t('builder.roamMode') }}</span>
+    <span v-if="isPointerLocked" class="orbit-hint">{{ t('builder.wasdMove') }}</span>
+    <span v-else class="orbit-hint pointer-lock-hint">{{ t('builder.clickToLock') }}</span>
     
     <!-- 速度选择器 -->
     <div class="speed-selector">
-      <span class="speed-label">速度:</span>
+      <span class="speed-label">{{ t('builder.speed') }}</span>
       <button 
         v-for="preset in speedPresets" 
         :key="preset"
@@ -46,7 +51,7 @@ const speedPresetLabels: Record<'slow' | 'normal' | 'fast', string> = {
       </button>
     </div>
     
-    <button class="exit-btn" @click="emit('exitRoamMode')">退出漫游</button>
+    <button class="exit-btn" @click="emit('exitRoamMode')">{{ t('builder.exitRoam') }}</button>
   </div>
 </template>
 

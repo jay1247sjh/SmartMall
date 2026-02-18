@@ -5,6 +5,9 @@
 import type { Tool } from '../composables/useDrawing'
 import type { MallProject } from '@/builder'
 import { toolButtons } from '../config/toolButtons'
+import { useI18n } from 'vue-i18n'
+
+const { t } = useI18n()
 
 interface Props {
   project: MallProject | null
@@ -45,7 +48,7 @@ function handleSetTool(tool: Tool | undefined) {
         <svg viewBox="0 0 20 20" fill="none">
           <path d="M12 4l-6 6 6 6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
         </svg>
-        <span>返回</span>
+        <span>{{ t('builder.back') }}</span>
       </button>
       <div class="toolbar-divider"></div>
       <div class="project-name">
@@ -53,7 +56,7 @@ function handleSetTool(tool: Tool | undefined) {
           <rect x="3" y="3" width="14" height="14" rx="2" stroke="currentColor" stroke-width="1.5"/>
           <path d="M3 8h14M8 8v9" stroke="currentColor" stroke-width="1.5"/>
         </svg>
-        <span>{{ project?.name || '商城布局' }}</span>
+        <span>{{ project?.name || t('admin.mallLayout') }}</span>
       </div>
     </div>
 
@@ -95,7 +98,7 @@ function handleSetTool(tool: Tool | undefined) {
     </div>
 
     <div class="toolbar-right">
-      <button class="action-btn" @click="emit('resetCamera')" title="重置视图">
+      <button class="action-btn" @click="emit('resetCamera')" :title="t('builder.resetView')">
         <svg viewBox="0 0 20 20" fill="none">
           <circle cx="10" cy="10" r="7" stroke="currentColor" stroke-width="1.5"/>
           <path d="M10 6v4l3 2" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
@@ -104,7 +107,7 @@ function handleSetTool(tool: Tool | undefined) {
       <button 
         :class="['action-btn preview-btn', { active: viewMode === 'orbit' }]" 
         @click="emit('toggleOrbitMode')" 
-        :title="'进入漫游模式：WASD移动，鼠标转向'"
+        :title="t('builder.roamModeHint')"
         :disabled="viewMode === 'orbit'"
       >
         <svg viewBox="0 0 20 20" fill="none">
@@ -112,29 +115,29 @@ function handleSetTool(tool: Tool | undefined) {
           <circle cx="10" cy="10" r="2" fill="currentColor"/>
           <path d="M10 5v2M10 13v2M5 10h2M13 10h2" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
         </svg>
-        <span class="btn-label">漫游预览</span>
+        <span class="btn-label">{{ t('builder.roamPreview') }}</span>
       </button>
       <div class="toolbar-divider"></div>
-      <button class="action-btn" @click="emit('undo')" :disabled="!canUndo" title="撤销 (Ctrl+Z)">
+      <button class="action-btn" @click="emit('undo')" :disabled="!canUndo" :title="t('builder.undoHint')">
         <svg viewBox="0 0 20 20" fill="none">
           <path d="M4 8h10a4 4 0 010 8H9" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
           <path d="M7 5L4 8l3 3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
         </svg>
       </button>
-      <button class="action-btn" @click="emit('redo')" :disabled="!canRedo" title="重做 (Ctrl+Shift+Z)">
+      <button class="action-btn" @click="emit('redo')" :disabled="!canRedo" :title="t('builder.redoHint')">
         <svg viewBox="0 0 20 20" fill="none">
           <path d="M16 8H6a4 4 0 000 8h5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
           <path d="M13 5l3 3-3 3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
         </svg>
       </button>
       <div class="toolbar-divider"></div>
-      <button class="action-btn" @click="emit('export')" title="导出">
+      <button class="action-btn" @click="emit('export')" :title="t('builder.export')">
         <svg viewBox="0 0 20 20" fill="none">
           <path d="M10 3v10M6 9l4 4 4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
           <path d="M3 14v2a1 1 0 001 1h12a1 1 0 001-1v-2" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
         </svg>
       </button>
-      <label class="action-btn" title="导入">
+      <label class="action-btn" :title="t('builder.import')">
         <svg viewBox="0 0 20 20" fill="none">
           <path d="M10 13V3M6 7l4-4 4 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
           <path d="M3 14v2a1 1 0 001 1h12a1 1 0 001-1v-2" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
@@ -146,9 +149,9 @@ function handleSetTool(tool: Tool | undefined) {
           <path d="M15 17H5a2 2 0 01-2-2V5a2 2 0 012-2h7l5 5v9a2 2 0 01-2 2z" stroke="currentColor" stroke-width="1.5"/>
           <path d="M12 3v5h5M7 13h6M7 16h4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
         </svg>
-        <span>{{ isSaving ? '保存中...' : '保存' }}</span>
+        <span>{{ isSaving ? t('builder.saving') : t('common.save') }}</span>
       </button>
-      <button class="action-btn" @click="emit('openProjectList')" title="打开项目">
+      <button class="action-btn" @click="emit('openProjectList')" :title="t('builder.openProject')">
         <svg viewBox="0 0 20 20" fill="none">
           <path d="M3 5a2 2 0 012-2h4l2 2h4a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2V5z" stroke="currentColor" stroke-width="1.5"/>
         </svg>

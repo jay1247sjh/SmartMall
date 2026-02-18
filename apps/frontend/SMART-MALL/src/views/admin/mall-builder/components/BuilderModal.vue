@@ -1,4 +1,4 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 /**
  * BuilderModal - Mall Builder 专用模态框组件
  * 统一的模态框样式，支持自定义内容
@@ -70,13 +70,13 @@ function handleOverlayClick() {
 
 .modal {
   @include dialog-box;
-  border: 1px solid $color-border-muted;
+  border: 1px solid var(--border-muted);
   box-shadow: $shadow-lg;
   border-radius: $radius-xl;
 
   &-header {
     @include dialog-header;
-    border-bottom-color: $color-border-muted;
+    border-bottom-color: var(--border-muted);
   }
 
   &-body {
@@ -86,7 +86,7 @@ function handleOverlayClick() {
 
   &-footer {
     @include dialog-footer;
-    border-top-color: $color-border-muted;
+    border-top-color: var(--border-muted);
   }
 }
 
@@ -97,7 +97,7 @@ function handleOverlayClick() {
   border-radius: $radius-md;
 
   &:hover {
-    background: $color-bg-hover;
+    background: rgba(var(--text-primary-rgb), 0.04);
   }
 
   svg {

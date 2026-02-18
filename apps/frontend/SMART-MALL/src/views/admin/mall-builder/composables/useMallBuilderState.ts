@@ -4,7 +4,7 @@
  */
 import { ref, reactive, computed, shallowRef } from 'vue'
 import type * as THREE from 'three'
-import type { MallBuilderEngine } from '@/orchestrator/mall-builder/MallBuilderEngine'
+import type { MallBuilderEngine } from '@/engine/mall-builder/MallBuilderEngine'
 import type {
   MallProject,
   AreaDefinition,

@@ -1,4 +1,4 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 /**
  * 区域审批页面
  * 管理员审批商家的区域申请
@@ -261,12 +261,12 @@ onMounted(loadData)
 
     dt {
       font-size: $font-size-sm + 1;
-      color: $color-text-secondary;
+      color: var(--text-secondary);
     }
 
     dd {
       font-size: $font-size-lg;
-      color: $color-text-primary;
+      color: var(--text-primary);
       margin: 0;
       line-height: 1.6;
     }
@@ -277,7 +277,7 @@ onMounted(loadData)
   }
 
   .reject-reason {
-    color: $color-error;
+    color: var(--error);
   }
 }
 
