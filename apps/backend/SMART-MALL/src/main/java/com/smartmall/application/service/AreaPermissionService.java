@@ -71,6 +71,7 @@ public class AreaPermissionService {
                 dto.setAreaName(area.getName());
                 dto.setFloorId(area.getFloorId());
                 dto.setAreaBoundaries(area.getShape());
+                dto.setAreaStatus(area.getStatus() != null ? area.getStatus().name() : null);
                 
                 Floor floor = floorMap.get(area.getFloorId());
                 if (floor != null) {

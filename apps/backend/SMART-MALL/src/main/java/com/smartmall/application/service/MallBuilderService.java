@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.smartmall.common.exception.BusinessException;
 import com.smartmall.common.response.ResultCode;
 import com.smartmall.domain.entity.Area;
+import com.smartmall.domain.enums.AreaStatus;
 import com.smartmall.domain.entity.Floor;
 import com.smartmall.domain.entity.MallProject;
 import com.smartmall.infrastructure.mapper.AreaMapper;
@@ -13,6 +14,8 @@ import com.smartmall.infrastructure.mapper.MallProjectMapper;
 import com.smartmall.interfaces.dto.mallbuilder.*;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -31,6 +34,10 @@ public class MallBuilderService {
     private final FloorMapper floorMapper;
     private final AreaMapper areaMapper;
     private final ObjectMapper objectMapper;
+
+    @Autowired
+    @Lazy
+    private LayoutVersionService layoutVersionService;
     
     /**
      * 创建项目
@@ -91,17 +98,18 @@ public class MallBuilderService {
     
     /**
      * 获取已发布的商城项目（公开接口）
-     * MVP：返回最新更新的非删除项目，包含完整楼层和区域数据
+     * 查询 status = PUBLISHED 的项目
      */
     public ProjectResponse getPublishedMall() {
         LambdaQueryWrapper<MallProject> wrapper = new LambdaQueryWrapper<>();
         wrapper.eq(MallProject::getIsDeleted, false)
+               .eq(MallProject::getStatus, "PUBLISHED")
                .orderByDesc(MallProject::getUpdateTime)
                .last("LIMIT 1");
         
         MallProject project = projectMapper.selectOne(wrapper);
         if (project == null) {
-            throw new BusinessException(ResultCode.MALL_NOT_FOUND, "暂无已发布的商城数据");
+            return null;
         }
         
         // 加载楼层和区域
@@ -113,6 +121,45 @@ public class MallBuilderService {
         project.setFloors(floors);
         
         return convertToResponse(project);
+    }
+
+    /**
+     * 发布项目
+     * 将指定项目标记为 PUBLISHED，同时将其他已发布项目回退为 DRAFT
+     */
+    @Transactional
+    public ProjectResponse publishProject(String projectId, String userId) {
+        MallProject project = projectMapper.selectById(projectId);
+        if (project == null || project.getIsDeleted()) {
+            throw new BusinessException(ResultCode.NOT_FOUND, "项目不存在");
+        }
+        
+        if (!project.getCreatorId().equals(userId)) {
+            throw new BusinessException(ResultCode.FORBIDDEN, "无权发布此项目");
+        }
+        
+        // 将其他已发布项目回退为草稿
+        LambdaQueryWrapper<MallProject> wrapper = new LambdaQueryWrapper<>();
+        wrapper.eq(MallProject::getStatus, "PUBLISHED")
+               .eq(MallProject::getIsDeleted, false)
+               .ne(MallProject::getProjectId, projectId);
+        
+        List<MallProject> publishedProjects = projectMapper.selectList(wrapper);
+        for (MallProject p : publishedProjects) {
+            p.setStatus("DRAFT");
+            projectMapper.updateById(p);
+        }
+        
+        // 发布当前项目
+        project.setStatus("PUBLISHED");
+        projectMapper.updateById(project);
+        
+        // 创建版本快照
+        layoutVersionService.createVersionFromProject(projectId, userId);
+        
+        log.info("项目已发布: projectId={}, userId={}", projectId, userId);
+        
+        return getProjectById(projectId);
     }
 
     /**
@@ -206,7 +253,7 @@ public class MallBuilderService {
     
     private void saveFloor(FloorDTO floorDTO, String projectId) {
         Floor floor = new Floor();
-        floor.setFloorId(floorDTO.getFloorId() != null ? floorDTO.getFloorId() : generateId());
+        floor.setFloorId(normalizeId(floorDTO.getFloorId()));
         floor.setProjectId(projectId);
         floor.setName(floorDTO.getName());
         floor.setLevel(floorDTO.getLevel());
@@ -230,7 +277,7 @@ public class MallBuilderService {
     
     private void saveArea(AreaDTO areaDTO, String floorId) {
         Area area = new Area();
-        area.setAreaId(areaDTO.getAreaId() != null ? areaDTO.getAreaId() : generateId());
+        area.setAreaId(normalizeId(areaDTO.getAreaId()));
         area.setFloorId(floorId);
         area.setName(areaDTO.getName());
         area.setType(areaDTO.getType());
@@ -346,6 +393,21 @@ public class MallBuilderService {
     private String generateId() {
         return UUID.randomUUID().toString().replace("-", "").substring(0, 32);
     }
+
+    /**
+     * 规范化外部传入的 ID
+     * 
+     * 前端使用 crypto.randomUUID() 生成带连字符的 UUID（36字符），
+     * 数据库字段为 VARCHAR(32)，需要去掉连字符并截断。
+     * 如果传入为 null 则生成新 ID。
+     */
+    private String normalizeId(String externalId) {
+        if (externalId == null || externalId.isBlank()) {
+            return generateId();
+        }
+        String normalized = externalId.replace("-", "");
+        return normalized.length() > 32 ? normalized.substring(0, 32) : normalized;
+    }
     
     private ProjectResponse convertToResponse(MallProject project) {
         ProjectResponse response = new ProjectResponse();
@@ -401,6 +463,7 @@ public class MallBuilderService {
         response.setRental(area.getRental());
         response.setVisible(area.getVisible());
         response.setLocked(area.getLocked());
+        response.setStatus(area.getStatus() != null ? area.getStatus().getValue() : AreaStatus.AVAILABLE.getValue());
         return response;
     }
 }

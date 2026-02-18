@@ -67,6 +67,14 @@ public class MallBuilderController {
         return ApiResponse.success();
     }
     
+    @Operation(summary = "发布项目")
+    @PostMapping("/{projectId}/publish")
+    public ApiResponse<ProjectResponse> publishProject(@PathVariable("projectId") String projectId) {
+        String userId = getCurrentUserId();
+        ProjectResponse response = mallBuilderService.publishProject(projectId, userId);
+        return ApiResponse.success(response);
+    }
+    
     private String getCurrentUserId() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         return authentication.getName();

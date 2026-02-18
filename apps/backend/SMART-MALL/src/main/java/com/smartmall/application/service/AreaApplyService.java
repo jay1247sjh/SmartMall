@@ -13,10 +13,12 @@ import com.smartmall.domain.entity.User;
 import com.smartmall.domain.enums.ApplyStatus;
 import com.smartmall.domain.enums.AreaStatus;
 import com.smartmall.domain.enums.PermissionStatus;
+import com.smartmall.domain.entity.MallProject;
 import com.smartmall.infrastructure.mapper.AreaApplyMapper;
 import com.smartmall.infrastructure.mapper.AreaMapper;
 import com.smartmall.infrastructure.mapper.AreaPermissionMapper;
 import com.smartmall.infrastructure.mapper.FloorMapper;
+import com.smartmall.infrastructure.mapper.MallProjectMapper;
 import com.smartmall.infrastructure.mapper.UserMapper;
 import com.smartmall.interfaces.dto.permission.AreaApplyDTO;
 import com.smartmall.interfaces.dto.permission.AreaApplyRequest;
@@ -41,19 +43,37 @@ public class AreaApplyService {
     private final AreaPermissionMapper areaPermissionMapper;
     private final AreaMapper areaMapper;
     private final FloorMapper floorMapper;
+    private final MallProjectMapper mallProjectMapper;
     private final UserMapper userMapper;
+    private final DashboardService dashboardService;
     
     /**
      * 获取可申请的区域列表
+     * 只返回已发布项目中 status 为 AVAILABLE 的区域
      */
     public List<AvailableAreaDTO> getAvailableAreas(String floorId) {
+        // 查询已发布项目关联的楼层 ID 列表
+        List<String> publishedFloorIds = getPublishedProjectFloorIds();
+        if (publishedFloorIds.isEmpty()) {
+            return List.of();
+        }
+        
+        // 如果指定了 floorId，校验它是否属于已发布项目
+        if (floorId != null && !floorId.isEmpty()) {
+            if (!publishedFloorIds.contains(floorId)) {
+                return List.of();
+            }
+        }
+        
         LambdaQueryWrapper<Area> wrapper = new LambdaQueryWrapper<>();
-        wrapper.eq(Area::getIsDeleted, false);
+        wrapper.eq(Area::getIsDeleted, false)
+               .eq(Area::getStatus, AreaStatus.AVAILABLE);
+        
         if (floorId != null && !floorId.isEmpty()) {
             wrapper.eq(Area::getFloorId, floorId);
+        } else {
+            wrapper.in(Area::getFloorId, publishedFloorIds);
         }
-        // 只返回 AVAILABLE 或 LOCKED 状态的区域
-        wrapper.in(Area::getStatus, AreaStatus.AVAILABLE, AreaStatus.LOCKED);
         
         List<Area> areas = areaMapper.selectList(wrapper);
         
@@ -83,6 +103,33 @@ public class AreaApplyService {
             }
             return dto;
         }).collect(Collectors.toList());
+    }
+    
+    /**
+     * 获取已发布项目关联的所有楼层 ID
+     */
+    private List<String> getPublishedProjectFloorIds() {
+        // 查询所有已发布的项目
+        LambdaQueryWrapper<MallProject> projectWrapper = new LambdaQueryWrapper<>();
+        projectWrapper.eq(MallProject::getStatus, "PUBLISHED");
+        List<MallProject> publishedProjects = mallProjectMapper.selectList(projectWrapper);
+        
+        if (publishedProjects.isEmpty()) {
+            return List.of();
+        }
+        
+        // 获取这些项目关联的楼层 ID
+        List<String> projectIds = publishedProjects.stream()
+            .map(MallProject::getProjectId)
+            .collect(Collectors.toList());
+        
+        LambdaQueryWrapper<Floor> floorWrapper = new LambdaQueryWrapper<>();
+        floorWrapper.in(Floor::getProjectId, projectIds);
+        List<Floor> floors = floorMapper.selectList(floorWrapper);
+        
+        return floors.stream()
+            .map(Floor::getFloorId)
+            .collect(Collectors.toList());
     }
     
     /**
@@ -116,6 +163,16 @@ public class AreaApplyService {
         apply.setApplyReason(request.getApplyReason());
         
         areaApplyMapper.insert(apply);
+        
+        // 使用条件更新防止并发冲突：只有当前状态为 AVAILABLE 时才更新为 PENDING
+        LambdaUpdateWrapper<Area> updateWrapper = new LambdaUpdateWrapper<>();
+        updateWrapper.eq(Area::getAreaId, request.getAreaId())
+            .eq(Area::getStatus, AreaStatus.AVAILABLE)
+            .set(Area::getStatus, AreaStatus.PENDING);
+        int rows = areaMapper.update(null, updateWrapper);
+        if (rows == 0) {
+            throw new BusinessException(ResultCode.AREA_NOT_AVAILABLE);
+        }
         
         // 获取楼层信息
         Floor floor = floorMapper.selectById(area.getFloorId());
@@ -168,12 +225,16 @@ public class AreaApplyService {
         permission.setGrantedAt(LocalDateTime.now());
         areaPermissionMapper.insert(permission);
         
-        // 更新区域状态为已占用
+        // 更新区域状态为已授权（商家可进行建模操作）
         LambdaUpdateWrapper<Area> updateWrapper = new LambdaUpdateWrapper<>();
         updateWrapper.eq(Area::getAreaId, apply.getAreaId())
-            .set(Area::getStatus, AreaStatus.OCCUPIED)
+            .set(Area::getStatus, AreaStatus.AUTHORIZED)
             .set(Area::getMerchantId, apply.getMerchantId());
         areaMapper.update(null, updateWrapper);
+
+        // 清除仪表盘统计缓存
+        dashboardService.evictAdminStatsCache();
+        dashboardService.evictMerchantStatsCache(apply.getMerchantId());
     }
     
     /**
@@ -196,8 +257,41 @@ public class AreaApplyService {
         apply.setApprovedBy(adminId);
         apply.setRejectReason(reason);
         areaApplyMapper.updateById(apply);
+
+        // 恢复区域状态为 AVAILABLE
+        LambdaUpdateWrapper<Area> areaUpdate = new LambdaUpdateWrapper<>();
+        areaUpdate.eq(Area::getAreaId, apply.getAreaId())
+            .set(Area::getStatus, AreaStatus.AVAILABLE);
+        areaMapper.update(null, areaUpdate);
+
+        // 清除仪表盘统计缓存
+        dashboardService.evictAdminStatsCache();
+        dashboardService.evictMerchantStatsCache(apply.getMerchantId());
     }
-    
+
+    /**
+     * 确认布局，将区域状态从 AUTHORIZED 更新为 OCCUPIED
+     * 商家完成店铺布局并确认应用后调用
+     */
+    @Transactional
+    public void confirmLayout(String areaId, String merchantId) {
+        // 校验商家对该区域拥有 ACTIVE 权限
+        int permCount = areaPermissionMapper.countActiveByAreaAndMerchant(areaId, merchantId);
+        if (permCount == 0) {
+            throw new BusinessException(ResultCode.AREA_PERMISSION_DENIED);
+        }
+
+        // 使用条件更新：只有当前状态为 AUTHORIZED 时才更新为 OCCUPIED
+        LambdaUpdateWrapper<Area> updateWrapper = new LambdaUpdateWrapper<>();
+        updateWrapper.eq(Area::getAreaId, areaId)
+            .eq(Area::getStatus, AreaStatus.AUTHORIZED)
+            .set(Area::getStatus, AreaStatus.OCCUPIED);
+        int rows = areaMapper.update(null, updateWrapper);
+        if (rows == 0) {
+            throw new BusinessException(ResultCode.AREA_NOT_AVAILABLE, "该区域当前状态不允许此操作");
+        }
+    }
+
     private List<AreaApplyDTO> convertToDTOList(List<AreaApply> applies) {
         if (applies.isEmpty()) {
             return List.of();

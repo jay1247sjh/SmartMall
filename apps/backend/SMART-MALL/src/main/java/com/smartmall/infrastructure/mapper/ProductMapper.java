@@ -60,4 +60,11 @@ public interface ProductMapper extends BaseMapper<Product> {
      */
     @Select("SELECT COUNT(*) FROM product WHERE store_id = #{storeId} AND status = 'ON_SALE' AND is_deleted = false")
     int countOnSaleByStoreId(@Param("storeId") String storeId);
+
+    /**
+     * 统计商家所有店铺下的商品总数（JOIN 查询避免 N+1）
+     */
+    @Select("SELECT COUNT(*) FROM product p JOIN store s ON p.store_id = s.store_id WHERE s.merchant_id = #{merchantId} AND p.is_deleted = false AND s.is_deleted = false")
+    long countByMerchantId(@Param("merchantId") String merchantId);
+
 }

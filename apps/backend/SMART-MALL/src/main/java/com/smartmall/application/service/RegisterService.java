@@ -10,6 +10,7 @@ import com.smartmall.interfaces.dto.auth.RegisterRequest;
 import com.smartmall.interfaces.dto.auth.RegisterResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.dao.DuplicateKeyException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -37,31 +38,58 @@ public class RegisterService {
             throw new BusinessException(ResultCode.PARAM_ERROR, "两次输入的密码不一致");
         }
         
-        // 2. 检查用户名是否已存在
-        if (userRepository.findByUsername(request.getUsername()).isPresent()) {
+        // 2. 校验密码不能与用户名相同
+        if (request.getPassword().equals(request.getUsername())) {
+            throw new BusinessException(ResultCode.PARAM_ERROR, "密码不能与用户名相同");
+        }
+        
+        // 3. 校验角色类型（双重保险，DTO 注解已校验）
+        UserType type = UserType.valueOf(request.getUserType());
+        if (type == UserType.ADMIN) {
+            throw new BusinessException(ResultCode.PARAM_ERROR, "不支持的用户类型");
+        }
+        
+        // 4. 输入清洗：去除首尾空白
+        String username = request.getUsername().trim();
+        String email = request.getEmail().trim();
+        String phone = request.getPhone() != null ? request.getPhone().trim() : null;
+        
+        // 5. 检查用户名是否已存在
+        if (userRepository.findByUsername(username).isPresent()) {
             throw new BusinessException(ResultCode.USER_ALREADY_EXISTS, "用户名已被注册");
         }
         
-        // 3. 检查邮箱是否已存在
-        if (userRepository.findByEmail(request.getEmail()).isPresent()) {
+        // 6. 检查邮箱是否已存在
+        if (userRepository.findByEmail(email).isPresent()) {
             throw new BusinessException(ResultCode.USER_ALREADY_EXISTS, "邮箱已被注册");
         }
         
-        // 4. 创建用户实体
+        // 7. 创建用户实体
         User user = new User();
         user.setUserId(UUID.randomUUID().toString().replace("-", ""));
-        user.setUsername(request.getUsername());
+        user.setUsername(username);
         user.setPasswordHash(passwordEncoder.encode(request.getPassword()));
-        user.setEmail(request.getEmail());
-        user.setPhone(request.getPhone());
-        user.setUserType(UserType.USER);  // 默认为普通用户
+        user.setEmail(email);
+        user.setPhone(phone);
+        user.setUserType(type);
         user.setStatus(UserStatus.ACTIVE);
         
-        // 5. 保存用户
-        User savedUser = userRepository.save(user);
+        // 8. 保存用户（捕获并发场景下的唯一约束冲突）
+        User savedUser;
+        try {
+            savedUser = userRepository.save(user);
+        } catch (DuplicateKeyException e) {
+            String msg = e.getMessage();
+            if (msg != null && msg.contains("username")) {
+                throw new BusinessException(ResultCode.USER_ALREADY_EXISTS, "用户名已被注册");
+            } else if (msg != null && msg.contains("email")) {
+                throw new BusinessException(ResultCode.USER_ALREADY_EXISTS, "邮箱已被注册");
+            }
+            throw new BusinessException(ResultCode.USER_ALREADY_EXISTS, "用户信息已存在");
+        }
         log.info("用户注册成功: username={}, email={}", savedUser.getUsername(), savedUser.getEmail());
         
-        // 6. 构建响应
+        // 9. 构建响应
         return RegisterResponse.builder()
                 .userId(savedUser.getUserId())
                 .username(savedUser.getUsername())

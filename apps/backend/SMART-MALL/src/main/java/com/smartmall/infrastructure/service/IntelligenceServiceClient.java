@@ -2,13 +2,17 @@ package com.smartmall.infrastructure.service;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.smartmall.common.exception.BusinessException;
+import com.smartmall.common.response.ResultCode;
 import com.smartmall.infrastructure.config.IntelligenceServiceConfig;
 import com.smartmall.interfaces.dto.ai.AiChatResponse;
+import com.smartmall.interfaces.dto.merchant.StoreLayoutResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.*;
 import org.springframework.stereotype.Service;
+import org.springframework.web.client.ResourceAccessException;
 import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
 
@@ -308,6 +312,60 @@ public class IntelligenceServiceClient {
         }
     }
     
+    /**
+     * 调用 Intelligence Service 生成店铺布局
+     *
+     * @param theme              店铺主题
+     * @param areaId             区域 ID
+     * @param areaBoundary       区域边界顶点列表
+     * @return StoreLayoutResponse
+     * @throws BusinessException 当 Intelligence Service 不可用或超时时
+     */
+    public StoreLayoutResponse generateStoreLayout(
+            String theme,
+            String areaId,
+            List<Map<String, Object>> areaBoundary) {
+        String url = baseUrl + "/api/store/generate-layout";
+        log.info("调用 Intelligence Service 生成店铺布局: areaId={}, theme={}", areaId, theme);
+
+        try {
+            Map<String, Object> request = new HashMap<>();
+            request.put("theme", theme);
+            request.put("areaId", areaId);
+            request.put("areaBoundary", areaBoundary);
+            request.put("availableMaterials", List.of());
+
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(MediaType.APPLICATION_JSON);
+            HttpEntity<Map<String, Object>> entity = new HttpEntity<>(request, headers);
+
+            ResponseEntity<StoreLayoutResponse> response = intelligenceRestTemplate.exchange(
+                    url, HttpMethod.POST, entity, StoreLayoutResponse.class
+            );
+
+            StoreLayoutResponse body = response.getBody();
+            if (body == null) {
+                log.error("Intelligence Service 返回空响应: areaId={}", areaId);
+                throw new BusinessException(ResultCode.EXTERNAL_SERVICE_ERROR, "AI 服务返回空响应，请稍后重试");
+            }
+
+            log.info("AI 布局生成完成: areaId={}, success={}", areaId, body.getSuccess());
+            return body;
+
+        } catch (ResourceAccessException e) {
+            log.error("Intelligence Service 超时或不可达: areaId={}, error={}", areaId, e.getMessage());
+            throw new BusinessException(ResultCode.EXTERNAL_SERVICE_TIMEOUT, "AI 服务超时，请稍后重试");
+        } catch (RestClientException e) {
+            log.error("Intelligence Service 调用失败: areaId={}, error={}", areaId, e.getMessage());
+            throw new BusinessException(ResultCode.EXTERNAL_SERVICE_ERROR, "AI 服务暂时不可用，请稍后重试");
+        } catch (BusinessException e) {
+            throw e;
+        } catch (Exception e) {
+            log.error("调用 Intelligence Service 时发生未知错误: areaId={}", areaId, e);
+            throw new BusinessException(ResultCode.EXTERNAL_SERVICE_ERROR, "AI 服务异常，请稍后重试");
+        }
+    }
+
     /**
      * 解析商城生成响应
      */
