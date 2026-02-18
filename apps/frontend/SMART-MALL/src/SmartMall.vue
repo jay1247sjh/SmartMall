@@ -34,24 +34,47 @@
  * ============================================================================
  */
 
-import { computed } from 'vue'
+import { computed, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
 import { ElConfigProvider } from 'element-plus'
-import zhCn from 'element-plus/es/locale/lang/zh-cn'
 import GlobalAiAssistant from '@/components/ai/GlobalAiAssistant.vue'
+import SettingsPanel from '@/components/settings/SettingsPanel.vue'
+import { useSettingsStore } from '@/stores'
 
 const route = useRoute()
+const settingsStore = useSettingsStore()
 
 /**
  * 是否显示全局 AI 助手
  * 
  * 【逻辑说明】
  * - 登录、注册、忘记密码等认证页面不显示
+ * - 设置面板中禁用 AI 助手时不显示
  * - 其他所有页面都显示
  */
+const hiddenPages = ['/login', '/register', '/forgot-password', '/reset-password']
+
 const showAiAssistant = computed(() => {
-  const authPages = ['/login', '/register', '/forgot-password', '/reset-password']
-  return !authPages.includes(route.path)
+  return !hiddenPages.includes(route.path) && settingsStore.aiAssistantEnabled
+})
+
+/**
+ * 是否显示全局设置面板（fixed 定位版本）
+ * 
+ * 在使用 DashboardLayout 的页面中，设置面板已集成到侧边栏，
+ * 因此根组件的 fixed 版本不需要显示。
+ * 认证页面也不显示。
+ */
+const showGlobalSettings = computed(() => {
+  // DashboardLayout 页面和 admin/merchant 页面已有侧边栏设置
+  const dashboardPaths = ['/mall', '/admin', '/merchant', '/user']
+  const isInDashboard = dashboardPaths.some(p => route.path === p || route.path.startsWith(p + '/'))
+  return !hiddenPages.includes(route.path) && !isInDashboard
+})
+
+// 页面加载时从 localStorage 恢复设置
+onMounted(() => {
+  settingsStore.initFromStorage()
 })
 </script>
 
@@ -69,7 +92,7 @@ const showAiAssistant = computed(() => {
     
     所有子组件都会继承这些配置
   -->
-  <ElConfigProvider :locale="zhCn">
+  <ElConfigProvider :locale="settingsStore.elementPlusLocale">
     <!--
       ============================================================================
       应用主容器
@@ -111,6 +134,9 @@ const showAiAssistant = computed(() => {
         - 支持意图识别和页面导航
       -->
       <GlobalAiAssistant v-if="showAiAssistant" />
+
+      <!-- 全局设置面板（左下角齿轮图标，仅非 Dashboard 页面显示） -->
+      <SettingsPanel v-if="showGlobalSettings" />
     </main>
   </ElConfigProvider>
 </template>

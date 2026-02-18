@@ -1,10 +1,19 @@
 <!doctype html>
-<html lang="zh-CN" class="dark">
+<html lang="en" data-theme="light">
   <head>
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/vite.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>智慧商城</title>
+    <script>
+      // 在 CSS 加载前应用已保存的主题，防止闪烁
+      try {
+        var s = JSON.parse(localStorage.getItem('smart-mall-settings'));
+        if (s && (s.theme === 'dark' || s.theme === 'light')) {
+          document.documentElement.setAttribute('data-theme', s.theme);
+        }
+      } catch (e) {}
+    </script>
     <style>
       * {
         margin: 0;

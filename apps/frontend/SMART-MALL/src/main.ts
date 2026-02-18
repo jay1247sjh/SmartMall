@@ -83,6 +83,12 @@ import 'element-plus/theme-chalk/dark/css-vars.css'
 import SmartMall from './SmartMall.vue'
 
 /**
+ * vue-i18n 国际化插件
+ * 支持 8 种语言，默认 English，其他语言懒加载
+ */
+import i18n from '@/i18n'
+
+/**
  * 路由配置
  * 包含所有页面路由定义和路由守卫
  */
@@ -104,6 +110,7 @@ import router from './router'
  * - _base.scss: 基础重置样式
  * - main.scss: 主入口，包含 Element Plus 覆盖样式
  */
+import './assets/styles/variables.css'
 import './assets/styles/scss/index.scss'
 
 // ============================================================================
@@ -133,13 +140,19 @@ const pinia = createPinia()
 app.use(pinia)
 
 /**
- * 2. 注册 Element Plus（UI 组件库）
+ * 2. 注册 vue-i18n（国际化）
+ * 在 Element Plus 之前注册，确保组件渲染时 i18n 已就绪
+ */
+app.use(i18n)
+
+/**
+ * 3. 注册 Element Plus（UI 组件库）
  * 全局注册后，所有组件都可以直接使用 El* 组件
  */
 app.use(ElementPlus)
 
 /**
- * 3. 注册 Router（路由管理）
+ * 4. 注册 Router（路由管理）
  * 最后注册，因为路由守卫中会用到 Pinia store
  * 
  * 【路由守卫执行时机】

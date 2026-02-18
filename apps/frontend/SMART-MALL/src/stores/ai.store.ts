@@ -17,6 +17,7 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import type { ChatMessage, ChatResponse } from '@/api/intelligence.api'
+import i18n from '@/i18n'
 
 /** 意图类型 */
 export type IntentType = 
@@ -142,6 +143,11 @@ export const useAiStore = defineStore('ai', () => {
     lastIntent.value = intent
   }
   
+  /** 获取翻译文本 */
+  function t(key: string, params?: Record<string, unknown>): string {
+    return (i18n.global as unknown as { t: (key: string, params?: Record<string, unknown>) => string }).t(key, params)
+  }
+  
   /** 处理 AI 响应 */
   function handleResponse(response: ChatResponse) {
     console.log('[AI Store] handleResponse:', response.type, response)
@@ -151,7 +157,7 @@ export const useAiStore = defineStore('ai', () => {
       console.log('[AI Store] Adding navigate message')
       addMessage({
         role: 'assistant',
-        content: response.content || `正在为您打开「${response.navigateLabel}」...`,
+        content: response.content || t('ai.navigatingTo', { label: response.navigateLabel }),
         type: 'navigate',
         navigateTo: response.navigateTo,
         navigateLabel: response.navigateLabel,
@@ -167,7 +173,7 @@ export const useAiStore = defineStore('ai', () => {
       // 商城布局生成成功
       addMessage({
         role: 'assistant',
-        content: response.content || '商城布局已生成！',
+        content: response.content || t('ai.sidebar.mallGenerated'),
         type: 'mall_generated',
         action: response.action,
         args: response.args,
@@ -183,18 +189,18 @@ export const useAiStore = defineStore('ai', () => {
       setPendingConfirmation({
         action: response.action!,
         args: response.args!,
-        message: response.message || '确认执行此操作吗？',
+        message: response.message || t('ai.confirmAction'),
       })
       addMessage({
         role: 'assistant',
-        content: response.message || '确认执行此操作吗？',
+        content: response.message || t('ai.confirmAction'),
         type: response.type,
         action: response.action,
         args: response.args,
       })
     } else if (response.type === 'error') {
       // 显示错误消息
-      const errorContent = response.content || response.message || '抱歉，处理时出现错误，请重试。'
+      const errorContent = response.content || response.message || t('ai.errorDefault')
       addMessage({
         role: 'assistant',
         content: errorContent,
@@ -214,7 +220,7 @@ export const useAiStore = defineStore('ai', () => {
     if (messages.value.length === 0) {
       addMessage({
         role: 'assistant',
-        content: '你好！我是小智，Smart Mall 的 AI 助手。有什么可以帮您的吗？\n\n您可以问我：\n• 帮我打开商品管理\n• 创建一个3层商城，1楼Nike/Adidas，2楼星巴克\n• 推荐一家好吃的餐厅\n• 查看今日订单',
+        content: t('ai.welcome'),
       })
     }
   }

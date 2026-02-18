@@ -38,6 +38,7 @@ const STATUS_CONFIGS: Record<string, Record<string, StatusConfig>> = {
   // 版本状态
   version: {
     DRAFT: { class: 'status-draft', text: '草稿', color: '#fbbf24' },
+    PUBLISHED: { class: 'status-published', text: '已发布', color: '#60a5fa' },
     ACTIVE: { class: 'status-active', text: '当前版本', color: '#34d399' },
     ARCHIVED: { class: 'status-archived', text: '已归档', color: '#9ca3af' },
   },
