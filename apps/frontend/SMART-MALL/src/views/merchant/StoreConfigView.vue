@@ -14,11 +14,14 @@
  * Requirements: 2.4, 2.5
  */
 import { ref, computed, onMounted } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { storeApi, areaPermissionApi } from '@/api'
 import type { StoreDTO, UpdateStoreRequest } from '@/api/store.api'
 import type { AreaPermissionDTO } from '@/api/area-permission.api'
 import { StoreList, StoreForm } from '@/components/store'
 import type { StoreFormData } from '@/components/store/StoreForm.vue'
+
+const { t } = useI18n()
 
 // ============================================================================
 // State
@@ -49,7 +52,14 @@ const message = ref<{ type: 'success' | 'error'; text: string } | null>(null)
 // Computed
 // ============================================================================
 
-const categories = ['餐饮', '零售', '服装', '娱乐', '服务', '其他']
+const categories = computed(() => [
+  t('merchant.catCatering'),
+  t('merchant.catRetail'),
+  t('merchant.catClothing'),
+  t('merchant.catEntertainment'),
+  t('merchant.catService'),
+  t('merchant.catOther'),
+])
 
 // 可用于创建店铺的区域（有权限但还没有店铺的区域）
 const availableAreasForCreate = computed(() => {
@@ -81,7 +91,7 @@ async function loadData() {
     }
   } catch (e) {
     console.error('加载数据失败:', e)
-    showMessage('error', '加载数据失败')
+    showMessage('error', t('merchant.loadDataFailed'))
   } finally {
     isLoading.value = false
   }
@@ -145,9 +155,9 @@ async function saveStore() {
     }
     
     isEditing.value = false
-    showMessage('success', '店铺信息保存成功')
+    showMessage('success', t('merchant.storeSaved'))
   } catch (e: any) {
-    showMessage('error', e.message || '保存失败')
+    showMessage('error', e.message || t('merchant.saveFailed'))
   } finally {
     isProcessing.value = false
   }
@@ -163,7 +173,7 @@ function handleCreateDialogClose() {
 
 async function handleCreateSubmit(formData: StoreFormData) {
   if (!formData.areaId || !formData.name || !formData.category) {
-    showMessage('error', '请填写必填项')
+    showMessage('error', t('merchant.fillRequired'))
     return
   }
   
@@ -179,9 +189,9 @@ async function handleCreateSubmit(formData: StoreFormData) {
     stores.value.unshift(newStore)
     selectStore(newStore)
     showCreateDialog.value = false
-    showMessage('success', '店铺创建成功，等待管理员审批')
+    showMessage('success', t('merchant.storeCreated'))
   } catch (e: any) {
-    showMessage('error', e.message || '创建失败')
+    showMessage('error', e.message || t('merchant.createFailed'))
   } finally {
     isProcessing.value = false
   }
@@ -192,7 +202,7 @@ async function toggleStoreStatus() {
   
   const store = selectedStore.value
   if (store.status !== 'ACTIVE' && store.status !== 'INACTIVE') {
-    showMessage('error', '当前状态不支持此操作')
+    showMessage('error', t('merchant.statusNotSupported'))
     return
   }
   
@@ -201,14 +211,14 @@ async function toggleStoreStatus() {
     if (store.status === 'ACTIVE') {
       await storeApi.deactivateStore(store.storeId)
       store.status = 'INACTIVE'
-      showMessage('success', '店铺已暂停营业')
+      showMessage('success', t('merchant.storePaused'))
     } else {
       await storeApi.activateStore(store.storeId)
       store.status = 'ACTIVE'
-      showMessage('success', '店铺已恢复营业')
+      showMessage('success', t('merchant.storeResumed'))
     }
   } catch (e: any) {
-    showMessage('error', e.message || '操作失败')
+    showMessage('error', e.message || t('merchant.operationFailed'))
   } finally {
     isProcessing.value = false
   }
@@ -231,10 +241,10 @@ function getStatusClass(status: string): string {
 
 function getStatusText(status: string): string {
   const map: Record<string, string> = {
-    ACTIVE: '营业中',
-    INACTIVE: '暂停营业',
-    PENDING: '待审批',
-    CLOSED: '已关闭',
+    ACTIVE: t('merchant.statusActive'),
+    INACTIVE: t('merchant.statusInactiveFull'),
+    PENDING: t('merchant.statusPending'),
+    CLOSED: t('merchant.statusClosed'),
   }
   return map[status] || status
 }
@@ -260,14 +270,14 @@ onMounted(() => {
       <!-- 左侧：店铺列表 -->
       <div class="store-list-panel">
         <div class="panel-header">
-          <h3>我的店铺</h3>
+          <h3>{{ t('merchant.myStores') }}</h3>
           <div class="header-actions">
-            <span class="store-count">{{ stores.length }} 家</span>
+            <span class="store-count">{{ t('merchant.storeCount', { count: stores.length }) }}</span>
             <button 
               v-if="availableAreasForCreate.length > 0"
               class="btn-add" 
               @click="openCreateDialog"
-              title="创建新店铺"
+              :title="t('merchant.createNewStore')"
             >+</button>
           </div>
         </div>
@@ -286,7 +296,7 @@ onMounted(() => {
               v-if="availableAreasForCreate.length > 0"
               class="btn btn-primary btn-sm"
               @click="openCreateDialog"
-            >创建店铺</button>
+            >{{ t('merchant.createStore') }}</button>
           </template>
         </StoreList>
       </div>
@@ -311,32 +321,32 @@ onMounted(() => {
 
           <div class="detail-form">
             <div class="form-item">
-              <label>店铺名称</label>
+              <label>{{ t('merchant.storeName') }}</label>
               <input
                 v-if="isEditing"
                 v-model="editForm.name"
                 type="text"
                 class="input"
-                placeholder="请输入店铺名称"
+                :placeholder="t('merchant.storeNamePlaceholder')"
               />
               <span v-else class="value">{{ selectedStore.name }}</span>
             </div>
 
             <div class="form-item">
-              <label>店铺描述</label>
+              <label>{{ t('merchant.storeDesc') }}</label>
               <textarea
                 v-if="isEditing"
                 v-model="editForm.description"
                 class="textarea"
                 rows="3"
-                placeholder="请输入店铺描述"
+                :placeholder="t('merchant.storeDescPlaceholder')"
               ></textarea>
               <span v-else class="value">{{ selectedStore.description || '-' }}</span>
             </div>
 
             <div class="form-row">
               <div class="form-item">
-                <label>店铺分类</label>
+                <label>{{ t('merchant.storeCategory') }}</label>
                 <select
                   v-if="isEditing"
                   v-model="editForm.category"
@@ -350,13 +360,13 @@ onMounted(() => {
               </div>
 
               <div class="form-item">
-                <label>营业时间</label>
+                <label>{{ t('merchant.businessHours') }}</label>
                 <input
                   v-if="isEditing"
                   v-model="editForm.businessHours"
                   type="text"
                   class="input"
-                  placeholder="如：08:00-22:00"
+                  :placeholder="t('merchant.businessHoursPlaceholder')"
                 />
                 <span v-else class="value">{{ selectedStore.businessHours || '-' }}</span>
               </div>
@@ -365,14 +375,14 @@ onMounted(() => {
             <div class="form-actions">
               <template v-if="isEditing">
                 <button class="btn btn-secondary" @click="cancelEdit">
-                  取消
+                  {{ t('common.cancel') }}
                 </button>
                 <button
                   class="btn btn-primary"
                   :disabled="isProcessing"
                   @click="saveStore"
                 >
-                  {{ isProcessing ? '保存中...' : '保存' }}
+                  {{ isProcessing ? t('merchant.saving') : t('common.save') }}
                 </button>
               </template>
               <template v-else>
@@ -382,14 +392,14 @@ onMounted(() => {
                   :disabled="isProcessing"
                   @click="toggleStoreStatus"
                 >
-                  {{ selectedStore.status === 'ACTIVE' ? '暂停营业' : '恢复营业' }}
+                  {{ selectedStore.status === 'ACTIVE' ? t('merchant.pauseBusiness') : t('merchant.resumeBusiness') }}
                 </button>
                 <button 
                   v-if="selectedStore.status !== 'CLOSED'"
                   class="btn btn-primary" 
                   @click="startEdit"
                 >
-                  编辑信息
+                  {{ t('merchant.editInfo') }}
                 </button>
               </template>
             </div>
@@ -397,7 +407,7 @@ onMounted(() => {
         </template>
 
         <div v-else class="empty-state">
-          <p>请从左侧选择一个店铺</p>
+          <p>{{ t('merchant.selectStoreHint') }}</p>
         </div>
       </div>
     </div>
@@ -461,14 +471,14 @@ onMounted(() => {
 
 .store-count {
   font-size: $font-size-sm;
-  color: $color-text-secondary;
+  color: var(--text-secondary);
 }
 
 .btn-add {
   width: 28px;
   height: 28px;
   border-radius: $radius-sm;
-  background: $color-primary;
+  background: var(--accent-primary);
   color: white;
   border: none;
   font-size: $font-size-xl;
@@ -476,7 +486,7 @@ onMounted(() => {
   @include clickable;
 
   &:hover {
-    background: $color-primary-hover;
+    background: var(--accent-hover);
   }
 }
 
@@ -490,14 +500,14 @@ onMounted(() => {
 .empty-state {
   flex: 1;
   @include flex-center;
-  color: $color-text-muted;
+  color: var(--text-muted);
   font-size: $font-size-base;
 }
 
 .detail-header {
   @include flex-between;
   padding-bottom: $space-6;
-  border-bottom: 1px solid $color-border-subtle;
+  border-bottom: 1px solid var(--border-subtle);
   margin-bottom: $space-6;
 }
 
@@ -521,13 +531,13 @@ onMounted(() => {
   h2 {
     font-size: $font-size-2xl;
     font-weight: $font-weight-semibold;
-    color: $color-text-primary;
+    color: var(--text-primary);
     margin: 0 0 $space-1 + 2 0;
   }
 
   .location {
     font-size: $font-size-base;
-    color: $color-text-secondary;
+    color: var(--text-secondary);
   }
 }
 
@@ -537,19 +547,23 @@ onMounted(() => {
   padding: $space-1 + 2 $space-3 + 2;
 
   &.status-active {
-    @include status-variant($color-success-muted, $color-success);
+    background: var(--success-muted);
+    color: var(--success);
   }
 
   &.status-inactive {
-    @include status-variant($color-warning-muted, $color-warning);
+    background: var(--warning-muted);
+    color: var(--warning);
   }
 
   &.status-pending {
-    @include status-variant($color-primary-muted, $color-primary);
+    background: rgba(var(--accent-primary-rgb), 0.15);
+    color: var(--accent-primary);
   }
 
   &.status-closed {
-    @include status-variant(rgba($color-text-muted, 0.15), $color-text-muted);
+    background: rgba(var(--text-muted-rgb), 0.15);
+    color: var(--text-muted);
   }
 }
 
@@ -564,7 +578,7 @@ onMounted(() => {
 
   .value {
     font-size: $font-size-lg;
-    color: $color-text-primary;
+    color: var(--text-primary);
   }
 }
 

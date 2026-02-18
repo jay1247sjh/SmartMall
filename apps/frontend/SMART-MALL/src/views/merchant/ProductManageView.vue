@@ -13,6 +13,7 @@
  * Requirements: 3.4, 3.5
  */
 import { ref, computed, onMounted, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { storeApi, productApi } from '@/api'
 import type { StoreDTO } from '@/api/store.api'
 import type { ProductDTO, ProductStatus } from '@/api/product.api'
@@ -26,6 +27,7 @@ import type { ProductFormData, StockFormData } from '@/components/product/Produc
 import type { ProductFilterParams } from '@/components/product/ProductFilter.vue'
 
 // Composables
+const { t } = useI18n()
 const { message, showMessage, clearMessage } = useMessage()
 
 // ============================================================================
@@ -83,7 +85,7 @@ async function loadStores() {
     }
   } catch (e) {
     console.error('加载店铺失败:', e)
-    showMessage('error', '加载店铺失败')
+    showMessage('error', t('merchant.product.loadStoresFailed'))
   }
 }
 
@@ -104,7 +106,7 @@ async function loadProducts() {
     total.value = result.total
   } catch (e) {
     console.error('加载商品失败:', e)
-    showMessage('error', '加载商品失败')
+    showMessage('error', t('merchant.product.loadProductsFailed'))
   } finally {
     isLoading.value = false
   }
@@ -149,7 +151,7 @@ async function handleFormSubmit(data: ProductFormData | StockFormData) {
         category: formData.category || undefined,
         image: formData.image || undefined,
       })
-      showMessage('success', '商品创建成功')
+      showMessage('success', t('merchant.product.createSuccess'))
     } else if (formMode.value === 'edit' && editingProduct.value) {
       const formData = data as ProductFormData
       await productApi.updateProduct(editingProduct.value.productId, {
@@ -162,18 +164,18 @@ async function handleFormSubmit(data: ProductFormData | StockFormData) {
         image: formData.image || undefined,
         sortOrder: formData.sortOrder,
       })
-      showMessage('success', '商品更新成功')
+      showMessage('success', t('merchant.product.updateSuccess'))
     } else if (formMode.value === 'stock' && editingProduct.value) {
       const stockData = data as StockFormData
       await productApi.updateProductStock(editingProduct.value.productId, stockData.stock)
-      showMessage('success', '库存已更新')
+      showMessage('success', t('merchant.product.stockUpdated'))
     }
     
     showFormDialog.value = false
     editingProduct.value = null
     loadProducts()
   } catch (e: any) {
-    showMessage('error', e.message || '操作失败')
+    showMessage('error', e.message || t('merchant.product.operationFailed'))
   } finally {
     isProcessing.value = false
   }
@@ -181,14 +183,14 @@ async function handleFormSubmit(data: ProductFormData | StockFormData) {
 
 // 商品操作
 async function handleDeleteProduct(product: ProductDTO) {
-  if (!confirm(`确定要删除商品"${product.name}"吗？`)) return
+  if (!confirm(t('merchant.product.confirmDelete', { name: product.name }))) return
   
   try {
     await productApi.deleteProduct(product.productId)
-    showMessage('success', '商品已删除')
+    showMessage('success', t('merchant.product.deleted'))
     loadProducts()
   } catch (e: any) {
-    showMessage('error', e.message || '删除失败')
+    showMessage('error', e.message || t('merchant.product.deleteFailed'))
   }
 }
 
@@ -196,10 +198,10 @@ async function handleToggleStatus(product: ProductDTO) {
   const newStatus: ProductStatus = product.status === 'ON_SALE' ? 'OFF_SALE' : 'ON_SALE'
   try {
     await productApi.updateProductStatus(product.productId, newStatus)
-    showMessage('success', newStatus === 'ON_SALE' ? '商品已上架' : '商品已下架')
+    showMessage('success', newStatus === 'ON_SALE' ? t('merchant.product.onSale') : t('merchant.product.offSale'))
     loadProducts()
   } catch (e: any) {
-    showMessage('error', e.message || '操作失败')
+    showMessage('error', e.message || t('merchant.product.operationFailed'))
   }
 }
 
@@ -262,7 +264,7 @@ onMounted(async () => {
 
     <!-- 商品列表 -->
     <div v-if="!filterParams.storeId" class="empty-state">
-      <div class="empty">请先选择店铺</div>
+      <div class="empty">{{ t('merchant.product.selectStore') }}</div>
     </div>
     <ProductTable
       v-else

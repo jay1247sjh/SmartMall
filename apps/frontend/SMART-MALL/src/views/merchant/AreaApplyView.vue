@@ -1,4 +1,4 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 /**
  * 区域申请视图
  *
@@ -14,12 +14,14 @@
  * - 仅商家（MERCHANT）可访问
  */
 import { ref, computed, onMounted } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { DataTable, Modal, MessageAlert, StatusBadge } from '@/components'
 import { areaPermissionApi } from '@/api'
 import type { AvailableAreaDTO, AreaApplyDTO } from '@/api/area-permission.api'
 import { useMessage, useFormatters } from '@/composables'
 
 // Composables
+const { t } = useI18n()
 const { message, showMessage, clearMessage } = useMessage()
 const { formatDate } = useFormatters()
 
@@ -44,21 +46,21 @@ const isProcessing = ref(false)
 // Computed
 // ============================================================================
 
-const availableColumns = [
-  { key: 'floorName', title: '楼层', minWidth: '80' },
-  { key: 'name', title: '区域编号', minWidth: '100' },
-  { key: 'type', title: '类型', minWidth: '80' },
-  { key: 'status', title: '状态', minWidth: '80' },
-  { key: 'actions', title: '操作', minWidth: '100' },
-]
+const availableColumns = computed(() => [
+  { key: 'floorName', title: t('merchant.areaApply.colFloor'), minWidth: '80' },
+  { key: 'name', title: t('merchant.areaApply.colAreaCode'), minWidth: '100' },
+  { key: 'type', title: t('merchant.areaApply.colType'), minWidth: '80' },
+  { key: 'status', title: t('merchant.areaApply.colStatus'), minWidth: '80' },
+  { key: 'actions', title: t('merchant.areaApply.colActions'), minWidth: '100' },
+])
 
-const historyColumns = [
-  { key: 'floorName', title: '楼层', minWidth: '80' },
-  { key: 'areaName', title: '区域编号', minWidth: '100' },
-  { key: 'applyReason', title: '申请理由', minWidth: '150' },
-  { key: 'status', title: '状态', minWidth: '80' },
-  { key: 'createdAt', title: '申请时间', minWidth: '120' },
-]
+const historyColumns = computed(() => [
+  { key: 'floorName', title: t('merchant.areaApply.colFloor'), minWidth: '80' },
+  { key: 'areaName', title: t('merchant.areaApply.colAreaCode'), minWidth: '100' },
+  { key: 'applyReason', title: t('merchant.areaApply.applyReason'), minWidth: '150' },
+  { key: 'status', title: t('merchant.areaApply.colStatus'), minWidth: '80' },
+  { key: 'createdAt', title: t('merchant.areaApply.colApplyTime'), minWidth: '120' },
+])
 
 const applyableAreas = computed(() => 
   availableAreas.value.filter(a => a.status === 'AVAILABLE')
@@ -79,7 +81,7 @@ async function loadData() {
     myApplications.value = apps
   } catch (e: any) {
     console.error('加载数据失败:', e)
-    showMessage('error', e.message || '加载数据失败')
+    showMessage('error', e.message || t('merchant.areaApply.loadDataFailed'))
   } finally {
     isLoading.value = false
   }
@@ -96,9 +98,9 @@ function getAreaStatusClass(status: string): string {
 
 function getAreaStatusText(status: string): string {
   const map: Record<string, string> = {
-    AVAILABLE: '可申请',
-    OCCUPIED: '已入驻',
-    LOCKED: '已锁定',
+    AVAILABLE: t('merchant.areaApply.statusAvailable'),
+    OCCUPIED: t('merchant.areaApply.statusOccupied'),
+    LOCKED: t('merchant.areaApply.statusLocked'),
   }
   return map[status] || status
 }
@@ -114,9 +116,9 @@ function getAppStatusClass(status: string): string {
 
 function getAppStatusText(status: string): string {
   const map: Record<string, string> = {
-    PENDING: '待审批',
-    APPROVED: '已通过',
-    REJECTED: '已拒绝',
+    PENDING: t('merchant.areaApply.statusPending'),
+    APPROVED: t('merchant.areaApply.statusApproved'),
+    REJECTED: t('merchant.areaApply.statusRejected'),
   }
   return map[status] || status
 }
@@ -147,9 +149,9 @@ async function submitApplication() {
     }
     
     showApplyModal.value = false
-    showMessage('success', '申请提交成功，请等待审批')
+    showMessage('success', t('merchant.areaApply.submitSuccess'))
   } catch (e: any) {
-    showMessage('error', e.message || '申请失败')
+    showMessage('error', e.message || t('merchant.areaApply.submitFailed'))
   } finally {
     isProcessing.value = false
   }
@@ -173,15 +175,15 @@ onMounted(() => {
       <div class="stats-row">
         <div class="stat-item">
           <span class="stat-value">{{ applyableAreas.length }}</span>
-          <span class="stat-label">可申请区域</span>
+          <span class="stat-label">{{ t('merchant.areaApply.applyableAreas') }}</span>
         </div>
         <div class="stat-item">
           <span class="stat-value">{{ myApplications.filter(a => a.status === 'PENDING').length }}</span>
-          <span class="stat-label">待审批</span>
+          <span class="stat-label">{{ t('merchant.areaApply.statusPending') }}</span>
         </div>
         <div class="stat-item">
           <span class="stat-value">{{ myApplications.filter(a => a.status === 'APPROVED').length }}</span>
-          <span class="stat-label">已通过</span>
+          <span class="stat-label">{{ t('merchant.areaApply.statusApproved') }}</span>
         </div>
       </div>
 
@@ -191,13 +193,13 @@ onMounted(() => {
           :class="['tab-btn', { active: activeTab === 'available' }]"
           @click="activeTab = 'available'"
         >
-          可申请区域
+          {{ t('merchant.areaApply.availableAreas') }}
         </button>
         <button
           :class="['tab-btn', { active: activeTab === 'history' }]"
           @click="activeTab = 'history'"
         >
-          我的申请
+          {{ t('merchant.areaApply.myApplications') }}
         </button>
       </div>
 
@@ -207,7 +209,7 @@ onMounted(() => {
           :columns="availableColumns"
           :data="availableAreas"
           :loading="isLoading"
-          empty-text="暂无可申请区域"
+          :empty-text="t('merchant.areaApply.noAvailableAreas')"
         >
           <template #status="{ value }">
             <span :class="['status-badge', getAreaStatusClass(value)]">
@@ -220,7 +222,7 @@ onMounted(() => {
               class="action-btn apply"
               @click="openApplyModal(row)"
             >
-              申请
+              {{ t('merchant.areaApply.apply') }}
             </button>
             <span v-else class="text-muted">-</span>
           </template>
@@ -233,7 +235,7 @@ onMounted(() => {
           :columns="historyColumns"
           :data="myApplications"
           :loading="isLoading"
-          empty-text="暂无申请记录"
+          :empty-text="t('merchant.areaApply.noApplications')"
         >
           <template #status="{ value, row }">
             <div class="status-cell">
@@ -241,7 +243,7 @@ onMounted(() => {
                 {{ getAppStatusText(value) }}
               </span>
               <span v-if="row.rejectReason" class="reject-hint" :title="row.rejectReason">
-                查看原因
+                {{ t('merchant.areaApply.viewReason') }}
               </span>
             </div>
           </template>
@@ -257,42 +259,42 @@ onMounted(() => {
       <!-- 申请弹窗 -->
       <Modal
         v-model:visible="showApplyModal"
-        title="申请区域"
+        :title="t('merchant.areaApply.applyArea')"
         width="450px"
       >
         <div v-if="selectedArea" class="apply-form">
           <div class="area-info">
             <div class="info-row">
-              <label>区域位置</label>
+              <label>{{ t('merchant.areaApply.areaLocation') }}</label>
               <span>{{ selectedArea.floorName }} · {{ selectedArea.name }}</span>
             </div>
             <div class="info-row">
-              <label>区域类型</label>
+              <label>{{ t('merchant.areaApply.areaType') }}</label>
               <span>{{ selectedArea.type || '-' }}</span>
             </div>
           </div>
           
           <div class="form-item">
-            <label>申请理由</label>
+            <label>{{ t('merchant.areaApply.applyReason') }}</label>
             <textarea
               v-model="applyReason"
               class="textarea"
               rows="4"
-              placeholder="请说明您申请该区域的理由（可选）..."
+              :placeholder="t('merchant.areaApply.applyReasonPlaceholder')"
             ></textarea>
           </div>
         </div>
 
         <template #footer>
           <button class="btn btn-secondary" @click="showApplyModal = false">
-            取消
+            {{ t('common.cancel') }}
           </button>
           <button
             class="btn btn-primary"
             :disabled="isProcessing"
             @click="submitApplication"
           >
-            {{ isProcessing ? '提交中...' : '提交申请' }}
+            {{ isProcessing ? t('merchant.areaApply.submitting') : t('merchant.areaApply.submitApply') }}
           </button>
         </template>
       </Modal>
@@ -348,27 +350,27 @@ onMounted(() => {
 }
 
 .status-available {
-  @include status-variant($color-primary-muted, $color-primary);
+  @include status-variant(var(--accent-muted), var(--accent-primary));
 }
 
 .status-locked {
-  @include status-variant($color-warning-muted, $color-warning);
+  @include status-variant(rgba(var(--warning-rgb), 0.15), var(--warning));
 }
 
 .status-occupied {
-  @include status-variant(rgba($color-gray-muted, 0.15), $color-gray-muted);
+  @include status-variant(rgba(var(--text-muted-rgb), 0.15), var(--text-muted));
 }
 
 .status-pending {
-  @include status-variant($color-warning-muted, $color-warning);
+  @include status-variant(rgba(var(--warning-rgb), 0.15), var(--warning));
 }
 
 .status-approved {
-  @include status-variant($color-success-muted, $color-success);
+  @include status-variant(rgba(var(--success-rgb), 0.15), var(--success));
 }
 
 .status-rejected {
-  @include status-variant($color-error-muted, $color-error);
+  @include status-variant(rgba(var(--error-rgb), 0.15), var(--error));
 }
 
 .status-cell {
@@ -379,7 +381,7 @@ onMounted(() => {
 
 .reject-hint {
   font-size: $font-size-xs + 1;
-  color: $color-error;
+  color: var(--error);
   cursor: pointer;
   text-decoration: underline;
 }
@@ -397,8 +399,8 @@ onMounted(() => {
   @include btn-action;
 
   &.apply {
-    background: rgba($color-primary, 0.2);
-    color: $color-primary;
+    background: rgba(var(--accent-primary-rgb), 0.2);
+    color: var(--accent-primary);
   }
 }
 
@@ -409,7 +411,7 @@ onMounted(() => {
   gap: $space-5;
 
   .area-info {
-    background: $color-bg-hover;
+    background: rgba(var(--text-primary-rgb), 0.04);
     border-radius: $radius-md + 2;
     padding: $space-4;
     display: flex;
@@ -423,12 +425,12 @@ onMounted(() => {
 
       label {
         font-size: $font-size-sm + 1;
-        color: $color-text-secondary;
+        color: var(--text-secondary);
       }
 
       span {
         font-size: $font-size-base;
-        color: $color-text-primary;
+        color: var(--text-primary);
         font-weight: $font-weight-medium;
       }
     }

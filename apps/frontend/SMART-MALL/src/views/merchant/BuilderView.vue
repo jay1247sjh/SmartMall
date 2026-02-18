@@ -1,33 +1,35 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 /**
  * 商家建模工具页面
  * 商家只能编辑自己授权的区域
  */
+import { useI18n } from 'vue-i18n'
 import { useUserStore } from '@/stores'
 
+const { t } = useI18n()
 const userStore = useUserStore()
 </script>
 
 <template>
   <article class="builder-view">
     <header class="builder-header">
-      <h2>建模工具</h2>
+      <h2>{{ t('merchant.builder.title') }}</h2>
     </header>
 
     <section class="info-card">
-      <h3>您已授权的区域</h3>
+      <h3>{{ t('merchant.builder.authorizedAreas') }}</h3>
       <ul v-if="userStore.authorizedAreaIds.length" class="area-list">
         <li v-for="areaId in userStore.authorizedAreaIds" :key="areaId" class="area-item">
           <span class="area-icon">📍</span>
           <span class="area-id">{{ areaId }}</span>
         </li>
       </ul>
-      <p v-else class="empty">暂无授权区域，请先申请</p>
+      <p v-else class="empty">{{ t('merchant.builder.noAuthorizedAreas') }}</p>
     </section>
 
     <section class="placeholder-card">
       <span class="placeholder-icon">🏗️</span>
-      <p class="placeholder-text">3D 建模工具开发中...</p>
+      <p class="placeholder-text">{{ t('merchant.builder.inDevelopment') }}</p>
     </section>
   </article>
 </template>
@@ -49,7 +51,7 @@ const userStore = useUserStore()
     margin: 0;
     font-size: $font-size-2xl;
     font-weight: $font-weight-semibold;
-    color: $color-text-primary;
+    color: var(--text-primary);
   }
 }
 
@@ -61,7 +63,7 @@ const userStore = useUserStore()
     margin: 0 0 $space-4 0;
     font-size: $font-size-lg;
     font-weight: $font-weight-medium;
-    color: $color-text-primary;
+    color: var(--text-primary);
   }
 }
 
@@ -79,12 +81,12 @@ const userStore = useUserStore()
   align-items: center;
   gap: $space-3;
   padding: $space-3 $space-4;
-  background: $color-bg-hover;
+  background: rgba(var(--text-primary-rgb), 0.04);
   border-radius: $radius-md;
   transition: background $duration-normal $ease-default;
 
   &:hover {
-    background: rgba($color-white, 0.06);
+    background: rgba(255, 255, 255, 0.06);
   }
 
   .area-icon {
@@ -93,7 +95,7 @@ const userStore = useUserStore()
 
   .area-id {
     font-size: $font-size-base;
-    color: $color-text-primary;
+    color: var(--text-primary);
     font-family: monospace;
   }
 }
@@ -111,8 +113,8 @@ const userStore = useUserStore()
   align-items: center;
   justify-content: center;
   gap: $space-4;
-  background: $color-bg-secondary;
-  border: 1px dashed $color-border-muted;
+  background: var(--bg-secondary);
+  border: 1px dashed var(--border-muted);
   border-radius: $radius-lg;
   min-height: 200px;
 
