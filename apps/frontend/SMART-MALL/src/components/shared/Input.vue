@@ -1,4 +1,4 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 /**
  * Input - 统一输入框组件
  * 
@@ -208,32 +208,32 @@ function togglePasswordVisibility() {
   
   :deep(.el-input__wrapper),
   :deep(.el-textarea__inner) {
-    background: $color-bg-primary;
-    border: 1px solid $color-border-muted;
+    background: var(--bg-primary);
+    border: 1px solid var(--border-muted);
     border-radius: $radius-md;
     box-shadow: none;
     padding: $space-3 $space-4;
     font-size: $font-size-base;
-    color: $color-text-primary;
+    color: var(--text-primary);
     @include transition-base;
     
     &:hover {
-      border-color: $color-border-focus;
+      border-color: var(--accent-primary);
     }
     
     &:focus,
     &.is-focus {
-      border-color: $color-primary;
-      box-shadow: 0 0 0 2px $color-primary-muted;
+      border-color: var(--accent-primary);
+      box-shadow: 0 0 0 2px var(--accent-muted);
     }
   }
   
   :deep(.el-input__inner),
   :deep(.el-textarea__inner) {
-    color: $color-text-primary;
+    color: var(--text-primary);
     
     &::placeholder {
-      color: $color-text-muted;
+      color: var(--text-muted);
     }
   }
   
@@ -273,16 +273,16 @@ function togglePasswordVisibility() {
   &.input-error {
     :deep(.el-input__wrapper),
     :deep(.el-textarea__inner) {
-      border-color: $color-error;
+      border-color: var(--error);
       
       &:hover {
-        border-color: $color-error-hover;
+        border-color: var(--error);
       }
       
       &:focus,
       &.is-focus {
-        border-color: $color-error;
-        box-shadow: 0 0 0 2px $color-error-muted;
+        border-color: var(--error);
+        box-shadow: 0 0 0 2px rgba(var(--error-rgb), 0.15);
       }
     }
   }
@@ -291,15 +291,15 @@ function togglePasswordVisibility() {
   &.input-disabled {
     :deep(.el-input__wrapper),
     :deep(.el-textarea__inner) {
-      background: $color-bg-tertiary;
-      border-color: $color-border-subtle;
+      background: var(--bg-tertiary);
+      border-color: var(--border-subtle);
       cursor: not-allowed;
       opacity: 0.6;
     }
     
     :deep(.el-input__inner),
     :deep(.el-textarea__inner) {
-      color: $color-text-disabled;
+      color: var(--text-disabled);
       cursor: not-allowed;
     }
   }
@@ -308,8 +308,8 @@ function togglePasswordVisibility() {
   &.input-readonly {
     :deep(.el-input__wrapper),
     :deep(.el-textarea__inner) {
-      background: $color-bg-secondary;
-      border-color: $color-border-subtle;
+      background: var(--bg-secondary);
+      border-color: var(--border-subtle);
     }
     
     :deep(.el-input__inner),
@@ -326,7 +326,7 @@ function togglePasswordVisibility() {
     display: inline-flex;
     align-items: center;
     gap: $space-2;
-    color: $color-text-secondary;
+    color: var(--text-secondary);
   }
   
   .input-prefix {
@@ -340,11 +340,11 @@ function togglePasswordVisibility() {
   // 密码切换按钮
   .input-password-toggle {
     cursor: pointer;
-    color: $color-text-secondary;
+    color: var(--text-secondary);
     @include transition-base;
     
     &:hover {
-      color: $color-text-primary;
+      color: var(--text-primary);
     }
   }
   
@@ -353,11 +353,11 @@ function togglePasswordVisibility() {
   // ============================================================================
   
   :deep(.el-input__clear) {
-    color: $color-text-muted;
+    color: var(--text-muted);
     @include transition-base;
     
     &:hover {
-      color: $color-text-secondary;
+      color: var(--text-secondary);
     }
   }
   
@@ -368,7 +368,7 @@ function togglePasswordVisibility() {
   :deep(.el-input__count),
   :deep(.el-textarea__count) {
     background: transparent;
-    color: $color-text-muted;
+    color: var(--text-muted);
     font-size: $font-size-sm;
   }
   
@@ -379,7 +379,7 @@ function togglePasswordVisibility() {
   .input-error-message {
     margin-top: $space-2;
     font-size: $font-size-sm;
-    color: $color-error;
+    color: var(--error);
     line-height: 1.4;
   }
 }

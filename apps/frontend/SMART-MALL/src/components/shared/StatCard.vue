@@ -1,4 +1,4 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 /**
  * StatCard - 统计卡片组件
  * 使用 Element Plus 组件 + HTML5 语义化标签
@@ -45,12 +45,12 @@ defineProps<Props>()
 .stat-card {
   @include card-base;
   border-radius: $radius-lg;
-  background: rgba($color-bg-secondary, 0.8);
+  background: rgba(var(--bg-secondary-rgb), 0.8);
   transition: transform $duration-slow $ease-default, border-color $duration-slow $ease-default;
 
   &:hover {
     transform: translateY(-2px);
-    border-color: rgba($color-accent-blue, 0.3);
+    border-color: rgba(var(--accent-primary-rgb), 0.3);
   }
 
   :deep(.el-card__body) {
@@ -65,14 +65,14 @@ defineProps<Props>()
     .stat-statistic {
       :deep(.el-statistic__head) {
         font-size: $font-size-sm;
-        color: $color-text-secondary;
+        color: var(--text-secondary);
         margin-bottom: $space-2;
       }
 
       :deep(.el-statistic__content) {
         font-size: 28px;
         font-weight: $font-weight-medium;
-        color: $color-text-primary;
+        color: var(--text-primary);
       }
     }
 

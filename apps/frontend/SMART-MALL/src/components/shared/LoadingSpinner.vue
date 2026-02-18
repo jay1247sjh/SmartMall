@@ -1,4 +1,4 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 /**
  * LoadingSpinner - 加载动画组件
  * 
@@ -61,8 +61,8 @@ withDefaults(defineProps<Props>(), {
   .spinner-ring {
     border-radius: $radius-full;
     border-style: solid;
-    border-color: $color-border-subtle;
-    border-top-color: $color-primary;
+    border-color: var(--border-subtle);
+    border-top-color: var(--accent-primary);
     animation: spin 1s linear infinite;
   }
   
@@ -71,7 +71,7 @@ withDefaults(defineProps<Props>(), {
   // ============================================================================
   
   .loading-text {
-    color: $color-text-secondary;
+    color: var(--text-secondary);
     font-weight: $font-weight-medium;
     text-align: center;
   }

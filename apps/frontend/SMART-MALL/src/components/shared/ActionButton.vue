@@ -1,4 +1,4 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 /**
  * 操作按钮组件
  * 表格行内的小型操作按钮
@@ -33,25 +33,25 @@ defineEmits<{
 
   &.approve,
   &.publish {
-    background: rgba($color-success, 0.2);
-    color: $color-success;
+    background: rgba(var(--success-rgb), 0.2);
+    color: var(--success);
   }
 
   &.reject,
   &.delete {
-    background: rgba($color-error, 0.2);
-    color: $color-error;
+    background: rgba(var(--error-rgb), 0.2);
+    color: var(--error);
   }
 
   &.view,
   &.edit {
-    background: rgba($color-primary, 0.2);
-    color: $color-primary;
+    background: rgba(var(--accent-primary-rgb), 0.2);
+    color: var(--accent-primary);
   }
 
   &.rollback {
-    background: rgba($color-warning, 0.2);
-    color: $color-warning;
+    background: rgba(var(--warning-rgb), 0.2);
+    color: var(--warning);
   }
 }
 </style>

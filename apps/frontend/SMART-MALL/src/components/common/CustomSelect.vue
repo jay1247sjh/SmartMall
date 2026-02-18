@@ -1,4 +1,4 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 /**
  * 自定义下拉选择器
  * 使用 Element Plus 组件
@@ -55,52 +55,52 @@ function handleChange(value: string) {
   min-width: 140px;
 
   :deep(.el-select__wrapper) {
-    background: rgba($color-bg-secondary, 0.9);
-    border: 1px solid rgba($color-primary, 0.3);
+    background: rgba(var(--bg-secondary-rgb), 0.9);
+    border: 1px solid rgba(var(--accent-primary-rgb), 0.3);
     border-radius: 10px;
     box-shadow: none;
     transition: all $duration-normal $ease-default;
 
     &:hover {
-      border-color: rgba($color-primary, 0.5);
-      background: rgba($color-primary, 0.08);
+      border-color: rgba(var(--accent-primary-rgb), 0.5);
+      background: rgba(var(--accent-primary-rgb), 0.08);
     }
 
     &.is-focused {
-      border-color: $color-primary;
-      box-shadow: 0 0 0 3px rgba($color-primary, 0.15);
+      border-color: var(--accent-primary);
+      box-shadow: 0 0 0 3px rgba(var(--accent-primary-rgb), 0.15);
     }
   }
 
   :deep(.el-select__placeholder) {
-    color: $color-text-secondary;
+    color: var(--text-secondary);
   }
 
   :deep(.el-select__selected-item) {
-    color: $color-text-primary;
+    color: var(--text-primary);
   }
 }
 
 :deep(.el-select-dropdown) {
-  background: $color-bg-tertiary;
-  border: 1px solid rgba($color-primary, 0.2);
+  background: var(--bg-tertiary);
+  border: 1px solid rgba(var(--accent-primary-rgb), 0.2);
   border-radius: 10px;
-  box-shadow: 0 8px 32px rgba($color-black, 0.4);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
 
   .el-select-dropdown__item {
-    color: $color-text-secondary;
+    color: var(--text-secondary);
     border-radius: $radius-md;
     margin: 2px $space-2;
     padding: 10px $space-3;
 
     &:hover {
-      background: rgba($color-primary, 0.1);
-      color: $color-text-primary;
+      background: rgba(var(--accent-primary-rgb), 0.1);
+      color: var(--text-primary);
     }
 
     &.is-selected {
-      background: rgba($color-primary, 0.15);
-      color: $color-primary;
+      background: rgba(var(--accent-primary-rgb), 0.15);
+      color: var(--accent-primary);
     }
   }
 }
@@ -110,7 +110,7 @@ function handleChange(value: string) {
 }
 
 .option-check {
-  color: $color-primary;
+  color: var(--accent-primary);
   margin-left: $space-2;
 }
 </style>

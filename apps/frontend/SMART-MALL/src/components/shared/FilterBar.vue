@@ -1,4 +1,4 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 /**
  * 筛选栏组件
  * 统一的列表页筛选栏样式
@@ -38,13 +38,13 @@ defineProps<{
 
     :deep(label) {
       font-size: $font-size-base;
-      color: $color-text-secondary;
+      color: var(--text-secondary);
     }
   }
 
   .filter-stats {
     font-size: $font-size-sm;
-    color: $color-text-secondary;
+    color: var(--text-secondary);
   }
 }
 </style>

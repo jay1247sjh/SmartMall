@@ -1,4 +1,4 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 /**
  * Button - 统一按钮组件
  * 
@@ -136,62 +136,62 @@ function handleClick(event: MouseEvent) {
   
   // Primary 变体 - 主要操作按钮
   &.btn-primary {
-    --el-button-bg-color: #{$color-primary};
-    --el-button-border-color: #{$color-primary};
-    --el-button-text-color: #{$color-bg-primary};
-    --el-button-hover-bg-color: #{$color-primary-hover};
-    --el-button-hover-border-color: #{$color-primary-hover};
-    --el-button-hover-text-color: #{$color-bg-primary};
-    --el-button-active-bg-color: #{$color-accent-blue-dark};
-    --el-button-active-border-color: #{$color-accent-blue-dark};
-    --el-button-disabled-bg-color: #{$color-primary};
-    --el-button-disabled-border-color: #{$color-primary};
-    --el-button-disabled-text-color: #{$color-bg-primary};
+    --el-button-bg-color: var(--accent-primary);
+    --el-button-border-color: var(--accent-primary);
+    --el-button-text-color: var(--bg-primary);
+    --el-button-hover-bg-color: var(--accent-hover);
+    --el-button-hover-border-color: var(--accent-hover);
+    --el-button-hover-text-color: var(--bg-primary);
+    --el-button-active-bg-color: var(--accent-muted);
+    --el-button-active-border-color: var(--accent-muted);
+    --el-button-disabled-bg-color: var(--accent-primary);
+    --el-button-disabled-border-color: var(--accent-primary);
+    --el-button-disabled-text-color: var(--bg-primary);
   }
   
   // Secondary 变体 - 次要操作按钮
   &.btn-secondary {
     --el-button-bg-color: transparent;
-    --el-button-border-color: #{$color-border-muted};
-    --el-button-text-color: #{$color-text-secondary};
-    --el-button-hover-bg-color: #{$color-bg-hover};
-    --el-button-hover-border-color: #{$color-border-muted};
-    --el-button-hover-text-color: #{$color-text-primary};
-    --el-button-active-bg-color: #{$color-bg-tertiary};
-    --el-button-active-border-color: #{$color-border-muted};
+    --el-button-border-color: var(--border-muted);
+    --el-button-text-color: var(--text-secondary);
+    --el-button-hover-bg-color: rgba(var(--text-primary-rgb), 0.04);
+    --el-button-hover-border-color: var(--border-muted);
+    --el-button-hover-text-color: var(--text-primary);
+    --el-button-active-bg-color: var(--bg-tertiary);
+    --el-button-active-border-color: var(--border-muted);
     --el-button-disabled-bg-color: transparent;
-    --el-button-disabled-border-color: #{$color-border-subtle};
-    --el-button-disabled-text-color: #{$color-text-disabled};
+    --el-button-disabled-border-color: var(--border-subtle);
+    --el-button-disabled-text-color: var(--text-disabled);
   }
   
   // Danger 变体 - 危险操作按钮
   &.btn-danger {
-    --el-button-bg-color: #{$color-error};
-    --el-button-border-color: #{$color-error};
-    --el-button-text-color: #{$color-bg-primary};
-    --el-button-hover-bg-color: #{$color-error-hover};
-    --el-button-hover-border-color: #{$color-error-hover};
-    --el-button-hover-text-color: #{$color-bg-primary};
-    --el-button-active-bg-color: darken($color-error, 10%);
-    --el-button-active-border-color: darken($color-error, 10%);
-    --el-button-disabled-bg-color: #{$color-error};
-    --el-button-disabled-border-color: #{$color-error};
-    --el-button-disabled-text-color: #{$color-bg-primary};
+    --el-button-bg-color: var(--error);
+    --el-button-border-color: var(--error);
+    --el-button-text-color: var(--bg-primary);
+    --el-button-hover-bg-color: var(--error);
+    --el-button-hover-border-color: var(--error);
+    --el-button-hover-text-color: var(--bg-primary);
+    --el-button-active-bg-color: var(--error);
+    --el-button-active-border-color: var(--error);
+    --el-button-disabled-bg-color: var(--error);
+    --el-button-disabled-border-color: var(--error);
+    --el-button-disabled-text-color: var(--bg-primary);
   }
   
   // Icon 变体 - 图标按钮
   &.btn-icon {
-    --el-button-bg-color: #{$color-border-subtle};
+    --el-button-bg-color: var(--border-subtle);
     --el-button-border-color: transparent;
-    --el-button-text-color: #{$color-text-secondary};
-    --el-button-hover-bg-color: #{$color-border-muted};
+    --el-button-text-color: var(--text-secondary);
+    --el-button-hover-bg-color: var(--border-muted);
     --el-button-hover-border-color: transparent;
-    --el-button-hover-text-color: #{$color-text-primary};
-    --el-button-active-bg-color: #{$color-bg-tertiary};
+    --el-button-hover-text-color: var(--text-primary);
+    --el-button-active-bg-color: var(--bg-tertiary);
     --el-button-active-border-color: transparent;
-    --el-button-disabled-bg-color: #{$color-border-subtle};
+    --el-button-disabled-bg-color: var(--border-subtle);
     --el-button-disabled-border-color: transparent;
-    --el-button-disabled-text-color: #{$color-text-disabled};
+    --el-button-disabled-text-color: var(--text-disabled);
     
     padding: 0;
     min-width: auto;
@@ -201,15 +201,15 @@ function handleClick(event: MouseEvent) {
   &.btn-ghost {
     --el-button-bg-color: transparent;
     --el-button-border-color: transparent;
-    --el-button-text-color: #{$color-text-secondary};
-    --el-button-hover-bg-color: #{$color-bg-hover};
+    --el-button-text-color: var(--text-secondary);
+    --el-button-hover-bg-color: rgba(var(--text-primary-rgb), 0.04);
     --el-button-hover-border-color: transparent;
-    --el-button-hover-text-color: #{$color-primary};
-    --el-button-active-bg-color: #{$color-primary-muted};
+    --el-button-hover-text-color: var(--accent-primary);
+    --el-button-active-bg-color: var(--accent-muted);
     --el-button-active-border-color: transparent;
     --el-button-disabled-bg-color: transparent;
     --el-button-disabled-border-color: transparent;
-    --el-button-disabled-text-color: #{$color-text-disabled};
+    --el-button-disabled-text-color: var(--text-disabled);
   }
   
   // ============================================================================

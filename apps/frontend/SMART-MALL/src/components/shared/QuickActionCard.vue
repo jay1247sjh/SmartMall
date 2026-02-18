@@ -1,4 +1,4 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 /**
  * QuickActionCard - 快捷入口卡片组件
  * 使用 Element Plus 组件 + HTML5 语义化标签
@@ -43,16 +43,16 @@ function handleClick() {
   cursor: pointer;
   @include card-base;
   border-radius: $radius-lg;
-  background: rgba($color-bg-secondary, 0.8);
+  background: rgba(var(--bg-secondary-rgb), 0.8);
   transition: transform $duration-normal, border-color $duration-normal;
 
   &:hover {
     transform: translateY(-2px);
-    border-color: rgba($color-primary, 0.3);
+    border-color: rgba(var(--accent-primary-rgb), 0.3);
 
     .action-arrow {
       transform: translateX($space-1);
-      color: $color-primary;
+      color: var(--accent-primary);
     }
   }
 
@@ -74,19 +74,19 @@ function handleClick() {
         font-size: $font-size-lg;
         font-weight: $font-weight-medium;
         margin: 0 0 $space-1 0;
-        color: $color-text-primary;
+        color: var(--text-primary);
       }
 
       .action-desc {
         font-size: $font-size-sm + 1;
         margin: 0;
-        color: $color-text-secondary;
+        color: var(--text-secondary);
       }
     }
 
     .action-arrow {
       flex-shrink: 0;
-      color: $color-text-disabled;
+      color: var(--text-disabled);
       transition: all $duration-normal;
     }
   }

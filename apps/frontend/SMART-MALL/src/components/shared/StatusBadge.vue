@@ -1,4 +1,4 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 /**
  * 状态徽章组件
  * 统一的状态显示样式
@@ -31,30 +31,34 @@ const config = computed(() => getStatusConfig(props.status))
   &.status-active,
   &.status-approved,
   &.status-occupied {
-    @include status-variant($color-success-muted, $color-success);
+    @include status-variant(rgba(var(--success-rgb), 0.15), var(--success));
   }
 
   &.status-pending,
   &.status-frozen,
   &.status-inactive,
   &.status-draft {
-    @include status-variant($color-warning-muted, $color-warning);
+    @include status-variant(rgba(var(--warning-rgb), 0.15), var(--warning));
   }
 
   &.status-rejected,
   &.status-revoked,
   &.status-deleted,
   &.status-closed {
-    @include status-variant($color-error-muted, $color-error);
+    @include status-variant(rgba(var(--error-rgb), 0.15), var(--error));
+  }
+
+  &.status-published {
+    @include status-variant(rgba(var(--info-rgb), 0.15), var(--info));
   }
 
   &.status-locked,
   &.status-archived {
-    @include status-variant(rgba($color-text-muted, 0.15), $color-text-muted);
+    @include status-variant(rgba(var(--text-muted-rgb), 0.15), var(--text-muted));
   }
 
   &.status-authorized {
-    @include status-variant($color-info-muted, $color-info);
+    @include status-variant(rgba(var(--info-rgb), 0.15), var(--info));
   }
 }
 </style>

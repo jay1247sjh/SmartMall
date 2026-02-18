@@ -1,4 +1,4 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 /**
  * 消息提示组件
  * 统一的页面内消息提示样式
@@ -33,15 +33,15 @@ const icons: Record<MessageType, string> = {
   @include message-alert;
 
   &.warning {
-    background: $color-warning-muted;
-    color: $color-warning;
-    border: 1px solid rgba($color-warning, 0.2);
+    background: rgba(var(--warning-rgb), 0.15);
+    color: var(--warning);
+    border: 1px solid rgba(var(--warning-rgb), 0.2);
   }
 
   &.info {
-    background: $color-info-muted;
-    color: $color-info;
-    border: 1px solid rgba($color-info, 0.2);
+    background: rgba(var(--info-rgb), 0.15);
+    color: var(--info);
+    border: 1px solid rgba(var(--info-rgb), 0.2);
   }
 
   .icon {

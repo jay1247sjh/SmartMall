@@ -1,4 +1,4 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 /**
  * 确认弹窗组件
  * 带有理由输入的确认弹窗
@@ -100,7 +100,7 @@ function handleClose() {
   @include form-item;
 
   .required {
-    color: $color-error;
+    color: var(--error);
   }
 
   .textarea {
@@ -125,11 +125,11 @@ function handleClose() {
   }
 
   &-warning {
-    background: $color-warning;
-    color: $color-bg-primary;
+    background: var(--warning);
+    color: var(--bg-primary);
 
     &:hover:not(:disabled) {
-      background: $color-warning-hover;
+      background: var(--warning);
     }
   }
 }

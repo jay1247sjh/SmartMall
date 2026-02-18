@@ -1,4 +1,4 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 /**
  * ErrorFallback - 错误回退组件
  * 
@@ -107,7 +107,7 @@ defineEmits<Emits>()
     display: flex;
     align-items: center;
     justify-content: center;
-    color: $color-warning;
+    color: var(--warning);
     
     .icon-warning {
       width: 48px;
@@ -121,7 +121,7 @@ defineEmits<Emits>()
   
   .error-message {
     margin: 0;
-    color: $color-text-primary;
+    color: var(--text-primary);
     font-weight: $font-weight-medium;
     line-height: 1.5;
   }
@@ -134,9 +134,9 @@ defineEmits<Emits>()
     margin: 0;
     padding: $space-3;
     max-width: 400px;
-    background-color: $color-bg-tertiary;
+    background-color: var(--bg-tertiary);
     border-radius: $radius-md;
-    color: $color-text-secondary;
+    color: var(--text-secondary);
     font-size: $font-size-sm;
     font-family: monospace;
     word-break: break-word;
@@ -156,7 +156,7 @@ defineEmits<Emits>()
     background: $gradient-button;
     border: none;
     border-radius: $radius-md;
-    color: $color-white;
+    color: #ffffff;
     font-size: $font-size-base;
     font-weight: $font-weight-medium;
     cursor: pointer;
@@ -178,7 +178,7 @@ defineEmits<Emits>()
     
     &:focus {
       outline: none;
-      box-shadow: 0 0 0 2px $color-border-focus;
+      box-shadow: 0 0 0 2px var(--accent-primary);
     }
   }
   
