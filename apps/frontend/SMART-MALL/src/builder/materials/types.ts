@@ -14,6 +14,33 @@ export type MaterialCategory =
   | 'service'         // 服务设施（洗手间、服务台）
   | 'common'          // 公共区域
   | 'infrastructure'  // 基础设施（长椅、路灯、垃圾桶等）
+  | 'commercial'      // 商业店铺（咖啡店、服装店、餐饮店、数码店）
+
+/**
+ * 商业材质子类型
+ */
+export type CommercialSubType =
+  | 'counter'          // 吧台/收银台
+  | 'coffeeMachine'    // 咖啡机
+  | 'sofa'             // 沙发座
+  | 'roundTable'       // 圆桌
+  | 'displayCase'      // 展示柜
+  | 'clothingRack'     // 衣架
+  | 'fittingRoom'      // 试衣间
+  | 'displayStand'     // 展示台
+  | 'cashRegister'     // 收银台
+  | 'mirror'           // 镜子
+  | 'diningTable'      // 餐桌
+  | 'chair'            // 椅子
+  | 'kitchenArea'      // 厨房区
+  | 'menuBoard'        // 菜单牌
+  | 'experienceDesk'   // 体验台
+  | 'accessoryRack'    // 配件架
+
+/**
+ * 商业店铺类型
+ */
+export type CommercialShopType = 'cafe' | 'fashion' | 'restaurant' | 'tech'
 
 /**
  * 放置规则
@@ -53,6 +80,10 @@ export interface MaterialPreset {
   isInfrastructure?: boolean
   /** 基础设施子类型 */
   infrastructureType?: 'bench' | 'lamp' | 'trashBin' | 'planter' | 'sign' | 'fountain' | 'kiosk' | 'atm' | 'vendingMachine' | 'infoBoard' | 'clock' | 'fireExtinguisher'
+  /** 商业材质子类型（仅 commercial 分类） */
+  commercialType?: CommercialSubType
+  /** 所属商业店铺类型（仅 commercial 分类） */
+  shopType?: CommercialShopType
 }
 
 /**

@@ -1,4 +1,4 @@
-<!--
+﻿<!--
   BuilderEngine Vue 3 使用示例
   
   这个示例展示了如何在 Vue 3 组件中使用 BuilderEngine
@@ -242,15 +242,15 @@ const projectInfo = computed(() => {
   display: flex;
   width: 100%;
   height: 100vh;
-  background: $color-bg-tertiary;
+  background: var(--bg-tertiary);
 }
 
 .toolbar {
   width: 250px;
-  background: $color-bg-secondary;
+  background: var(--bg-secondary);
   padding: $space-5;
   overflow-y: auto;
-  color: $color-text-primary;
+  color: var(--text-primary);
 
   &-section {
     margin-bottom: 30px;
@@ -258,7 +258,7 @@ const projectInfo = computed(() => {
     h3 {
       margin: 0 0 10px 0;
       font-size: $font-size-base;
-      color: $color-text-muted;
+      color: var(--text-muted);
       text-transform: uppercase;
     }
 
@@ -267,21 +267,21 @@ const projectInfo = computed(() => {
       width: 100%;
       padding: 10px;
       margin-bottom: $space-2;
-      background: $color-bg-tertiary;
-      border: 1px solid $color-border-muted;
-      color: $color-text-primary;
+      background: var(--bg-tertiary);
+      border: 1px solid var(--border-muted);
+      color: var(--text-primary);
       cursor: pointer;
       border-radius: $radius-sm;
       transition: all $duration-normal;
 
       &:hover:not(:disabled) {
-        background: $color-border-muted;
-        border-color: $color-text-muted;
+        background: var(--border-muted);
+        border-color: var(--text-muted);
       }
 
       &.active {
-        background: $color-primary;
-        border-color: $color-primary-hover;
+        background: var(--accent-primary);
+        border-color: var(--accent-hover);
       }
 
       &:disabled {
@@ -293,7 +293,7 @@ const projectInfo = computed(() => {
     .info {
       font-size: 13px;
       line-height: 1.8;
-      color: $color-text-secondary;
+      color: var(--text-secondary);
 
       div {
         padding: $space-1 0;

@@ -4,7 +4,7 @@
  * 定义所有预设的公共区域材质
  */
 
-import type { MaterialPreset, MaterialCategory } from './types'
+import type { MaterialPreset, MaterialCategory, CommercialShopType } from './types'
 
 /**
  * 材质预设列表
@@ -349,6 +349,363 @@ export const MATERIAL_PRESETS: MaterialPreset[] = [
     isInfrastructure: true,
     infrastructureType: 'fireExtinguisher',
   },
+  // ============================================================================
+  // 商业店铺 - 咖啡店 (commercial / cafe)
+  // ============================================================================
+  {
+    id: 'cafe-counter',
+    name: '吧台',
+    description: '咖啡店吧台/柜台',
+    icon: 'M4 16h16M4 12h16M8 12V8h8v4',
+    areaType: 'other',
+    color: '#8b6914',
+    category: 'commercial',
+    placementRules: {
+      allowedItems: [],
+      requiresFloorConnection: false,
+      description: '点击放置吧台',
+    },
+    isVerticalConnection: false,
+    isInfrastructure: true,
+    commercialType: 'counter',
+    shopType: 'cafe',
+  },
+  {
+    id: 'cafe-coffeeMachine',
+    name: '咖啡机',
+    description: '专业咖啡制作设备',
+    icon: 'M6 4h12v4H6zM8 8v8M16 8v8M6 16h12v2H6z',
+    areaType: 'other',
+    color: '#5c4033',
+    category: 'commercial',
+    placementRules: {
+      allowedItems: [],
+      requiresFloorConnection: false,
+      description: '点击放置咖啡机',
+    },
+    isVerticalConnection: false,
+    isInfrastructure: true,
+    commercialType: 'coffeeMachine',
+    shopType: 'cafe',
+  },
+  {
+    id: 'cafe-sofa',
+    name: '沙发座',
+    description: '舒适的休闲沙发',
+    icon: 'M4 14h16v4H4zM6 10h12v4H6zM4 14V10M20 14V10',
+    areaType: 'other',
+    color: '#c4a882',
+    category: 'commercial',
+    placementRules: {
+      allowedItems: [],
+      requiresFloorConnection: false,
+      description: '点击放置沙发座',
+    },
+    isVerticalConnection: false,
+    isInfrastructure: true,
+    commercialType: 'sofa',
+    shopType: 'cafe',
+  },
+  {
+    id: 'cafe-roundTable',
+    name: '圆桌',
+    description: '咖啡店圆桌',
+    icon: 'M12 6a6 6 0 100 12 6 6 0 000-12zM12 18v4M8 22h8',
+    areaType: 'other',
+    color: '#a0826d',
+    category: 'commercial',
+    placementRules: {
+      allowedItems: [],
+      requiresFloorConnection: false,
+      description: '点击放置圆桌',
+    },
+    isVerticalConnection: false,
+    isInfrastructure: true,
+    commercialType: 'roundTable',
+    shopType: 'cafe',
+  },
+  {
+    id: 'cafe-displayCase',
+    name: '展示柜',
+    description: '甜品/饮品展示柜',
+    icon: 'M4 4h16v14H4zM4 10h16M8 4v14M16 4v14',
+    areaType: 'other',
+    color: '#d4a574',
+    category: 'commercial',
+    placementRules: {
+      allowedItems: [],
+      requiresFloorConnection: false,
+      description: '点击放置展示柜',
+    },
+    isVerticalConnection: false,
+    isInfrastructure: true,
+    commercialType: 'displayCase',
+    shopType: 'cafe',
+  },
+
+  // ============================================================================
+  // 商业店铺 - 服装店 (commercial / fashion)
+  // ============================================================================
+  {
+    id: 'fashion-clothingRack',
+    name: '衣架',
+    description: '服装展示衣架',
+    icon: 'M4 4h16M12 4v16M8 8h8M6 12h12',
+    areaType: 'other',
+    color: '#2d3748',
+    category: 'commercial',
+    placementRules: {
+      allowedItems: [],
+      requiresFloorConnection: false,
+      description: '点击放置衣架',
+    },
+    isVerticalConnection: false,
+    isInfrastructure: true,
+    commercialType: 'clothingRack',
+    shopType: 'fashion',
+  },
+  {
+    id: 'fashion-fittingRoom',
+    name: '试衣间',
+    description: '顾客试衣空间',
+    icon: 'M4 4h16v16H4zM4 4v16M20 4v16M10 4v16',
+    areaType: 'other',
+    color: '#e8d5b7',
+    category: 'commercial',
+    placementRules: {
+      allowedItems: [],
+      requiresFloorConnection: false,
+      description: '点击放置试衣间',
+    },
+    isVerticalConnection: false,
+    isInfrastructure: true,
+    commercialType: 'fittingRoom',
+    shopType: 'fashion',
+  },
+  {
+    id: 'fashion-displayStand',
+    name: '展示台',
+    description: '服装展示平台',
+    icon: 'M6 18h12M8 14h8v4H8zM10 10h4v4h-4z',
+    areaType: 'other',
+    color: '#718096',
+    category: 'commercial',
+    placementRules: {
+      allowedItems: [],
+      requiresFloorConnection: false,
+      description: '点击放置展示台',
+    },
+    isVerticalConnection: false,
+    isInfrastructure: true,
+    commercialType: 'displayStand',
+    shopType: 'fashion',
+  },
+  {
+    id: 'fashion-cashRegister',
+    name: '收银台',
+    description: '服装店收银台',
+    icon: 'M4 6h16v10H4zM8 16v2M16 16v2M7 10h2M11 10h2M15 10h2',
+    areaType: 'other',
+    color: '#4a5568',
+    category: 'commercial',
+    placementRules: {
+      allowedItems: [],
+      requiresFloorConnection: false,
+      description: '点击放置收银台',
+    },
+    isVerticalConnection: false,
+    isInfrastructure: true,
+    commercialType: 'cashRegister',
+    shopType: 'fashion',
+  },
+  {
+    id: 'fashion-mirror',
+    name: '镜子',
+    description: '全身穿衣镜',
+    icon: 'M8 2h8v18H8zM8 20h8M12 20v2',
+    areaType: 'other',
+    color: '#b0c4de',
+    category: 'commercial',
+    placementRules: {
+      allowedItems: [],
+      requiresFloorConnection: false,
+      description: '点击放置镜子',
+    },
+    isVerticalConnection: false,
+    isInfrastructure: true,
+    commercialType: 'mirror',
+    shopType: 'fashion',
+  },
+
+  // ============================================================================
+  // 商业店铺 - 餐饮店 (commercial / restaurant)
+  // ============================================================================
+  {
+    id: 'restaurant-diningTable',
+    name: '餐桌',
+    description: '中式餐饮桌',
+    icon: 'M4 10h16v2H4zM6 12v6M18 12v6M8 10V6M16 10V6',
+    areaType: 'other',
+    color: '#8b4513',
+    category: 'commercial',
+    placementRules: {
+      allowedItems: [],
+      requiresFloorConnection: false,
+      description: '点击放置餐桌',
+    },
+    isVerticalConnection: false,
+    isInfrastructure: true,
+    commercialType: 'diningTable',
+    shopType: 'restaurant',
+  },
+  {
+    id: 'restaurant-chair',
+    name: '椅子',
+    description: '餐饮椅',
+    icon: 'M8 4h8v4H8zM6 8h12v2H6zM8 10v8M16 10v8M6 18h12',
+    areaType: 'other',
+    color: '#a0522d',
+    category: 'commercial',
+    placementRules: {
+      allowedItems: [],
+      requiresFloorConnection: false,
+      description: '点击放置椅子',
+    },
+    isVerticalConnection: false,
+    isInfrastructure: true,
+    commercialType: 'chair',
+    shopType: 'restaurant',
+  },
+  {
+    id: 'restaurant-kitchenArea',
+    name: '厨房区',
+    description: '后厨操作区域',
+    icon: 'M4 4h16v16H4zM4 10h16M10 4v16',
+    areaType: 'other',
+    color: '#cd853f',
+    category: 'commercial',
+    placementRules: {
+      allowedItems: [],
+      requiresFloorConnection: false,
+      description: '点击放置厨房区',
+    },
+    isVerticalConnection: false,
+    isInfrastructure: true,
+    commercialType: 'kitchenArea',
+    shopType: 'restaurant',
+  },
+  {
+    id: 'restaurant-cashRegister',
+    name: '收银台',
+    description: '餐饮店收银台',
+    icon: 'M4 6h16v10H4zM8 16v2M16 16v2M7 10h2M11 10h2M15 10h2',
+    areaType: 'other',
+    color: '#b8860b',
+    category: 'commercial',
+    placementRules: {
+      allowedItems: [],
+      requiresFloorConnection: false,
+      description: '点击放置收银台',
+    },
+    isVerticalConnection: false,
+    isInfrastructure: true,
+    commercialType: 'cashRegister',
+    shopType: 'restaurant',
+  },
+  {
+    id: 'restaurant-menuBoard',
+    name: '菜单牌',
+    description: '菜品展示牌',
+    icon: 'M6 2h12v18H6zM8 6h8M8 10h8M8 14h6',
+    areaType: 'other',
+    color: '#daa520',
+    category: 'commercial',
+    placementRules: {
+      allowedItems: [],
+      requiresFloorConnection: false,
+      description: '点击放置菜单牌',
+    },
+    isVerticalConnection: false,
+    isInfrastructure: true,
+    commercialType: 'menuBoard',
+    shopType: 'restaurant',
+  },
+
+  // ============================================================================
+  // 商业店铺 - 数码店 (commercial / tech)
+  // ============================================================================
+  {
+    id: 'tech-displayCase',
+    name: '展示柜',
+    description: '数码产品展示柜',
+    icon: 'M4 4h16v14H4zM4 10h16M8 4v14M16 4v14',
+    areaType: 'other',
+    color: '#1a202c',
+    category: 'commercial',
+    placementRules: {
+      allowedItems: [],
+      requiresFloorConnection: false,
+      description: '点击放置展示柜',
+    },
+    isVerticalConnection: false,
+    isInfrastructure: true,
+    commercialType: 'displayCase',
+    shopType: 'tech',
+  },
+  {
+    id: 'tech-experienceDesk',
+    name: '体验台',
+    description: '产品体验操作台',
+    icon: 'M4 8h16v8H4zM6 16v4M18 16v4M8 8V6h8v2',
+    areaType: 'other',
+    color: '#2b6cb0',
+    category: 'commercial',
+    placementRules: {
+      allowedItems: [],
+      requiresFloorConnection: false,
+      description: '点击放置体验台',
+    },
+    isVerticalConnection: false,
+    isInfrastructure: true,
+    commercialType: 'experienceDesk',
+    shopType: 'tech',
+  },
+  {
+    id: 'tech-cashRegister',
+    name: '收银台',
+    description: '数码店收银台',
+    icon: 'M4 6h16v10H4zM8 16v2M16 16v2M7 10h2M11 10h2M15 10h2',
+    areaType: 'other',
+    color: '#2d3748',
+    category: 'commercial',
+    placementRules: {
+      allowedItems: [],
+      requiresFloorConnection: false,
+      description: '点击放置收银台',
+    },
+    isVerticalConnection: false,
+    isInfrastructure: true,
+    commercialType: 'cashRegister',
+    shopType: 'tech',
+  },
+  {
+    id: 'tech-accessoryRack',
+    name: '配件架',
+    description: '数码配件展示架',
+    icon: 'M4 4h16v16H4zM4 8h16M4 12h16M4 16h16',
+    areaType: 'other',
+    color: '#4a5568',
+    category: 'commercial',
+    placementRules: {
+      allowedItems: [],
+      requiresFloorConnection: false,
+      description: '点击放置配件架',
+    },
+    isVerticalConnection: false,
+    isInfrastructure: true,
+    commercialType: 'accessoryRack',
+    shopType: 'tech',
+  },
 ]
 
 /**
@@ -383,7 +740,7 @@ export function getMaterialPresetsByCategory(category: MaterialCategory): Materi
  * 获取所有分类
  */
 export function getAllCategories(): MaterialCategory[] {
-  return ['circulation', 'service', 'common', 'infrastructure']
+  return ['circulation', 'service', 'common', 'infrastructure', 'commercial']
 }
 
 /**
@@ -395,6 +752,7 @@ export function getCategoryDisplayName(category: MaterialCategory): string {
     service: '服务设施',
     common: '公共区域',
     infrastructure: '基础设施',
+    commercial: '商业店铺',
   }
   return names[category]
 }
@@ -419,4 +777,11 @@ export function getInfrastructurePresets(): MaterialPreset[] {
  */
 export function getInfrastructurePresetByType(type: string): MaterialPreset | undefined {
   return MATERIAL_PRESETS.find(preset => preset.infrastructureType === type)
+}
+
+/**
+ * 根据商业店铺类型获取预设列表
+ */
+export function getCommercialPresetsByType(shopType: CommercialShopType): MaterialPreset[] {
+  return MATERIAL_PRESETS.filter(preset => preset.category === 'commercial' && preset.shopType === shopType)
 }
