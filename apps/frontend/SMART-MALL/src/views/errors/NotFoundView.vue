@@ -1,4 +1,4 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 /**
  * 404 页面未找到视图
  *
@@ -58,7 +58,7 @@ function goHome() {
 .error-view {
   min-height: 100vh;
   @include flex-center;
-  background: $color-bg-primary;
+  background: var(--bg-primary);
 
   .error-content {
     text-align: center;

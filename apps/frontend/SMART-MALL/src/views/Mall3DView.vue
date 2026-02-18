@@ -1,4 +1,4 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 /**
  * 3D 商城漫游页面
  *
@@ -111,7 +111,7 @@ onUnmounted(() => {
   position: relative;
   width: 100%;
   height: 100vh;
-  background: $color-bg-primary;
+  background: var(--bg-primary);
   overflow: hidden;
 
   .scene-container {
@@ -126,7 +126,7 @@ onUnmounted(() => {
 .loading-overlay {
   position: absolute;
   inset: 0;
-  background: $color-bg-primary;
+  background: var(--bg-primary);
   @include flex-center;
   z-index: 100;
 
@@ -139,34 +139,34 @@ onUnmounted(() => {
   .loading-spinner {
     width: 48px;
     height: 48px;
-    border: 3px solid rgba($color-primary, 0.2);
-    border-top-color: $color-primary;
+    border: 3px solid rgba(var(--accent-primary-rgb), 0.2);
+    border-top-color: var(--accent-primary);
     border-radius: 50%;
     animation: spin 1s linear infinite;
   }
 
   .loading-text {
     font-size: $font-size-base;
-    color: $color-text-secondary;
+    color: var(--text-secondary);
   }
 
   .loading-bar {
     width: 200px;
     height: 4px;
-    background: $color-border-muted;
+    background: var(--border-muted);
     border-radius: 2px;
     overflow: hidden;
 
     .loading-progress {
       height: 100%;
-      background: $color-primary;
+      background: var(--accent-primary);
       @include transition-slow;
     }
   }
 
   .loading-percent {
     font-size: $font-size-sm;
-    color: $color-text-muted;
+    color: var(--text-muted);
   }
 }
 
@@ -182,7 +182,7 @@ onUnmounted(() => {
 .error-overlay {
   position: absolute;
   inset: 0;
-  background: $color-bg-primary;
+  background: var(--bg-primary);
   @include flex-center;
   z-index: 100;
 
@@ -194,12 +194,12 @@ onUnmounted(() => {
   .error-icon {
     width: 48px;
     height: 48px;
-    color: $color-text-muted;
+    color: var(--text-muted);
   }
 
   .error-title {
     font-size: $font-size-base;
-    color: $color-text-secondary;
+    color: var(--text-secondary);
     text-align: center;
     max-width: 320px;
     margin: 0;
@@ -228,7 +228,7 @@ onUnmounted(() => {
   position: absolute;
   inset: 0;
   @include flex-center;
-  background: rgba($color-black, 0.4);
+  background: rgba(0, 0, 0, 0.4);
   z-index: 5;
   pointer-events: none;
   @include transition-slow;
@@ -240,13 +240,13 @@ onUnmounted(() => {
   .hint-title {
     font-size: $font-size-2xl;
     font-weight: $font-weight-medium;
-    color: $color-text-primary;
+    color: var(--text-primary);
     margin: 0 0 $space-2;
   }
 
   .hint-sub {
     font-size: $font-size-base;
-    color: $color-text-secondary;
+    color: var(--text-secondary);
     margin: 0;
   }
 }

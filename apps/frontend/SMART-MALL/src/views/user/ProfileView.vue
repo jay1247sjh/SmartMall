@@ -31,6 +31,7 @@
  * - 只能编辑自己的信息
  */
 import { ref, computed, onMounted } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { useUserStore } from '@/stores'
 import { userApi, passwordApi } from '@/api'
 import type { UserProfile, UpdateProfileRequest } from '@/api/user.api'
@@ -52,6 +53,7 @@ import {
 } from 'element-plus'
 import { Edit, Lock } from '@element-plus/icons-vue'
 
+const { t } = useI18n()
 const userStore = useUserStore()
 
 const isLoading = ref(false)
@@ -74,20 +76,20 @@ const isChangingPassword = ref(false)
 
 const roleDisplayName = computed(() => {
   const roleMap: Record<string, string> = {
-    ADMIN: '管理员',
-    MERCHANT: '商家',
-    USER: '用户',
+    ADMIN: t('roles.admin'),
+    MERCHANT: t('roles.merchant'),
+    USER: t('roles.user'),
   }
-  return roleMap[profile.value?.userType || ''] || '用户'
+  return roleMap[profile.value?.userType || ''] || t('roles.user')
 })
 
 const statusDisplayName = computed(() => {
   const statusMap: Record<string, string> = {
-    ACTIVE: '正常',
-    INACTIVE: '未激活',
-    BANNED: '已禁用',
+    ACTIVE: t('profile.statusActive'),
+    INACTIVE: t('profile.statusInactive'),
+    BANNED: t('profile.statusBanned'),
   }
-  return statusMap[profile.value?.status || ''] || '未知'
+  return statusMap[profile.value?.status || ''] || t('profile.statusUnknown')
 })
 
 const avatarLetter = computed(() => 
@@ -121,7 +123,7 @@ async function loadProfile() {
       phone: profile.value.phone,
     }
   } catch (e: unknown) {
-    error.value = (e as Error).message || '加载用户信息失败'
+    error.value = (e as Error).message || t('profile.loadFailed')
   } finally {
     isLoading.value = false
   }
@@ -153,10 +155,10 @@ async function saveProfile() {
     const updated = await userApi.updateProfile(editForm.value)
     profile.value = updated
     isEditing.value = false
-    successMessage.value = '保存成功'
+    successMessage.value = t('profile.saveSuccess')
     setTimeout(() => { successMessage.value = null }, 3000)
   } catch (e: unknown) {
-    error.value = (e as Error).message || '保存失败'
+    error.value = (e as Error).message || t('profile.saveFailed')
   } finally {
     isSaving.value = false
   }
@@ -180,10 +182,10 @@ async function changePassword() {
       passwordForm.value.newPassword
     )
     showPasswordModal.value = false
-    successMessage.value = '密码修改成功'
+    successMessage.value = t('profile.passwordChanged')
     setTimeout(() => { successMessage.value = null }, 3000)
   } catch (e: unknown) {
-    passwordError.value = (e as Error).message || '密码修改失败'
+    passwordError.value = (e as Error).message || t('profile.passwordChangeFailed')
   } finally {
     isChangingPassword.value = false
   }
@@ -238,25 +240,25 @@ onMounted(() => {
       <!-- 详细信息 -->
       <section class="profile-details">
         <ElForm v-if="isEditing" label-position="top">
-          <ElFormItem label="邮箱">
-            <ElInput v-model="editForm.email" placeholder="请输入邮箱" />
+          <ElFormItem :label="t('profile.email')">
+            <ElInput v-model="editForm.email" :placeholder="t('profile.emailPlaceholder')" />
           </ElFormItem>
-          <ElFormItem label="手机号">
-            <ElInput v-model="editForm.phone" placeholder="请输入手机号" />
+          <ElFormItem :label="t('profile.phone')">
+            <ElInput v-model="editForm.phone" :placeholder="t('profile.phonePlaceholder')" />
           </ElFormItem>
         </ElForm>
 
         <ElDescriptions v-else :column="2" border>
-          <ElDescriptionsItem label="邮箱">
-            {{ profile.email || '未设置' }}
+          <ElDescriptionsItem :label="t('profile.email')">
+            {{ profile.email || t('profile.notSet') }}
           </ElDescriptionsItem>
-          <ElDescriptionsItem label="手机号">
-            {{ profile.phone || '未设置' }}
+          <ElDescriptionsItem :label="t('profile.phone')">
+            {{ profile.phone || t('profile.notSet') }}
           </ElDescriptionsItem>
-          <ElDescriptionsItem label="角色">
+          <ElDescriptionsItem :label="t('profile.role')">
             {{ roleDisplayName }}
           </ElDescriptionsItem>
-          <ElDescriptionsItem label="状态">
+          <ElDescriptionsItem :label="t('profile.status')">
             <ElTag :type="profile.status === 'ACTIVE' ? 'success' : 'info'" size="small">
               {{ statusDisplayName }}
             </ElTag>
@@ -269,14 +271,14 @@ onMounted(() => {
       <!-- 操作按钮 -->
       <footer class="profile-actions">
         <ElSpace v-if="isEditing">
-          <ElButton @click="cancelEditing" :disabled="isSaving">取消</ElButton>
+          <ElButton @click="cancelEditing" :disabled="isSaving">{{ t('common.cancel') }}</ElButton>
           <ElButton type="primary" @click="saveProfile" :loading="isSaving">
-            {{ isSaving ? '保存中...' : '保存' }}
+            {{ isSaving ? t('profile.saving') : t('common.save') }}
           </ElButton>
         </ElSpace>
         <ElSpace v-else>
-          <ElButton :icon="Lock" @click="openPasswordModal">修改密码</ElButton>
-          <ElButton type="primary" :icon="Edit" @click="startEditing">编辑资料</ElButton>
+          <ElButton :icon="Lock" @click="openPasswordModal">{{ t('profile.changePassword') }}</ElButton>
+          <ElButton type="primary" :icon="Edit" @click="startEditing">{{ t('profile.editProfile') }}</ElButton>
         </ElSpace>
       </footer>
     </ElCard>
@@ -284,7 +286,7 @@ onMounted(() => {
     <!-- 修改密码弹窗 -->
     <ElDialog
       v-model="showPasswordModal"
-      title="修改密码"
+      :title="t('profile.changePassword')"
       width="400px"
       :close-on-click-modal="false"
     >
@@ -297,48 +299,48 @@ onMounted(() => {
       />
 
       <ElForm label-position="top">
-        <ElFormItem label="当前密码">
+        <ElFormItem :label="t('profile.currentPassword')">
           <ElInput
             v-model="passwordForm.currentPassword"
             type="password"
-            placeholder="请输入当前密码"
+            :placeholder="t('profile.currentPasswordPlaceholder')"
             show-password
           />
         </ElFormItem>
-        <ElFormItem label="新密码">
+        <ElFormItem :label="t('profile.newPassword')">
           <ElInput
             v-model="passwordForm.newPassword"
             type="password"
-            placeholder="请输入新密码（至少6位）"
+            :placeholder="t('profile.newPasswordPlaceholder')"
             show-password
           />
         </ElFormItem>
-        <ElFormItem label="确认新密码">
+        <ElFormItem :label="t('profile.confirmNewPassword')">
           <ElInput
             v-model="passwordForm.confirmPassword"
             type="password"
-            placeholder="请再次输入新密码"
+            :placeholder="t('profile.confirmNewPasswordPlaceholder')"
             show-password
           />
           <small
             v-if="passwordForm.confirmPassword && passwordForm.newPassword !== passwordForm.confirmPassword"
             class="password-mismatch"
           >
-            两次密码不一致
+            {{ t('profile.passwordMismatch') }}
           </small>
         </ElFormItem>
       </ElForm>
 
       <template #footer>
         <ElSpace>
-          <ElButton @click="showPasswordModal = false">取消</ElButton>
+          <ElButton @click="showPasswordModal = false">{{ t('common.cancel') }}</ElButton>
           <ElButton
             type="primary"
             :disabled="!isPasswordFormValid"
             :loading="isChangingPassword"
             @click="changePassword"
           >
-            {{ isChangingPassword ? '修改中...' : '确认修改' }}
+            {{ isChangingPassword ? t('profile.changing') : t('profile.confirmChange') }}
           </ElButton>
         </ElSpace>
       </template>
@@ -369,9 +371,9 @@ onMounted(() => {
       gap: $space-5;
 
       .profile-avatar {
-        background: linear-gradient(135deg, $color-primary-muted 0%, rgba($color-accent-violet, 0.15) 100%);
-        border: 1px solid $color-border-muted;
-        color: $color-accent-blue;
+        background: linear-gradient(135deg, rgba(var(--accent-primary-rgb), 0.15) 0%, rgba(168, 85, 247, 0.15) 100%);
+        border: 1px solid var(--border-muted);
+        color: var(--accent-primary);
         font-size: 32px;
         font-weight: $font-weight-semibold;
       }
@@ -385,7 +387,7 @@ onMounted(() => {
           margin: 0;
           font-size: 24px;
           font-weight: $font-weight-medium;
-          color: $color-text-primary;
+          color: var(--text-primary);
         }
       }
     }
@@ -417,7 +419,7 @@ onMounted(() => {
 }
 
 .password-mismatch {
-  color: $color-error;
+  color: var(--error);
   font-size: $font-size-sm;
   margin-top: $space-1;
 }

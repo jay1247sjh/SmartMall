@@ -1,4 +1,4 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 /**
  * ============================================================================
  * 商城主页/仪表盘 (MallView)
@@ -15,41 +15,26 @@
  *
  * 【角色差异化展示】
  *
- * 管理员（ADMIN）看到：
- * - 统计：商城总数、店铺总数、待审批、在线用户
- * - 入口：进入商城、个人中心、商城管理、区域审批
- *
- * 商家（MERCHANT）看到：
- * - 统计：我的店铺、商品数量、今日访客、待处理
- * - 入口：进入商城、个人中心、店铺配置、建模工具
- *
- * 普通用户（USER）看到：
- * - 统计：收藏店铺、浏览记录、我的订单、优惠券
- * - 入口：进入商城、个人中心
- *
- * 【设计原则】
- * 1. Element Plus 优先 - ElRow、ElCol、ElCard、ElStatistic 等
- * 2. HTML5 语义化 - header、section、article、hgroup 等
- * 3. 响应式布局 - 使用 ElCol 的断点属性适配不同屏幕
- *
- * 【问候语逻辑】
- * 根据当前小时数显示不同问候：
- * - 0-5点：夜深了
- * - 6-11点：早上好
- * - 12-13点：中午好
- * - 14-17点：下午好
- * - 18-23点：晚上好
+ * 管理员（ADMIN）：调用真实 API 获取统计数据
+ * 商家（MERCHANT）：调用真实 API 获取统计数据
+ * 普通用户（USER）：展示静态默认数据
  * ============================================================================
  */
-import { computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
+import { useI18n } from 'vue-i18n'
 import { DashboardLayout } from '@/components'
 import { useUserStore } from '@/stores'
+import { adminApi, merchantApi } from '@/api'
 import {
   ElRow,
   ElCol,
   ElCard,
   ElStatistic,
+  ElIcon,
+  ElSkeleton,
+  ElEmpty,
+  ElButton,
 } from 'element-plus'
 import {
   Shop,
@@ -67,6 +52,7 @@ import {
 
 const router = useRouter()
 const userStore = useUserStore()
+const { t } = useI18n()
 
 // ============================================================================
 // 计算属性
@@ -74,15 +60,14 @@ const userStore = useUserStore()
 
 /**
  * 根据当前时间生成问候语
- * 让用户感受到个性化的欢迎
  */
 const greeting = computed(() => {
   const hour = new Date().getHours()
-  if (hour < 6) return '夜深了'
-  if (hour < 12) return '早上好'
-  if (hour < 14) return '中午好'
-  if (hour < 18) return '下午好'
-  return '晚上好'
+  if (hour < 6) return t('dashboard.greetingNight')
+  if (hour < 12) return t('dashboard.greetingMorning')
+  if (hour < 14) return t('dashboard.greetingNoon')
+  if (hour < 18) return t('dashboard.greetingAfternoon')
+  return t('dashboard.greetingEvening')
 })
 
 /**
@@ -97,28 +82,24 @@ interface QuickAction {
 
 /**
  * 根据用户角色生成快捷入口列表
- * 不同角色看到不同的功能入口
  */
 const quickActions = computed<QuickAction[]>(() => {
-  // 所有用户都能看到的基础入口
   const actions: QuickAction[] = [
-    { title: '进入商城', description: '浏览 3D 商城空间', path: '/mall/3d', icon: Shop },
-    { title: '个人中心', description: '查看和编辑个人信息', path: '/user/profile', icon: User },
+    { title: t('dashboard.enterMall'), description: t('dashboard.enterMallDesc'), path: '/mall/3d', icon: Shop },
+    { title: t('dashboard.profileCenter'), description: t('dashboard.profileCenterDesc'), path: '/user/profile', icon: User },
   ]
 
-  // 管理员专属入口
   if (userStore.isAdmin) {
     actions.push(
-      { title: '商城管理', description: '管理商城结构和配置', path: '/admin/mall', icon: Setting },
-      { title: '区域审批', description: '处理商家区域申请', path: '/admin/area-approval', icon: Document }
+      { title: t('dashboard.mallManage'), description: t('dashboard.mallManageDesc'), path: '/admin/mall', icon: Setting },
+      { title: t('dashboard.areaApproval'), description: t('dashboard.areaApprovalDesc'), path: '/admin/area-approval', icon: Document }
     )
   }
 
-  // 商家专属入口
   if (userStore.isMerchant) {
     actions.push(
-      { title: '店铺配置', description: '管理店铺信息和商品', path: '/merchant/store-config', icon: Edit },
-      { title: '建模工具', description: '编辑店铺 3D 布局', path: '/merchant/builder', icon: Tools }
+      { title: t('dashboard.storeConfig'), description: t('dashboard.storeConfigDesc'), path: '/merchant/store-config', icon: Edit },
+      { title: t('dashboard.builderTool'), description: t('dashboard.builderToolDesc'), path: '/merchant/builder', icon: Tools }
     )
   }
 
@@ -134,68 +115,85 @@ interface StatItem {
   icon: typeof Shop
 }
 
-/**
- * 根据用户角色生成统计数据
- * 展示与用户相关的关键指标
- *
- * 【注意】当前使用静态数据，实际项目中应从 API 获取
- */
-const stats = computed<StatItem[]>(() => {
-  // 管理员看到系统运营数据
-  if (userStore.isAdmin) {
-    return [
-      { label: '商城总数', value: 3, icon: Shop },
-      { label: '店铺总数', value: 128, icon: Shop },
-      { label: '待审批', value: 5, icon: Document },
-      { label: '在线用户', value: 42, icon: User },
+// ============================================================================
+// 响应式数据 + API 调用
+// ============================================================================
+
+const statsLoading = ref(false)
+const statsError = ref(false)
+const stats = ref<StatItem[]>([])
+
+async function loadStats() {
+  if (!userStore.isAdmin && !userStore.isMerchant) {
+    // USER role: static data
+    stats.value = [
+      { label: t('dashboard.statFavorites'), value: 8, icon: Star },
+      { label: t('dashboard.statHistory'), value: 24, icon: View },
+      { label: t('dashboard.statOrders'), value: 3, icon: ShoppingCart },
+      { label: t('dashboard.statCoupons'), value: 5, icon: Ticket },
     ]
+    return
   }
-  
-  // 商家看到自己的经营数据
-  if (userStore.isMerchant) {
-    return [
-      { label: '我的店铺', value: 2, icon: Shop },
-      { label: '商品数量', value: 56, icon: Shop },
-      { label: '今日访客', value: 128, icon: View },
-      { label: '待处理', value: 3, icon: Document },
-    ]
+
+  statsLoading.value = true
+  statsError.value = false
+  try {
+    if (userStore.isAdmin) {
+      const data = await adminApi.getStats()
+      stats.value = [
+        { label: t('dashboard.statMallCount'), value: data.merchantCount, icon: Shop },
+        { label: t('dashboard.statStoreCount'), value: data.storeCount, icon: Shop },
+        { label: t('dashboard.statPending'), value: data.pendingApprovals, icon: Document },
+        { label: t('dashboard.statTodayActive'), value: data.todayActiveUsers, icon: User },
+      ]
+    } else if (userStore.isMerchant) {
+      const data = await merchantApi.getStats()
+      stats.value = [
+        { label: t('dashboard.statMyStores'), value: data.storeCount, icon: Shop },
+        { label: t('dashboard.statProductCount'), value: data.productCount, icon: Shop },
+        { label: t('dashboard.statPendingApps'), value: data.pendingApplications, icon: Document },
+      ]
+    }
+  } catch (e) {
+    statsError.value = true
+    console.error('Failed to load stats:', e)
+  } finally {
+    statsLoading.value = false
   }
-  
-  // 普通用户看到个人相关数据
-  return [
-    { label: '收藏店铺', value: 8, icon: Star },
-    { label: '浏览记录', value: 24, icon: View },
-    { label: '我的订单', value: 3, icon: ShoppingCart },
-    { label: '优惠券', value: 5, icon: Ticket },
-  ]
-})
+}
 
 // ============================================================================
 // 事件处理
 // ============================================================================
 
-/**
- * 导航到指定路径
- * @param path - 目标路由路径
- */
 function navigateTo(path: string) {
   router.push(path)
 }
+
+onMounted(() => {
+  loadStats()
+})
 </script>
 
 <template>
-  <DashboardLayout page-title="首页">
+  <DashboardLayout :page-title="t('dashboard.home')">
     <!-- 欢迎区域 -->
     <header class="welcome-section">
       <hgroup>
         <h2 class="welcome-title">{{ greeting }}，{{ userStore.currentUser?.username }}</h2>
-        <p class="welcome-subtitle">欢迎回到 Smart Mall 智能商城管理平台</p>
+        <p class="welcome-subtitle">{{ t('dashboard.welcomeSubtitle') }}</p>
       </hgroup>
     </header>
 
     <!-- 统计卡片 -->
     <section class="stats-section" aria-label="数据统计">
-      <ElRow :gutter="16">
+      <ElSkeleton v-if="statsLoading" :rows="2" animated />
+      <ElCard v-else-if="statsError" shadow="never" class="error-card">
+        <ElEmpty :description="t('dashboard.loadStatsFailed')">
+          <ElButton type="primary" @click="loadStats">{{ t('common.retry') }}</ElButton>
+        </ElEmpty>
+      </ElCard>
+      <ElRow v-else :gutter="16">
         <ElCol v-for="stat in stats" :key="stat.label" :xs="12" :sm="12" :md="6">
           <ElCard shadow="hover" class="stat-card">
             <ElStatistic :title="stat.label" :value="stat.value">
@@ -212,7 +210,7 @@ function navigateTo(path: string) {
 
     <!-- 快捷入口 -->
     <section class="quick-actions-section" aria-label="快捷入口">
-      <h3 class="section-title">快捷入口</h3>
+      <h3 class="section-title">{{ t('dashboard.quickActions') }}</h3>
       <ElRow :gutter="16">
         <ElCol v-for="action in quickActions" :key="action.path" :xs="24" :sm="12" :md="12" :lg="6">
           <ElCard shadow="hover" class="action-card" @click="navigateTo(action.path)">
@@ -243,22 +241,22 @@ function navigateTo(path: string) {
   padding: $space-8;
   margin-bottom: $space-6;
   border-radius: $radius-lg;
-  background: linear-gradient(135deg, 
-    rgba($color-primary, 0.1) 0%, 
-    rgba($color-bg-secondary, 0.8) 100%
+  background: linear-gradient(135deg,
+    rgba(var(--accent-primary-rgb), 0.1) 0%,
+    rgba(var(--bg-secondary-rgb), 0.8) 100%
   );
-  border: 1px solid $color-border-subtle;
+  border: 1px solid var(--border-subtle);
 
   .welcome-title {
     font-size: 28px;
     font-weight: $font-weight-medium;
     margin: 0 0 $space-2 0;
-    color: $color-text-primary;
+    color: var(--text-primary);
   }
 
   .welcome-subtitle {
     font-size: $font-size-lg;
-    color: $color-text-secondary;
+    color: var(--text-secondary);
     margin: 0;
   }
 
@@ -277,13 +275,19 @@ function navigateTo(path: string) {
   .stat-card {
     border-radius: $radius-lg;
     margin-bottom: $space-4;
-    background: rgba($color-bg-secondary, 0.8);
-    border: 1px solid $color-border-subtle;
+    background: rgba(var(--bg-secondary-rgb), 0.8);
+    border: 1px solid var(--border-subtle);
 
     .stat-icon {
-      color: $color-accent-blue;
+      color: var(--accent-primary);
       margin-right: $space-2;
     }
+  }
+
+  .error-card {
+    border-radius: $radius-lg;
+    background: rgba(var(--bg-secondary-rgb), 0.8);
+    border: 1px solid var(--border-subtle);
   }
 }
 
@@ -292,7 +296,7 @@ function navigateTo(path: string) {
     font-size: $font-size-base;
     font-weight: $font-weight-medium;
     margin: 0 0 $space-4 0;
-    color: $color-text-secondary;
+    color: var(--text-secondary);
     text-transform: uppercase;
     letter-spacing: 0.05em;
   }
@@ -301,13 +305,13 @@ function navigateTo(path: string) {
     cursor: pointer;
     border-radius: $radius-lg;
     margin-bottom: $space-4;
-    background: rgba($color-bg-secondary, 0.8);
-    border: 1px solid $color-border-subtle;
-    transition: transform 0.2s, box-shadow 0.2s, border-color 0.2s;
+    background: rgba(var(--bg-secondary-rgb), 0.8);
+    border: 1px solid var(--border-subtle);
+    transition: transform 0.2s, border-color 0.2s;
 
     &:hover {
       transform: translateY(-2px);
-      border-color: rgba($color-accent-blue, 0.3);
+      border-color: rgba(var(--accent-primary-rgb), 0.3);
     }
 
     .action-content {
@@ -316,7 +320,7 @@ function navigateTo(path: string) {
       gap: $space-4;
 
       .action-icon {
-        color: $color-accent-blue;
+        color: var(--accent-primary);
         flex-shrink: 0;
       }
 
@@ -328,18 +332,18 @@ function navigateTo(path: string) {
           font-size: 16px;
           font-weight: $font-weight-medium;
           margin: 0 0 $space-1 0;
-          color: $color-text-primary;
+          color: var(--text-primary);
         }
 
         .action-desc {
           font-size: 13px;
-          color: $color-text-secondary;
+          color: var(--text-secondary);
           margin: 0;
         }
       }
 
       .action-arrow {
-        color: $color-text-disabled;
+        color: var(--text-disabled);
         flex-shrink: 0;
       }
     }

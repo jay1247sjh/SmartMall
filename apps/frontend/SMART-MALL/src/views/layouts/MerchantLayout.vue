@@ -31,9 +31,14 @@
  * - 仅商家（MERCHANT）可访问
  * - 路由守卫会验证用户角色
  */
-import { useUserStore } from '@/stores'
+import { ref } from 'vue'
+import { useUserStore, useAiStore } from '@/stores'
 import { useRouter } from 'vue-router'
+import { useI18n } from 'vue-i18n'
 import { cleanupOnLogout } from '@/router'
+import UserCard from '@/components/layouts/UserCard.vue'
+import SettingsPanel from '@/components/settings/SettingsPanel.vue'
+import AiSidebar from '@/components/ai/AiSidebar.vue'
 import {
   ElContainer,
   ElAside,
@@ -41,20 +46,26 @@ import {
   ElMain,
   ElMenu,
   ElMenuItem,
-  ElButton,
   ElIcon,
-  ElTag,
 } from 'element-plus'
-import { Box, HomeFilled, Shop, Document, Tools, SwitchButton } from '@element-plus/icons-vue'
+import { Box, HomeFilled, Shop, Document, Tools, ChatDotRound } from '@element-plus/icons-vue'
 
 const userStore = useUserStore()
+const aiStore = useAiStore()
 const router = useRouter()
+const { t } = useI18n()
+
+const aiVisible = ref(false)
+
+function toggleAi() {
+  aiVisible.value = !aiVisible.value
+}
 
 const menuItems = [
-  { path: '/merchant/dashboard', label: '工作台', icon: HomeFilled },
-  { path: '/merchant/store-config', label: '店铺配置', icon: Shop },
-  { path: '/merchant/area-apply', label: '区域申请', icon: Document },
-  { path: '/merchant/builder', label: '建模工具', icon: Tools },
+  { path: '/merchant/dashboard', labelKey: 'nav.workspace', icon: HomeFilled },
+  { path: '/merchant/store-config', labelKey: 'nav.storeConfig', icon: Shop },
+  { path: '/merchant/area-apply', labelKey: 'nav.areaApply', icon: Document },
+  { path: '/merchant/builder', labelKey: 'nav.builderTool', icon: Tools },
 ]
 
 function handleLogout() {
@@ -74,7 +85,7 @@ function handleMenuSelect(path: string) {
     <ElAside width="220px" class="layout-sidebar">
       <header class="sidebar-header">
         <ElIcon :size="18" class="logo-icon"><Box /></ElIcon>
-        <span class="header-text">商家中心</span>
+        <span class="header-text">{{ t('nav.merchantCenter') }}</span>
       </header>
 
       <ElMenu
@@ -84,34 +95,32 @@ function handleMenuSelect(path: string) {
       >
         <ElMenuItem v-for="item in menuItems" :key="item.path" :index="item.path">
           <ElIcon><component :is="item.icon" /></ElIcon>
-          <span>{{ item.label }}</span>
+          <span>{{ t(item.labelKey) }}</span>
         </ElMenuItem>
       </ElMenu>
 
       <footer class="sidebar-footer">
-        <ElButton text class="back-link" @click="router.push('/mall')">
-          <ElIcon class="mr-1"><HomeFilled /></ElIcon>
-          返回首页
-        </ElButton>
+        <UserCard show-logout @logout="handleLogout" />
       </footer>
     </ElAside>
 
     <ElContainer class="layout-main">
       <ElHeader class="layout-header">
-        <span class="breadcrumb">商家中心</span>
-        <nav class="user-actions">
-          <ElTag effect="dark" size="small" class="role-badge">MERCHANT</ElTag>
-          <span class="username">{{ userStore.currentUser?.username }}</span>
-          <ElButton text @click="handleLogout">
-            <ElIcon class="mr-1"><SwitchButton /></ElIcon>
-            退出
-          </ElButton>
+        <span class="breadcrumb">{{ t('nav.merchantCenter') }}</span>
+        <nav class="topbar-actions">
+          <button class="btn-ai-trigger" :class="{ active: aiVisible }" @click="toggleAi">
+            <ElIcon :size="18"><ChatDotRound /></ElIcon>
+          </button>
+          <SettingsPanel trigger-mode="avatar" :avatar-size="32" show-logout @logout="handleLogout" />
         </nav>
       </ElHeader>
 
-      <ElMain class="layout-content">
-        <router-view />
-      </ElMain>
+      <div class="layout-body">
+        <ElMain class="layout-content">
+          <router-view />
+        </ElMain>
+        <AiSidebar v-model:visible="aiVisible" />
+      </div>
     </ElContainer>
   </ElContainer>
 </template>
@@ -121,10 +130,11 @@ function handleMenuSelect(path: string) {
 @use '@/assets/styles/scss/mixins' as *;
 
 .merchant-layout {
-  min-height: 100vh;
-  background: $color-bg-primary;
-  color: $color-text-primary;
+  height: 100vh;
+  background: var(--bg-primary);
+  color: var(--text-primary);
   position: relative;
+  overflow: hidden;
 
   .layout-bg {
     position: fixed;
@@ -136,9 +146,9 @@ function handleMenuSelect(path: string) {
   }
 
   .layout-sidebar {
-    background: rgba($color-bg-secondary, 0.8);
+    background: rgba(var(--bg-secondary-rgb), 0.8);
     backdrop-filter: blur(20px);
-    border-right: 1px solid $color-border-subtle;
+    border-right: 1px solid var(--border-subtle);
     @include flex-column;
     position: relative;
     z-index: 10;
@@ -147,22 +157,22 @@ function handleMenuSelect(path: string) {
       @include flex-center-y;
       gap: $space-3;
       padding: $space-5 $space-4;
-      border-bottom: 1px solid $color-border-subtle;
+      border-bottom: 1px solid var(--border-subtle);
 
       .logo-icon {
         width: 36px;
         height: 36px;
         @include flex-center;
-        background: linear-gradient(135deg, rgba($color-accent-pink, 0.15) 0%, rgba($color-accent-orange, 0.15) 100%);
-        border: 1px solid $color-border-muted;
+        background: linear-gradient(135deg, rgba(244, 114, 182, 0.15) 0%, rgba(251, 146, 60, 0.15) 100%);
+        border: 1px solid var(--border-muted);
         border-radius: 10px;
-        color: $color-accent-pink;
+        color: #f472b6;
       }
 
       .header-text {
         font-size: $font-size-lg;
         font-weight: $font-weight-semibold;
-        background: $gradient-merchant;
+        background: linear-gradient(135deg, #f472b6 0%, #fb923c 100%);
         background-clip: text;
         -webkit-background-clip: text;
         -webkit-text-fill-color: transparent;
@@ -180,19 +190,16 @@ function handleMenuSelect(path: string) {
         line-height: 44px;
         margin-bottom: 2px;
         border-radius: $radius-md;
-        color: $color-text-secondary;
+        color: var(--text-secondary);
 
-        &:hover { background: $color-bg-hover; color: $color-text-primary; }
-        &.is-active { background: rgba($color-accent-pink, 0.1); color: $color-accent-pink; }
+        &:hover { background: rgba(var(--text-primary-rgb), 0.04); color: var(--text-primary); }
+        &.is-active { background: rgba(244, 114, 182, 0.1); color: #f472b6; }
       }
     }
 
     .sidebar-footer {
       padding: $space-3 $space-2;
-      border-top: 1px solid $color-border-subtle;
-
-      .back-link { width: 100%; justify-content: flex-start; color: $color-text-secondary; }
-      .mr-1 { margin-right: $space-2; }
+      border-top: 1px solid var(--border-subtle);
     }
   }
 
@@ -200,32 +207,64 @@ function handleMenuSelect(path: string) {
     flex-direction: column;
     position: relative;
     z-index: 1;
+    min-height: 0;
+    overflow: hidden;
 
     .layout-header {
       display: flex;
       justify-content: space-between;
       align-items: center;
       height: 60px;
-      background: rgba($color-bg-secondary, 0.6);
+      flex-shrink: 0;
+      background: rgba(var(--bg-secondary-rgb), 0.6);
       backdrop-filter: blur(20px);
-      border-bottom: 1px solid $color-border-subtle;
+      border-bottom: 1px solid var(--border-subtle);
 
-      .breadcrumb { font-size: $font-size-base; color: $color-text-secondary; }
+      .breadcrumb { font-size: $font-size-base; color: var(--text-secondary); }
 
-      .user-actions {
+      .topbar-actions {
         display: flex;
         align-items: center;
-        gap: $space-4;
+        gap: $space-3;
 
-        .role-badge { background: $gradient-merchant; border: none; }
-        .username { font-size: $font-size-base; color: $color-text-primary; }
-        .mr-1 { margin-right: $space-1; }
+        .btn-ai-trigger {
+          width: 32px;
+          height: 32px;
+          background: transparent;
+          border: 1px solid var(--border-subtle);
+          border-radius: $radius-md;
+          color: var(--text-secondary);
+          @include flex-center;
+          @include clickable;
+
+          &:hover {
+            background: var(--bg-tertiary);
+            color: var(--text-primary);
+          }
+
+          &.active {
+            background: rgba(244, 114, 182, 0.1);
+            border-color: rgba(244, 114, 182, 0.3);
+            color: #f472b6;
+          }
+        }
       }
+    }
+
+    .layout-body {
+      display: flex;
+      flex: 1;
+      min-height: 0;
+      overflow: hidden;
     }
 
     .layout-content {
       flex: 1;
+      min-width: 0;
       overflow-y: auto;
+      overflow-x: hidden;
+      scrollbar-width: thin;
+      @include scrollbar-themed;
     }
   }
 }

@@ -1,4 +1,4 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 /**
  * 403 无权限视图
  *
@@ -69,7 +69,7 @@ function goHome() {
 .error-view {
   min-height: 100vh;
   @include flex-center;
-  background: $color-bg-primary;
+  background: var(--bg-primary);
 
   .error-content {
     text-align: center;

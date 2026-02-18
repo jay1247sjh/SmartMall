@@ -31,20 +31,22 @@
  */
 import { useUserStore } from '@/stores'
 import { useRouter } from 'vue-router'
+import { useI18n } from 'vue-i18n'
 import { cleanupOnLogout } from '@/router'
+import SettingsPanel from '@/components/settings/SettingsPanel.vue'
 import {
   ElContainer,
   ElHeader,
   ElMain,
   ElMenu,
   ElMenuItem,
-  ElButton,
   ElIcon,
 } from 'element-plus'
-import { Box, SwitchButton } from '@element-plus/icons-vue'
+import { Box } from '@element-plus/icons-vue'
 
 const userStore = useUserStore()
 const router = useRouter()
+const { t } = useI18n()
 
 function handleLogout() {
   userStore.clearUser()
@@ -73,17 +75,14 @@ function handleMenuSelect(path: string) {
           class="nav-menu"
           @select="handleMenuSelect"
         >
-          <ElMenuItem index="/mall">商城</ElMenuItem>
-          <ElMenuItem index="/user/profile">个人中心</ElMenuItem>
+          <ElMenuItem index="/mall">{{ t('nav.mall') }}</ElMenuItem>
+          <ElMenuItem index="/user/profile">{{ t('nav.profile') }}</ElMenuItem>
         </ElMenu>
       </nav>
 
       <nav class="user-actions">
         <span class="username">{{ userStore.currentUser?.username }}</span>
-        <ElButton text @click="handleLogout">
-          <ElIcon class="mr-1"><SwitchButton /></ElIcon>
-          退出
-        </ElButton>
+        <SettingsPanel show-logout @logout="handleLogout" />
       </nav>
     </ElHeader>
 
@@ -99,8 +98,8 @@ function handleMenuSelect(path: string) {
 
 .main-layout {
   min-height: 100vh;
-  background: $color-bg-primary;
-  color: $color-text-primary;
+  background: var(--bg-primary);
+  color: var(--text-primary);
   position: relative;
 
   .layout-bg {
@@ -108,7 +107,7 @@ function handleMenuSelect(path: string) {
     inset: 0;
     pointer-events: none;
     z-index: 0;
-    background: radial-gradient(ellipse 50% 30% at 70% 10%, rgba(59, 130, 246, 0.04) 0%, transparent 50%),
+    background: radial-gradient(ellipse 50% 30% at 70% 10%, rgba(var(--accent-primary-rgb), 0.04) 0%, transparent 50%),
                 radial-gradient(ellipse 40% 30% at 30% 90%, rgba(168, 85, 247, 0.03) 0%, transparent 50%);
   }
 
@@ -117,9 +116,9 @@ function handleMenuSelect(path: string) {
     align-items: center;
     justify-content: space-between;
     height: 60px;
-    background: rgba($color-bg-secondary, 0.8);
+    background: rgba(var(--bg-secondary-rgb), 0.8);
     backdrop-filter: blur(20px);
-    border-bottom: 1px solid $color-border-subtle;
+    border-bottom: 1px solid var(--border-subtle);
     position: relative;
     z-index: 10;
 
@@ -136,16 +135,16 @@ function handleMenuSelect(path: string) {
           width: 36px;
           height: 36px;
           @include flex-center;
-          background: linear-gradient(135deg, $color-primary-muted 0%, rgba($color-accent-violet, 0.15) 100%);
-          border: 1px solid $color-border-muted;
+          background: linear-gradient(135deg, rgba(var(--accent-primary-rgb), 0.15) 0%, rgba(168, 85, 247, 0.15) 100%);
+          border: 1px solid var(--border-muted);
           border-radius: 10px;
-          color: $color-accent-blue;
+          color: var(--accent-primary);
         }
 
         .logo-text {
           font-size: $font-size-base + 2;
           font-weight: $font-weight-semibold;
-          background: $gradient-admin;
+          background: linear-gradient(135deg, var(--accent-primary), rgba(168, 85, 247, 0.8));
           background-clip: text;
           -webkit-background-clip: text;
           -webkit-text-fill-color: transparent;
@@ -160,10 +159,10 @@ function handleMenuSelect(path: string) {
           height: 60px;
           line-height: 60px;
           border-bottom: none;
-          color: $color-text-secondary;
+          color: var(--text-secondary);
 
-          &:hover { background: transparent; color: $color-text-primary; }
-          &.is-active { background: transparent; color: $color-accent-blue; border-bottom: 2px solid $color-accent-blue; }
+          &:hover { background: transparent; color: var(--text-primary); }
+          &.is-active { background: transparent; color: var(--accent-primary); border-bottom: 2px solid var(--accent-primary); }
         }
       }
     }
@@ -172,7 +171,7 @@ function handleMenuSelect(path: string) {
       @include flex-center-y;
       gap: $space-4;
 
-      .username { font-size: $font-size-base; color: $color-text-primary; }
+      .username { font-size: $font-size-base; color: var(--text-primary); }
       .mr-1 { margin-right: $space-1; }
     }
   }
