@@ -13,6 +13,20 @@
 
 ### Changed - 变更
 
+#### AdminLayout AI Copilot Sidebar 集成
+
+**AdminLayout.vue - AI 助手从 FAB 模式改为 Copilot 侧边栏模式**
+- ✅ 新增 `AiSidebar` 组件导入，集成到主内容区右侧
+- ✅ 新增 `useAiStore` 状态管理，管理 AI 面板可见性
+- ✅ 新增顶部栏 AI 触发图标按钮（ChatDotRound 图标）
+- ✅ 主内容区改为 flex 布局（`.layout-body`），AiSidebar 展开时内容区自适应缩小
+- ✅ 侧边栏底部使用 `UserCard` 组件替代旧的独立按钮
+- ✅ 顶部栏角色标识改为轻量文字样式（`username · Admin`），移除 ElTag
+
+**变更原因**:
+- Admin 布局中 AI 助手以侧边栏形式集成，与主内容区并排显示，提升工作流连贯性
+- 属于 frontend-ui-overhaul spec 任务 11.4
+
 #### Mall3DView.vue 漫游模式改造
 
 **Mall3DView.vue - 从轨道相机模式改造为第三人称漫游模式**

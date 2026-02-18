@@ -22,7 +22,7 @@
 **数据结构**：
 ```
 MallProject
-├── id, name, description
+├── id, name, description, status(DRAFT/PUBLISHED)
 ├── floors[]
 │   ├── id, level, name, height
 │   └── objects[]
@@ -175,7 +175,18 @@ export function useMallBuilderPersistence() {
     isDirty.value = false;
   }
   
-  return { saveProject, loadProject, isDirty };
+  // 发布项目到服务器
+  async function publishToServer(projectId: string): Promise<boolean> {
+    try {
+      await mallBuilderApi.publishProject(projectId);
+      return true;
+    } catch (err) {
+      console.error('发布失败:', err);
+      return false;
+    }
+  }
+
+  return { saveProject, loadProject, publishToServer, isDirty };
 }
 ```
 

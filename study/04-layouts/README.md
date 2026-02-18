@@ -907,11 +907,11 @@ onDeactivated(() => {
 
 ### 布局组件对照表
 
-| 布局 | Element Plus 组件 |
-|------|------------------|
-| `AdminLayout` | ElContainer, ElAside, ElHeader, ElMain, ElMenu, ElMenuItem, ElButton, ElIcon, ElTag |
-| `MerchantLayout` | ElContainer, ElAside, ElHeader, ElMain, ElMenu, ElMenuItem, ElButton, ElIcon, ElTag |
-| `MainLayout` | ElContainer, ElHeader, ElMain, ElMenu, ElMenuItem, ElButton, ElIcon |
+| 布局 | Element Plus 组件 | 自定义组件 |
+|------|------------------|-----------|
+| `AdminLayout` | ElContainer, ElAside, ElHeader, ElMain, ElMenu, ElMenuItem, ElIcon | UserCard, AiSidebar |
+| `MerchantLayout` | ElContainer, ElAside, ElHeader, ElMain, ElMenu, ElMenuItem, ElButton, ElIcon, ElTag | - |
+| `MainLayout` | ElContainer, ElHeader, ElMain, ElMenu, ElMenuItem, ElButton, ElIcon | - |
 
 ### 布局组件示例
 

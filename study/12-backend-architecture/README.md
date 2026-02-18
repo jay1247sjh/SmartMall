@@ -249,6 +249,7 @@ ApiResponse.success()
 | Floor.java | 楼层实体 | [查看](../../apps/backend/SMART-MALL/src/main/java/com/smartmall/domain/entity/Floor.java) |
 | Area.java | 区域实体 | [查看](../../apps/backend/SMART-MALL/src/main/java/com/smartmall/domain/entity/Area.java) |
 | MallProject.java | 商城项目实体 | [查看](../../apps/backend/SMART-MALL/src/main/java/com/smartmall/domain/entity/MallProject.java) |
+| Notice.java | 系统公告实体 | [查看](../../apps/backend/SMART-MALL/src/main/java/com/smartmall/domain/entity/Notice.java) |
 | BaseEntity.java | 基础实体类 | [查看](../../apps/backend/SMART-MALL/src/main/java/com/smartmall/domain/entity/BaseEntity.java) |
 
 ### 应用入口

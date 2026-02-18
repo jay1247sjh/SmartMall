@@ -215,6 +215,11 @@
 - 一类用户
 - 拥有商城结构管理与审批权限
 
+**Notice（系统公告）**
+- 系统级公告实体，用于管理员发布通知
+- 属性：noticeId, title, content, publishedAt, isActive
+- 在管理员仪表盘中展示
+
 #### 4.1.2 值对象示例
 
 ```java
@@ -653,47 +658,36 @@ public class AreaApply {
     private String reviewerId;
     private String reviewComment;
 }
+
+// 系统公告
+public class Notice {
+    private String noticeId;
+    private String title;
+    private String content;
+    private LocalDateTime publishedAt;
+    private Boolean isActive;
+}
 ```
 
 #### 7.1.3 布局版本模型
 
 ```java
-// 布局版本
-public class LayoutVersion {
-    private String versionId;
-    private String mallId;
-    private Integer version;
-    private LayoutVersionStatus status;
-    private String createdBy;
-    private Role createdByRole;
-    private LocalDateTime createdAt;
-    private LocalDateTime publishedAt;
-    private String description;
-    private List<LayoutChange> changes;
-    private List<String> affectedAreaIds;
+// 布局版本（基于快照机制，继承 BaseEntity 获得 createTime/updateTime/isDeleted/version）
+public class LayoutVersion extends BaseEntity {
+    private String versionId;           // 主键
+    private String versionNumber;       // 版本号，格式 "v{projectSeq}.{count}"
+    private String status;              // PUBLISHED | ACTIVE | ARCHIVED
+    private String description;         // 版本描述
+    private Map<String, Object> snapshotData;  // JSONB，完整 ProjectResponse 快照
+    private String sourceProjectId;     // 来源项目 ID（逻辑外键）
+    private Integer schemaVersion;      // 快照 Schema 版本号
+    private Integer changeCount;        // 变更数量（区域总数）
+    private String creatorId;           // 创建者 ID（逻辑外键）
 }
 
-// 布局变更记录
-public class LayoutChange {
-    private String changeId;
-    private String areaId;
-    private String merchantId;
-    private LayoutChangeType changeType;
-    private String objectsBefore;     // JSON 快照
-    private String objectsAfter;      // JSON 快照
-    private LocalDateTime timestamp;
-}
-
-// 变更提案
-public class LayoutChangeProposal {
-    private String proposalId;
-    private String areaId;
-    private String merchantId;
-    private String description;
-    private ProposalStatus status;
-    private String changesJson;       // 变更内容 JSON
-    private LocalDateTime submittedAt;
-    private LocalDateTime reviewedAt;
+// 注：原设计中的 LayoutChange 和 LayoutChangeProposal 已被快照机制替代。
+// 当前实现采用整体快照（snapshotData 存储完整 ProjectResponse），
+// 而非逐条变更记录，简化了版本管理复杂度。
     private String reviewComment;
 }
 ```
@@ -753,30 +747,8 @@ public enum ApplyStatus {
     REJECTED    // 已拒绝
 }
 
-// 布局版本状态
-public enum LayoutVersionStatus {
-    DRAFT,      // 草稿
-    ACTIVE,     // 当前生效
-    ARCHIVED    // 已归档
-}
-
-// 变更类型
-public enum LayoutChangeType {
-    AREA_CREATED,
-    AREA_MODIFIED,
-    AREA_DELETED,
-    OBJECTS_ADDED,
-    OBJECTS_MODIFIED,
-    OBJECTS_REMOVED
-}
-
-// 提案状态
-public enum ProposalStatus {
-    PENDING_REVIEW,
-    APPROVED,
-    REJECTED,
-    MERGED
-}
+// 布局版本状态（当前实现使用 String 而非枚举）
+// 可选值：PUBLISHED（已发布）、ACTIVE（当前生效）、ARCHIVED（已归档）
 ```
 
 ---
@@ -941,7 +913,15 @@ public class ApiResponse<T> {
 }
 ```
 
-#### 8.2.7 管理端
+#### 8.2.7 仪表盘统计
+
+| 方法 | 路径 | 说明 |
+|------|------|------|
+| GET | /api/dashboard/admin/stats | 获取管理员统计数据（需要 ADMIN 角色） |
+| GET | /api/dashboard/merchant/stats | 获取商家统计数据（需要 MERCHANT 角色） |
+| GET | /api/dashboard/notices | 获取系统公告列表（公开接口） |
+
+#### 8.2.8 管理端
 
 | 方法 | 路径 | 说明 |
 |------|------|------|
@@ -1213,62 +1193,43 @@ CREATE TRIGGER trigger_apply_update_time BEFORE UPDATE ON area_apply FOR EACH RO
 CREATE TRIGGER trigger_apply_version BEFORE UPDATE ON area_apply FOR EACH ROW EXECUTE FUNCTION increment_version();
 ```
 
-#### 9.3.3 布局版本相关表
+#### 9.3.3 布局版本表
 
 ```sql
--- 布局版本表
-CREATE TABLE layout_version (
-    version_id VARCHAR(32) PRIMARY KEY,
-    mall_id VARCHAR(32) NOT NULL,              -- 逻辑外键，关联 mall.mall_id
-    version INT NOT NULL,
-    status VARCHAR(20) NOT NULL DEFAULT 'DRAFT',
-    created_by VARCHAR(32) NOT NULL,           -- 逻辑外键，关联 user.user_id
-    created_by_role VARCHAR(20) NOT NULL,
-    description TEXT,
-    published_at TIMESTAMPTZ,
-    create_time TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    update_time TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    UNIQUE (mall_id, version)
+-- 布局版本表（基于快照机制，每次发布创建完整 ProjectResponse 快照）
+CREATE TABLE IF NOT EXISTS layout_version (
+    version_id        VARCHAR(32) PRIMARY KEY,
+    version_number    VARCHAR(20) NOT NULL UNIQUE,   -- 版本号，格式 "v{projectSeq}.{count}"
+    status            VARCHAR(20) NOT NULL DEFAULT 'PUBLISHED',  -- PUBLISHED | ACTIVE | ARCHIVED
+    description       TEXT,
+    snapshot_data     JSONB NOT NULL,                 -- 完整 ProjectResponse 快照
+    source_project_id VARCHAR(32) NOT NULL,           -- 逻辑外键，关联 mall_project.project_id
+    schema_version    INTEGER NOT NULL DEFAULT 1,     -- 快照 Schema 版本号
+    change_count      INTEGER DEFAULT 0,              -- 变更数量（区域总数）
+    creator_id        VARCHAR(32) NOT NULL,           -- 逻辑外键，关联 user.user_id
+    version           INTEGER NOT NULL DEFAULT 0,     -- 乐观锁
+    created_at        TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at        TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    is_deleted        BOOLEAN NOT NULL DEFAULT FALSE  -- 软删除
 );
-CREATE INDEX idx_layout_mall_id ON layout_version(mall_id);
-CREATE INDEX idx_layout_status ON layout_version(status);
-CREATE TRIGGER trigger_layout_update_time BEFORE UPDATE ON layout_version FOR EACH ROW EXECUTE FUNCTION update_timestamp();
 
--- 布局变更记录表
-CREATE TABLE layout_change (
-    change_id VARCHAR(32) PRIMARY KEY,
-    version_id VARCHAR(32) NOT NULL,           -- 逻辑外键，关联 layout_version.version_id
-    area_id VARCHAR(32) NOT NULL,              -- 逻辑外键，关联 mall_area.area_id
-    merchant_id VARCHAR(32),                   -- 逻辑外键，关联 merchant.merchant_id
-    change_type VARCHAR(30) NOT NULL,
-    objects_before JSONB,
-    objects_after JSONB,
-    change_time TIMESTAMPTZ NOT NULL,
-    create_time TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
-);
-CREATE INDEX idx_change_version_id ON layout_change(version_id);
-CREATE INDEX idx_change_area_id ON layout_change(area_id);
+-- 索引
+CREATE INDEX IF NOT EXISTS idx_layout_version_status ON layout_version(status) WHERE is_deleted = FALSE;
+CREATE INDEX IF NOT EXISTS idx_layout_version_source ON layout_version(source_project_id);
+CREATE INDEX IF NOT EXISTS idx_layout_version_creator ON layout_version(creator_id);
+CREATE INDEX IF NOT EXISTS idx_layout_version_created ON layout_version(created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_layout_version_deleted ON layout_version(is_deleted);
 
--- 变更提案表
-CREATE TABLE layout_change_proposal (
-    proposal_id VARCHAR(32) PRIMARY KEY,
-    area_id VARCHAR(32) NOT NULL,              -- 逻辑外键，关联 mall_area.area_id
-    merchant_id VARCHAR(32) NOT NULL,          -- 逻辑外键，关联 merchant.merchant_id
-    description TEXT,
-    status VARCHAR(20) NOT NULL DEFAULT 'PENDING_REVIEW',
-    changes_json JSONB NOT NULL,
-    submitted_at TIMESTAMPTZ NOT NULL,
-    reviewed_at TIMESTAMPTZ,
-    review_comment TEXT,
-    version INT NOT NULL DEFAULT 0,
-    create_time TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    update_time TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
-);
-CREATE INDEX idx_proposal_area_id ON layout_change_proposal(area_id);
-CREATE INDEX idx_proposal_merchant_id ON layout_change_proposal(merchant_id);
-CREATE INDEX idx_proposal_status ON layout_change_proposal(status);
-CREATE TRIGGER trigger_proposal_update_time BEFORE UPDATE ON layout_change_proposal FOR EACH ROW EXECUTE FUNCTION update_timestamp();
-CREATE TRIGGER trigger_proposal_version BEFORE UPDATE ON layout_change_proposal FOR EACH ROW EXECUTE FUNCTION increment_version();
+-- 触发器
+CREATE TRIGGER trigger_layout_version_update_time
+BEFORE UPDATE ON layout_version
+FOR EACH ROW EXECUTE FUNCTION update_timestamp();
+
+CREATE TRIGGER trigger_layout_version_version
+BEFORE UPDATE ON layout_version
+FOR EACH ROW EXECUTE FUNCTION increment_version();
+
+-- 注：原设计中的 layout_change 和 layout_change_proposal 表已被快照机制替代，不再需要。
 ```
 
 #### 9.3.4 审计日志表

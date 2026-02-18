@@ -5,7 +5,28 @@
 > 
 > 本文档为 **变更日志（Changelog）**，用于记录版本变更历史，遵循 Keep a Changelog 格式规范。
 > 
-> 最后更新：2026-01-26
+> 最后更新：2026-02-15
+
+---
+
+## [Unreleased] - 2026-02-15
+
+### Added
+- `MallProject` 实体新增 `status` 字段，支持 DRAFT（草稿）和 PUBLISHED（已发布）两种状态
+
+### Changed
+- `AreaApplyService.getAvailableAreas` 重构：仅返回已发布（PUBLISHED）项目中 AVAILABLE 状态的区域，不再返回 LOCKED 状态区域
+  - 新增 `MallProjectMapper` 依赖，用于查询已发布项目
+  - 新增 `getPublishedProjectFloorIds` 私有方法，获取已发布项目关联的楼层 ID
+  - 指定 `floorId` 时校验其是否属于已发布项目
+- `AreaApplyService.submitApplication` 增加并发保护：使用条件更新（CAS）将区域状态从 AVAILABLE 更新为 PENDING，防止多商家同时申请同一区域
+- `AreaApplyService.approveApplication` 审批通过后区域状态改为 AUTHORIZED（原为 OCCUPIED），商家需完成布局后再确认占用
+- `AreaApplyService.rejectApplication` 驳回申请后恢复区域状态为 AVAILABLE（原实现未恢复状态）
+
+### Added
+- 新增 `AreaApplyService.confirmLayout` 方法：商家完成店铺布局并确认后，将区域状态从 AUTHORIZED 更新为 OCCUPIED
+  - 校验商家对该区域拥有 ACTIVE 权限
+  - 使用条件更新确保只有 AUTHORIZED 状态的区域才能转为 OCCUPIED
 
 ---
 

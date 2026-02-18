@@ -201,6 +201,9 @@ export const mallBuilderApi = {
   saveProject: (data: SaveProjectRequest): Promise<MallProject> => 
     http.post('/api/mall-builder/projects', data),
   
+  publishProject: (id: string): Promise<void> =>
+    http.post(`/api/mall-builder/projects/${id}/publish`),
+  
   deleteProject: (id: string): Promise<void> => 
     http.delete(`/api/mall-builder/projects/${id}`)
 };

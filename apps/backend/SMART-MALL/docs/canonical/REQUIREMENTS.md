@@ -137,12 +137,14 @@
 #### Acceptance Criteria
 
 1. WHEN 商家提交区域申请 THEN THE Backend System SHALL 创建申请记录并设置状态为 PENDING
-2. WHEN 申请提交成功 THEN THE Backend System SHALL 更新区域状态为 PENDING
+2. WHEN 申请提交成功 THEN THE Backend System SHALL 使用条件更新将区域状态从 AVAILABLE 更新为 PENDING（防止并发冲突）
 3. WHEN 管理员审批通过 THEN THE Backend System SHALL 创建 AreaPermission 记录
 4. WHEN 管理员审批通过 THEN THE Backend System SHALL 更新区域状态为 AUTHORIZED
-5. WHEN 管理员驳回申请 THEN THE Backend System SHALL 恢复区域状态为 LOCKED
+5. WHEN 管理员驳回申请 THEN THE Backend System SHALL 恢复区域状态为 AVAILABLE
 6. THE Backend System SHALL 阻止对同一区域的重复申请
 7. THE Backend System SHALL 支持设置权限有效期
+8. WHEN 商家完成布局并确认 THEN THE Backend System SHALL 将区域状态从 AUTHORIZED 更新为 OCCUPIED
+9. THE Backend System SHALL 仅返回已发布（PUBLISHED）项目中 AVAILABLE 状态的区域作为可申请区域
 
 ---
 

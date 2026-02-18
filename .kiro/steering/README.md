@@ -24,6 +24,7 @@
 | `password-security.md` | `**/auth/**` | 密码安全要求、BCrypt 加密 |
 | `scss-nesting.md` | `**/*.vue` | SCSS 嵌套规则 |
 | `frontend-style-guide.md` | `**/*.vue` | 前端样式指南、命名规范 |
+| `i18n-convention.md` | `**/*.vue` | i18n 国际化规范、键名约定 |
 
 ## 使用方式
 
