@@ -1,4 +1,4 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 /**
  * StoreCard 子组件
  * 
@@ -94,8 +94,8 @@ function handleDelete(event: Event) {
   @include hover-highlight;
 
   &.active {
-    background: $color-primary-muted;
-    border-color: rgba($color-primary, 0.3);
+    background: var(--accent-muted);
+    border-color: rgba(var(--accent-primary-rgb), 0.3);
   }
 }
 
@@ -121,13 +121,13 @@ function handleDelete(event: Event) {
 .store-name {
   font-size: $font-size-base;
   font-weight: $font-weight-medium;
-  color: $color-text-primary;
+  color: var(--text-primary);
   @include text-ellipsis;
 }
 
 .store-location {
   font-size: $font-size-sm;
-  color: $color-text-secondary;
+  color: var(--text-secondary);
 }
 
 // 状态点
@@ -137,9 +137,9 @@ function handleDelete(event: Event) {
   border-radius: $radius-full;
   flex-shrink: 0;
 
-  &.status-active { background: $color-success; }
-  &.status-inactive { background: $color-warning; }
-  &.status-pending { background: $color-primary; }
-  &.status-closed { background: $color-text-muted; }
+  &.status-active { background: var(--success); }
+  &.status-inactive { background: var(--warning); }
+  &.status-pending { background: var(--accent-primary); }
+  &.status-closed { background: var(--text-muted); }
 }
 </style>

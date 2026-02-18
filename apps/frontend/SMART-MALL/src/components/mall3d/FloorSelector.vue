@@ -1,4 +1,4 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 /**
  * FloorSelector 组件
  *
@@ -119,8 +119,8 @@ function handleSelectFloor(floorId: number) {
 @use '@/assets/styles/scss/mixins' as *;
 
 // 扩展变量（全局变量中没有的）
-$bg-panel: rgba($color-bg-secondary, 0.9);
-$bg-panel-solid: rgba($color-bg-secondary, 0.95);
+$bg-panel: rgba(var(--bg-secondary-rgb), 0.9);
+$bg-panel-solid: rgba(var(--bg-secondary-rgb), 0.95);
 
 // ============================================================================
 // 楼层选择器
@@ -136,20 +136,20 @@ $bg-panel-solid: rgba($color-bg-secondary, 0.95);
     gap: $space-2;
     padding: $space-3 $space-5;
     background: $bg-panel;
-    border: 1px solid $color-border-muted;
+    border: 1px solid var(--border-muted);
     border-radius: 10px;
-    color: $color-text-primary;
+    color: var(--text-primary);
     font-size: 16px;
     font-weight: $font-weight-semibold;
     @include clickable;
 
     &:hover {
-      background: $color-bg-secondary;
+      background: var(--bg-secondary);
     }
 
     .arrow {
       font-size: $font-size-xs;
-      color: $color-text-secondary;
+      color: var(--text-secondary);
     }
   }
 
@@ -159,7 +159,7 @@ $bg-panel-solid: rgba($color-bg-secondary, 0.95);
     top: 100%;
     margin-top: $space-2;
     background: $bg-panel-solid;
-    border: 1px solid $color-border-muted;
+    border: 1px solid var(--border-muted);
     border-radius: 10px;
     overflow: hidden;
     min-width: 180px;
@@ -177,18 +177,18 @@ $bg-panel-solid: rgba($color-bg-secondary, 0.95);
       @include hover-highlight;
 
       &.active {
-        background: $color-primary-muted;
+        background: var(--accent-muted);
       }
 
       .floor-name {
         font-size: $font-size-lg;
         font-weight: $font-weight-semibold;
-        color: $color-text-primary;
+        color: var(--text-primary);
       }
 
       .floor-label {
         font-size: $font-size-sm;
-        color: $color-text-secondary;
+        color: var(--text-secondary);
       }
     }
   }

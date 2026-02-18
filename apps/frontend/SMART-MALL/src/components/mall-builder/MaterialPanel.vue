@@ -1,4 +1,4 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 /**
  * MaterialPanel 组件
  *
@@ -285,11 +285,11 @@ function hasSelectedMaterial(): boolean {
   max-height: calc(100vh - 140px);
   background: linear-gradient(
     to bottom,
-    rgba($color-bg-primary, 0.95),
-    rgba($color-bg-primary, 0.9)
+    rgba(var(--bg-primary-rgb), 0.95),
+    rgba(var(--bg-primary-rgb), 0.9)
   );
   backdrop-filter: blur(8px);
-  border: 1px solid $color-border-subtle;
+  border: 1px solid var(--border-subtle);
   border-radius: $radius-xl;
   z-index: 50;
   overflow: hidden;
@@ -303,13 +303,13 @@ function hasSelectedMaterial(): boolean {
 .panel-header {
   @include flex-between;
   padding: $space-3 $space-4;
-  border-bottom: 1px solid $color-border-subtle;
+  border-bottom: 1px solid var(--border-subtle);
   flex-shrink: 0;
 
   h3 {
     font-size: $font-size-sm;
     font-weight: $font-weight-semibold;
-    color: $color-text-primary;
+    color: var(--text-primary);
     margin: 0;
   }
 }
@@ -321,7 +321,7 @@ function hasSelectedMaterial(): boolean {
   background: transparent;
   border: none;
   border-radius: $radius-md;
-  color: $color-text-secondary;
+  color: var(--text-secondary);
   cursor: pointer;
   transition: all $duration-normal;
 
@@ -331,16 +331,16 @@ function hasSelectedMaterial(): boolean {
   }
 
   &:hover:not(:disabled) {
-    background: rgba($color-white, 0.08);
-    color: $color-text-primary;
+    background: rgba(255, 255, 255, 0.08);
+    color: var(--text-primary);
   }
 
   &.clear {
-    color: $color-text-muted;
+    color: var(--text-muted);
 
     &:hover {
-      color: $color-error;
-      background: rgba($color-error, 0.1);
+      color: var(--error);
+      background: rgba(var(--error-rgb), 0.1);
     }
   }
 }
@@ -363,21 +363,21 @@ function hasSelectedMaterial(): boolean {
   @include flex-center-y;
   gap: $space-2;
   padding: $space-2 $space-3;
-  background: rgba($color-primary, 0.1);
-  border: 1px solid rgba($color-primary, 0.2);
+  background: rgba(var(--accent-primary-rgb), 0.1);
+  border: 1px solid rgba(var(--accent-primary-rgb), 0.2);
   border-radius: $radius-md;
   margin-bottom: $space-3;
 
   svg {
     width: 16px;
     height: 16px;
-    color: $color-primary;
+    color: var(--accent-primary);
     flex-shrink: 0;
   }
 
   span {
     font-size: $font-size-xs;
-    color: $color-primary;
+    color: var(--accent-primary);
     line-height: 1.4;
   }
 }
@@ -397,16 +397,16 @@ function hasSelectedMaterial(): boolean {
   @include flex-center-y;
   width: 100%;
   padding: $space-2 $space-3;
-  background: rgba($color-white, 0.03);
+  background: rgba(255, 255, 255, 0.03);
   border: none;
   border-radius: $radius-md;
   cursor: pointer;
   transition: all $duration-normal;
   text-align: left;
-  color: $color-text-primary;
+  color: var(--text-primary);
 
   &:hover {
-    background: rgba($color-white, 0.06);
+    background: rgba(255, 255, 255, 0.06);
   }
 
   span {
@@ -419,7 +419,7 @@ function hasSelectedMaterial(): boolean {
   width: 16px;
   height: 16px;
   margin-right: $space-2;
-  color: $color-text-secondary;
+  color: var(--text-secondary);
   transition: transform $duration-normal;
   flex-shrink: 0;
 
@@ -435,8 +435,8 @@ function hasSelectedMaterial(): boolean {
 .category-count {
   margin-left: auto;
   font-size: $font-size-xs;
-  color: $color-text-muted;
-  background: rgba($color-white, 0.05);
+  color: var(--text-muted);
+  background: rgba(255, 255, 255, 0.05);
   padding: 2px 6px;
   border-radius: $radius-sm;
 }
@@ -456,24 +456,24 @@ function hasSelectedMaterial(): boolean {
   gap: $space-3;
   width: 100%;
   padding: $space-2 $space-3;
-  background: rgba($color-white, 0.02);
-  border: 1px solid $color-border-subtle;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid var(--border-subtle);
   border-radius: $radius-md;
   cursor: pointer;
   transition: all $duration-normal;
   text-align: left;
 
   &:hover {
-    background: rgba($color-white, 0.05);
-    border-color: $color-border-muted;
+    background: rgba(255, 255, 255, 0.05);
+    border-color: var(--border-muted);
   }
 
   &.active {
-    background: rgba($color-primary, 0.1);
-    border-color: rgba($color-primary, 0.3);
+    background: rgba(var(--accent-primary-rgb), 0.1);
+    border-color: rgba(var(--accent-primary-rgb), 0.3);
 
     .material-name {
-      color: $color-primary;
+      color: var(--accent-primary);
     }
   }
 }
@@ -489,7 +489,7 @@ function hasSelectedMaterial(): boolean {
   svg {
     width: 18px;
     height: 18px;
-    color: var(--material-color, $color-text-secondary);
+    color: var(--material-color, var(--text-secondary));
   }
 }
 
@@ -503,14 +503,14 @@ function hasSelectedMaterial(): boolean {
 .material-name {
   font-size: $font-size-sm;
   font-weight: $font-weight-medium;
-  color: $color-text-primary;
+  color: var(--text-primary);
   transition: color $duration-normal;
   @include text-truncate;
 }
 
 .material-desc {
   font-size: $font-size-xs;
-  color: $color-text-muted;
+  color: var(--text-muted);
   @include text-truncate;
 }
 
@@ -518,7 +518,7 @@ function hasSelectedMaterial(): boolean {
   width: 16px;
   height: 16px;
   border-radius: $radius-sm;
-  border: 1px solid rgba($color-white, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.1);
   flex-shrink: 0;
 }
 </style>

@@ -1,4 +1,4 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 /**
  * FloorPanel 组件
  *
@@ -203,11 +203,11 @@ function getCollapseIconPath(): string {
   max-height: calc(100vh - 360px);
   background: linear-gradient(
     to bottom,
-    rgba($color-bg-primary, 0.95),
-    rgba($color-bg-primary, 0.9)
+    rgba(var(--bg-primary-rgb), 0.95),
+    rgba(var(--bg-primary-rgb), 0.9)
   );
   backdrop-filter: blur(8px);
-  border: 1px solid $color-border-subtle;
+  border: 1px solid var(--border-subtle);
   border-radius: $radius-xl;
   z-index: 50;
   transition: width $duration-normal;
@@ -235,12 +235,12 @@ function getCollapseIconPath(): string {
 .panel-header {
   @include flex-between;
   padding: $space-3 $space-4;
-  border-bottom: 1px solid $color-border-subtle;
+  border-bottom: 1px solid var(--border-subtle);
 
   h3 {
     font-size: $font-size-sm;
     font-weight: $font-weight-semibold;
-    color: $color-text-primary;
+    color: var(--text-primary);
     margin: 0;
   }
 }
@@ -257,7 +257,7 @@ function getCollapseIconPath(): string {
   background: transparent;
   border: none;
   border-radius: $radius-md;
-  color: $color-text-secondary;
+  color: var(--text-secondary);
   cursor: pointer;
   transition: all $duration-normal;
 
@@ -267,8 +267,8 @@ function getCollapseIconPath(): string {
   }
 
   &:hover:not(:disabled) {
-    background: rgba($color-white, 0.08);
-    color: $color-text-primary;
+    background: rgba(255, 255, 255, 0.08);
+    color: var(--text-primary);
   }
 
   &:disabled {
@@ -303,22 +303,22 @@ function getCollapseIconPath(): string {
 .floor-item {
   @include flex-between;
   padding: $space-2 $space-3;
-  background: rgba($color-white, 0.03);
+  background: rgba(255, 255, 255, 0.03);
   border: 1px solid transparent;
   border-radius: $radius-md;
   cursor: pointer;
   transition: all $duration-normal;
 
   &:hover {
-    background: rgba($color-white, 0.06);
+    background: rgba(255, 255, 255, 0.06);
   }
 
   &.active {
-    background: rgba($color-primary, 0.15);
-    border-color: rgba($color-primary, 0.3);
+    background: rgba(var(--accent-primary-rgb), 0.15);
+    border-color: rgba(var(--accent-primary-rgb), 0.3);
 
     .floor-name {
-      color: $color-primary;
+      color: var(--accent-primary);
     }
   }
 }
@@ -331,13 +331,13 @@ function getCollapseIconPath(): string {
 .floor-name {
   font-size: $font-size-sm;
   font-weight: $font-weight-medium;
-  color: $color-text-primary;
+  color: var(--text-primary);
   transition: color $duration-normal;
 }
 
 .floor-level {
   font-size: $font-size-xs;
-  color: $color-text-secondary;
+  color: var(--text-secondary);
 }
 
 .floor-actions {

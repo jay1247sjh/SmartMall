@@ -14,6 +14,9 @@
 import { ref, watch, computed } from 'vue'
 import type { StoreDTO, CreateStoreRequest, UpdateStoreRequest } from '@/api/store.api'
 import type { AreaPermissionDTO } from '@/api/area-permission.api'
+import { useI18n } from 'vue-i18n'
+
+const { t } = useI18n()
 
 // ============================================================================
 // Types
@@ -60,7 +63,14 @@ const emit = defineEmits<StoreFormEmits>()
 // State
 // ============================================================================
 
-const categories = ['餐饮', '零售', '服装', '娱乐', '服务', '其他']
+const categories = computed(() => [
+  { value: '餐饮', label: t('merchant.catCatering') },
+  { value: '零售', label: t('merchant.catRetail') },
+  { value: '服装', label: t('merchant.catClothing') },
+  { value: '娱乐', label: t('merchant.catEntertainment') },
+  { value: '服务', label: t('merchant.catService') },
+  { value: '其他', label: t('merchant.catOther') },
+])
 
 const formData = ref<StoreFormData>({
   areaId: '',
@@ -75,14 +85,14 @@ const formData = ref<StoreFormData>({
 // ============================================================================
 
 const dialogTitle = computed(() => {
-  return props.mode === 'create' ? '创建新店铺' : '编辑店铺'
+  return props.mode === 'create' ? t('store.createStore') : t('store.editStore')
 })
 
 const submitButtonText = computed(() => {
   if (props.processing) {
-    return props.mode === 'create' ? '创建中...' : '保存中...'
+    return props.mode === 'create' ? t('store.creating') : t('store.saving')
   }
-  return props.mode === 'create' ? '创建' : '保存'
+  return props.mode === 'create' ? t('store.create') : t('common.save')
 })
 
 // ============================================================================
@@ -147,9 +157,9 @@ function handleSubmit() {
       <div class="dialog-body">
         <!-- 区域选择（仅创建模式） -->
         <div v-if="mode === 'create'" class="form-item">
-          <label>选择区域 *</label>
+          <label>{{ t('store.selectArea') }} *</label>
           <select v-model="formData.areaId" class="select">
-            <option value="">请选择区域</option>
+            <option value="">{{ t('store.pleaseSelectArea') }}</option>
             <option 
               v-for="area in availableAreas" 
               :key="area.areaId" 
@@ -162,50 +172,50 @@ function handleSubmit() {
         
         <!-- 店铺名称 -->
         <div class="form-item">
-          <label>店铺名称 *</label>
+          <label>{{ t('store.storeName') }} *</label>
           <input 
             v-model="formData.name" 
             type="text" 
             class="input" 
-            placeholder="请输入店铺名称" 
+            :placeholder="t('store.storeNamePlaceholder')" 
           />
         </div>
         
         <!-- 店铺分类 -->
         <div class="form-item">
-          <label>店铺分类 *</label>
+          <label>{{ t('store.storeCategory') }} *</label>
           <select v-model="formData.category" class="select">
-            <option value="">请选择分类</option>
-            <option v-for="cat in categories" :key="cat" :value="cat">
-              {{ cat }}
+            <option value="">{{ t('store.selectCategory') }}</option>
+            <option v-for="cat in categories" :key="cat.value" :value="cat.value">
+              {{ cat.label }}
             </option>
           </select>
         </div>
         
         <!-- 营业时间 -->
         <div class="form-item">
-          <label>营业时间</label>
+          <label>{{ t('store.businessHours') }}</label>
           <input 
             v-model="formData.businessHours" 
             type="text" 
             class="input" 
-            placeholder="如：08:00-22:00" 
+            :placeholder="t('store.businessHoursPlaceholder')" 
           />
         </div>
         
         <!-- 店铺描述 -->
         <div class="form-item">
-          <label>店铺描述</label>
+          <label>{{ t('store.storeDesc') }}</label>
           <textarea 
             v-model="formData.description" 
             class="textarea" 
             rows="3" 
-            placeholder="请输入店铺描述"
+            :placeholder="t('store.storeDescPlaceholder')"
           ></textarea>
         </div>
       </div>
       <div class="dialog-footer">
-        <button class="btn btn-secondary" @click="handleClose">取消</button>
+        <button class="btn btn-secondary" @click="handleClose">{{ t('common.cancel') }}</button>
         <button 
           class="btn btn-primary" 
           :disabled="processing" 

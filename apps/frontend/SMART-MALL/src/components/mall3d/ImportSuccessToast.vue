@@ -1,4 +1,4 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 /**
  * ImportSuccessToast 组件
  *
@@ -24,6 +24,10 @@
  *
  * @validates Requirements 1.6
  */
+
+import { useI18n } from 'vue-i18n'
+
+const { t } = useI18n()
 
 // ============================================================================
 // 类型定义
@@ -70,8 +74,8 @@ function handleClose() {
 <template>
   <div v-if="visible" class="import-success-toast">
     <span class="toast-icon">✨</span>
-    <span class="toast-message">已加载 AI 生成的商城：{{ mallName }}</span>
-    <button class="toast-close" @click="handleClose" aria-label="关闭提示">×</button>
+    <span class="toast-message">{{ t('mall3d.aiImportToast', { name: mallName }) }}</span>
+    <button class="toast-close" @click="handleClose" :aria-label="t('mall3d.closeToast')">×</button>
   </div>
 </template>
 
@@ -90,11 +94,11 @@ function handleClose() {
   @include flex-center-y;
   gap: 10px;
   padding: $space-3 $space-5;
-  background: linear-gradient(135deg, rgba($color-success, 0.9) 0%, rgba($color-success, 0.9) 100%);
+  background: linear-gradient(135deg, rgba(var(--success-rgb), 0.9) 0%, rgba(var(--success-rgb), 0.9) 100%);
   border-radius: $radius-lg;
   color: white;
   font-size: $font-size-base;
-  box-shadow: 0 4px 20px rgba($color-success, 0.4);
+  box-shadow: 0 4px 20px rgba(var(--success-rgb), 0.4);
   z-index: 100;
 
   .toast-icon {
@@ -109,7 +113,7 @@ function handleClose() {
     margin-left: $space-2;
     width: 20px;
     height: 20px;
-    background: rgba($color-white, 0.2);
+    background: rgba(255, 255, 255, 0.2);
     border: none;
     border-radius: 50%;
     color: white;
@@ -117,7 +121,7 @@ function handleClose() {
     @include clickable;
 
     &:hover {
-      background: rgba($color-white, 0.3);
+      background: rgba(255, 255, 255, 0.3);
     }
   }
 }

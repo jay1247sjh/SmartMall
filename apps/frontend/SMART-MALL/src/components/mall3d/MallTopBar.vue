@@ -1,4 +1,4 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 /**
  * MallTopBar 组件
  *
@@ -22,6 +22,10 @@
  * />
  * ```
  */
+
+import { useI18n } from 'vue-i18n'
+
+const { t } = useI18n()
 
 // ============================================================================
 // 类型定义
@@ -92,7 +96,7 @@ function handleSelectResult(result: SearchResult) {
   <div class="top-bar">
     <!-- 返回按钮 -->
     <button class="btn-back" @click="handleBack">
-      <span>←</span> 返回
+      <span>←</span> {{ t('mall3d.back') }}
     </button>
 
     <!-- 搜索框 -->
@@ -100,7 +104,7 @@ function handleSelectResult(result: SearchResult) {
       <input
         :value="searchQuery"
         type="text"
-        placeholder="搜索店铺..."
+        :placeholder="t('mall3d.searchStore')"
         @input="handleInput"
         @focus="handleFocus"
       />
@@ -141,7 +145,7 @@ function handleSelectResult(result: SearchResult) {
   left: 0;
   right: 0;
   height: 60px;
-  background: linear-gradient(to bottom, rgba($color-bg-primary, 0.9), transparent);
+  background: linear-gradient(to bottom, rgba(var(--bg-primary-rgb), 0.9), transparent);
   @include flex-center-y;
   padding: 0 $space-5;
   gap: $space-5;
@@ -150,15 +154,15 @@ function handleSelectResult(result: SearchResult) {
     @include flex-center-y;
     gap: 6px;
     padding: $space-2 $space-4;
-    background: $color-border-muted;
-    border: 1px solid $color-border-muted;
+    background: var(--border-muted);
+    border: 1px solid var(--border-muted);
     border-radius: $radius-md;
-    color: $color-text-primary;
+    color: var(--text-primary);
     font-size: $font-size-base;
     @include clickable;
 
     &:hover {
-      background: rgba($color-white, 0.15);
+      background: rgba(255, 255, 255, 0.15);
     }
   }
 
@@ -170,19 +174,19 @@ function handleSelectResult(result: SearchResult) {
     input {
       width: 100%;
       padding: 10px $space-4 10px $space-10;
-      background: $color-border-muted;
-      border: 1px solid $color-border-muted;
+      background: var(--border-muted);
+      border: 1px solid var(--border-muted);
       border-radius: $radius-md;
-      color: $color-text-primary;
+      color: var(--text-primary);
       font-size: $font-size-base;
 
       &:focus {
         outline: none;
-        border-color: $color-primary;
+        border-color: var(--accent-primary);
       }
 
       &::placeholder {
-        color: $color-text-muted;
+        color: var(--text-muted);
       }
     }
 
@@ -200,8 +204,8 @@ function handleSelectResult(result: SearchResult) {
       left: 0;
       right: 0;
       margin-top: $space-2;
-      background: $color-bg-secondary;
-      border: 1px solid $color-border-muted;
+      background: var(--bg-secondary);
+      border: 1px solid var(--border-muted);
       border-radius: $radius-md;
       overflow: hidden;
       z-index: 10;
@@ -214,12 +218,12 @@ function handleSelectResult(result: SearchResult) {
 
         .store-name {
           font-size: $font-size-base;
-          color: $color-text-primary;
+          color: var(--text-primary);
         }
 
         .store-location {
           font-size: $font-size-sm;
-          color: $color-text-secondary;
+          color: var(--text-secondary);
         }
       }
     }
@@ -228,7 +232,7 @@ function handleSelectResult(result: SearchResult) {
   .user-info {
     margin-left: auto;
     font-size: $font-size-base;
-    color: $color-text-secondary;
+    color: var(--text-secondary);
   }
 }
 </style>

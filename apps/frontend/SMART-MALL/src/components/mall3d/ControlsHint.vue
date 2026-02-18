@@ -1,4 +1,4 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 /**
  * ControlsHint 组件
  *
@@ -107,10 +107,10 @@ import { computed } from 'vue'
   display: flex;
   gap: $space-6;
   padding: 10px $space-5;
-  background: rgba($color-bg-secondary, 0.8);
+  background: rgba(var(--bg-secondary-rgb), 0.8);
   border-radius: $radius-pill;
   font-size: $font-size-sm;
-  color: $color-text-secondary;
+  color: var(--text-secondary);
 
   .hint-item {
     display: flex;

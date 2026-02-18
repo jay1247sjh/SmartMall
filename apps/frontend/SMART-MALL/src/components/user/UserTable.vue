@@ -1,4 +1,4 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 /**
  * UserTable 组件
  *
@@ -44,6 +44,9 @@ import {
 } from 'element-plus'
 import type { UserInfo } from '@/api/admin.api'
 import { useFormatters, useStatusConfig } from '@/composables'
+import { useI18n } from 'vue-i18n'
+
+const { t } = useI18n()
 
 // ============================================================================
 // 类型定义
@@ -176,7 +179,7 @@ function handleRetry() {
     <!-- 错误状态 -->
     <div v-else-if="error" class="error-state">
       <ElEmpty :description="error">
-        <ElButton type="primary" @click="handleRetry">重试</ElButton>
+        <ElButton type="primary" @click="handleRetry">{{ t('common.retry') }}</ElButton>
       </ElEmpty>
     </div>
 
@@ -191,12 +194,12 @@ function handleRetry() {
         <table class="user-table-custom">
           <thead>
             <tr>
-              <th style="width: 150px">用户名</th>
-              <th style="min-width: 200px">邮箱</th>
-              <th style="width: 120px">用户类型</th>
-              <th style="width: 100px">状态</th>
-              <th style="width: 120px">注册时间</th>
-              <th style="width: 150px">操作</th>
+              <th style="width: 150px">{{ t('userMgmt.username') }}</th>
+              <th style="min-width: 200px">{{ t('userMgmt.email') }}</th>
+              <th style="width: 120px">{{ t('userMgmt.userType') }}</th>
+              <th style="width: 100px">{{ t('userMgmt.status') }}</th>
+              <th style="width: 120px">{{ t('userMgmt.registerTime') }}</th>
+              <th style="width: 150px">{{ t('userMgmt.actions') }}</th>
             </tr>
           </thead>
           <tbody>
@@ -233,7 +236,7 @@ function handleRetry() {
                     text
                     @click.stop="handleFreeze(user, $event)"
                   >
-                    冻结
+                    {{ t('userMgmt.freeze') }}
                   </ElButton>
                   <ElButton
                     v-if="user.status === 'FROZEN'"
@@ -242,7 +245,7 @@ function handleRetry() {
                     text
                     @click.stop="handleActivate(user, $event)"
                   >
-                    激活
+                    {{ t('userMgmt.activate') }}
                   </ElButton>
                 </ElSpace>
               </td>
@@ -252,7 +255,7 @@ function handleRetry() {
         
         <!-- 空状态 -->
         <div v-if="users.length === 0" class="empty-state">
-          <ElEmpty description="暂无用户数据" />
+          <ElEmpty :description="t('userMgmt.noData')" />
         </div>
       </div>
 
@@ -309,13 +312,13 @@ function handleRetry() {
   td {
     padding: $space-3 $space-4;
     text-align: left;
-    border-bottom: 1px solid $color-border-subtle;
+    border-bottom: 1px solid var(--border-subtle);
   }
 
   thead {
     th {
-      background-color: $color-bg-secondary;
-      color: $color-text-secondary;
+      background-color: var(--bg-secondary);
+      color: var(--text-secondary);
       font-weight: $font-weight-medium;
       white-space: nowrap;
     }
@@ -327,14 +330,14 @@ function handleRetry() {
       transition: background-color $duration-normal;
 
       &:hover {
-        background-color: $color-bg-hover;
+        background-color: rgba(var(--text-primary-rgb), 0.04);
       }
 
       &:nth-child(even) {
-        background-color: $color-bg-tertiary;
+        background-color: var(--bg-tertiary);
 
         &:hover {
-          background-color: $color-bg-hover;
+          background-color: rgba(var(--text-primary-rgb), 0.04);
         }
       }
     }

@@ -14,6 +14,9 @@
  */
 import type { StoreDTO } from '@/api/store.api'
 import StoreCard from './StoreCard.vue'
+import { useI18n } from 'vue-i18n'
+
+const { t } = useI18n()
 
 // ============================================================================
 // Props & Emits
@@ -57,11 +60,11 @@ function handleDelete(store: StoreDTO) {
 <template>
   <div class="store-list-container">
     <!-- 加载状态 -->
-    <div v-if="loading" class="loading">加载中...</div>
+    <div v-if="loading" class="loading">{{ t('store.loading') }}</div>
 
     <!-- 空状态 -->
     <div v-else-if="stores.length === 0" class="empty">
-      <p>暂无店铺</p>
+      <p>{{ t('store.noStores') }}</p>
       <slot name="empty-action"></slot>
     </div>
 

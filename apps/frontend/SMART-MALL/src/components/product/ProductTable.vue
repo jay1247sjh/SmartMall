@@ -1,4 +1,4 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 /**
  * ProductTable 子组件
  * 
@@ -256,7 +256,7 @@ const hasNext = computed(() => props.currentPage < totalPages.value)
 
     .product-category {
       font-size: $font-size-sm;
-      color: $color-text-secondary;
+      color: var(--text-secondary);
     }
   }
 }
@@ -268,12 +268,12 @@ const hasNext = computed(() => props.currentPage < totalPages.value)
 
   .current-price {
     font-weight: $font-weight-medium;
-    color: $color-error;
+    color: var(--error);
   }
 
   .original-price {
     font-size: $font-size-sm;
-    color: $color-text-muted;
+    color: var(--text-muted);
     text-decoration: line-through;
   }
 }
@@ -286,7 +286,7 @@ const hasNext = computed(() => props.currentPage < totalPages.value)
   @include hover-highlight;
 
   &.stock-low {
-    color: $color-warning;
+    color: var(--warning);
   }
 }
 
@@ -295,15 +295,15 @@ const hasNext = computed(() => props.currentPage < totalPages.value)
   @include status-badge;
 
   &.status-on-sale {
-    @include status-variant($color-success-muted, $color-success);
+    @include status-variant(rgba(var(--success-rgb), 0.15), var(--success));
   }
 
   &.status-off-sale {
-    @include status-variant(rgba($color-gray-muted, 0.15), $color-gray-muted);
+    @include status-variant(rgba(var(--text-muted-rgb), 0.15), var(--text-muted));
   }
 
   &.status-sold-out {
-    @include status-variant($color-warning-muted, $color-warning);
+    @include status-variant(rgba(var(--warning-rgb), 0.15), var(--warning));
   }
 }
 
@@ -317,8 +317,8 @@ const hasNext = computed(() => props.currentPage < totalPages.value)
 
   &.btn-danger {
     &:hover {
-      background: rgba($color-error, 0.2);
-      color: $color-error;
+      background: rgba(var(--error-rgb), 0.2);
+      color: var(--error);
     }
   }
 }

@@ -1,4 +1,4 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 /**
  * BuilderToolbar 组件
  *
@@ -66,6 +66,8 @@ export interface BuilderToolbarProps {
   canRedo: boolean
   /** 是否正在保存 */
   isSaving: boolean
+  /** 是否正在发布 */
+  isPublishing?: boolean
 }
 
 export interface BuilderToolbarEmits {
@@ -79,6 +81,7 @@ export interface BuilderToolbarEmits {
   (e: 'export'): void
   (e: 'import', event: Event): void
   (e: 'save'): void
+  (e: 'publish'): void
 }
 
 // ============================================================================
@@ -92,6 +95,7 @@ const props = withDefaults(defineProps<BuilderToolbarProps>(), {
   canUndo: false,
   canRedo: false,
   isSaving: false,
+  isPublishing: false,
 })
 
 const emit = defineEmits<BuilderToolbarEmits>()
@@ -184,6 +188,13 @@ function handleImport(event: Event) {
  */
 function handleSave() {
   emit('save')
+}
+
+/**
+ * 处理发布
+ */
+function handlePublish() {
+  emit('publish')
 }
 
 /**
@@ -361,6 +372,19 @@ function isToolActive(tool: string | undefined): boolean {
         </svg>
         <span>{{ getSaveButtonText() }}</span>
       </button>
+      
+      <!-- 发布 -->
+      <button 
+        class="btn-publish" 
+        :disabled="isPublishing"
+        @click="handlePublish"
+      >
+        <svg viewBox="0 0 20 20" fill="none">
+          <path d="M10 2v10M6 8l4-4 4 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+          <path d="M3 14v2a1 1 0 001 1h12a1 1 0 001-1v-2" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+        </svg>
+        <span>{{ isPublishing ? '发布中...' : '发布' }}</span>
+      </button>
     </div>
   </header>
 </template>
@@ -378,9 +402,9 @@ function isToolActive(tool: string | undefined): boolean {
   left: 0;
   right: 0;
   height: 56px;
-  background: linear-gradient(to bottom, rgba($color-bg-primary, 0.95), rgba($color-bg-primary, 0.85));
+  background: linear-gradient(to bottom, rgba(var(--bg-primary-rgb), 0.95), rgba(var(--bg-primary-rgb), 0.85));
   backdrop-filter: blur(8px);
-  border-bottom: 1px solid $color-border-subtle;
+  border-bottom: 1px solid var(--border-subtle);
   @include flex-between;
   padding: 0 $space-4;
   z-index: 100;
@@ -400,10 +424,10 @@ function isToolActive(tool: string | undefined): boolean {
   @include flex-center-y;
   gap: $space-2;
   padding: $space-2 $space-3;
-  background: rgba($color-white, 0.05);
-  border: 1px solid $color-border-muted;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--border-muted);
   border-radius: $radius-md;
-  color: $color-text-secondary;
+  color: var(--text-secondary);
   font-size: $font-size-sm;
   cursor: pointer;
   transition: all $duration-normal;
@@ -414,8 +438,8 @@ function isToolActive(tool: string | undefined): boolean {
   }
 
   &:hover {
-    background: rgba($color-white, 0.1);
-    color: $color-text-primary;
+    background: rgba(255, 255, 255, 0.1);
+    color: var(--text-primary);
   }
 }
 
@@ -423,7 +447,7 @@ function isToolActive(tool: string | undefined): boolean {
   @include flex-center-y;
   gap: $space-2;
   padding: $space-2 $space-3;
-  color: $color-text-primary;
+  color: var(--text-primary);
   font-size: $font-size-base;
   font-weight: $font-weight-medium;
   white-space: nowrap;
@@ -432,7 +456,7 @@ function isToolActive(tool: string | undefined): boolean {
   svg {
     width: 18px;
     height: 18px;
-    color: $color-primary;
+    color: var(--accent-primary);
     flex-shrink: 0;
   }
 
@@ -452,8 +476,8 @@ function isToolActive(tool: string | undefined): boolean {
   @include flex-center-y;
   gap: $space-1;
   padding: $space-1;
-  background: rgba($color-white, 0.03);
-  border: 1px solid $color-border-subtle;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--border-subtle);
   border-radius: $radius-lg;
 }
 
@@ -464,7 +488,7 @@ function isToolActive(tool: string | undefined): boolean {
   background: transparent;
   border: none;
   border-radius: $radius-md;
-  color: $color-text-secondary;
+  color: var(--text-secondary);
   cursor: pointer;
   transition: all $duration-normal;
 
@@ -474,20 +498,20 @@ function isToolActive(tool: string | undefined): boolean {
   }
 
   &:hover {
-    background: rgba($color-white, 0.08);
-    color: $color-text-primary;
+    background: rgba(255, 255, 255, 0.08);
+    color: var(--text-primary);
   }
 
   &.active {
-    background: rgba($color-primary, 0.15);
-    color: $color-primary;
+    background: rgba(var(--accent-primary-rgb), 0.15);
+    color: var(--accent-primary);
   }
 
   &.reset-outline {
-    color: $color-warning;
+    color: var(--warning);
 
     &:hover {
-      background: rgba($color-warning, 0.15);
+      background: rgba(var(--warning-rgb), 0.15);
     }
   }
 }
@@ -495,7 +519,7 @@ function isToolActive(tool: string | undefined): boolean {
 .tool-divider {
   width: 1px;
   height: 24px;
-  background: $color-border-muted;
+  background: var(--border-muted);
   margin: 0 $space-1;
 }
 
@@ -510,7 +534,7 @@ function isToolActive(tool: string | undefined): boolean {
 .toolbar-divider {
   width: 1px;
   height: 24px;
-  background: $color-border-muted;
+  background: var(--border-muted);
   margin: 0 $space-1;
 }
 
@@ -518,10 +542,10 @@ function isToolActive(tool: string | undefined): boolean {
   @include flex-center;
   width: 36px;
   height: 36px;
-  background: rgba($color-white, 0.05);
-  border: 1px solid $color-border-subtle;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--border-subtle);
   border-radius: $radius-md;
-  color: $color-text-secondary;
+  color: var(--text-secondary);
   cursor: pointer;
   transition: all $duration-normal;
 
@@ -531,8 +555,8 @@ function isToolActive(tool: string | undefined): boolean {
   }
 
   &:hover:not(:disabled) {
-    background: rgba($color-white, 0.1);
-    color: $color-text-primary;
+    background: rgba(255, 255, 255, 0.1);
+    color: var(--text-primary);
   }
 
   &:disabled {
@@ -541,9 +565,9 @@ function isToolActive(tool: string | undefined): boolean {
   }
 
   &.active {
-    background: rgba($color-primary, 0.15);
-    border-color: rgba($color-primary, 0.3);
-    color: $color-primary;
+    background: rgba(var(--accent-primary-rgb), 0.15);
+    border-color: rgba(var(--accent-primary-rgb), 0.3);
+    color: var(--accent-primary);
   }
 }
 
@@ -561,10 +585,10 @@ function isToolActive(tool: string | undefined): boolean {
   @include flex-center-y;
   gap: $space-2;
   padding: $space-2 $space-4;
-  background: $color-primary;
+  background: var(--accent-primary);
   border: none;
   border-radius: $radius-md;
-  color: $color-bg-primary;
+  color: var(--bg-primary);
   font-size: $font-size-sm;
   font-weight: $font-weight-medium;
   cursor: pointer;
@@ -576,7 +600,35 @@ function isToolActive(tool: string | undefined): boolean {
   }
 
   &:hover:not(:disabled) {
-    background: $color-primary-hover;
+    background: var(--accent-hover);
+  }
+
+  &:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+}
+
+.btn-publish {
+  @include flex-center-y;
+  gap: $space-2;
+  padding: $space-2 $space-4;
+  background: rgba(34, 197, 94, 0.9);
+  border: none;
+  border-radius: $radius-md;
+  color: var(--bg-primary);
+  font-size: $font-size-sm;
+  font-weight: $font-weight-medium;
+  cursor: pointer;
+  transition: all $duration-normal;
+
+  svg {
+    width: 16px;
+    height: 16px;
+  }
+
+  &:hover:not(:disabled) {
+    background: rgba(22, 163, 74, 1);
   }
 
   &:disabled {

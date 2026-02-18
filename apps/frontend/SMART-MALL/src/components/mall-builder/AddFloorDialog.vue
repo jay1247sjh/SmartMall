@@ -1,4 +1,4 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 /**
  * AddFloorDialog 组件
  *
@@ -437,7 +437,7 @@ watch(() => form.level, () => {
   background: transparent;
   border: none;
   border-radius: $radius-md;
-  color: $color-text-secondary;
+  color: var(--text-secondary);
   cursor: pointer;
   transition: all $duration-normal;
 
@@ -447,8 +447,8 @@ watch(() => form.level, () => {
   }
 
   &:hover {
-    background: rgba($color-white, 0.08);
-    color: $color-text-primary;
+    background: rgba(255, 255, 255, 0.08);
+    color: var(--text-primary);
   }
 }
 
@@ -479,7 +479,7 @@ watch(() => form.level, () => {
   @include form-control;
 
   &.error {
-    border-color: $color-error;
+    border-color: var(--error);
   }
 }
 
@@ -490,7 +490,7 @@ watch(() => form.level, () => {
 
 .form-error {
   font-size: $font-size-xs;
-  color: $color-error;
+  color: var(--error);
 }
 
 // ============================================================================
@@ -501,10 +501,10 @@ watch(() => form.level, () => {
   align-items: center;
   gap: $space-2;
   padding: $space-3;
-  background: rgba($color-error, 0.08);
-  border: 1px solid rgba($color-error, 0.2);
+  background: rgba(var(--error-rgb), 0.08);
+  border: 1px solid rgba(var(--error-rgb), 0.2);
   border-radius: $radius-md;
-  color: $color-error;
+  color: var(--error);
   font-size: $font-size-sm;
 
   svg {
@@ -524,12 +524,12 @@ watch(() => form.level, () => {
 
 .preview-label {
   font-size: $font-size-sm + 1;
-  color: $color-text-secondary;
+  color: var(--text-secondary);
 }
 
 .preview-canvas-wrapper {
-  background: $color-bg-primary;
-  border: 1px solid $color-border-subtle;
+  background: var(--bg-primary);
+  border: 1px solid var(--border-subtle);
   border-radius: $radius-md;
   overflow: hidden;
 }

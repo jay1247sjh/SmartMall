@@ -1,4 +1,4 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 /**
  * BuilderWizard 组件
  *
@@ -298,8 +298,8 @@ function getCreateButtonText(): string {
   width: 800px;
   max-width: 90vw;
   max-height: 90vh;
-  background: $color-bg-secondary;
-  border: 1px solid $color-border-muted;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-muted);
   border-radius: $radius-xl;
   overflow: hidden;
   display: flex;
@@ -312,18 +312,18 @@ function getCreateButtonText(): string {
 // ============================================================================
 .wizard-header {
   padding: $space-5 $space-6;
-  border-bottom: 1px solid $color-border-subtle;
+  border-bottom: 1px solid var(--border-subtle);
 
   h2 {
     font-size: $font-size-2xl;
     font-weight: $font-weight-semibold;
-    color: $color-text-primary;
+    color: var(--text-primary);
     margin: 0 0 $space-2 0;
   }
 
   p {
     font-size: $font-size-base;
-    color: $color-text-secondary;
+    color: var(--text-secondary);
     margin: 0;
   }
 }
@@ -348,27 +348,27 @@ function getCreateButtonText(): string {
     display: block;
     font-size: $font-size-sm;
     font-weight: $font-weight-medium;
-    color: $color-text-secondary;
+    color: var(--text-secondary);
     margin-bottom: $space-2;
   }
 
   .input {
     width: 100%;
     padding: $space-3 $space-4;
-    background: $color-bg-tertiary;
-    border: 1px solid $color-border-muted;
+    background: var(--bg-tertiary);
+    border: 1px solid var(--border-muted);
     border-radius: $radius-md;
-    color: $color-text-primary;
+    color: var(--text-primary);
     font-size: $font-size-base;
     transition: border-color $duration-normal;
 
     &:focus {
       outline: none;
-      border-color: $color-primary;
+      border-color: var(--accent-primary);
     }
 
     &::placeholder {
-      color: $color-text-muted;
+      color: var(--text-muted);
     }
   }
 }
@@ -381,7 +381,7 @@ function getCreateButtonText(): string {
     display: block;
     font-size: $font-size-sm;
     font-weight: $font-weight-medium;
-    color: $color-text-secondary;
+    color: var(--text-secondary);
     margin-bottom: $space-3;
   }
 }
@@ -400,21 +400,21 @@ function getCreateButtonText(): string {
   flex-direction: column;
   align-items: center;
   padding: $space-4;
-  background: rgba($color-white, 0.02);
-  border: 2px solid $color-border-subtle;
+  background: rgba(255, 255, 255, 0.02);
+  border: 2px solid var(--border-subtle);
   border-radius: $radius-lg;
   cursor: pointer;
   transition: all $duration-normal;
 
   &:hover {
-    background: rgba($color-white, 0.05);
-    border-color: $color-border-muted;
+    background: rgba(255, 255, 255, 0.05);
+    border-color: var(--border-muted);
     transform: translateY(-2px);
   }
 
   &.active {
-    background: rgba($color-primary, 0.1);
-    border-color: $color-primary;
+    background: rgba(var(--accent-primary-rgb), 0.1);
+    border-color: var(--accent-primary);
   }
 
   &.custom {
@@ -422,12 +422,12 @@ function getCreateButtonText(): string {
   }
 
   &.ai-card {
-    border-color: rgba($color-primary, 0.3);
-    background: rgba($color-primary, 0.04);
+    border-color: rgba(var(--accent-primary-rgb), 0.3);
+    background: rgba(var(--accent-primary-rgb), 0.04);
 
     &.active {
-      background: rgba($color-primary, 0.12);
-      border-color: $color-primary;
+      background: rgba(var(--accent-primary-rgb), 0.12);
+      border-color: var(--accent-primary);
     }
   }
 }
@@ -436,7 +436,7 @@ function getCreateButtonText(): string {
   width: 64px;
   height: 64px;
   margin-bottom: $space-3;
-  color: $color-text-muted;
+  color: var(--text-muted);
 
   svg {
     width: 100%;
@@ -444,21 +444,21 @@ function getCreateButtonText(): string {
   }
 
   .template-card.active & {
-    color: $color-primary;
+    color: var(--accent-primary);
   }
 }
 
 .template-name {
   font-size: $font-size-base;
   font-weight: $font-weight-medium;
-  color: $color-text-primary;
+  color: var(--text-primary);
   margin-bottom: $space-1;
   text-align: center;
 }
 
 .template-desc {
   font-size: $font-size-sm;
-  color: $color-text-muted;
+  color: var(--text-muted);
   text-align: center;
 }
 
@@ -472,7 +472,7 @@ function getCreateButtonText(): string {
     display: block;
     font-size: $font-size-sm;
     font-weight: $font-weight-medium;
-    color: $color-text-secondary;
+    color: var(--text-secondary);
     margin-bottom: $space-2;
   }
 }
@@ -480,10 +480,10 @@ function getCreateButtonText(): string {
 .ai-textarea {
   width: 100%;
   padding: $space-3 $space-4;
-  background: $color-bg-tertiary;
-  border: 1px solid $color-border-muted;
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border-muted);
   border-radius: $radius-md;
-  color: $color-text-primary;
+  color: var(--text-primary);
   font-size: $font-size-base;
   font-family: inherit;
   resize: vertical;
@@ -492,11 +492,11 @@ function getCreateButtonText(): string {
 
   &:focus {
     outline: none;
-    border-color: $color-primary;
+    border-color: var(--accent-primary);
   }
 
   &::placeholder {
-    color: $color-text-muted;
+    color: var(--text-muted);
   }
 
   &:disabled {
@@ -529,7 +529,7 @@ function getCreateButtonText(): string {
   align-items: center;
   gap: $space-2;
   margin-top: $space-2;
-  color: $color-text-muted;
+  color: var(--text-muted);
   font-size: $font-size-sm;
 
   .hint-icon {
@@ -547,7 +547,7 @@ function getCreateButtonText(): string {
   justify-content: flex-end;
   gap: $space-3;
   padding: $space-4 $space-6;
-  border-top: 1px solid $color-border-subtle;
+  border-top: 1px solid var(--border-subtle);
 }
 
 // ============================================================================
@@ -556,16 +556,16 @@ function getCreateButtonText(): string {
 .btn-secondary {
   padding: $space-2 $space-4;
   background: transparent;
-  border: 1px solid $color-border-subtle;
+  border: 1px solid var(--border-subtle);
   border-radius: $radius-md;
-  color: $color-text-primary;
+  color: var(--text-primary);
   font-size: $font-size-base;
   cursor: pointer;
   transition: all $duration-normal;
 
   &:hover {
-    background: $color-bg-tertiary;
-    border-color: $color-border-muted;
+    background: var(--bg-tertiary);
+    border-color: var(--border-muted);
   }
 }
 
@@ -574,7 +574,7 @@ function getCreateButtonText(): string {
   align-items: center;
   gap: $space-2;
   padding: $space-2 $space-4;
-  background: $color-primary;
+  background: var(--accent-primary);
   border: none;
   border-radius: $radius-md;
   color: #fff;
@@ -584,12 +584,12 @@ function getCreateButtonText(): string {
   transition: background $duration-normal;
 
   &:hover {
-    background: $color-primary-hover;
+    background: var(--accent-hover);
   }
 
   &:disabled {
-    background: $color-bg-tertiary;
-    color: $color-text-disabled;
+    background: var(--bg-tertiary);
+    color: var(--text-disabled);
     cursor: not-allowed;
   }
 }

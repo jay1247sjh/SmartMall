@@ -33,6 +33,9 @@ import {
 } from 'element-plus'
 import { Search, Refresh } from '@element-plus/icons-vue'
 import type { SelectOption } from '@/types/ui'
+import { useI18n } from 'vue-i18n'
+
+const { t } = useI18n()
 
 // ============================================================================
 // 类型定义
@@ -132,17 +135,17 @@ function handleKeyupEnter() {
 <template>
   <ElCard shadow="never" class="search-card">
     <ElForm :model="modelValue" inline>
-      <ElFormItem label="关键词">
+      <ElFormItem :label="t('userMgmt.keyword')">
         <ElInput
           :model-value="modelValue.keyword"
-          placeholder="搜索用户名或邮箱"
+          :placeholder="t('userMgmt.searchPlaceholder')"
           clearable
           style="width: 200px"
           @update:model-value="handleKeywordChange"
           @keyup.enter="handleKeyupEnter"
         />
       </ElFormItem>
-      <ElFormItem label="用户类型">
+      <ElFormItem :label="t('userMgmt.userType')">
         <ElSelect
           :model-value="modelValue.userType"
           style="width: 120px"
@@ -156,7 +159,7 @@ function handleKeyupEnter() {
           />
         </ElSelect>
       </ElFormItem>
-      <ElFormItem label="状态">
+      <ElFormItem :label="t('userMgmt.status')">
         <ElSelect
           :model-value="modelValue.status"
           style="width: 120px"
@@ -172,8 +175,8 @@ function handleKeyupEnter() {
       </ElFormItem>
       <ElFormItem>
         <ElSpace>
-          <ElButton type="primary" :icon="Search" @click="handleSearch">搜索</ElButton>
-          <ElButton :icon="Refresh" @click="handleReset">重置</ElButton>
+          <ElButton type="primary" :icon="Search" @click="handleSearch">{{ t('userMgmt.search') }}</ElButton>
+          <ElButton :icon="Refresh" @click="handleReset">{{ t('userMgmt.reset') }}</ElButton>
         </ElSpace>
       </ElFormItem>
     </ElForm>

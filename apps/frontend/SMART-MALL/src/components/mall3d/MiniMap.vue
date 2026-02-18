@@ -1,4 +1,4 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 /**
  * MiniMap 组件
  *
@@ -19,6 +19,10 @@
  * />
  * ```
  */
+
+import { useI18n } from 'vue-i18n'
+
+const { t } = useI18n()
 
 // ============================================================================
 // 类型定义
@@ -71,7 +75,7 @@ function handleToggle() {
     <!-- 迷你地图面板 -->
     <div v-if="visible" class="minimap">
       <div class="minimap-header">
-        <span>迷你地图</span>
+        <span>{{ t('mall3d.miniMap') }}</span>
         <button class="btn-close" @click="handleClose">×</button>
       </div>
       <div class="minimap-content">
@@ -91,7 +95,7 @@ function handleToggle() {
 @use '@/assets/styles/scss/mixins' as *;
 
 // 扩展变量（全局变量中没有的）
-$bg-panel: rgba($color-bg-secondary, 0.9);
+$bg-panel: rgba(var(--bg-secondary-rgb), 0.9);
 
 // ============================================================================
 // 迷你地图容器
@@ -108,29 +112,29 @@ $bg-panel: rgba($color-bg-secondary, 0.9);
 .minimap {
   width: 180px;
   background: $bg-panel;
-  border: 1px solid $color-border-muted;
+  border: 1px solid var(--border-muted);
   border-radius: 10px;
   overflow: hidden;
 
   .minimap-header {
     @include flex-between;
     padding: 10px 14px;
-    border-bottom: 1px solid $color-border-subtle;
+    border-bottom: 1px solid var(--border-subtle);
     font-size: $font-size-sm;
-    color: $color-text-secondary;
+    color: var(--text-secondary);
 
     .btn-close {
       width: 20px;
       height: 20px;
       background: transparent;
       border: none;
-      color: $color-text-secondary;
+      color: var(--text-secondary);
       font-size: 16px;
       @include flex-center;
       @include clickable;
 
       &:hover {
-        color: $color-text-primary;
+        color: var(--text-primary);
       }
     }
   }
@@ -141,12 +145,12 @@ $bg-panel: rgba($color-bg-secondary, 0.9);
     .minimap-placeholder {
       width: 100%;
       aspect-ratio: 1;
-      background: $color-bg-hover;
+      background: rgba(var(--text-primary-rgb), 0.04);
       border-radius: 6px;
       @include flex-center;
       font-size: 24px;
       font-weight: $font-weight-semibold;
-      color: $color-text-muted;
+      color: var(--text-muted);
     }
   }
 }
@@ -158,13 +162,13 @@ $bg-panel: rgba($color-bg-secondary, 0.9);
   width: 44px;
   height: 44px;
   background: $bg-panel;
-  border: 1px solid $color-border-muted;
+  border: 1px solid var(--border-muted);
   border-radius: 10px;
   font-size: $font-size-2xl;
   @include clickable;
 
   &:hover {
-    background: $color-bg-secondary;
+    background: var(--bg-secondary);
   }
 }
 </style>

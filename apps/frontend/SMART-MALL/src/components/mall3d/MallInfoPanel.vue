@@ -1,4 +1,4 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 /**
  * MallInfoPanel 组件
  *
@@ -21,6 +21,10 @@
  *
  * @validates Requirements 1.7
  */
+
+import { useI18n } from 'vue-i18n'
+
+const { t } = useI18n()
 
 // ============================================================================
 // 类型定义
@@ -76,10 +80,10 @@ function handleClear() {
   <div v-if="mallData" class="mall-info-panel">
     <div class="mall-info-header">
       <span class="mall-name">{{ mallData.name }}</span>
-      <span class="mall-badge">AI 生成</span>
+      <span class="mall-badge">{{ t('mall3d.aiGenerated') }}</span>
     </div>
     <div class="mall-info-desc">{{ mallData.description }}</div>
-    <button class="btn-clear-mall" @click="handleClear">清除并重置</button>
+    <button class="btn-clear-mall" @click="handleClear">{{ t('mall3d.clearAndReset') }}</button>
   </div>
 </template>
 
@@ -88,7 +92,7 @@ function handleClear() {
 @use '@/assets/styles/scss/mixins' as *;
 
 // 扩展变量（全局变量中没有的）
-$bg-panel-solid: rgba($color-bg-secondary, 0.95);
+$bg-panel-solid: rgba(var(--bg-secondary-rgb), 0.95);
 
 // ============================================================================
 // 商城信息面板
@@ -100,7 +104,7 @@ $bg-panel-solid: rgba($color-bg-secondary, 0.95);
   width: 240px;
   padding: $space-4;
   background: $bg-panel-solid;
-  border: 1px solid $color-border-muted;
+  border: 1px solid var(--border-muted);
   border-radius: $radius-lg;
   backdrop-filter: blur(10px);
 
@@ -112,7 +116,7 @@ $bg-panel-solid: rgba($color-bg-secondary, 0.95);
     .mall-name {
       font-size: 16px;
       font-weight: $font-weight-semibold;
-      color: $color-text-primary;
+      color: var(--text-primary);
     }
 
     .mall-badge {
@@ -127,7 +131,7 @@ $bg-panel-solid: rgba($color-bg-secondary, 0.95);
 
   .mall-info-desc {
     font-size: $font-size-sm;
-    color: $color-text-secondary;
+    color: var(--text-secondary);
     line-height: 1.5;
     margin-bottom: $space-3;
     @include line-clamp(2);
@@ -136,16 +140,16 @@ $bg-panel-solid: rgba($color-bg-secondary, 0.95);
   .btn-clear-mall {
     width: 100%;
     padding: $space-2;
-    background: $color-error-muted;
-    border: 1px solid rgba($color-error, 0.3);
+    background: rgba(var(--error-rgb), 0.15);
+    border: 1px solid rgba(var(--error-rgb), 0.3);
     border-radius: $radius-md;
-    color: $color-error;
+    color: var(--error);
     font-size: $font-size-sm;
     @include clickable;
 
     &:hover {
-      background: rgba($color-error, 0.25);
-      border-color: rgba($color-error, 0.5);
+      background: rgba(var(--error-rgb), 0.25);
+      border-color: rgba(var(--error-rgb), 0.5);
     }
   }
 }

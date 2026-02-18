@@ -1,4 +1,4 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 /**
  * StorePanel 组件
  *
@@ -20,6 +20,10 @@
  * />
  * ```
  */
+
+import { useI18n } from 'vue-i18n'
+
+const { t } = useI18n()
 
 // ============================================================================
 // 类型定义
@@ -87,9 +91,9 @@ function getBusinessHours(): string {
   if (openTime && closeTime) {
     return `${openTime} - ${closeTime}`
   }
-  if (openTime) return `${openTime} 起`
-  if (closeTime) return `至 ${closeTime}`
-  return '暂无信息'
+  if (openTime) return `${openTime} ${t('mall3d.timeFrom')}`
+  if (closeTime) return `${t('mall3d.timeTo')} ${closeTime}`
+  return t('mall3d.noInfo')
 }
 
 // ============================================================================
@@ -123,26 +127,26 @@ function handleEnter() {
     <div class="panel-content">
       <!-- 位置信息 -->
       <div v-if="getLocationText()" class="info-row">
-        <label>位置</label>
+        <label>{{ t('mall3d.location') }}</label>
         <span>{{ getLocationText() }}</span>
       </div>
 
       <!-- 分类信息 -->
       <div v-if="store.category" class="info-row">
-        <label>分类</label>
+        <label>{{ t('mall3d.category') }}</label>
         <span>{{ store.category }}</span>
       </div>
 
       <!-- 营业时间 -->
       <div class="info-row">
-        <label>营业时间</label>
+        <label>{{ t('mall3d.businessHours') }}</label>
         <span>{{ getBusinessHours() }}</span>
       </div>
     </div>
 
     <!-- 面板操作 -->
     <div class="panel-actions">
-      <button class="btn-primary" @click="handleEnter">进入店铺</button>
+      <button class="btn-primary" @click="handleEnter">{{ t('mall3d.enterStore') }}</button>
     </div>
   </div>
 </template>
@@ -152,7 +156,7 @@ function handleEnter() {
 @use '@/assets/styles/scss/mixins' as *;
 
 // 扩展变量（全局变量中没有的）
-$bg-panel-solid: rgba($color-bg-secondary, 0.95);
+$bg-panel-solid: rgba(var(--bg-secondary-rgb), 0.95);
 
 // ============================================================================
 // 店铺面板
@@ -163,19 +167,19 @@ $bg-panel-solid: rgba($color-bg-secondary, 0.95);
   top: 80px;
   width: 280px;
   background: $bg-panel-solid;
-  border: 1px solid $color-border-muted;
+  border: 1px solid var(--border-muted);
   border-radius: $radius-lg;
   overflow: hidden;
 
   .panel-header {
     @include flex-between;
     padding: $space-4 $space-5;
-    border-bottom: 1px solid $color-border-subtle;
+    border-bottom: 1px solid var(--border-subtle);
 
     h3 {
       font-size: 16px;
       font-weight: $font-weight-semibold;
-      color: $color-text-primary;
+      color: var(--text-primary);
       margin: 0;
     }
 
@@ -184,13 +188,13 @@ $bg-panel-solid: rgba($color-bg-secondary, 0.95);
       height: 24px;
       background: transparent;
       border: none;
-      color: $color-text-secondary;
+      color: var(--text-secondary);
       font-size: 18px;
       @include flex-center;
       @include clickable;
 
       &:hover {
-        color: $color-text-primary;
+        color: var(--text-primary);
       }
     }
   }
@@ -205,33 +209,33 @@ $bg-panel-solid: rgba($color-bg-secondary, 0.95);
 
       label {
         font-size: 13px;
-        color: $color-text-secondary;
+        color: var(--text-secondary);
       }
 
       span {
         font-size: $font-size-base;
-        color: $color-text-primary;
+        color: var(--text-primary);
       }
     }
   }
 
   .panel-actions {
     padding: $space-4 $space-5;
-    border-top: 1px solid $color-border-subtle;
+    border-top: 1px solid var(--border-subtle);
 
     .btn-primary {
       width: 100%;
       padding: $space-3;
-      background: $color-primary;
+      background: var(--accent-primary);
       border: none;
       border-radius: $radius-md;
-      color: $color-bg-primary;
+      color: var(--bg-primary);
       font-size: $font-size-base;
       font-weight: $font-weight-medium;
       @include clickable;
 
       &:hover {
-        background: $color-primary-hover;
+        background: var(--accent-hover);
       }
     }
   }

@@ -1,4 +1,4 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 /**
  * PropertyPanel 组件
  *
@@ -251,11 +251,11 @@ function handleTypeChange(event: Event) {
   width: 280px;
   background: linear-gradient(
     to bottom,
-    rgba($color-bg-primary, 0.95),
-    rgba($color-bg-primary, 0.9)
+    rgba(var(--bg-primary-rgb), 0.95),
+    rgba(var(--bg-primary-rgb), 0.9)
   );
   backdrop-filter: blur(8px);
-  border: 1px solid $color-border-subtle;
+  border: 1px solid var(--border-subtle);
   border-radius: $radius-xl;
   z-index: 60;
   overflow: hidden;
@@ -269,13 +269,13 @@ function handleTypeChange(event: Event) {
 .panel-header {
   @include flex-between;
   padding: $space-3 $space-4;
-  border-bottom: 1px solid $color-border-subtle;
+  border-bottom: 1px solid var(--border-subtle);
   flex-shrink: 0;
 
   h3 {
     font-size: $font-size-sm;
     font-weight: $font-weight-semibold;
-    color: $color-text-primary;
+    color: var(--text-primary);
     margin: 0;
   }
 }
@@ -287,7 +287,7 @@ function handleTypeChange(event: Event) {
   background: transparent;
   border: none;
   border-radius: $radius-md;
-  color: $color-text-secondary;
+  color: var(--text-secondary);
   cursor: pointer;
   transition: all $duration-normal;
 
@@ -297,8 +297,8 @@ function handleTypeChange(event: Event) {
   }
 
   &:hover:not(:disabled) {
-    background: rgba($color-white, 0.08);
-    color: $color-text-primary;
+    background: rgba(255, 255, 255, 0.08);
+    color: var(--text-primary);
   }
 }
 
@@ -324,7 +324,7 @@ function handleTypeChange(event: Event) {
   label {
     font-size: $font-size-xs;
     font-weight: $font-weight-medium;
-    color: $color-text-secondary;
+    color: var(--text-secondary);
     text-transform: uppercase;
     letter-spacing: 0.05em;
   }
@@ -336,25 +336,25 @@ function handleTypeChange(event: Event) {
 .input {
   width: 100%;
   padding: $space-2 $space-3;
-  background: rgba($color-white, 0.05);
-  border: 1px solid $color-border-subtle;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--border-subtle);
   border-radius: $radius-md;
   font-size: $font-size-sm;
-  color: $color-text-primary;
+  color: var(--text-primary);
   transition: all $duration-normal;
 
   &::placeholder {
-    color: $color-text-muted;
+    color: var(--text-muted);
   }
 
   &:hover {
-    border-color: $color-border-muted;
+    border-color: var(--border-muted);
   }
 
   &:focus {
     outline: none;
-    border-color: $color-primary;
-    background: rgba($color-white, 0.08);
+    border-color: var(--accent-primary);
+    background: rgba(255, 255, 255, 0.08);
   }
 }
 
@@ -364,11 +364,11 @@ function handleTypeChange(event: Event) {
 .select {
   width: 100%;
   padding: $space-2 $space-3;
-  background: rgba($color-white, 0.05);
-  border: 1px solid $color-border-subtle;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--border-subtle);
   border-radius: $radius-md;
   font-size: $font-size-sm;
-  color: $color-text-primary;
+  color: var(--text-primary);
   cursor: pointer;
   transition: all $duration-normal;
   appearance: none;
@@ -378,18 +378,18 @@ function handleTypeChange(event: Event) {
   padding-right: $space-8;
 
   &:hover {
-    border-color: $color-border-muted;
+    border-color: var(--border-muted);
   }
 
   &:focus {
     outline: none;
-    border-color: $color-primary;
-    background-color: rgba($color-white, 0.08);
+    border-color: var(--accent-primary);
+    background-color: rgba(255, 255, 255, 0.08);
   }
 
   option {
-    background: $color-bg-primary;
-    color: $color-text-primary;
+    background: var(--bg-primary);
+    color: var(--text-primary);
   }
 }
 
@@ -405,19 +405,19 @@ function handleTypeChange(event: Event) {
 .property-panel__size-item {
   @include flex-between;
   padding: $space-2 $space-3;
-  background: rgba($color-white, 0.03);
+  background: rgba(255, 255, 255, 0.03);
   border-radius: $radius-md;
 }
 
 .property-panel__size-label {
   font-size: $font-size-xs;
-  color: $color-text-muted;
+  color: var(--text-muted);
 }
 
 .property-panel__size-value {
   font-size: $font-size-sm;
   font-weight: $font-weight-medium;
-  color: $color-text-primary;
+  color: var(--text-primary);
   font-family: $font-mono;
 }
 
@@ -427,7 +427,7 @@ function handleTypeChange(event: Event) {
 .property-actions {
   margin-top: $space-2;
   padding-top: $space-4;
-  border-top: 1px solid $color-border-subtle;
+  border-top: 1px solid var(--border-subtle);
 }
 
 .btn-danger {
@@ -435,12 +435,12 @@ function handleTypeChange(event: Event) {
   gap: $space-2;
   width: 100%;
   padding: $space-2 $space-4;
-  background: rgba($color-error, 0.1);
-  border: 1px solid rgba($color-error, 0.2);
+  background: rgba(var(--error-rgb), 0.1);
+  border: 1px solid rgba(var(--error-rgb), 0.2);
   border-radius: $radius-md;
   font-size: $font-size-sm;
   font-weight: $font-weight-medium;
-  color: $color-error;
+  color: var(--error);
   cursor: pointer;
   transition: all $duration-normal;
 
@@ -450,12 +450,12 @@ function handleTypeChange(event: Event) {
   }
 
   &:hover {
-    background: rgba($color-error, 0.2);
-    border-color: rgba($color-error, 0.3);
+    background: rgba(var(--error-rgb), 0.2);
+    border-color: rgba(var(--error-rgb), 0.3);
   }
 
   &:active {
-    background: rgba($color-error, 0.25);
+    background: rgba(var(--error-rgb), 0.25);
   }
 }
 </style>

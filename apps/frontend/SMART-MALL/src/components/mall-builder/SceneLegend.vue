@@ -1,4 +1,4 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 /**
  * SceneLegend 组件
  *
@@ -144,11 +144,11 @@ function hasItems(): boolean {
   max-width: 180px;
   background: linear-gradient(
     to bottom,
-    rgba($color-bg-primary, 0.95),
-    rgba($color-bg-primary, 0.9)
+    rgba(var(--bg-primary-rgb), 0.95),
+    rgba(var(--bg-primary-rgb), 0.9)
   );
   backdrop-filter: blur(8px);
-  border: 1px solid $color-border-subtle;
+  border: 1px solid var(--border-subtle);
   border-radius: $radius-lg;
   z-index: 40;
   overflow: hidden;
@@ -160,21 +160,21 @@ function hasItems(): boolean {
     @include flex-center-y;
     gap: $space-2;
     padding: $space-2 $space-3;
-    border-bottom: 1px solid $color-border-subtle;
-    background: rgba($color-white, 0.02);
+    border-bottom: 1px solid var(--border-subtle);
+    background: rgba(255, 255, 255, 0.02);
   }
 
   &__icon {
     width: 14px;
     height: 14px;
-    color: $color-text-secondary;
+    color: var(--text-secondary);
     flex-shrink: 0;
   }
 
   &__title {
     font-size: $font-size-xs;
     font-weight: $font-weight-semibold;
-    color: $color-text-secondary;
+    color: var(--text-secondary);
     text-transform: uppercase;
     letter-spacing: 0.05em;
   }
@@ -202,12 +202,12 @@ function hasItems(): boolean {
     height: 12px;
     border-radius: $radius-sm;
     flex-shrink: 0;
-    box-shadow: 0 0 0 1px rgba($color-white, 0.1);
+    box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.1);
   }
 
   &__label {
     font-size: $font-size-xs;
-    color: $color-text-secondary;
+    color: var(--text-secondary);
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
