@@ -1,4 +1,4 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 /**
  * ============================================================================
  * 认证页面布局组件 (AuthLayout.vue)
@@ -182,10 +182,10 @@ defineProps<{
  * ============================================================================
  * 
  * 【颜色方案】
- * - 背景色：$color-bg-primary（接近纯黑）
- * - 主文字：$color-text-primary（浅灰白）
- * - 次文字：$color-text-secondary（中灰）
- * - 强调色：蓝紫渐变（$color-primary → 紫色 → 粉色）
+ * - 背景色：var(--bg-primary)（接近纯黑）
+ * - 主文字：var(--text-primary)（浅灰白）
+ * - 次文字：var(--text-secondary)（中灰）
+ * - 强调色：蓝紫渐变（var(--accent-primary) → 紫色 → 粉色）
  * 
  * 【设计原则】
  * - 深色主题，减少视觉疲劳
@@ -197,7 +197,7 @@ defineProps<{
 .auth-page {
   min-height: 100vh;
   display: flex;
-  background-color: $color-bg-primary;
+  background-color: var(--bg-primary);
 }
 
 /* 左侧品牌区 */
@@ -229,8 +229,8 @@ defineProps<{
       position: absolute;
       inset: 0;
       background-image: 
-        linear-gradient(rgba($color-white, 0.02) 1px, transparent 1px),
-        linear-gradient(90deg, rgba($color-white, 0.02) 1px, transparent 1px);
+        linear-gradient(rgba(255, 255, 255, 0.02) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255, 255, 255, 0.02) 1px, transparent 1px);
       background-size: 60px 60px;
       mask-image: radial-gradient(ellipse 80% 60% at 50% 50%, black 20%, transparent 70%);
     }
@@ -246,7 +246,7 @@ defineProps<{
         height: 400px;
         top: -100px;
         right: -50px;
-        background: linear-gradient(135deg, $color-accent-blue-dark 0%, $color-accent-purple 100%);
+        background: linear-gradient(135deg, var(--accent-muted) 0%, #a78bfa 100%);
         opacity: 0.4;
       }
 
@@ -255,7 +255,7 @@ defineProps<{
         height: 300px;
         bottom: -50px;
         left: 10%;
-        background: linear-gradient(135deg, $color-accent-pink 0%, $color-accent-orange 100%);
+        background: linear-gradient(135deg, #f472b6 0%, #fb923c 100%);
         opacity: 0.25;
       }
     }
@@ -275,7 +275,7 @@ defineProps<{
         letter-spacing: -0.03em;
         line-height: 1.1;
         margin: 0 0 $space-8 0;
-        background: linear-gradient(135deg, $color-primary 0%, $color-accent-violet 40%, $color-accent-pink 70%, $color-accent-orange 100%);
+        background: linear-gradient(135deg, var(--accent-primary) 0%, #c4b5fd 40%, #f472b6 70%, #fb923c 100%);
         -webkit-background-clip: text;
         -webkit-text-fill-color: transparent;
         background-clip: text;
@@ -287,7 +287,7 @@ defineProps<{
       .system-headline {
         font-size: 28px;
         font-weight: $font-weight-normal;
-        color: $color-text-primary;
+        color: var(--text-primary);
         line-height: 1.4;
         margin: 0 0 $space-4 0;
       }
@@ -295,7 +295,7 @@ defineProps<{
       /* 副标语 */
       .system-subtitle {
         font-size: $font-size-lg;
-        color: $color-text-secondary;
+        color: var(--text-secondary);
         line-height: 1.6;
         margin: 0 0 $space-10 0;
       }
@@ -334,10 +334,10 @@ defineProps<{
         width: 48px;
         height: 48px;
         @include flex-center;
-        background: linear-gradient(135deg, $color-primary-muted 0%, rgba(167, 139, 250, 0.15) 100%);
-        border: 1px solid $color-border-muted;
+        background: linear-gradient(135deg, var(--accent-muted) 0%, rgba(167, 139, 250, 0.15) 100%);
+        border: 1px solid var(--border-muted);
         border-radius: $radius-lg;
-        color: $color-primary;
+        color: var(--accent-primary);
       }
     }
   }

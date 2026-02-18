@@ -1,4 +1,4 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 /**
  * ============================================================================
  * 功能特性列表组件 (FeatureList)
@@ -82,11 +82,11 @@ defineProps<{
     display: flex;
     align-items: center;
     gap: $radius-lg;
-    color: $color-text-secondary;
+    color: var(--text-secondary);
     font-size: $font-size-base;
 
     .feature-icon {
-      color: $color-success;
+      color: var(--success);
       flex-shrink: 0;
     }
   }

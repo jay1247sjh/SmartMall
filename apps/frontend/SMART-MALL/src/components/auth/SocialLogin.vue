@@ -1,4 +1,4 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 /**
  * ============================================================================
  * 第三方社交登录组件 (SocialLogin)
@@ -95,9 +95,9 @@ defineEmits<{
 @use '@/assets/styles/scss/mixins' as *;
 
 // 扩展变量（基于全局变量的透明度变体）
-$border-divider: rgba($color-white, 0.08);
-$bg-button: rgba($color-white, 0.03);
-$border-button-hover: rgba($color-white, 0.15);
+$border-divider: rgba(255, 255, 255, 0.08);
+$bg-button: rgba(255, 255, 255, 0.03);
+$border-button-hover: rgba(255, 255, 255, 0.15);
 
 .social-login-section {
   :deep(.el-divider) {
@@ -111,7 +111,7 @@ $border-button-hover: rgba($color-white, 0.15);
   }
 
   .divider-text {
-    color: $color-text-muted;
+    color: var(--text-muted);
     font-size: $font-size-sm;
   }
 
@@ -123,15 +123,15 @@ $border-button-hover: rgba($color-white, 0.15);
       width: 48px;
       height: 48px;
       background: $bg-button;
-      border: 1px solid $color-border-muted;
+      border: 1px solid var(--border-muted);
       border-radius: $radius-lg;
-      color: $color-text-secondary;
+      color: var(--text-secondary);
       transition: all $duration-normal;
 
       &:hover {
-        background: $color-bg-hover;
+        background: rgba(var(--text-primary-rgb), 0.04);
         border-color: $border-button-hover;
-        color: $color-text-primary;
+        color: var(--text-primary);
       }
 
       svg {

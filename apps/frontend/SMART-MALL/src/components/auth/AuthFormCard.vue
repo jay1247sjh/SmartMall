@@ -1,4 +1,4 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 /**
  * ============================================================================
  * 认证表单卡片组件 (AuthFormCard.vue)
@@ -142,13 +142,13 @@ defineProps<{
       h2 {
         font-size: 26px;
         font-weight: $font-weight-medium;
-        color: $color-text-primary;
+        color: var(--text-primary);
         margin: 0 0 $space-2 0;
       }
 
       p {
         font-size: $font-size-base;
-        color: $color-text-secondary;
+        color: var(--text-secondary);
         margin: 0;
       }
     }
@@ -156,8 +156,8 @@ defineProps<{
 
   /* 表单内容区域 */
   .form-body {
-    background: $color-bg-hover;
-    border: 1px solid rgba($color-white, 0.08);
+    background: rgba(var(--text-primary-rgb), 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.08);
     border-radius: $radius-xl;
 
     :deep(.el-card__body) {

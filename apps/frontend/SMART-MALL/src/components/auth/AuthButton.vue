@@ -1,4 +1,4 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 /**
  * ============================================================================
  * 认证表单提交按钮组件 (AuthButton)
@@ -90,14 +90,14 @@ defineEmits<{
   border-radius: 10px;
   font-size: $font-size-base;
   font-weight: $font-weight-medium;
-  background: linear-gradient(135deg, $color-primary 0%, $color-accent-purple 100%);
+  background: linear-gradient(135deg, var(--accent-primary) 0%, #a78bfa 100%);
   border: none;
   transition: transform $duration-normal, box-shadow $duration-normal;
 
   &:hover:not(:disabled) {
     transform: translateY(-1px);
-    box-shadow: 0 4px 20px rgba($color-primary, 0.3);
-    background: linear-gradient(135deg, $color-primary 0%, $color-accent-purple 100%);
+    box-shadow: 0 4px 20px rgba(var(--accent-primary-rgb), 0.3);
+    background: linear-gradient(135deg, var(--accent-primary) 0%, #a78bfa 100%);
 
     .btn-arrow {
       transform: translateX(3px);
@@ -109,8 +109,8 @@ defineEmits<{
   }
 
   &:disabled {
-    background: $color-bg-tertiary;
-    color: $color-text-muted;
+    background: var(--bg-tertiary);
+    color: var(--text-muted);
   }
 
   .btn-arrow {

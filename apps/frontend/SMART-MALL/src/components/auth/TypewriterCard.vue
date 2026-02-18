@@ -1,4 +1,4 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 /**
  * ============================================================================
  * 打字机效果卡片组件 (TypewriterCard.vue)
@@ -238,8 +238,8 @@ onUnmounted(() => {
 @use '@/assets/styles/scss/mixins' as *;
 
 // 扩展变量（基于全局变量的透明度变体）
-$bg-card: rgba($color-white, 0.03);
-$border-card: rgba($color-white, 0.08);
+$bg-card: rgba(255, 255, 255, 0.03);
+$border-card: rgba(255, 255, 255, 0.08);
 
 .typewriter-card {
   background: $bg-card;
@@ -257,7 +257,7 @@ $border-card: rgba($color-white, 0.08);
 
     .typewriter-text {
       font-size: $font-size-base;
-      color: $color-text-secondary;
+      color: var(--text-secondary);
       line-height: 24px;
       vertical-align: middle;
     }
@@ -266,7 +266,7 @@ $border-card: rgba($color-white, 0.08);
       display: inline-block;
       width: 2px;
       height: 16px;
-      background: $color-primary;
+      background: var(--accent-primary);
       margin-left: 1px;
       vertical-align: middle;
       animation: blink 1s step-end infinite;

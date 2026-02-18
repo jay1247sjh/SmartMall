@@ -1,4 +1,4 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 /**
  * ============================================================================
  * 认证流程提示消息组件 (AlertMessage)
@@ -92,29 +92,29 @@ const alertType = computed(() => {
   }
 
   &.el-alert--error {
-    background: $color-error-muted;
-    border: 1px solid rgba($color-error, 0.2);
+    background: rgba(var(--error-rgb), 0.15);
+    border: 1px solid rgba(var(--error-rgb), 0.2);
 
     :deep(.el-alert__title) {
-      color: $color-error;
+      color: var(--error);
     }
   }
 
   &.el-alert--success {
-    background: $color-success-muted;
-    border: 1px solid rgba($color-success, 0.2);
+    background: rgba(var(--success-rgb), 0.15);
+    border: 1px solid rgba(var(--success-rgb), 0.2);
 
     :deep(.el-alert__title) {
-      color: $color-success;
+      color: var(--success);
     }
   }
 
   &.el-alert--warning {
-    background: $color-warning-muted;
-    border: 1px solid rgba($color-warning, 0.2);
+    background: rgba(var(--warning-rgb), 0.15);
+    border: 1px solid rgba(var(--warning-rgb), 0.2);
 
     :deep(.el-alert__title) {
-      color: $color-warning;
+      color: var(--warning);
     }
   }
 }
