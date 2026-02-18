@@ -48,6 +48,7 @@ import { http, type RequestConfig } from './http'
  * @property confirmPassword - 确认密码，必须与 password 一致
  * @property email - 邮箱地址，用于账号验证和密码找回
  * @property phone - 手机号（可选），11位中国大陆手机号
+ * @property userType - 用户类型，USER（普通用户）或 MERCHANT（商家）
  */
 export interface RegisterRequest {
   username: string
@@ -55,6 +56,7 @@ export interface RegisterRequest {
   confirmPassword: string
   email: string
   phone?: string
+  userType: 'USER' | 'MERCHANT'
 }
 
 /**

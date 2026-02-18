@@ -46,10 +46,8 @@ export interface MerchantStats {
   storeCount: number
   /** 商品总数 */
   productCount: number
-  /** 今日访客数 */
-  todayVisitors: number
-  /** 待处理任务数（如待回复咨询、待处理订单等） */
-  pendingTasks: number
+  /** 待处理申请数 */
+  pendingApplications: number
 }
 
 /**
@@ -130,7 +128,7 @@ export interface AvailableArea {
   /** 区域面积（平方米） */
   size: number
   /** 区域状态 */
-  status: 'LOCKED' | 'PENDING' | 'AUTHORIZED' | 'OCCUPIED'
+  status: 'AVAILABLE' | 'LOCKED' | 'PENDING' | 'AUTHORIZED' | 'OCCUPIED'
   /** 区域在楼层平面图中的位置 */
   position: { x: number; y: number }
 }
@@ -259,16 +257,7 @@ function mapBackendApplyToFrontend(dto: BackendAreaApplyDTO): AreaApplication {
  * TODO: 后端尚未实现 /merchant/stats 接口，暂时使用 Mock 数据
  */
 export async function getStats(): Promise<MerchantStats> {
-  // TODO: 后端实现后启用
-  // return http.get('/merchant/stats')
-  
-  // Mock 数据：模拟一个有 2 家店铺的商家
-  return Promise.resolve({
-    storeCount: 2,
-    productCount: 56,
-    todayVisitors: 128,
-    pendingTasks: 3,
-  })
+  return http.get('/dashboard/merchant/stats')
 }
 
 /**
@@ -350,6 +339,111 @@ export async function applyForArea(areaId: number, reason: string): Promise<Area
 }
 
 // ============================================================================
+// AI 布局生成类型定义
+// ============================================================================
+
+/**
+ * 3D 位置
+ */
+export interface Position3D {
+  x: number
+  y: number
+  z: number
+}
+
+/**
+ * 旋转（绕 Y 轴）
+ */
+export interface Rotation {
+  y: number
+}
+
+/**
+ * 3D 缩放
+ */
+export interface Scale3D {
+  x: number
+  y: number
+  z: number
+}
+
+/**
+ * 店铺内的单个对象
+ * 描述一个家具、设备或装饰物的位置和外观
+ */
+export interface StoreObject {
+  /** 对象名称（如 "吧台"） */
+  name: string
+  /** 材质预设 ID */
+  materialId: string
+  /** 位置 */
+  position: Position3D
+  /** 旋转 */
+  rotation: Rotation
+  /** 缩放 */
+  scale: Scale3D
+}
+
+/**
+ * 店铺布局数据
+ * AI 生成的单个区域内 3D 对象集合
+ */
+export interface StoreLayoutData {
+  /** 主题名称 */
+  theme: string
+  /** 区域 ID */
+  areaId: string
+  /** 对象列表 */
+  objects: StoreObject[]
+}
+
+/**
+ * AI 布局生成响应
+ */
+export interface StoreLayoutResponse {
+  success: boolean
+  message: string
+  data?: StoreLayoutData
+}
+
+// ============================================================================
+// AI 布局生成 API 方法
+// ============================================================================
+
+/**
+ * AI 生成店铺布局
+ *
+ * 商家选择主题后，调用后端转发到 Intelligence Service，
+ * 由 LLM 生成区域内的 3D 店铺布局。
+ *
+ * @param areaId - 目标区域 ID
+ * @param params - 生成参数（主题）
+ * @returns AI 生成的布局数据
+ */
+export async function generateAILayout(
+  areaId: string,
+  params: { theme: string },
+): Promise<StoreLayoutResponse> {
+  return http.post<StoreLayoutResponse>(`/merchant/area/${areaId}/ai-layout`, params)
+}
+
+/**
+ * 应用布局到区域
+ *
+ * 商家确认 AI 生成的布局后，将布局数据持久化到后端，
+ * 并更新区域状态为 OCCUPIED。
+ *
+ * @param areaId - 目标区域 ID
+ * @param layoutData - 要应用的布局数据
+ */
+export async function applyLayout(
+  areaId: string,
+  layoutData: StoreLayoutData,
+): Promise<void> {
+  await http.post(`/merchant/area/${areaId}/apply-layout`, { layoutData })
+}
+
+// ============================================================================
 // 导出
 // ============================================================================
 
@@ -360,6 +454,8 @@ export const merchantApi = {
   getMyApplications,
   getAvailableAreas,
   applyForArea,
+  generateAILayout,
+  applyLayout,
 }
 
 export default merchantApi

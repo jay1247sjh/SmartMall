@@ -105,6 +105,8 @@ export interface AreaPermissionDTO {
   areaBoundaries: object | null
   /** 权限状态 (ACTIVE, REVOKED) */
   status: string
+  /** 区域状态 (AVAILABLE, PENDING, AUTHORIZED, OCCUPIED) */
+  areaStatus: string | null
   /** 授权时间 */
   grantedAt: string
 }

@@ -50,8 +50,19 @@ export interface AdminStats {
   storeCount: number
   /** 待审批申请数 */
   pendingApprovals: number
-  /** 当前在线用户数 */
-  onlineUsers: number
+  /** 今日活跃用户数 */
+  todayActiveUsers: number
+}
+
+/**
+ * 系统公告项
+ * 用于管理员仪表盘展示系统公告
+ */
+export interface NoticeItem {
+  noticeId: string
+  title: string
+  content: string
+  publishedAt: string
 }
 
 /**
@@ -165,16 +176,17 @@ export interface UserDetail extends UserInfo {
  * TODO: 后端尚未实现 /admin/stats 接口，暂时使用 Mock 数据
  */
 export async function getStats(): Promise<AdminStats> {
-  // TODO: 后端实现后启用
-  // return http.get('/admin/stats')
-  
-  // Mock 数据：模拟一个中等规模商城的运营数据
-  return Promise.resolve({
-    merchantCount: 128,
-    storeCount: 256,
-    pendingApprovals: 5,
-    onlineUsers: 42,
-  })
+  return http.get('/dashboard/admin/stats')
+}
+
+/**
+ * 获取系统公告列表
+ *
+ * @param limit - 返回数量限制，默认 5
+ * @returns 系统公告列表
+ */
+export async function getNotices(limit = 5): Promise<NoticeItem[]> {
+  return http.get('/dashboard/notices', { params: { limit } })
 }
 
 /**
@@ -456,6 +468,7 @@ export async function activateUser(userId: string): Promise<void> {
 
 export const adminApi = {
   getStats,
+  getNotices,
   getApprovalList,
   approveRequest,
   rejectRequest,

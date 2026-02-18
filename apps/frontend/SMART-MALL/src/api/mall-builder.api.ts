@@ -185,6 +185,7 @@ export interface AreaResponse {
   rental?: Record<string, unknown>
   visible: boolean
   locked: boolean
+  status?: 'AVAILABLE' | 'LOCKED' | 'PENDING' | 'AUTHORIZED' | 'OCCUPIED'
 }
 
 /**
@@ -503,12 +504,23 @@ export const mallBuilderApi = {
   /**
    * 删除项目
    * 
-   * ⚠️ 删除操作不可恢复，会同时删除所有楼层和区域数据。
-   * 
    * @param projectId 项目 ID
    */
   deleteProject(projectId: string): Promise<void> {
     return http.delete<void>(`/mall-builder/projects/${projectId}`)
+  },
+
+  /**
+   * 发布项目
+   * 
+   * 将项目标记为已发布，用户可在 Mall3D 视图中查看。
+   * 同一时间只能有一个已发布的项目。
+   * 
+   * @param projectId 项目 ID
+   * @returns 发布后的项目
+   */
+  publishProject(projectId: string): Promise<ProjectResponse> {
+    return http.post<ProjectResponse>(`/mall-builder/projects/${projectId}/publish`)
   },
 
   // ==================== 便捷方法 ====================
