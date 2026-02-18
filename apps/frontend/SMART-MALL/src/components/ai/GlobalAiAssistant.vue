@@ -23,11 +23,13 @@
  * - 操作：「添加商品」→ 执行添加操作
  * ============================================================================
  */
-import { ref, nextTick, watch, onUnmounted } from 'vue'
+import { ref, computed, nextTick, watch, onUnmounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
-import { ElInput, ElButton, ElIcon, ElUpload, ElMessage, ElBadge } from 'element-plus'
-import { Promotion, Picture, Close, Loading, ChatDotRound, VideoPause } from '@element-plus/icons-vue'
+import { useI18n } from 'vue-i18n'
+import { ElInput, ElButton, ElIcon, ElUpload, ElMessage } from 'element-plus'
+import { Promotion, Picture, Close } from '@element-plus/icons-vue'
 import { intelligenceApi } from '@/api/intelligence.api'
+import AiFloatingTrigger from '@/components/ai/AiFloatingTrigger.vue'
 import { mallBuilderApi, toCreateRequest } from '@/api/mall-builder.api'
 import type { MallProject } from '@/builder/types/mall-project'
 import { useUserStore, useAiStore } from '@/stores'
@@ -38,8 +40,14 @@ import { useUserStore, useAiStore } from '@/stores'
 
 const router = useRouter()
 const route = useRoute()
+const { t } = useI18n()
 const userStore = useUserStore()
 const aiStore = useAiStore()
+
+/** 是否在 Admin 或 Merchant 路由下（AI 由 Layout 内的 AiSidebar 处理） */
+const isAdminOrMerchantRoute = computed(() => {
+  return route.path.startsWith('/admin') || route.path.startsWith('/merchant')
+})
 
 /** 输入框内容 */
 const inputText = ref('')
@@ -66,12 +74,12 @@ const currentStepIndex = ref(0)
 let processingTimer: ReturnType<typeof setInterval> | null = null
 
 // Agent 处理步骤（企业级文案）
-const AGENT_STEPS = [
-  { text: '分析请求', delay: 400 },
-  { text: '检索上下文', delay: 500 },
-  { text: '执行操作', delay: 600 },
-  { text: '生成回复', delay: 400 },
-]
+const AGENT_STEPS = computed(() => [
+  { text: t('ai.steps.analyze'), delay: 400 },
+  { text: t('ai.steps.retrieve'), delay: 500 },
+  { text: t('ai.steps.execute'), delay: 600 },
+  { text: t('ai.steps.generate'), delay: 400 },
+])
 
 // ============================================================================
 // 方法
@@ -89,7 +97,7 @@ function scrollToBottom() {
 /** 开始处理动画 */
 function startProcessing() {
   // 初始化步骤
-  agentSteps.value = AGENT_STEPS.map((step, index) => ({
+  agentSteps.value = AGENT_STEPS.value.map((step, index) => ({
     text: step.text,
     status: index === 0 ? 'active' : 'pending'
   }))
@@ -108,7 +116,7 @@ function startProcessing() {
     currentStepIndex.value = stepIndex
     
     // 激活下一步
-    if (stepIndex < AGENT_STEPS.length) {
+    if (stepIndex < AGENT_STEPS.value.length) {
       const nextStep = agentSteps.value[stepIndex]
       if (nextStep) {
         nextStep.status = 'active'
@@ -146,7 +154,7 @@ function stopResponse() {
   // 添加一条提示消息
   aiStore.addMessage({
     role: 'assistant',
-    content: '已停止回答。',
+    content: t('ai.sidebar.stopped'),
     type: 'text',
   })
   scrollToBottom()
@@ -163,47 +171,34 @@ function parseErrorMessage(error: unknown): string {
     if (typeof message === 'string') {
       // API Key 错误
       if (message.includes('invalid_api_key') || message.includes('401')) {
-        return 'AI 服务配置异常，请联系管理员检查 API 密钥配置'
+        return t('ai.sidebar.errorApiKey')
       }
       // 限流错误
       if (message.includes('rate_limit') || message.includes('429')) {
-        return 'AI 服务请求过于频繁，请稍后再试'
+        return t('ai.sidebar.errorRateLimit')
       }
       // 超时错误
       if (message.includes('timeout') || message.includes('ETIMEDOUT')) {
-        return 'AI 服务响应超时，请稍后重试'
+        return t('ai.sidebar.errorTimeout')
       }
       // 网络错误
       if (message.includes('network') || message.includes('ECONNREFUSED')) {
-        return 'AI 服务连接失败，请检查网络'
+        return t('ai.sidebar.errorNetwork')
       }
     }
     
     // 检查 HTTP 状态码
     const status = err.status || err.statusCode
     if (typeof status === 'number') {
-      if (status === 401) return 'AI 服务配置异常，请联系管理员'
-      if (status === 429) return 'AI 服务请求过于频繁，请稍后再试'
-      if (status === 503) return 'AI 服务暂时不可用，请稍后重试'
-      if (status >= 500) return '服务处理异常，请稍后重试'
+      if (status === 401) return t('ai.sidebar.errorApiKey')
+      if (status === 429) return t('ai.sidebar.errorRateLimit')
+      if (status === 503) return t('ai.sidebar.errorTimeout')
+      if (status >= 500) return t('ai.sidebar.errorGeneral')
     }
   }
   
   // 默认错误消息
-  return '抱歉，处理时出现异常，请稍后重试'
-}
-
-/** 处理面板显示 */
-function handleTogglePanel() {
-  aiStore.togglePanel()
-  if (aiStore.isPanelVisible) {
-    aiStore.initWelcomeMessage()
-    scrollToBottom()
-    // 聚焦输入框
-    nextTick(() => {
-      inputRef.value?.focus()
-    })
-  }
+  return t('ai.sidebar.errorGeneral')
 }
 
 /** 处理导航意图 */
@@ -212,7 +207,7 @@ function handleNavigationIntent(path: string, label: string) {
   if (route.path === path) {
     aiStore.addMessage({
       role: 'assistant',
-      content: `您已经在「${label}」页面了哦~`,
+      content: t('ai.alreadyOnPage', { label }),
     })
     return
   }
@@ -221,7 +216,7 @@ function handleNavigationIntent(path: string, label: string) {
   router.push(path)
   aiStore.addMessage({
     role: 'assistant',
-    content: `好的，正在为您打开「${label}」...`,
+    content: t('ai.navigatingTo', { label }),
   })
 }
 
@@ -288,7 +283,7 @@ async function sendMessage() {
         const createRequest = toCreateRequest(mallData)
         const createdProject = await mallBuilderApi.createProject(createRequest)
         
-        ElMessage.success('商城布局已生成！正在打开建模器...')
+        ElMessage.success(t('ai.sidebar.mallGenerated'))
         
         // 导航到带有项目 ID 的建模器页面
         setTimeout(() => {
@@ -298,7 +293,7 @@ async function sendMessage() {
         console.error('Failed to create project:', error)
         // 如果创建失败，回退到旧方式（存储到 localStorage）
         localStorage.setItem('ai_generated_mall', JSON.stringify(response.args.mallData))
-        ElMessage.warning('项目保存失败，使用临时存储')
+        ElMessage.warning(t('ai.sidebar.mallSaveFailed'))
         setTimeout(() => {
           router.push('/admin/builder')
         }, 500)
@@ -366,7 +361,7 @@ async function confirmAction(confirmed: boolean) {
     console.error('Confirm error:', error)
     aiStore.addMessage({
       role: 'assistant',
-      content: '操作失败，请重试。',
+      content: t('ai.sidebar.actionFailed'),
       type: 'error',
     })
   } finally {
@@ -378,12 +373,12 @@ async function confirmAction(confirmed: boolean) {
 /** 处理图片上传 */
 async function handleImageUpload(file: File) {
   if (!file.type.startsWith('image/')) {
-    ElMessage.warning('请上传图片文件')
+    ElMessage.warning(t('ai.sidebar.imageTypeError'))
     return false
   }
 
   if (file.size > 5 * 1024 * 1024) {
-    ElMessage.warning('图片大小不能超过 5MB')
+    ElMessage.warning(t('ai.sidebar.imageSizeError'))
     return false
   }
 
@@ -391,7 +386,7 @@ async function handleImageUpload(file: File) {
     const imageUrl = await intelligenceApi.uploadImage(file)
     pendingImage.value = imageUrl
   } catch (error) {
-    ElMessage.error('图片上传失败')
+    ElMessage.error(t('ai.sidebar.imageUploadFailed'))
   }
 
   return false
@@ -421,10 +416,14 @@ function quickNavigate(label: string) {
 // 生命周期
 // ============================================================================
 
-// 监听面板显示状态
+// 监听面板显示状态 — 初始化欢迎消息并聚焦输入框
 watch(() => aiStore.isPanelVisible, (visible) => {
   if (visible) {
+    aiStore.initWelcomeMessage()
     scrollToBottom()
+    nextTick(() => {
+      inputRef.value?.focus()
+    })
   }
 })
 
@@ -438,21 +437,9 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <div class="global-ai-assistant">
-    <!-- 悬浮按钮 -->
-    <ElBadge :is-dot="aiStore.hasUnread" class="ai-badge">
-      <button 
-        class="ai-fab" 
-        :class="{ active: aiStore.isPanelVisible }"
-        @click="handleTogglePanel"
-        title="智能助手"
-      >
-        <ElIcon :size="24">
-          <Close v-if="aiStore.isPanelVisible" />
-          <ChatDotRound v-else />
-        </ElIcon>
-      </button>
-    </ElBadge>
+  <div v-if="!isAdminOrMerchantRoute" class="global-ai-assistant">
+    <!-- FAB trigger (extracted component) -->
+    <AiFloatingTrigger />
 
     <!-- 聊天面板 -->
     <Transition name="panel-slide">
@@ -461,7 +448,7 @@ onUnmounted(() => {
         <div class="panel-header">
           <div class="header-title">
             <ElIcon :size="20" class="ai-icon"><Promotion /></ElIcon>
-            <span>智能助手</span>
+            <span>{{ t('ai.panel.title') }}</span>
           </div>
           <button class="btn-close" @click="aiStore.hidePanel">
             <ElIcon><Close /></ElIcon>
@@ -470,10 +457,10 @@ onUnmounted(() => {
 
         <!-- 快捷操作 -->
         <div class="quick-actions">
-          <button class="quick-btn" @click="quickNavigate('控制台')">控制台</button>
-          <button class="quick-btn" @click="quickNavigate('商品管理')">商品管理</button>
-          <button class="quick-btn" @click="quickNavigate('商城建模')">商城建模</button>
-          <button class="quick-btn" @click="quickNavigate('商城')">3D商城</button>
+          <button class="quick-btn" @click="quickNavigate(t('ai.quick.dashboard'))">{{ t('ai.quick.dashboard') }}</button>
+          <button class="quick-btn" @click="quickNavigate(t('ai.quick.productManage'))">{{ t('ai.quick.productManage') }}</button>
+          <button class="quick-btn" @click="quickNavigate(t('ai.quick.mallBuilder'))">{{ t('ai.quick.mallBuilder') }}</button>
+          <button class="quick-btn" @click="quickNavigate(t('ai.quick.mall3d'))">{{ t('ai.quick.mall3d') }}</button>
         </div>
 
         <!-- 消息列表 -->
@@ -499,10 +486,10 @@ onUnmounted(() => {
                 <!-- 确认按钮 -->
                 <div v-if="msg.type === 'confirmation_required' || msg.type === 'confirm'" class="confirm-actions">
                   <ElButton type="primary" size="small" @click="confirmAction(true)">
-                    确认
+                    {{ t('common.confirm') }}
                   </ElButton>
                   <ElButton size="small" @click="confirmAction(false)">
-                    取消
+                    {{ t('common.cancel') }}
                   </ElButton>
                 </div>
               </div>
@@ -535,7 +522,7 @@ onUnmounted(() => {
               
               <!-- 取消按钮 -->
               <button class="btn-stop" @click="stopResponse">
-                <span>取消</span>
+                <span>{{ t('common.cancel') }}</span>
               </button>
             </div>
           </div>
@@ -545,7 +532,7 @@ onUnmounted(() => {
         <div class="input-area">
           <!-- 待上传图片预览 -->
           <div v-if="pendingImage" class="pending-image">
-            <img :src="pendingImage" alt="待发送图片" />
+            <img :src="pendingImage" :alt="t('ai.sidebar.pendingImage')" />
             <button class="btn-remove" @click="removePendingImage">
               <ElIcon><Close /></ElIcon>
             </button>
@@ -569,7 +556,7 @@ onUnmounted(() => {
               type="textarea"
               :rows="1"
               :autosize="{ minRows: 1, maxRows: 4 }"
-              :placeholder="aiStore.isSending ? 'AI 正在思考中...' : '输入消息，如「打开商品管理」...'"
+              :placeholder="aiStore.isSending ? t('ai.sidebar.thinking') : t('ai.inputPlaceholder')"
               :disabled="aiStore.isSending"
               resize="none"
               @keydown="handleKeydown"
@@ -602,35 +589,6 @@ onUnmounted(() => {
   z-index: 9999;
 }
 
-/* 悬浮按钮 */
-.ai-badge {
-  :deep(.el-badge__content.is-dot) {
-    top: 4px;
-    right: 4px;
-    background: $color-error;
-  }
-}
-
-.ai-fab {
-  width: 48px;
-  height: 48px;
-  border-radius: 50%;
-  border: none;
-  background: var(--accent-primary, $color-accent-blue-dark);
-  color: white;
-  @include flex-center;
-  @include clickable;
-
-  &:hover {
-    background: var(--accent-hover, $color-accent-blue-deep);
-  }
-
-  &.active {
-    background: var(--bg-tertiary, $color-bg-tertiary);
-    border: 1px solid var(--border-subtle, $color-border-subtle);
-  }
-}
-
 /* 聊天面板 */
 .ai-chat-panel {
   position: absolute;
@@ -638,8 +596,8 @@ onUnmounted(() => {
   bottom: 64px;
   width: 380px;
   height: 520px;
-  background: var(--bg-secondary, $color-bg-secondary);
-  border: 1px solid var(--border-subtle, $color-border-subtle);
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-subtle);
   border-radius: $radius-md;
   @include flex-column;
   overflow: hidden;
@@ -661,8 +619,8 @@ onUnmounted(() => {
 .panel-header {
   @include flex-between;
   padding: 14px $space-4;
-  border-bottom: 1px solid var(--border-subtle, $color-border-subtle);
-  background: var(--bg-tertiary, $color-bg-tertiary);
+  border-bottom: 1px solid var(--border-subtle);
+  background: var(--bg-tertiary);
 }
 
 .header-title {
@@ -670,10 +628,10 @@ onUnmounted(() => {
   gap: $space-2;
   font-size: $font-size-base;
   font-weight: $font-weight-medium;
-  color: var(--text-primary, $color-text-primary);
+  color: var(--text-primary);
 
   .ai-icon {
-    color: var(--accent-primary, $color-accent-blue-dark);
+    color: var(--accent-primary);
   }
 }
 
@@ -683,13 +641,13 @@ onUnmounted(() => {
   background: transparent;
   border: none;
   border-radius: 6px;
-  color: var(--text-secondary, $color-text-secondary);
+  color: var(--text-secondary);
   @include flex-center;
   @include clickable;
 
   &:hover {
-    background: var(--bg-tertiary, $color-bg-tertiary);
-    color: var(--text-primary, $color-text-primary);
+    background: var(--bg-tertiary);
+    color: var(--text-primary);
   }
 }
 
@@ -698,7 +656,7 @@ onUnmounted(() => {
   display: flex;
   gap: $space-2;
   padding: 10px $space-4;
-  border-bottom: 1px solid var(--border-subtle, $color-border-subtle);
+  border-bottom: 1px solid var(--border-subtle);
   overflow-x: auto;
 
   &::-webkit-scrollbar {
@@ -710,16 +668,16 @@ onUnmounted(() => {
   flex-shrink: 0;
   padding: 6px $space-3;
   background: transparent;
-  border: 1px solid var(--border-subtle, $color-border-subtle);
+  border: 1px solid var(--border-subtle);
   border-radius: 6px;
-  color: var(--text-secondary, $color-text-secondary);
+  color: var(--text-secondary);
   font-size: $font-size-sm;
   @include clickable;
 
   &:hover {
-    background: var(--bg-tertiary, $color-bg-tertiary);
-    border-color: var(--border-muted, $color-border-muted);
-    color: var(--text-primary, $color-text-primary);
+    background: var(--bg-tertiary);
+    border-color: var(--border-muted);
+    color: var(--text-primary);
   }
 }
 
@@ -762,8 +720,8 @@ onUnmounted(() => {
 }
 
 .user-message {
-  background: var(--accent-primary, $color-accent-blue-dark);
-  color: $color-white;
+  background: var(--accent-primary);
+  color: #fff;
   border-bottom-right-radius: 2px;
 
   .message-image {
@@ -775,8 +733,8 @@ onUnmounted(() => {
 }
 
 .assistant-message {
-  background: var(--bg-tertiary, $color-bg-tertiary);
-  color: var(--text-primary, $color-text-primary);
+  background: var(--bg-tertiary);
+  color: var(--text-primary);
   border-bottom-left-radius: 2px;
 
   /* 处理中状态 - 企业级 Agent 步骤 */
@@ -787,14 +745,14 @@ onUnmounted(() => {
     /* 进度条 */
     .progress-bar {
       height: 2px;
-      background: var(--border-subtle, $color-border-subtle);
+      background: var(--border-subtle);
       border-radius: 1px;
       margin-bottom: 14px;
       overflow: hidden;
       
       .progress-fill {
         height: 100%;
-        background: var(--accent-primary, $color-accent-blue-dark);
+        background: var(--accent-primary);
         border-radius: 1px;
         transition: width $duration-slow;
       }
@@ -815,35 +773,35 @@ onUnmounted(() => {
         width: 6px;
         height: 6px;
         border-radius: 50%;
-        background: var(--border-muted, $color-border-muted);
+        background: var(--border-muted);
         transition: all 0.2s ease;
         flex-shrink: 0;
       }
       
       .step-text {
-        color: var(--text-muted, $color-text-muted);
+        color: var(--text-muted);
         transition: color 0.2s ease;
       }
       
       /* 待处理 */
       &.pending {
         .step-dot {
-          background: var(--border-muted, $color-border-muted);
+          background: var(--border-muted);
         }
         .step-text {
-          color: var(--text-muted, $color-text-muted);
+          color: var(--text-muted);
         }
       }
       
       /* 进行中 */
       &.active {
         .step-dot {
-          background: var(--accent-primary, $color-accent-blue-dark);
-          box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
+          background: var(--accent-primary);
+          box-shadow: 0 0 0 3px rgba(var(--accent-primary-rgb), 0.2);
           animation: pulse-dot 1.5s ease-in-out infinite;
         }
         .step-text {
-          color: var(--text-primary, $color-text-primary);
+          color: var(--text-primary);
           font-weight: $font-weight-medium;
         }
       }
@@ -851,10 +809,10 @@ onUnmounted(() => {
       /* 已完成 */
       &.done {
         .step-dot {
-          background: var(--success, $color-success);
+          background: var(--success);
         }
         .step-text {
-          color: var(--text-secondary, $color-text-secondary);
+          color: var(--text-secondary);
         }
       }
     }
@@ -865,15 +823,15 @@ onUnmounted(() => {
       margin-top: $space-3;
       padding: $space-1 10px;
       background: transparent;
-      border: 1px solid var(--border-subtle, $color-border-subtle);
+      border: 1px solid var(--border-subtle);
       border-radius: $radius-sm;
-      color: var(--text-muted, $color-text-muted);
+      color: var(--text-muted);
       font-size: $font-size-sm;
       @include clickable;
       
       &:hover {
-        border-color: var(--border-muted, $color-border-muted);
-        color: var(--text-secondary, $color-text-secondary);
+        border-color: var(--border-muted);
+        color: var(--text-secondary);
       }
     }
   }
@@ -902,8 +860,8 @@ onUnmounted(() => {
 /* 输入区域 */
 .input-area {
   padding: $space-3 $space-4;
-  border-top: 1px solid var(--border-subtle, $color-border-subtle);
-  background: var(--bg-primary, $color-bg-primary);
+  border-top: 1px solid var(--border-subtle);
+  background: var(--bg-primary);
 }
 
 .pending-image {
@@ -915,7 +873,7 @@ onUnmounted(() => {
     max-width: 100px;
     max-height: 80px;
     border-radius: $radius-md;
-    border: 1px solid rgba($color-white, 0.1);
+    border: 1px solid rgba(var(--white-rgb), 0.1);
   }
 
   .btn-remove {
@@ -924,7 +882,7 @@ onUnmounted(() => {
     right: -6px;
     width: 20px;
     height: 20px;
-    background: $color-error;
+    background: var(--error);
     border: none;
     border-radius: 50%;
     color: white;
@@ -942,24 +900,24 @@ onUnmounted(() => {
   }
 
   :deep(.el-textarea__inner) {
-    background: var(--bg-secondary, $color-bg-secondary);
-    border: 1px solid var(--border-subtle, $color-border-subtle);
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-subtle);
     border-radius: 6px;
-    color: var(--text-primary, $color-text-primary);
+    color: var(--text-primary);
     padding: 10px $space-3;
 
     &::placeholder {
-      color: var(--text-muted, $color-text-muted);
+      color: var(--text-muted);
     }
 
     &:focus {
-      border-color: var(--accent-primary, $color-accent-blue-dark);
+      border-color: var(--accent-primary);
     }
 
     &:disabled {
       opacity: 0.5;
       cursor: not-allowed;
-      background: var(--bg-tertiary, $color-bg-tertiary);
+      background: var(--bg-tertiary);
     }
   }
 }

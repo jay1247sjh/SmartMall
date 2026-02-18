@@ -408,8 +408,8 @@ watch(() => props.visible, (visible) => {
   bottom: 80px;
   width: 360px;
   height: 500px;
-  background: var(--bg-secondary, $color-bg-secondary);
-  border: 1px solid var(--border-subtle, $color-border-subtle);
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-subtle);
   border-radius: $radius-md;
   display: flex;
   flex-direction: column;
@@ -422,8 +422,8 @@ watch(() => props.visible, (visible) => {
   align-items: center;
   justify-content: space-between;
   padding: 14px $space-4;
-  border-bottom: 1px solid var(--border-subtle, $color-border-subtle);
-  background: var(--bg-tertiary, $color-bg-tertiary);
+  border-bottom: 1px solid var(--border-subtle);
+  background: var(--bg-tertiary);
 }
 
 .header-title {
@@ -432,10 +432,10 @@ watch(() => props.visible, (visible) => {
   gap: $space-2;
   font-size: $font-size-base;
   font-weight: $font-weight-medium;
-  color: var(--text-primary, $color-text-primary);
+  color: var(--text-primary);
 
   .ai-icon {
-    color: var(--accent-primary, $color-accent-blue-dark);
+    color: var(--accent-primary);
   }
 }
 
@@ -445,13 +445,13 @@ watch(() => props.visible, (visible) => {
   background: transparent;
   border: none;
   border-radius: 6px;
-  color: var(--text-secondary, $color-text-secondary);
+  color: var(--text-secondary);
   @include flex-center;
   @include clickable;
 
   &:hover {
-    background: var(--bg-tertiary, $color-bg-tertiary);
-    color: var(--text-primary, $color-text-primary);
+    background: var(--bg-tertiary);
+    color: var(--text-primary);
   }
 }
 
@@ -494,8 +494,8 @@ watch(() => props.visible, (visible) => {
 }
 
 .user-message {
-  background: var(--accent-primary, $color-accent-blue-dark);
-  color: $color-white;
+  background: var(--accent-primary);
+  color: #ffffff;
   border-bottom-right-radius: 2px;
 
   .message-image {
@@ -507,14 +507,14 @@ watch(() => props.visible, (visible) => {
 }
 
 .assistant-message {
-  background: var(--bg-tertiary, $color-bg-tertiary);
-  color: var(--text-primary, $color-text-primary);
+  background: var(--bg-tertiary);
+  color: var(--text-primary);
   border-bottom-left-radius: 2px;
 
   &.loading {
     @include flex-center-y;
     gap: $space-2;
-    color: var(--text-secondary, $color-text-secondary);
+    color: var(--text-secondary);
 
     .loading-icon {
       animation: spin 1s linear infinite;
@@ -536,8 +536,8 @@ watch(() => props.visible, (visible) => {
 /* 输入区域 */
 .input-area {
   padding: $space-3 $space-4;
-  border-top: 1px solid var(--border-subtle, $color-border-subtle);
-  background: var(--bg-primary, $color-bg-primary);
+  border-top: 1px solid var(--border-subtle);
+  background: var(--bg-primary);
 }
 
 .pending-image {
@@ -549,7 +549,7 @@ watch(() => props.visible, (visible) => {
     max-width: 100px;
     max-height: 80px;
     border-radius: 6px;
-    border: 1px solid var(--border-subtle, $color-border-subtle);
+    border: 1px solid var(--border-subtle);
   }
 
   .btn-remove {
@@ -558,7 +558,7 @@ watch(() => props.visible, (visible) => {
     right: -6px;
     width: 20px;
     height: 20px;
-    background: var(--error, $color-error);
+    background: var(--error);
     border: none;
     border-radius: 50%;
     color: white;
@@ -576,18 +576,18 @@ watch(() => props.visible, (visible) => {
   }
 
   :deep(.el-textarea__inner) {
-    background: var(--bg-secondary, $color-bg-secondary);
-    border: 1px solid var(--border-subtle, $color-border-subtle);
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-subtle);
     border-radius: 6px;
-    color: var(--text-primary, $color-text-primary);
+    color: var(--text-primary);
     padding: 10px $space-3;
 
     &::placeholder {
-      color: var(--text-muted, $color-text-muted);
+      color: var(--text-muted);
     }
 
     &:focus {
-      border-color: var(--accent-primary, $color-accent-blue-dark);
+      border-color: var(--accent-primary);
     }
   }
 }
