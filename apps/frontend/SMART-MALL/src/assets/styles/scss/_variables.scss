@@ -8,70 +8,112 @@
 // ============================================================================
 
 // 主色调
+// ⚠️ DEPRECATED: 使用 var(--accent-primary) 替代
 $color-primary: #60a5fa;
+// ⚠️ DEPRECATED: 使用 var(--accent-primary) 并配合 hover 状态替代
 $color-primary-hover: #93c5fd;
+// ⚠️ DEPRECATED: 使用 rgba(var(--accent-primary-rgb), 0.15) 替代
 $color-primary-muted: rgba(96, 165, 250, 0.15);
 
 // 语义色
-$color-success: #34d399;
-$color-success-hover: #2dd4bf;
-$color-success-muted: rgba(52, 211, 153, 0.15);
+// ⚠️ DEPRECATED: 使用 var(--success) 替代
+$color-success: #22c55e;
+// ⚠️ DEPRECATED: 使用 var(--success) 并配合 hover 状态替代
+$color-success-hover: #4ade80;
+// ⚠️ DEPRECATED: 使用 rgba(var(--success-rgb), 0.15) 替代
+$color-success-muted: rgba(34, 197, 94, 0.15);
 
-$color-warning: #fbbf24;
-$color-warning-hover: #fcd34d;
-$color-warning-muted: rgba(251, 191, 36, 0.15);
+// ⚠️ DEPRECATED: 使用 var(--warning) 替代
+$color-warning: #f59e0b;
+// ⚠️ DEPRECATED: 使用 var(--warning) 并配合 hover 状态替代
+$color-warning-hover: #fbbf24;
+// ⚠️ DEPRECATED: 使用 rgba(var(--warning-rgb), 0.15) 替代
+$color-warning-muted: rgba(245, 158, 11, 0.15);
 
-$color-error: #f28b82;
-$color-error-hover: #fca5a5;
-$color-error-muted: rgba(242, 139, 130, 0.15);
+// ⚠️ DEPRECATED: 使用 var(--error) 替代
+$color-error: #ef4444;
+// ⚠️ DEPRECATED: 使用 var(--error) 并配合 hover 状态替代
+$color-error-hover: #f87171;
+// ⚠️ DEPRECATED: 使用 rgba(var(--error-rgb), 0.15) 替代
+$color-error-muted: rgba(239, 68, 68, 0.15);
 
-$color-info: #60a5fa;
-$color-info-muted: rgba(96, 165, 250, 0.15);
+// ⚠️ DEPRECATED: 使用 var(--info) 替代
+$color-info: #6366f1;
+// ⚠️ DEPRECATED: 使用 rgba(var(--info-rgb), 0.15) 替代
+$color-info-muted: rgba(99, 102, 241, 0.15);
 
 // 中性色
+// ⚠️ DEPRECATED: 使用 #ffffff 或主题相关 CSS 变量替代
 $color-white: #ffffff;
+// ⚠️ DEPRECATED: 使用 #000000 或主题相关 CSS 变量替代
 $color-black: #000000;
+// ⚠️ DEPRECATED: 使用 var(--text-primary) 替代
 $color-text-primary: #e8eaed;
-$color-text-secondary: #9aa0a6;
-$color-text-muted: #5f6368;
-$color-text-disabled: #71717a;
+// ⚠️ DEPRECATED: 使用 var(--text-secondary) 替代
+$color-text-secondary: #a1a1aa;
+// ⚠️ DEPRECATED: 使用 var(--text-muted) 替代
+$color-text-muted: #71717a;
+// ⚠️ DEPRECATED: 使用 var(--text-disabled) 替代
+$color-text-disabled: #52525b;
 
 // 背景色
+// ⚠️ DEPRECATED: 使用 var(--bg-primary) 替代
 $color-bg-primary: #0a0a0a;
+// ⚠️ DEPRECATED: 使用 var(--bg-secondary) 替代
 $color-bg-secondary: #111113;
-$color-bg-tertiary: #1a1a1c;
+// ⚠️ DEPRECATED: 使用 var(--bg-tertiary) 替代
+$color-bg-tertiary: #18181b;
+// ⚠️ DEPRECATED: 使用 rgba(var(--text-primary-rgb), 0.04) 替代
 $color-bg-hover: rgba(255, 255, 255, 0.04);
 
 // 边框色
-$color-border-subtle: rgba(255, 255, 255, 0.06);
-$color-border-muted: rgba(255, 255, 255, 0.1);
+// ⚠️ DEPRECATED: 使用 var(--border-subtle) 替代
+$color-border-subtle: #27272a;
+// ⚠️ DEPRECATED: 使用 var(--border-muted) 替代
+$color-border-muted: #3f3f46;
+// ⚠️ DEPRECATED: 使用 var(--accent-primary) 替代
 $color-border-focus: $color-primary;
 
 // ============================================================================
 // 品牌色与渐变
 // ============================================================================
 
-// 蓝色系（管理员/默认主题）
+// 冷色系（Linear 品牌主题）
+// ⚠️ DEPRECATED: 使用 var(--accent-primary) 替代
 $color-accent-blue: #8ab4f8;
+// ⚠️ DEPRECATED: 使用 var(--accent-primary) 并配合 hover 状态替代
 $color-accent-blue-hover: #aecbfa;
-$color-accent-blue-dark: #3b82f6;
-$color-accent-blue-darker: #1d4ed8;
-$color-accent-blue-deep: #2563eb;
-$color-accent-purple: #818cf8;
-$color-accent-violet: #a78bfa;
+// ⚠️ DEPRECATED: 使用主题 CSS 变量替代
+$color-accent-blue-dark: #669df6;
+// ⚠️ DEPRECATED: 使用主题 CSS 变量替代
+$color-accent-blue-darker: #4285f4;
+// ⚠️ DEPRECATED: 使用主题 CSS 变量替代
+$color-accent-blue-deep: #1a73e8;
+// ⚠️ DEPRECATED: 使用 var(--accent-purple) 替代
+$color-accent-purple: #a78bfa;
+// ⚠️ DEPRECATED: 使用主题 CSS 变量替代
+$color-accent-violet: #c4b5fd;
 
 // 粉橙色系（商家主题）
+// ⚠️ DEPRECATED: 使用主题 CSS 变量替代
 $color-accent-pink: #f472b6;
+// ⚠️ DEPRECATED: 使用主题 CSS 变量替代
 $color-accent-orange: #fb923c;
 
 // 灰色系（禁用/占用状态）
-$color-gray-muted: #9ca3af;
+// ⚠️ DEPRECATED: 使用 var(--text-muted) 替代
+$color-gray-muted: #8a7e72;
 
 // 渐变色
-$gradient-primary: linear-gradient(135deg, $color-primary 0%, $color-accent-purple 100%);
-$gradient-admin: linear-gradient(135deg, $color-primary 0%, $color-accent-violet 100%);
+// ⚠️ DEPRECATED: 使用 CSS 自定义属性构建渐变替代
+$gradient-primary: linear-gradient(135deg, $color-accent-blue 0%, $color-accent-purple 100%);
+// ⚠️ DEPRECATED: 使用 CSS 自定义属性构建渐变替代
+$gradient-admin: linear-gradient(135deg, $color-accent-blue 0%, $color-accent-violet 100%);
+// ⚠️ DEPRECATED: 使用 CSS 自定义属性构建渐变替代
 $gradient-merchant: linear-gradient(135deg, $color-accent-pink 0%, $color-accent-orange 100%);
-$gradient-button: linear-gradient(135deg, $color-accent-blue-dark 0%, #2563eb 100%);
+// ⚠️ DEPRECATED: 使用 CSS 自定义属性构建渐变替代
+$gradient-button: linear-gradient(135deg, $color-accent-blue 0%, $color-accent-blue-dark 100%);
+
 
 // ============================================================================
 // 间距系统
@@ -132,14 +174,15 @@ $ease-in-out: cubic-bezier(0.4, 0, 0.2, 1);
 // 阴影系统
 // ============================================================================
 
-$shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
-$shadow-md: 0 4px 6px rgba(0, 0, 0, 0.3);
-$shadow-lg: 0 10px 15px rgba(0, 0, 0, 0.3);
+$shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.4);
+$shadow-md: 0 4px 6px rgba(0, 0, 0, 0.4);
+$shadow-lg: 0 10px 15px rgba(0, 0, 0, 0.4);
 
 // ============================================================================
 // 状态颜色映射
 // ============================================================================
 
+// ⚠️ DEPRECATED: 使用 CSS 自定义属性构建状态颜色映射替代
 $status-colors: (
   'active': $color-success,
   'approved': $color-success,
@@ -161,10 +204,12 @@ $status-colors: (
 // 工具函数
 // ============================================================================
 
+// ⚠️ DEPRECATED: 使用 CSS 自定义属性替代
 @function status-color($status) {
   @return map-get($status-colors, $status) or $color-text-muted;
 }
 
+// ⚠️ DEPRECATED: 使用 CSS 自定义属性替代
 @function status-bg($status) {
   @return rgba(status-color($status), 0.15);
 }

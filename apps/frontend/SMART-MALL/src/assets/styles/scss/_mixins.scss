@@ -1,6 +1,9 @@
 /**
  * Smart Mall 设计系统 - 公共 Mixins
  * 可复用的样式模式，减少重复代码
+ *
+ * 颜色系统已迁移至 CSS 自定义属性（variables.css），
+ * 所有 mixin 中的颜色引用均使用 var(--xxx) 格式。
  */
 
 @use 'variables' as *;
@@ -31,11 +34,11 @@
 /// 主要按钮
 @mixin btn-primary {
   @include btn-base;
-  background: $color-primary;
-  color: $color-bg-primary;
+  background: var(--accent-primary);
+  color: var(--bg-primary);
 
   &:hover:not(:disabled) {
-    background: $color-primary-hover;
+    background: var(--accent-primary-hover);
   }
 }
 
@@ -43,33 +46,33 @@
 @mixin btn-secondary {
   @include btn-base;
   background: transparent;
-  color: $color-text-secondary;
-  border: 1px solid $color-border-muted;
+  color: var(--text-secondary);
+  border: 1px solid var(--border-muted);
 
   &:hover:not(:disabled) {
-    background: $color-bg-hover;
+    background: var(--bg-hover);
   }
 }
 
 /// 成功按钮
 @mixin btn-success {
   @include btn-base;
-  background: $color-success;
-  color: $color-bg-primary;
+  background: var(--success);
+  color: var(--bg-primary);
 
   &:hover:not(:disabled) {
-    background: $color-success-hover;
+    background: var(--success-hover);
   }
 }
 
 /// 危险按钮
 @mixin btn-danger {
   @include btn-base;
-  background: $color-error;
-  color: $color-bg-primary;
+  background: var(--error);
+  color: var(--bg-primary);
 
   &:hover:not(:disabled) {
-    background: $color-error-hover;
+    background: var(--error-hover);
   }
 }
 
@@ -84,20 +87,20 @@
   padding: $space-1 + 2 $space-3;
   border-radius: $radius-sm + 2;
   font-size: $font-size-sm;
-  background: $color-border-subtle;
-  color: $color-text-secondary;
+  background: var(--border-subtle);
+  color: var(--text-secondary);
   border: none;
   cursor: pointer;
   transition: all $duration-normal;
 
   &:hover {
-    background: $color-border-muted;
-    color: $color-text-primary;
+    background: var(--border-muted);
+    color: var(--text-primary);
   }
 
   &.danger:hover {
-    background: rgba($color-error, 0.2);
-    color: $color-error;
+    background: rgba(var(--error-rgb), 0.2);
+    color: var(--error);
   }
 }
 
@@ -108,22 +111,22 @@
 /// 基础输入框样式
 @mixin form-control {
   width: 100%;
-  background: $color-bg-primary;
-  border: 1px solid $color-border-muted;
+  background: var(--bg-primary);
+  border: 1px solid var(--border-muted);
   border-radius: $radius-md;
   padding: $space-3 $space-4;
   font-size: $font-size-base;
-  color: $color-text-primary;
+  color: var(--text-primary);
   font-family: inherit;
   transition: border-color $duration-normal $ease-default;
 
   &:focus {
     outline: none;
-    border-color: $color-primary;
+    border-color: var(--accent-primary);
   }
 
   &::placeholder {
-    color: $color-text-muted;
+    color: var(--text-muted);
   }
 }
 
@@ -141,7 +144,7 @@
 
   label {
     font-size: $font-size-sm + 1;
-    color: $color-text-secondary;
+    color: var(--text-secondary);
   }
 }
 
@@ -159,8 +162,8 @@
 /// 表格容器
 @mixin table-container {
   flex: 1;
-  background: $color-bg-secondary;
-  border: 1px solid $color-border-subtle;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-subtle);
   border-radius: $radius-lg;
   overflow: hidden;
 }
@@ -174,23 +177,23 @@
   td {
     padding: $space-4 $space-5;
     text-align: left;
-    border-bottom: 1px solid $color-border-subtle;
+    border-bottom: 1px solid var(--border-subtle);
   }
 
   th {
     font-size: $font-size-sm + 1;
     font-weight: $font-weight-medium;
-    color: $color-text-secondary;
-    background: $color-bg-hover;
+    color: var(--text-secondary);
+    background: var(--bg-hover);
   }
 
   td {
     font-size: $font-size-base;
-    color: $color-text-primary;
+    color: var(--text-primary);
   }
 
   tbody tr:hover {
-    background: $color-bg-hover;
+    background: var(--bg-hover);
   }
 }
 
@@ -198,7 +201,7 @@
 @mixin table-empty-state {
   padding: 60px $space-5;
   text-align: center;
-  color: $color-text-muted;
+  color: var(--text-muted);
   font-size: $font-size-base;
 }
 
@@ -217,14 +220,14 @@
   padding: $space-2 $space-4;
   border-radius: $radius-sm + 2;
   font-size: $font-size-sm + 1;
-  background: $color-border-subtle;
-  color: $color-text-secondary;
+  background: var(--border-subtle);
+  color: var(--text-secondary);
   border: none;
   cursor: pointer;
 
   &:hover:not(:disabled) {
-    background: $color-border-muted;
-    color: $color-text-primary;
+    background: var(--border-muted);
+    color: var(--text-primary);
   }
 
   &:disabled {
@@ -235,7 +238,7 @@
 
 @mixin pagination-info {
   font-size: $font-size-sm + 1;
-  color: $color-text-secondary;
+  color: var(--text-secondary);
 }
 
 // ============================================================================
@@ -256,7 +259,7 @@
 }
 
 @mixin dialog-box($width: 480px) {
-  background: $color-bg-tertiary;
+  background: var(--bg-tertiary);
   border-radius: $radius-lg;
   width: $width;
   max-width: 90vw;
@@ -271,19 +274,19 @@
   align-items: center;
   justify-content: space-between;
   padding: $space-5 $space-6;
-  border-bottom: 1px solid $color-border-subtle;
+  border-bottom: 1px solid var(--border-subtle);
 
   h3 {
     margin: 0;
     font-size: $font-size-xl;
-    color: $color-text-primary;
+    color: var(--text-primary);
   }
 }
 
 @mixin dialog-close {
   background: none;
   border: none;
-  color: $color-text-secondary;
+  color: var(--text-secondary);
   font-size: 24px;
   cursor: pointer;
   padding: 0;
@@ -291,7 +294,7 @@
   transition: color $duration-normal $ease-default;
 
   &:hover {
-    color: $color-text-primary;
+    color: var(--text-primary);
   }
 }
 
@@ -308,7 +311,7 @@
   justify-content: flex-end;
   gap: $space-3;
   padding: $space-4 $space-6;
-  border-top: 1px solid $color-border-subtle;
+  border-top: 1px solid var(--border-subtle);
 }
 
 // ============================================================================
@@ -323,8 +326,10 @@
   font-weight: $font-weight-medium;
 }
 
+/// 状态变体 - 接受 CSS 自定义属性值作为参数
+/// 调用示例: @include status-variant(rgba(var(--success-rgb), 0.15), var(--success));
 @mixin status-variant($bg-color, $text-color) {
-  background: rgba($text-color, 0.15);
+  background: $bg-color;
   color: $text-color;
 }
 
@@ -341,15 +346,15 @@
   font-size: $font-size-base;
 
   &.success {
-    background: $color-success-muted;
-    color: $color-success;
-    border: 1px solid rgba($color-success, 0.2);
+    background: var(--success-muted);
+    color: var(--success);
+    border: 1px solid rgba(var(--success-rgb), 0.2);
   }
 
   &.error {
-    background: $color-error-muted;
-    color: $color-error;
-    border: 1px solid rgba($color-error, 0.2);
+    background: var(--error-muted);
+    color: var(--error);
+    border: 1px solid rgba(var(--error-rgb), 0.2);
   }
 }
 
@@ -358,8 +363,8 @@
 // ============================================================================
 
 @mixin card-base {
-  background: $color-bg-secondary;
-  border: 1px solid $color-border-subtle;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-subtle);
   border-radius: $radius-lg;
 }
 
@@ -368,12 +373,12 @@
   align-items: center;
   justify-content: space-between;
   padding: $space-4 $space-5;
-  border-bottom: 1px solid $color-border-subtle;
+  border-bottom: 1px solid var(--border-subtle);
 
   h3 {
     font-size: $font-size-lg;
     font-weight: $font-weight-semibold;
-    color: $color-text-primary;
+    color: var(--text-primary);
     margin: 0;
   }
 }
@@ -400,12 +405,12 @@
 @mixin stat-value {
   font-size: 28px;
   font-weight: $font-weight-semibold;
-  color: $color-text-primary;
+  color: var(--text-primary);
 }
 
 @mixin stat-label {
   font-size: $font-size-sm + 1;
-  color: $color-text-secondary;
+  color: var(--text-secondary);
 }
 
 // ============================================================================
@@ -416,7 +421,7 @@
   display: flex;
   gap: $space-2;
   padding: $space-1;
-  background: $color-bg-secondary;
+  background: var(--bg-secondary);
   border-radius: $radius-md + 2;
   width: fit-content;
 }
@@ -425,19 +430,19 @@
   padding: $space-2 + 2 $space-5;
   border-radius: $radius-md;
   background: transparent;
-  color: $color-text-secondary;
+  color: var(--text-secondary);
   font-size: $font-size-base;
   border: none;
   cursor: pointer;
   transition: all $duration-normal;
 
   &:hover {
-    color: $color-text-primary;
+    color: var(--text-primary);
   }
 
   &.active {
-    background: $color-primary-muted;
-    color: $color-primary;
+    background: var(--primary-muted);
+    color: var(--accent-primary);
   }
 }
 
@@ -455,7 +460,7 @@
 // ============================================================================
 
 @mixin text-muted {
-  color: $color-text-muted;
+  color: var(--text-muted);
 }
 
 @mixin text-ellipsis {
@@ -485,7 +490,8 @@
 }
 
 /// 细滚动条（用于聊天面板等）
-@mixin scrollbar-thin($width: 6px, $thumb-color: rgba($color-white, 0.1)) {
+/// $thumb-color 参数接受 CSS 颜色值（包括 rgba(var(--xxx-rgb), alpha)）
+@mixin scrollbar-thin($width: 6px, $thumb-color: rgba(var(--white-rgb), 0.1)) {
   &::-webkit-scrollbar {
     width: $width;
   }
@@ -501,21 +507,22 @@
 }
 
 /// 主题滚动条（用于侧边栏等）
+/// 使用 CSS 自定义属性 --scrollbar-track 和 --scrollbar-thumb
 @mixin scrollbar-themed($width: 8px) {
   scrollbar-width: thin;
-  scrollbar-color: $color-primary rgba($color-accent-blue-darker, 0.5);
+  scrollbar-color: var(--accent-primary) var(--scrollbar-track);
 
   &::-webkit-scrollbar {
     width: $width;
   }
 
   &::-webkit-scrollbar-track {
-    background: rgba($color-accent-blue-darker, 0.5);
+    background: var(--scrollbar-track);
     border-radius: $radius-sm;
   }
 
   &::-webkit-scrollbar-thumb {
-    background: linear-gradient(180deg, $color-accent-blue-dark 0%, $color-primary 50%, $color-primary-hover 100%);
+    background: var(--scrollbar-thumb);
     border-radius: $radius-sm;
   }
 }
@@ -613,7 +620,7 @@
 /// 悬停高亮
 @mixin hover-highlight {
   &:hover {
-    background: $color-bg-hover;
+    background: var(--bg-hover);
   }
 }
 
@@ -654,7 +661,7 @@
 
 /// 渐变文本
 @mixin text-gradient {
-  background: linear-gradient(135deg, $color-primary, $color-accent-blue);
+  background: linear-gradient(135deg, var(--accent-primary), var(--accent-hover));
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
@@ -665,11 +672,11 @@
   @include btn-base;
   padding: $space-2;
   background: transparent;
-  color: $color-text-secondary;
-  
+  color: var(--text-secondary);
+
   &:hover:not(:disabled) {
-    background: $color-bg-hover;
-    color: $color-text-primary;
+    background: var(--bg-hover);
+    color: var(--text-primary);
   }
 }
 
@@ -681,23 +688,23 @@
 /// 卡片悬停效果
 @mixin card-hover {
   @include transition-base;
-  
+
   &:hover {
-    border-color: $color-border-muted;
+    border-color: var(--border-muted);
     transform: translateY(-2px);
   }
 }
 
 /// 卡片激活状态
 @mixin card-active {
-  border-color: $color-primary;
-  box-shadow: 0 0 0 2px rgba($color-primary, 0.2);
+  border-color: var(--accent-primary);
+  box-shadow: 0 0 0 2px rgba(var(--accent-primary-rgb), 0.2);
 }
 
 /// 面板基础样式
 @mixin panel-base {
-  background: $color-bg-secondary;
-  border: 1px solid $color-border-subtle;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-subtle);
   border-radius: $radius-lg;
 }
 
@@ -707,7 +714,7 @@
   align-items: center;
   justify-content: space-between;
   padding: $space-4 $space-5;
-  border-bottom: 1px solid $color-border-subtle;
+  border-bottom: 1px solid var(--border-subtle);
 }
 
 /// 面板内容
@@ -742,16 +749,16 @@
 
 /// 玻璃效果
 @mixin glass-effect {
-  background: rgba($color-bg-secondary, 0.8);
+  background: rgba(var(--bg-secondary-rgb), 0.8);
   backdrop-filter: blur(10px);
-  border: 1px solid rgba($color-border-subtle, 0.5);
+  border: 1px solid rgba(var(--border-subtle-rgb), 0.5);
 }
 
 /// 焦点环
 @mixin focus-ring {
   &:focus {
     outline: none;
-    box-shadow: 0 0 0 2px rgba($color-primary, 0.4);
+    box-shadow: 0 0 0 2px rgba(var(--accent-primary-rgb), 0.4);
   }
 }
 
