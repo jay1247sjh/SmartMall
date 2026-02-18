@@ -45,6 +45,11 @@ public class AreaPermissionDTO {
     private String status;
     
     /**
+     * 区域状态（AVAILABLE, PENDING, AUTHORIZED, OCCUPIED 等）
+     */
+    private String areaStatus;
+    
+    /**
      * 授权时间
      */
     private LocalDateTime grantedAt;

@@ -30,4 +30,9 @@ public class RegisterRequest {
     
     @Pattern(regexp = "^1[3-9]\\d{9}$", message = "手机号格式不正确")
     private String phone;
+
+    @NotBlank(message = "用户类型不能为空")
+    @Pattern(regexp = "^(USER|MERCHANT)$", message = "不支持的用户类型")
+    private String userType;
+
 }

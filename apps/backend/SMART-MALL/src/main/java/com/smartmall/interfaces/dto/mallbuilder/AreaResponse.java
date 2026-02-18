@@ -29,4 +29,6 @@ public class AreaResponse {
     private Boolean visible;
     
     private Boolean locked;
+    
+    private String status;
 }

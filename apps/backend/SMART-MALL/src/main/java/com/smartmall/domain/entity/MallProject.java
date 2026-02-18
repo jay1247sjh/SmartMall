@@ -37,6 +37,11 @@ public class MallProject extends BaseEntity {
     private String creatorId;
     
     /**
+     * 项目状态：DRAFT（草稿）、PUBLISHED（已发布）
+     */
+    private String status;
+    
+    /**
      * 楼层列表（非数据库字段）
      */
     @TableField(exist = false)

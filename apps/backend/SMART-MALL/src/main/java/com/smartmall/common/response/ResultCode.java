@@ -20,6 +20,7 @@ public enum ResultCode {
     PARAM_ERROR("A1001", "参数校验失败"),
     PARAM_MISSING("A1002", "缺少必要参数"),
     PARAM_INVALID("A1003", "参数格式错误"),
+    RATE_LIMITED("A1004", "请求过于频繁，请稍后再试"),
     
     AUTH_FAILED("A2001", "认证失败"),
     TOKEN_EXPIRED("A2002", "Token已过期"),
