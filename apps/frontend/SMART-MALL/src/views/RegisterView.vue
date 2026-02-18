@@ -48,6 +48,7 @@
  */
 import { ref, computed, watch } from 'vue'
 import { useRouter } from 'vue-router'
+import { useI18n } from 'vue-i18n'
 import { registerApi } from '@/api'
 import {
   AuthLayout,
@@ -57,8 +58,16 @@ import {
   AlertMessage,
   FeatureList,
 } from '@/components'
+import {
+  validateUsername,
+  validateEmail,
+  validatePassword,
+  validateConfirmPassword,
+  validatePhone,
+} from '@/utils/validators'
 
 const router = useRouter()
+const { t } = useI18n()
 
 // ============================================================================
 // 表单状态
@@ -74,6 +83,14 @@ const password = ref('')
 const confirmPassword = ref('')
 /** 手机号输入值（选填） */
 const phone = ref('')
+/** 用户类型（默认普通用户） */
+const userType = ref<'USER' | 'MERCHANT'>('USER')
+
+/** 角色选项 */
+const roleOptions = computed(() => [
+  { value: 'USER' as const, label: t('auth.roleUser'), description: t('auth.roleUserDesc') },
+  { value: 'MERCHANT' as const, label: t('auth.roleMerchant'), description: t('auth.roleMerchantDesc') },
+])
 
 // ============================================================================
 // UI 状态
@@ -109,11 +126,11 @@ let emailTimer: number | null = null
 // ============================================================================
 
 /** 左侧功能特性列表 */
-const features = [
-  '免费注册，即刻体验',
-  '3D 商城可视化管理',
-  'AI 智能助手随时待命',
-]
+const features = computed(() => [
+  t('auth.featureFree'),
+  t('auth.feature3D'),
+  t('auth.featureAI'),
+])
 
 // ============================================================================
 // 表单验证（计算属性）
@@ -124,11 +141,9 @@ const features = [
  * 验证规则：3-20字符，只能包含字母、数字、下划线，且未被注册
  */
 const usernameError = computed(() => {
-  if (!username.value) return ''
-  if (username.value.length < 3) return '用户名至少3个字符'
-  if (username.value.length > 20) return '用户名最多20个字符'
-  if (!/^[a-zA-Z0-9_]+$/.test(username.value)) return '只能包含字母、数字和下划线'
-  if (usernameAvailable.value === false) return '用户名已被注册'
+  const formatError = validateUsername(username.value)
+  if (formatError) return formatError
+  if (usernameAvailable.value === false) return t('auth.usernameTaken')
   return ''
 })
 
@@ -137,9 +152,9 @@ const usernameError = computed(() => {
  * 验证规则：标准邮箱格式，且未被注册
  */
 const emailError = computed(() => {
-  if (!email.value) return ''
-  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.value)) return '邮箱格式不正确'
-  if (emailAvailable.value === false) return '邮箱已被注册'
+  const formatError = validateEmail(email.value)
+  if (formatError) return formatError
+  if (emailAvailable.value === false) return t('auth.emailTaken')
   return ''
 })
 
@@ -148,9 +163,7 @@ const emailError = computed(() => {
  * 验证规则：至少6字符
  */
 const passwordError = computed(() => {
-  if (!password.value) return ''
-  if (password.value.length < 6) return '密码至少6个字符'
-  return ''
+  return validatePassword(password.value)
 })
 
 /**
@@ -158,9 +171,7 @@ const passwordError = computed(() => {
  * 验证规则：必须与密码一致
  */
 const confirmPasswordError = computed(() => {
-  if (!confirmPassword.value) return ''
-  if (confirmPassword.value !== password.value) return '两次密码不一致'
-  return ''
+  return validateConfirmPassword(confirmPassword.value, password.value)
 })
 
 /**
@@ -168,9 +179,7 @@ const confirmPasswordError = computed(() => {
  * 验证规则：11位中国大陆手机号（1开头，第二位3-9）
  */
 const phoneError = computed(() => {
-  if (!phone.value) return ''
-  if (!/^1[3-9]\d{9}$/.test(phone.value)) return '手机号格式不正确'
-  return ''
+  return validatePhone(phone.value)
 })
 
 /**
@@ -242,7 +251,7 @@ watch(email, (val) => {
  */
 async function handleRegister() {
   if (!isFormValid.value) {
-    errorMsg.value = '请检查表单填写是否正确'
+    errorMsg.value = t('auth.checkForm')
     return
   }
 
@@ -257,13 +266,14 @@ async function handleRegister() {
       confirmPassword: confirmPassword.value,
       email: email.value,
       phone: phone.value || undefined, // 空字符串转为 undefined
+      userType: userType.value,
     })
     
-    successMsg.value = '注册成功！即将跳转到登录页面...'
+    successMsg.value = t('auth.registerSuccess')
     // 2秒后跳转到登录页，给用户时间看到成功消息
     setTimeout(() => router.push('/login'), 2000)
   } catch (error: any) {
-    errorMsg.value = error?.message || '注册失败，请重试'
+    errorMsg.value = error?.message || t('auth.registerFailed')
   } finally {
     loading.value = false
   }
@@ -272,21 +282,37 @@ async function handleRegister() {
 
 <template>
   <AuthLayout
-    brand-headline="加入我们，开启智能商城之旅"
-    brand-subtitle="创建账号，体验 3D 可视化与 AI 智能融合的下一代商业空间管理平台"
+    :brand-headline="t('auth.brandHeadline')"
+    :brand-subtitle="t('auth.brandSubtitle')"
   >
     <template #brand-extra>
       <FeatureList :features="features" />
     </template>
 
-    <AuthFormCard title="创建账号" description="填写以下信息完成注册">
+    <AuthFormCard :title="t('auth.createAccount')" :description="t('auth.createAccountDesc')">
       <ElForm @submit.prevent="handleRegister">
+        <div class="role-selector">
+          <label class="role-selector__label">{{ t('auth.registerRole') }}</label>
+          <div class="role-selector__options">
+            <div
+              v-for="option in roleOptions"
+              :key="option.value"
+              class="role-option"
+              :class="{ active: userType === option.value }"
+              @click="userType = option.value"
+            >
+              <span class="role-option__label">{{ option.label }}</span>
+              <span class="role-option__desc">{{ option.description }}</span>
+            </div>
+          </div>
+        </div>
+
         <AuthInput
           id="username"
           v-model="username"
-          label="用户名"
+          :label="t('auth.username')"
           icon="user"
-          placeholder="3-20个字符，字母数字下划线"
+          :placeholder="t('auth.usernamePlaceholder')"
           autocomplete="username"
           required
           :error="usernameError"
@@ -297,7 +323,7 @@ async function handleRegister() {
         <AuthInput
           id="email"
           v-model="email"
-          label="邮箱"
+          :label="t('auth.email')"
           type="email"
           icon="email"
           placeholder="your@email.com"
@@ -311,10 +337,10 @@ async function handleRegister() {
         <AuthInput
           id="password"
           v-model="password"
-          label="密码"
+          :label="t('auth.password')"
           type="password"
           icon="password"
-          placeholder="至少6个字符"
+          :placeholder="t('auth.passwordPlaceholder')"
           autocomplete="new-password"
           required
           :error="passwordError"
@@ -323,10 +349,10 @@ async function handleRegister() {
         <AuthInput
           id="confirmPassword"
           v-model="confirmPassword"
-          label="确认密码"
+          :label="t('auth.confirmPassword')"
           type="password"
           icon="password"
-          placeholder="再次输入密码"
+          :placeholder="t('auth.confirmPasswordPlaceholder')"
           autocomplete="new-password"
           required
           :error="confirmPasswordError"
@@ -335,10 +361,10 @@ async function handleRegister() {
         <AuthInput
           id="phone"
           v-model="phone"
-          label="手机号"
+          :label="t('auth.phone')"
           type="tel"
           icon="phone"
-          placeholder="11位手机号"
+          :placeholder="t('auth.phonePlaceholder')"
           autocomplete="tel"
           :error="phoneError"
         />
@@ -347,8 +373,8 @@ async function handleRegister() {
         <AlertMessage v-if="successMsg" type="success" :message="successMsg" />
 
         <AuthButton 
-          text="创建账号" 
-          loading-text="注册中..." 
+          :text="t('auth.createAccount')" 
+          :loading-text="t('auth.registering')" 
           :loading="loading" 
           :disabled="!isFormValid" 
         />
@@ -356,9 +382,9 @@ async function handleRegister() {
 
       <template #footer>
         <nav class="form-footer">
-          <ElText type="info" size="small">已有账号？</ElText>
+          <ElText type="info" size="small">{{ t('auth.haveAccount') }}</ElText>
           <ElLink type="primary" :underline="false" @click="router.push('/login')">
-            立即登录
+            {{ t('auth.loginNow') }}
           </ElLink>
         </nav>
       </template>
@@ -370,6 +396,59 @@ async function handleRegister() {
 @use '@/assets/styles/scss/variables' as *;
 @use '@/assets/styles/scss/mixins' as *;
 
+// ============================================================================
+// Role Selector
+// ============================================================================
+.role-selector {
+  margin-bottom: $space-4;
+
+  &__label {
+    display: block;
+    margin-bottom: $space-2;
+    font-size: $font-size-sm;
+    color: var(--text-secondary);
+  }
+
+  &__options {
+    display: flex;
+    gap: $space-3;
+  }
+}
+
+.role-option {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  gap: $space-1;
+  padding: $space-3 $space-4;
+  border: 1px solid var(--border-subtle);
+  border-radius: $radius-md;
+  background: transparent;
+  cursor: pointer;
+  transition: all $duration-normal $ease-default;
+
+  &:hover {
+    border-color: var(--border-muted);
+    background: rgba(var(--text-primary-rgb), 0.04);
+  }
+
+  &.active {
+    border-color: var(--accent-primary);
+    background: rgba(var(--accent-primary-rgb), 0.15);
+  }
+
+  &__label {
+    font-size: $font-size-base;
+    font-weight: $font-weight-medium;
+    color: var(--text-primary);
+  }
+
+  &__desc {
+    font-size: $font-size-sm;
+    color: var(--text-muted);
+  }
+}
+
 .form-footer {
   display: flex;
   justify-content: center;
@@ -378,7 +457,7 @@ async function handleRegister() {
 
   :deep(.el-text) {
     font-size: $font-size-sm;
-    color: $color-text-secondary;
+    color: var(--text-secondary);
   }
 
   :deep(.el-link) {

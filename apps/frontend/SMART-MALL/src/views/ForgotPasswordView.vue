@@ -1,4 +1,4 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 /**
  * ============================================================================
  * 忘记密码页面 (ForgotPasswordView)
@@ -41,12 +41,14 @@
  */
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
+import { useI18n } from 'vue-i18n'
 import { passwordApi } from '@/api'
 import { ElResult } from 'element-plus'
 import { Box, CircleCheck } from '@element-plus/icons-vue'
 import { AuthFormCard, AuthInput, AuthButton, AlertMessage } from '@/components'
 
 const router = useRouter()
+const { t } = useI18n()
 
 // ============================================================================
 // 表单状态
@@ -72,14 +74,14 @@ const success = ref(false)
 async function handleSubmit() {
   // 验证邮箱不为空
   if (!email.value.trim()) {
-    errorMsg.value = '请输入邮箱地址'
+    errorMsg.value = t('auth.enterEmail')
     return
   }
   
   // 验证邮箱格式
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
   if (!emailRegex.test(email.value)) {
-    errorMsg.value = '请输入有效的邮箱地址'
+    errorMsg.value = t('auth.enterValidEmail')
     return
   }
 
@@ -93,7 +95,7 @@ async function handleSubmit() {
     // 切换到成功状态
     success.value = true
   } catch (error: any) {
-    errorMsg.value = error?.message || '发送失败，请重试'
+    errorMsg.value = error?.message || t('auth.sendFailed')
   } finally {
     loading.value = false
   }
@@ -123,8 +125,8 @@ function goBack() {
         <template v-if="success">
           <ElResult
             icon="success"
-            title="邮件已发送"
-            sub-title="如果该邮箱已注册，您将收到一封包含密码重置链接的邮件。请检查您的收件箱。"
+            :title="t('auth.emailSent')"
+            :sub-title="t('auth.emailSentDesc')"
             class="success-result"
           >
             <template #icon>
@@ -133,34 +135,34 @@ function goBack() {
               </ElIcon>
             </template>
             <template #extra>
-              <ElButton type="primary" @click="goBack">返回登录</ElButton>
+              <ElButton type="primary" @click="goBack">{{ t('auth.backToLogin') }}</ElButton>
             </template>
           </ElResult>
         </template>
 
         <!-- 表单状态 -->
         <template v-else>
-          <AuthFormCard title="忘记密码" description="输入您的邮箱地址，我们将发送密码重置链接">
+          <AuthFormCard :title="t('auth.forgotPassword')" :description="t('auth.forgotPasswordDesc')">
             <ElForm @submit.prevent="handleSubmit">
               <AuthInput
                 id="email"
                 v-model="email"
-                label="邮箱地址"
+                :label="t('auth.emailAddress')"
                 type="email"
                 icon="email"
-                placeholder="输入邮箱地址"
+                :placeholder="t('auth.enterEmailPlaceholder')"
                 autocomplete="email"
                 required
               />
 
               <AlertMessage v-if="errorMsg" type="error" :message="errorMsg" />
 
-              <AuthButton text="发送重置链接" loading-text="发送中..." :loading="loading" />
+              <AuthButton :text="t('auth.sendResetLink')" :loading-text="t('auth.sending')" :loading="loading" />
             </ElForm>
 
             <template #footer>
               <nav class="form-footer">
-                <ElButton text @click="goBack">← 返回登录</ElButton>
+                <ElButton text @click="goBack">← {{ t('auth.backToLogin') }}</ElButton>
               </nav>
             </template>
           </AuthFormCard>
@@ -177,7 +179,7 @@ function goBack() {
 .forgot-password-page {
   min-height: 100vh;
   display: flex;
-  background-color: $color-bg-primary;
+  background-color: var(--bg-primary);
 
   .form-panel {
     flex: 1;
@@ -206,10 +208,10 @@ function goBack() {
           width: 48px;
           height: 48px;
           @include flex-center;
-          background: linear-gradient(135deg, $color-primary-muted 0%, rgba($color-accent-violet, 0.15) 100%);
-          border: 1px solid $color-border-muted;
+          background: linear-gradient(135deg, var(--accent-muted) 0%, rgba(196, 181, 253, 0.15) 100%);
+          border: 1px solid var(--border-muted);
           border-radius: $radius-lg;
-          color: $color-accent-blue;
+          color: var(--accent-primary);
         }
       }
     }
@@ -219,11 +221,11 @@ function goBack() {
     @include flex-center-x;
 
     :deep(.el-button) {
-      color: $color-accent-blue;
+      color: var(--accent-primary);
       font-size: $font-size-sm;
 
       &:hover {
-        color: $color-accent-blue-hover;
+        color: var(--accent-hover);
       }
     }
   }
@@ -232,15 +234,15 @@ function goBack() {
     text-align: center;
 
     .success-icon {
-      color: $color-success;
+      color: var(--success);
     }
 
     :deep(.el-result__title) {
-      color: $color-text-primary;
+      color: var(--text-primary);
     }
 
     :deep(.el-result__subtitle) {
-      color: $color-text-secondary;
+      color: var(--text-secondary);
     }
 
     :deep(.el-button) {

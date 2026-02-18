@@ -44,6 +44,7 @@
  */
 import { ref, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
+import { useI18n } from 'vue-i18n'
 import { passwordApi } from '@/api'
 import { ElForm, ElButton, ElIcon, ElResult, ElSkeleton } from 'element-plus'
 import { Box, CircleCheck, CircleClose } from '@element-plus/icons-vue'
@@ -51,6 +52,7 @@ import { AuthFormCard, AuthInput, AuthButton, AlertMessage } from '@/components'
 
 const router = useRouter()
 const route = useRoute()
+const { t } = useI18n()
 
 const token = ref('')
 const newPassword = ref('')
@@ -65,7 +67,7 @@ onMounted(async () => {
   token.value = (route.query.token as string) || ''
   
   if (!token.value) {
-    errorMsg.value = '无效的重置链接'
+    errorMsg.value = t('auth.invalidResetLink')
     verifying.value = false
     return
   }
@@ -74,10 +76,10 @@ onMounted(async () => {
     const valid = await passwordApi.verifyResetToken({ token: token.value })
     tokenValid.value = valid
     if (!valid) {
-      errorMsg.value = '重置链接已过期或无效'
+      errorMsg.value = t('auth.resetLinkExpired')
     }
   } catch {
-    errorMsg.value = '验证失败，请重试'
+    errorMsg.value = t('auth.verifyFailed')
   } finally {
     verifying.value = false
   }
@@ -85,17 +87,17 @@ onMounted(async () => {
 
 async function handleSubmit() {
   if (!newPassword.value) {
-    errorMsg.value = '请输入新密码'
+    errorMsg.value = t('auth.enterNewPassword')
     return
   }
   
   if (newPassword.value.length < 6) {
-    errorMsg.value = '密码长度不能少于6位'
+    errorMsg.value = t('auth.passwordTooShort')
     return
   }
   
   if (newPassword.value !== confirmPassword.value) {
-    errorMsg.value = '两次输入的密码不一致'
+    errorMsg.value = t('auth.passwordMismatch')
     return
   }
 
@@ -106,7 +108,7 @@ async function handleSubmit() {
     await passwordApi.resetPassword({ token: token.value, newPassword: newPassword.value })
     success.value = true
   } catch (error: any) {
-    errorMsg.value = error?.message || '重置失败，请重试'
+    errorMsg.value = error?.message || t('auth.resetFailed')
   } finally {
     loading.value = false
   }
@@ -136,15 +138,15 @@ function goToForgotPassword() {
         <!-- 加载状态 -->
         <template v-if="verifying">
           <ElSkeleton :rows="5" animated class="loading-skeleton" />
-          <p class="loading-text">正在验证重置链接...</p>
+          <p class="loading-text">{{ t('auth.verifyingLink') }}</p>
         </template>
 
         <!-- 令牌无效 -->
         <template v-else-if="!tokenValid && !success">
           <ElResult
             icon="error"
-            title="链接无效"
-            :sub-title="errorMsg || '重置链接已过期或无效，请重新申请'"
+            :title="t('auth.linkInvalid')"
+            :sub-title="errorMsg || t('auth.resetLinkExpired')"
             class="status-result error"
           >
             <template #icon>
@@ -153,7 +155,7 @@ function goToForgotPassword() {
               </ElIcon>
             </template>
             <template #extra>
-              <ElButton type="primary" @click="goToForgotPassword">重新申请</ElButton>
+              <ElButton type="primary" @click="goToForgotPassword">{{ t('auth.reApply') }}</ElButton>
             </template>
           </ElResult>
         </template>
@@ -162,8 +164,8 @@ function goToForgotPassword() {
         <template v-else-if="success">
           <ElResult
             icon="success"
-            title="密码已重置"
-            sub-title="您的密码已成功重置，请使用新密码登录"
+            :title="t('auth.passwordReset')"
+            :sub-title="t('auth.passwordResetDesc')"
             class="status-result success"
           >
             <template #icon>
@@ -172,22 +174,22 @@ function goToForgotPassword() {
               </ElIcon>
             </template>
             <template #extra>
-              <ElButton type="primary" @click="goToLogin">前往登录</ElButton>
+              <ElButton type="primary" @click="goToLogin">{{ t('auth.goToLogin') }}</ElButton>
             </template>
           </ElResult>
         </template>
 
         <!-- 表单状态 -->
         <template v-else>
-          <AuthFormCard title="重置密码" description="请输入您的新密码">
+          <AuthFormCard :title="t('auth.resetPassword')" :description="t('auth.resetPasswordDesc')">
             <ElForm @submit.prevent="handleSubmit">
               <AuthInput
                 id="newPassword"
                 v-model="newPassword"
-                label="新密码"
+                :label="t('auth.newPassword')"
                 type="password"
                 icon="password"
-                placeholder="输入新密码（至少6位）"
+                :placeholder="t('auth.newPasswordPlaceholder')"
                 autocomplete="new-password"
                 required
               />
@@ -195,22 +197,22 @@ function goToForgotPassword() {
               <AuthInput
                 id="confirmPassword"
                 v-model="confirmPassword"
-                label="确认密码"
+                :label="t('auth.confirmPassword')"
                 type="password"
                 icon="password"
-                placeholder="再次输入新密码"
+                :placeholder="t('auth.confirmPasswordResetPlaceholder')"
                 autocomplete="new-password"
                 required
               />
 
               <AlertMessage v-if="errorMsg" type="error" :message="errorMsg" />
 
-              <AuthButton text="重置密码" loading-text="重置中..." :loading="loading" />
+              <AuthButton :text="t('auth.resetPassword')" :loading-text="t('auth.resetting')" :loading="loading" />
             </ElForm>
 
             <template #footer>
               <nav class="form-footer">
-                <ElButton text @click="goToLogin">← 返回登录</ElButton>
+                <ElButton text @click="goToLogin">← {{ t('auth.backToLogin') }}</ElButton>
               </nav>
             </template>
           </AuthFormCard>
@@ -227,7 +229,7 @@ function goToForgotPassword() {
 .reset-password-page {
   min-height: 100vh;
   display: flex;
-  background-color: $color-bg-primary;
+  background-color: var(--bg-primary);
 
   .form-panel {
     flex: 1;
@@ -239,7 +241,7 @@ function goToForgotPassword() {
     .form-panel-bg {
       position: absolute;
       inset: 0;
-      background: radial-gradient(ellipse 100% 80% at 50% 20%, rgba(59, 130, 246, 0.04) 0%, transparent 50%);
+      background: radial-gradient(ellipse 100% 80% at 50% 20%, rgba(var(--accent-primary-rgb), 0.04) 0%, transparent 50%);
       pointer-events: none;
     }
 
@@ -256,10 +258,10 @@ function goToForgotPassword() {
           width: 48px;
           height: 48px;
           @include flex-center;
-          background: linear-gradient(135deg, $color-primary-muted 0%, rgba($color-accent-violet, 0.15) 100%);
-          border: 1px solid $color-border-muted;
+          background: linear-gradient(135deg, rgba(var(--accent-primary-rgb), 0.15) 0%, rgba(168, 85, 247, 0.15) 100%);
+          border: 1px solid var(--border-muted);
           border-radius: $radius-lg;
-          color: $color-accent-blue;
+          color: var(--accent-primary);
         }
       }
     }
@@ -272,7 +274,7 @@ function goToForgotPassword() {
   .loading-text {
     text-align: center;
     font-size: $font-size-base;
-    color: $color-text-secondary;
+    color: var(--text-secondary);
     margin-top: $space-4;
   }
 
@@ -280,11 +282,11 @@ function goToForgotPassword() {
     @include flex-center-x;
 
     :deep(.el-button) {
-      color: $color-accent-blue;
+      color: var(--accent-primary);
       font-size: $font-size-sm;
 
       &:hover {
-        color: $color-accent-blue-hover;
+        color: var(--accent-hover);
       }
     }
   }
@@ -293,23 +295,23 @@ function goToForgotPassword() {
     text-align: center;
 
     &.success .success-icon {
-      color: $color-success;
+      color: var(--success);
     }
 
     &.error .error-icon {
-      color: $color-error;
+      color: var(--error);
     }
 
     :deep(.el-result__title) {
-      color: $color-text-primary;
+      color: var(--text-primary);
     }
 
     :deep(.el-result__subtitle) {
-      color: $color-text-secondary;
+      color: var(--text-secondary);
     }
 
     :deep(.el-button) {
-      background: $gradient-primary;
+      background: linear-gradient(135deg, var(--accent-primary) 0%, rgba(168, 85, 247, 1) 100%);
       border: none;
       border-radius: 10px;
       padding: $space-3 $space-8;

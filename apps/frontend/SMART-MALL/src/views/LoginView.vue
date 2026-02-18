@@ -1,4 +1,4 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 /**
  * ============================================================================
  * 登录页面 (LoginView.vue)
@@ -38,7 +38,6 @@ import {
   AuthButton,        // 带加载状态的主按钮
   AlertMessage,      // 错误/成功提示
   TypewriterCard,    // 打字机效果卡片（展示产品特性）
-  SocialLogin,       // 第三方登录按钮组（微信、GitHub 等）
 } from '@/components'
 
 // ============================================================================
@@ -327,12 +326,6 @@ async function handleLogin() {
       </ElForm>
 
       <!--
-        第三方登录
-        提供微信、GitHub 等社交账号登录选项
-      -->
-      <SocialLogin />
-
-      <!--
         表单底部区域
         - 忘记密码链接
         - 注册链接
@@ -385,7 +378,7 @@ async function handleLogin() {
 
   :deep(.el-divider--vertical) {
     margin: 0;
-    border-color: $color-text-muted;
+    border-color: var(--text-muted);
   }
 }
 
@@ -393,12 +386,12 @@ async function handleLogin() {
 .test-hint {
   margin-top: $space-5;
   padding-top: $space-5;
-  border-top: 1px solid $color-border-subtle;
+  border-top: 1px solid var(--border-subtle);
   text-align: center;
 
   :deep(.el-text) {
     font-size: $font-size-xs + 1;
-    color: $color-text-muted;
+    color: var(--text-muted);
   }
 }
 </style>
