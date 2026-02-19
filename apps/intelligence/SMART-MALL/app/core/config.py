@@ -30,6 +30,13 @@ class Settings(BaseSettings):
     # LLM 配置
     LLM_PROVIDER: str = "qwen"  # qwen / openai / deepseek / local
     
+    # === OpenRouter 配置 ===
+    OPENROUTER_API_KEY: str = ""
+    OPENROUTER_MODEL: str = "stepfun/step-3.5-flash:free"
+    OPENROUTER_BASE_URL: str = "https://openrouter.ai/api/v1"
+    OPENROUTER_SUPPORTS_TOOLS: bool = False  # 模型是否支持 function calling
+    OPENROUTER_VISION_MODEL: str = "nvidia/nemotron-nano-12b-v2-vl:free"
+    
     # 阿里云百炼 Qwen 配置（推荐）
     QWEN_API_KEY: str = ""
     QWEN_MODEL: str = "qwen3-vl-plus"  # 支持视觉+Function Calling
@@ -50,6 +57,10 @@ class Settings(BaseSettings):
     # 本地模型配置 (Ollama)
     LOCAL_MODEL_URL: str = "http://localhost:11434"
     LOCAL_MODEL_NAME: str = "llama2"
+    
+    # === Ollama Embedding 配置 ===
+    OLLAMA_EMBEDDING_URL: str = "http://127.0.0.1:11434/api/embed"
+    OLLAMA_EMBEDDING_MODEL: str = "bge-m3:latest"
     
     # LLM 参数
     LLM_TEMPERATURE: float = 0.3
@@ -102,6 +113,7 @@ class Settings(BaseSettings):
     
     # 缓存配置
     REDIS_URL: str = "redis://localhost:6379/0"
+    REDIS_MAX_CONNECTIONS: int = 20
     CACHE_TTL: int = 300  # 5 分钟
     
     # 兼容旧配置
@@ -158,6 +170,13 @@ class Settings(BaseSettings):
         return v.lower()
     
     # ============ 模型验证器 ============
+    
+    @model_validator(mode="after")
+    def validate_openrouter_config(self) -> "Settings":
+        """验证 OpenRouter 配置"""
+        if not self.OPENROUTER_API_KEY:
+            logger.warning("OPENROUTER_API_KEY is not set. OpenRouter LLM will not work.")
+        return self
     
     @model_validator(mode="after")
     def validate_llm_config(self) -> "Settings":
