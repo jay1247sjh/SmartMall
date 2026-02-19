@@ -114,6 +114,16 @@ class Settings(BaseSettings):
     PG_PASSWORD: str = "smartmall123"
     PG_DATABASE: str = "smartmall"
     
+    # ============ 记忆系统配置 ============
+    MEMORY_MAX_TOKEN_LIMIT: int = 4000
+    MEMORY_SHORT_TERM_ROUNDS: int = 10
+    MEMORY_SUMMARY_THRESHOLD: int = 5
+    MEMORY_MID_TERM_TTL_DAYS: int = 7
+
+    # ============ Session 检测配置 ============
+    SESSION_TIMEOUT_MINUTES: int = 30
+    SESSION_SCAN_INTERVAL_MINUTES: int = 5
+
     # 缓存配置
     REDIS_URL: str = "redis://localhost:6379/0"
     REDIS_MAX_CONNECTIONS: int = 20
