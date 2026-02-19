@@ -40,12 +40,15 @@ from typing import List, Optional, Dict, Any
 from dataclasses import dataclass
 import logging
 
+from langchain_core.documents import Document
+from langchain_core.retrievers import BaseRetriever
+
 # Milvus 向量数据库客户端
 from app.core.rag.milvus_client import MilvusClient, get_milvus_client
 # 文本向量化服务
 from app.core.rag.embedding import EmbeddingService, get_embedding_service
 # 检索器和过滤表达式构建器
-from app.core.rag.retriever import SmartMallRetriever, build_filter_expr
+from app.core.rag.retriever import SmartMallRetriever, build_filter_expr, RAGRetrieverFactory
 # 数据库集合的 Schema 定义
 from app.core.rag.schemas import STORES_SCHEMA, PRODUCTS_SCHEMA, LOCATIONS_SCHEMA
 # 应用配置
@@ -318,6 +321,7 @@ class RAGService:
         self._milvus_client = milvus_client
         self._embedding_service = embedding_service
         self._initialized = False  # 初始化标志，防止重复初始化
+        self._retrievers: Dict[str, BaseRetriever] = {}  # Retriever 缓存
     
     @property
     def milvus_client(self) -> MilvusClient:
@@ -823,6 +827,102 @@ class RAGService:
             "message": f"{store.name} 位于 {store.floor} 楼 {store.area}"
         }
     
+    # ================================================================
+    # RAG 数据隔离方法（world_facts / reviews / rules）
+    # ================================================================
+
+    # world_facts 集合映射：stores, products, locations
+    WORLD_FACTS_COLLECTIONS = ["stores", "products", "locations"]
+
+    def _get_retriever(self, collection: str) -> BaseRetriever:
+        """获取指定集合的 Retriever（带缓存）"""
+        if collection not in self._retrievers:
+            self._retrievers[collection] = RAGRetrieverFactory.create_retriever(collection)
+        return self._retrievers[collection]
+
+    async def _search_world_facts(
+        self, query: str, filters: Optional[Dict[str, Any]] = None
+    ) -> List[Document]:
+        """检索 world_facts（stores + products + locations）"""
+        all_docs: List[Document] = []
+        for collection in self.WORLD_FACTS_COLLECTIONS:
+            try:
+                if filters:
+                    retriever = RAGRetrieverFactory.create_filtered_retriever(
+                        collection_name=collection, **filters
+                    )
+                else:
+                    retriever = self._get_retriever(collection)
+                docs = await retriever.ainvoke(query)
+                for doc in docs:
+                    doc.metadata["source_type"] = "world_facts"
+                    doc.metadata["source_collection"] = collection
+                all_docs.extend(docs)
+            except Exception as e:
+                logger.warning(f"Failed to search {collection}: {e}")
+        return all_docs
+
+    async def _search_reviews(self, query: str) -> List[Document]:
+        """检索 reviews 集合"""
+        try:
+            retriever = self._get_retriever("reviews")
+            docs = await retriever.ainvoke(query)
+            for doc in docs:
+                doc.metadata["source_type"] = "reviews"
+                doc.metadata["source_collection"] = "reviews"
+            return docs
+        except Exception as e:
+            logger.warning(f"Failed to search reviews: {e}")
+            return []
+
+    async def _search_rules(self, query: str) -> List[Document]:
+        """检索 rules 集合"""
+        try:
+            retriever = self._get_retriever("rules")
+            docs = await retriever.ainvoke(query)
+            for doc in docs:
+                doc.metadata["source_type"] = "rules"
+                doc.metadata["source_collection"] = "rules"
+            return docs
+        except Exception as e:
+            logger.warning(f"Failed to search rules: {e}")
+            return []
+
+    @staticmethod
+    def _merge_with_source_tags(*doc_groups: List[Document]) -> List[Document]:
+        """合并多组文档（source_type 已在检索时标注）"""
+        merged: List[Document] = []
+        for group in doc_groups:
+            merged.extend(group)
+        return merged
+
+    async def search_for_navigation(
+        self, query: str, filters: Optional[Dict[str, Any]] = None
+    ) -> List[Document]:
+        """导航决策：仅检索 world_facts + rules
+
+        遵循 RAG 数据隔离规范：导航决策不使用 reviews。
+        """
+        wf_docs = await self._search_world_facts(query, filters)
+        rule_docs = await self._search_rules(query)
+        return self._merge_with_source_tags(wf_docs, rule_docs)
+
+    async def search_for_evaluation(self, query: str) -> List[Document]:
+        """主观评价：仅检索 reviews
+
+        遵循 RAG 数据隔离规范：评价问题不使用 world_facts。
+        """
+        return await self._search_reviews(query)
+
+    async def search_for_complex(self, query: str) -> List[Document]:
+        """综合查询：多路检索，标注来源
+
+        同时检索 world_facts 和 reviews，每条结果带 source_type 标注。
+        """
+        wf_docs = await self._search_world_facts(query)
+        rv_docs = await self._search_reviews(query)
+        return self._merge_with_source_tags(wf_docs, rv_docs)
+
     async def health_check(self) -> Dict[str, Any]:
         """
         健康检查
