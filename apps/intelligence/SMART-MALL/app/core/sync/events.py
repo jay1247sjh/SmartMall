@@ -62,3 +62,4 @@ class ConsistencyReport(BaseModel):
     orphaned_in_milvus: List[str] = Field(default_factory=list)
     compensating_events_created: int = 0
     orphaned_cleaned: int = 0
+    error: Optional[str] = None

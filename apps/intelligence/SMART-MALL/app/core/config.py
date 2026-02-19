@@ -104,6 +104,9 @@ class Settings(BaseSettings):
     SYNC_BATCH_SIZE: int = 100  # 批量同步大小
     SYNC_INTERVAL_MINUTES: int = 5  # 增量同步间隔（分钟）
     
+    # ============ Java 后端内部接口 ============
+    JAVA_BACKEND_INTERNAL_URL: str = "http://localhost:8080"  # Java 后端内部 API 地址
+    
     # ============ PostgreSQL 配置（数据源） ============
     PG_HOST: str = "localhost"
     PG_PORT: int = 5433

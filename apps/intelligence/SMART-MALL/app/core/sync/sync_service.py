@@ -106,6 +106,10 @@ class SyncService:
     async def run_consumer(self, consumer_name: str = "worker-1") -> None:
         """消费循环：持续从 EventBus 读取事件并处理。
 
+        关键可靠性设计：
+        - retry_queue.enqueue() 成功 → XACK（重试由 RetryQueue 负责）
+        - retry_queue.enqueue() 失败 → 不 XACK，消息留在 PEL 中等待重新投递
+
         支持优雅退出：调用 shutdown() 后当前批次处理完毕即退出。
         """
         while not self._shutdown.is_set():
@@ -120,9 +124,22 @@ class SyncService:
                             "event_id": event.event_id,
                             "reason": str(e),
                         }, ensure_ascii=False))
-                        if self.retry_queue:
-                            await self.retry_queue.enqueue(event, str(e), retry_count=0)
-                        await self.event_bus.acknowledge(message_id)
+                        # 尝试写入 RetryQueue（DB 优先持久化）
+                        try:
+                            if self.retry_queue:
+                                await self.retry_queue.enqueue(
+                                    event, str(e), retry_count=0
+                                )
+                            # enqueue 成功 → XACK，重试由 RetryQueue 负责
+                            await self.event_bus.acknowledge(message_id)
+                        except Exception as enqueue_err:
+                            # enqueue 失败 → 不 XACK，消息留在 PEL 中
+                            logger.error(json.dumps({
+                                "event": "retry_enqueue_failed",
+                                "event_id": event.event_id,
+                                "reason": str(enqueue_err),
+                                "action": "message_stays_in_pel",
+                            }, ensure_ascii=False))
             except asyncio.CancelledError:
                 logger.info("Consumer task cancelled, shutting down gracefully")
                 break
