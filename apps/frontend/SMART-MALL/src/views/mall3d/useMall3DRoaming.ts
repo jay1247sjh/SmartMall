@@ -23,6 +23,7 @@ import type { LoadingState } from '@/shared/types/ui.types'
 import { mallApi } from '@/api/mall.api'
 import { toMallProject } from '@/api/mall-builder.api'
 import { useRendering, useRoamingMode } from '@/views/admin/mall-builder/composables'
+import { useSettingsStore } from '@/stores'
 
 // ============================================================================
 // 类型定义
@@ -141,7 +142,8 @@ export function useMall3DRoaming(options: UseMall3DRoamingOptions): UseMall3DRoa
       // Step 4: 创建角色 + 碰撞
       updateLoading(70, '初始化角色...')
       const initialPos = getInitialPosition(project.outline)
-      controller = new CharacterController()
+      const settingsStore = useSettingsStore()
+      controller = new CharacterController(settingsStore.characterModel)
       controller.setPosition(initialPos.x, 0, -initialPos.y) // 2D y → 3D -z
       controller.setMoveSpeed('normal') // 使用 normal 预设（速度 3），与建模器一致
       controller.setBoundary(getOutlineBoundary(project.outline))
@@ -177,8 +179,8 @@ export function useMall3DRoaming(options: UseMall3DRoamingOptions): UseMall3DRoa
       // API 返回 ProjectResponse 格式（projectId/floorId/areaId），需转换为前端 MallProject 格式
       return toMallProject(data as any)
     } catch (e: unknown) {
-      const err = e as { response?: { status?: number } }
-      if (err.response?.status === 404) {
+      const err = e as { response?: { status?: number }; code?: string }
+      if (err.response?.status === 404 || err.code === 'A4002') {
         error.value = '暂无已发布的商城，请联系管理员'
       } else {
         error.value = '无法加载商城数据，请检查网络后重试'

@@ -75,9 +75,13 @@ async function loadData() {
     if (floors.value.length > 0) {
       selectedFloorId.value = floors.value[0].floorId
     }
-  } catch (e) {
-    console.error('Failed to load mall data:', e)
-    ElMessage.error(t('admin.loadMallDataFailed'))
+  } catch (e: any) {
+    if (e.code === 'A4002') {
+      projectData.value = null
+    } else {
+      console.error('Failed to load mall data:', e)
+      ElMessage.error(t('admin.loadMallDataFailed'))
+    }
   } finally {
     isLoading.value = false
   }
