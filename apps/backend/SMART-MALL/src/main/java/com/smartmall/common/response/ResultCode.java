@@ -44,6 +44,7 @@ public enum ResultCode {
     USER_ALREADY_EXISTS("A4002", "用户已存在"),
     USER_FROZEN("A4003", "用户已被冻结"),
     PASSWORD_ERROR("A4004", "密码错误"),
+    USER_ADMIN_PROTECTED("A3005", "不允许对管理员账户执行此操作"),
     
     NOT_FOUND("A5000", "资源不存在"),
     MALL_NOT_FOUND("A5001", "商城不存在"),

@@ -23,4 +23,10 @@ public interface UserMapper extends BaseMapper<User> {
      */
     @Update("UPDATE \"user\" SET password_hash = #{passwordHash}, updated_at = NOW() WHERE user_id = #{userId}")
     void updatePassword(@Param("userId") String userId, @Param("passwordHash") String passwordHash);
+    
+    /**
+     * 更新用户状态
+     */
+    @Update("UPDATE \"user\" SET status = #{status}, updated_at = NOW() WHERE user_id = #{userId}")
+    void updateStatus(@Param("userId") String userId, @Param("status") String status);
 }
