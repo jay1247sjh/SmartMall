@@ -16,11 +16,7 @@ from langchain_core.prompts import ChatPromptTemplate
 from app.core.config import settings
 from app.core.llm_provider import get_llm
 from app.core.prompt_loader import PromptLoader
-from app.api.mall_generator import (
-    MallLayoutData,
-    parse_mall_description,
-    generate_mall_layout,
-)
+from app.api.mall_generator import MallLayoutData, rule_based_generate
 
 logger = logging.getLogger(__name__)
 
@@ -108,6 +104,5 @@ class MallGenerationService:
         )
 
     def _fallback_generate(self, description: str) -> MallLayoutData:
-        """降级到规则生成器"""
-        parsed = parse_mall_description(description)
-        return generate_mall_layout(parsed)
+        """降级到规则生成器（单一入口）"""
+        return rule_based_generate(description)

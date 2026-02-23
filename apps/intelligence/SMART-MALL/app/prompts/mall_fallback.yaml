@@ -1,0 +1,62 @@
+# ============================================================
+# 降级路径规则配置 - 参数化几何生成器
+# ============================================================
+# 当 LLM 不可用时，降级路径使用此配置生成商城布局。
+# 所有可调参数集中在此文件，Python 代码中零业务数据。
+# 此文件是部署产物的一部分，缺失视为部署错误。
+# ============================================================
+
+name: "mall_fallback"
+version: "1.0"
+description: "降级路径规则配置 - 参数化几何生成器"
+
+# ============ 商城默认尺寸 ============
+mall_defaults:
+  name: "新商城"
+  width: 100        # 米
+  height: 80        # 米
+  floor_count: 1
+
+# ============ 布局几何参数 ============
+layout:
+  margin: 5.0             # 商城边缘缓冲区（米）
+  store_gap: 2.0          # 区域间间隔（米）
+  corridor_width: 10.0    # 主走廊宽度（米）
+  side_padding: 2.5       # 店铺到走廊/边缘的横向间距（米）
+  min_store_height: 3.0   # 单个区域最小高度（米），防止区域过多时几何失效
+
+# ============ 默认值 ============
+defaults:
+  color: "#94a3b8"            # 所有区域统一默认颜色
+  corridor_color: "#cbd5e1"   # 走廊颜色
+  store_type: "retail"        # 默认店铺 type
+  corridor_type: "corridor"   # 走廊 type
+  placeholder_type: "store"   # 无店铺时的占位区域 type
+  floor_height: 4.0           # 楼层高度（米）
+  min_areas_per_floor: 2      # 无指定店铺时每层默认区域数量
+
+# ============ 全局 settings（直接透传给前端） ============
+settings:
+  gridSize: 1
+  snapToGrid: true
+  defaultFloorHeight: 4
+  unit: "meters"
+  display:
+    showGrid: true
+    showRuler: true
+    showAreaLabels: true
+
+# ============ help 端点文案 ============
+help:
+  description: "通过自然语言描述快速生成商城布局"
+  note: "降级模式下区域均使用默认样式，完整语义理解请确保 LLM 服务可用"
+  formats:
+    - name: "简单格式"
+      example: "创建一个3层商城，1楼有Nike、Adidas，2楼有星巴克、麦当劳"
+      description: "直接描述楼层和店铺"
+    - name: "详细格式"
+      example: "生成100x80的商城，名称=我的商城，2层，1F:Zara/H&M，2F:海底捞"
+      description: "可指定尺寸、名称等详细信息"
+    - name: "区域数量格式"
+      example: "3层商城，至少20个区域"
+      description: "指定区域数量，由系统自动布局"
