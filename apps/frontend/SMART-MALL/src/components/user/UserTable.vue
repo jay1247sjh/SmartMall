@@ -96,7 +96,7 @@ const emit = defineEmits<UserTableEmits>()
 // ============================================================================
 
 const { formatDate } = useFormatters()
-const { getStatusConfig } = useStatusConfig()
+const { getStatusConfig } = useStatusConfig('user')
 
 // ============================================================================
 // 用户类型配置
@@ -123,7 +123,7 @@ function getUserTypeConfig(userType: string) {
  * 获取用户状态配置
  */
 function getUserStatusConfig(status: string) {
-  return getStatusConfig(status, 'user')
+  return getStatusConfig(status)
 }
 
 /**
@@ -222,31 +222,36 @@ function handleRetry() {
                 </ElTag>
               </td>
               <td>
-                <ElTag :type="getUserStatusConfig(user.status).tagType" size="small">
-                  {{ getUserStatusConfig(user.status).label }}
-                </ElTag>
+                <span
+                  class="status-dot"
+                  :style="{ backgroundColor: getUserStatusConfig(user.status).color }"
+                />
+                <span class="status-text">{{ getUserStatusConfig(user.status).text }}</span>
               </td>
               <td>{{ formatDate(user.createdAt, 'date') }}</td>
               <td>
                 <ElSpace>
-                  <ElButton
-                    v-if="user.status === 'ACTIVE'"
-                    type="warning"
-                    size="small"
-                    text
-                    @click.stop="handleFreeze(user, $event)"
-                  >
-                    {{ t('userMgmt.freeze') }}
-                  </ElButton>
-                  <ElButton
-                    v-if="user.status === 'FROZEN'"
-                    type="success"
-                    size="small"
-                    text
-                    @click.stop="handleActivate(user, $event)"
-                  >
-                    {{ t('userMgmt.activate') }}
-                  </ElButton>
+                  <template v-if="user.userType !== 'ADMIN'">
+                    <ElButton
+                      v-if="user.status === 'ACTIVE'"
+                      type="warning"
+                      size="small"
+                      text
+                      @click.stop="handleFreeze(user, $event)"
+                    >
+                      {{ t('userMgmt.freeze') }}
+                    </ElButton>
+                    <ElButton
+                      v-if="user.status === 'FROZEN'"
+                      type="success"
+                      size="small"
+                      text
+                      @click.stop="handleActivate(user, $event)"
+                    >
+                      {{ t('userMgmt.activate') }}
+                    </ElButton>
+                  </template>
+                  <span v-else class="action-disabled">—</span>
                 </ElSpace>
               </td>
             </tr>
@@ -354,5 +359,28 @@ function handleRetry() {
 .empty-state {
   @include table-empty-state;
   padding: $space-8;
+}
+
+// ============================================================================
+// Status indicator
+// ============================================================================
+.status-dot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  margin-right: 6px;
+  vertical-align: middle;
+}
+
+.status-text {
+  font-size: $font-size-sm;
+  color: var(--text-secondary);
+  vertical-align: middle;
+}
+
+.action-disabled {
+  font-size: $font-size-sm;
+  color: var(--text-disabled);
 }
 </style>

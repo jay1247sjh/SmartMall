@@ -179,6 +179,11 @@ function handleRowClick(user: UserInfo) {
  * 冻结用户
  */
 async function handleFreezeUser(user: UserInfo) {
+  // 防御性校验：禁止冻结管理员账户（即使 UI 已隐藏按钮）
+  if (user.userType === 'ADMIN') {
+    ElMessage.error(t('admin.userMgmt.cannotOperateAdmin'))
+    return
+  }
   try {
     await ElMessageBox.confirm(
       t('admin.userMgmt.confirmFreezeMsg', { username: user.username }),
@@ -199,6 +204,11 @@ async function handleFreezeUser(user: UserInfo) {
  * 激活用户
  */
 async function handleActivateUser(user: UserInfo) {
+  // 防御性校验：禁止操作管理员账户（即使 UI 已隐藏按钮）
+  if (user.userType === 'ADMIN') {
+    ElMessage.error(t('admin.userMgmt.cannotOperateAdmin'))
+    return
+  }
   try {
     await ElMessageBox.confirm(
       t('admin.userMgmt.confirmActivateMsg', { username: user.username }),
