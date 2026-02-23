@@ -305,10 +305,13 @@ def generate_mall_layout(
     floor_count = parsed_info["floor_count"]
     min_areas = parsed_info.get("min_areas", 0)
 
-    # 每层目标区域数（向上取整分配）
-    per_floor_target = 0
+    # 精确分配区域数到每层（总数严格等于 min_areas）
+    floor_targets: List[int] = [0] * floor_count
     if min_areas > 0:
-        per_floor_target = -(-min_areas // floor_count)  # ceil division
+        base = min_areas // floor_count
+        remainder = min_areas % floor_count
+        for i in range(floor_count):
+            floor_targets[i] = base + (1 if i < remainder else 0)
 
     outline = _build_outline(width, height)
 
@@ -318,7 +321,7 @@ def generate_mall_layout(
     floors: List[FloorData] = []
     for level in range(1, floor_count + 1):
         stores = parsed_info["floors"].get(level, [])
-        target = per_floor_target if not stores else 0
+        target = floor_targets[level - 1] if not stores else 0
 
         areas = _generate_floor_areas(
             level=level,
