@@ -622,13 +622,15 @@ function getCreateButtonText(): string {
   justify-content: center;
   gap: $space-2;
   min-width: 120px;
-  padding: $space-2 $space-4;
+  height: 36px;
+  padding: 0 $space-4;
   background: var(--accent-primary);
   border: none;
   border-radius: $radius-md;
   color: #fff;
   font-size: $font-size-base;
   font-weight: $font-weight-medium;
+  white-space: nowrap;
   cursor: pointer;
   transition: background $duration-normal;
 
@@ -649,6 +651,7 @@ function getCreateButtonText(): string {
 .loading-spinner {
   width: 16px;
   height: 16px;
+  flex-shrink: 0;
   animation: spin 1s linear infinite;
 }
 
