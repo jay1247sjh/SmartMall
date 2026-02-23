@@ -6,16 +6,14 @@ LLM 完全自主决定布局，后端只做格式校验和重叠检测。
 LLM 失败时自动降级到现有规则生成器。
 """
 
-import json
-import re
 import logging
 from typing import List, Tuple
 
 from langchain_core.output_parsers import StrOutputParser
 from langchain_core.prompts import ChatPromptTemplate
 
-from app.core.config import settings
 from app.core.llm_provider import get_llm
+from app.core.llm_utils import extract_json, is_llm_available
 from app.core.prompt_loader import PromptLoader
 from app.api.mall_generator import MallLayoutData, AreaData, rule_based_generate
 
@@ -66,7 +64,7 @@ class MallGenerationService:
         Returns:
             (layout_data, generation_method)  method: "llm" | "rule_based"
         """
-        if self._is_llm_available():
+        if is_llm_available():
             try:
                 layout = await self._generate_with_llm(description)
                 return layout, "llm"
@@ -103,7 +101,7 @@ class MallGenerationService:
         result = await chain.ainvoke({"user_input": user_prompt})
 
         # 提取并校验 JSON（格式校验）
-        raw_json = self._extract_json(result)
+        raw_json = extract_json(result)
         layout = MallLayoutData.model_validate(raw_json)
 
         # 重叠检测
@@ -119,38 +117,6 @@ class MallGenerationService:
             f"{len(layout.floors)} floors"
         )
         return layout
-
-    def _extract_json(self, content: str) -> dict:
-        """
-        从 LLM 响应中提取 JSON。
-        处理裸 JSON、markdown 代码块、前后带文本等格式。
-        """
-        text = content.strip()
-
-        # 尝试 1: markdown 代码块 ```json ... ``` 或 ``` ... ```
-        code_block = re.search(r"```(?:json)?\s*\n?(.*?)\n?\s*```", text, re.DOTALL)
-        if code_block:
-            return json.loads(code_block.group(1).strip())
-
-        # 尝试 2: 直接解析整个文本
-        try:
-            return json.loads(text)
-        except json.JSONDecodeError:
-            pass
-
-        # 尝试 3: 提取第一个 { ... } 块
-        brace_match = re.search(r"\{.*\}", text, re.DOTALL)
-        if brace_match:
-            return json.loads(brace_match.group(0))
-
-        raise ValueError("Failed to extract valid JSON from LLM response")
-
-    def _is_llm_available(self) -> bool:
-        """检查 LLM 是否可用（OpenRouter 或 Qwen API Key 已配置）"""
-        return bool(
-            (settings.OPENROUTER_API_KEY and settings.OPENROUTER_API_KEY.strip())
-            or (settings.QWEN_API_KEY and settings.QWEN_API_KEY.strip())
-        )
 
     def _fallback_generate(self, description: str) -> MallLayoutData:
         """降级到规则生成器（单一入口）"""

@@ -29,55 +29,58 @@ system_prompt: |
   4. 如果用户指定了具体店铺名称，必须包含这些店铺
   5. 商城轮廓中心在原点 (0, 0)，vertices 按顺时针排列
 
-  ## 字段说明
-
-  - `floors[].areas`：该楼层的所有区域列表，包括店铺、走廊、电梯等一切空间。areas 数组的长度就是该楼层的区域总数
-  - `areas[].type`：区域的功能类型，如 retail（零售）、corridor（走廊）、elevator（电梯）等
-  - `areas[].name`：区域名称，请使用有意义的名称（品牌名、功能名），不要用"区域1"这样的占位名
-
-  ## JSON Schema
+  ## JSON Schema（含字段说明）
 
   ```json
   {
-    "name": "string",
-    "description": "string",
+    "name": "string — 商城名称",
+    "description": "string — 商城描述，简要说明布局特点",
     "outline": {
+      // 商城整体轮廓，中心在原点 (0,0)，vertices 按顺时针排列
       "vertices": [{"x": "float", "y": "float"}, ...],
-      "isClosed": true
+      "isClosed": true  // 始终为 true，表示闭合多边形
     },
     "floors": [
+      // ⚠️ floors 数组的长度就是商城的楼层数量！
+      // 用户要求 N 层，这里就必须有 N 个元素。
+      // 例如用户说"7层商城"，floors 数组必须包含 7 个对象。
       {
-        "name": "string (如 1F)",
-        "level": "int (1 开始)",
-        "height": "float (默认 4.0)",
-        "inheritOutline": true,
+        "name": "string — 楼层显示名称，如 '1F'、'2F'、'B1'",
+        "level": "int — 楼层编号，从 1 开始递增（1, 2, 3, ...）",
+        "height": "float — 该楼层层高（米），通常 4.0",
+        "inheritOutline": true,  // 始终为 true，表示继承商城轮廓
         "areas": [
+          // 该楼层的所有区域列表，包括店铺、走廊、电梯等一切空间
           {
-            "name": "string",
-            "type": "string (见类型列表)",
+            "name": "string — 区域名称，使用品牌名或功能名（如 'Nike'、'主走廊'、'中庭电梯'）",
+            "type": "string — 区域功能类型，见下方类型列表",
             "shape": {
+              // 区域的多边形轮廓，坐标系与商城 outline 一致
+              // 必须在商城 outline 范围内，且不与同楼层其他区域重叠
               "vertices": [{"x": "float", "y": "float"}, ...],
               "isClosed": true
             },
-            "color": "string (#hex)",
-            "properties": {}
+            "color": "string — 颜色 hex 值，见下方颜色规则"
           }
         ]
       }
     ],
     "settings": {
+      // 前端渲染设置，直接使用以下固定值，不要修改
       "gridSize": 1,
       "snapToGrid": true,
       "defaultFloorHeight": 4,
       "unit": "meters",
-      "display": {
-        "showGrid": true,
-        "showRuler": true,
-        "showAreaLabels": true
-      }
+      "display": { "showGrid": true, "showRuler": true, "showAreaLabels": true }
     }
   }
   ```
+
+  ## 关键规则
+
+  - floors 数组长度 = 楼层数。用户说几层就生成几个 floor 对象，不能多也不能少。
+  - 每个 floor 必须有自己的 areas 数组，不同楼层的区域布局可以不同。
+  - settings 是固定值，直接复制上面的内容即可。
 
   ## 区域类型（type 字段可选值）
 

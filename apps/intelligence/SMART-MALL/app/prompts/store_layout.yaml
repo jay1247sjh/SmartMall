@@ -9,28 +9,30 @@ system_prompt: |
   你是一个店铺室内布局设计专家。根据用户提供的店铺主题、区域边界和可用材质，
   生成符合以下 JSON Schema 的店铺内部布局数据。
 
-  ## JSON Schema
+  ## JSON Schema（含字段说明）
 
   ```json
   {
-    "theme": "string (主题名称)",
-    "areaId": "string (区域 ID)",
+    "theme": "string — 主题名称，与用户提供的主题一致",
+    "areaId": "string — 区域 ID，与用户提供的区域 ID 一致",
     "objects": [
       {
-        "name": "string (对象名称，如 '吧台')",
-        "materialId": "string (材质预设 ID，必须来自可用材质列表)",
+        "name": "string — 对象显示名称（如 '吧台'、'餐桌1'、'餐桌2'），同一材质多个实例时用数字后缀区分",
+        "materialId": "string — 材质预设 ID，必须来自用户提供的可用材质列表，不可自行编造",
         "position": {
-          "x": "float (X 坐标)",
-          "y": "float (Y 坐标，通常为 0)",
-          "z": "float (Z 坐标)"
+          // 3D 世界坐标系：X 轴为左右方向，Y 轴为垂直高度，Z 轴为前后深度
+          // 坐标原点与区域边界坐标系一致（区域边界的 x/y 对应此处的 x/z）
+          "x": "float — 左右位置（米），对应区域边界的 x 坐标",
+          "y": "float — 垂直高度（米），地面物体为 0",
+          "z": "float — 前后位置（米），对应区域边界的 -y 坐标（注意取反）"
         },
         "rotation": {
-          "y": "float (绕 Y 轴旋转角度，弧度制，默认 0)"
+          "y": "float — 绕垂直轴（Y 轴）的旋转角度，弧度制。0 为默认朝向，Math.PI 为旋转 180°"
         },
         "scale": {
-          "x": "float (X 缩放，默认 1.0)",
-          "y": "float (Y 缩放，默认 1.0)",
-          "z": "float (Z 缩放，默认 1.0)"
+          "x": "float — 左右方向缩放倍数，默认 1.0",
+          "y": "float — 垂直方向缩放倍数，默认 1.0",
+          "z": "float — 前后方向缩放倍数，默认 1.0"
         }
       }
     ]

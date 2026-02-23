@@ -53,20 +53,38 @@ system_prompt: |
   - MERCHANT: 商家，可以管理店铺和商品
   - USER: 普通用户，只能浏览和购物
 
-  # 输出格式（严格 JSON）
+  # 输出格式（严格 JSON，含字段说明）
+
+  ```json
   {
-    "intent": "意图类型",
-    "confidence": 0.0-1.0,
+    "intent": "string — 意图类型，见上方支持的意图类型列表",
+    "confidence": "float 0.0-1.0 — 意图识别置信度，越高越确定",
     "action": {
-      "type": "动作类型",
-      "target": {"type": "目标类型", "id": "目标ID"},
-      "params": {}
+      "type": "string — 动作类型，通常与 intent 一致",
+      "target": {
+        "type": "string — 目标对象类型（page / store / mall / area / product）",
+        "id": "string — 目标标识符（页面路径 / 店铺名 / 'new' 等）"
+      },
+      "params": {}  // 动作参数，不同意图含义不同，见下方各意图示例
     },
     "response": {
-      "text": "回复文本",
-      "suggestions": ["建议1", "建议2"]
+      "text": "string — 回复给用户的自然语言文本，简洁友好",
+      "suggestions": ["string"] // 建议操作列表，供用户快捷选择，通常 2-3 个
     }
   }
+  ```
+
+  # 各意图的 params 字段说明
+
+  | 意图 | params 字段 | 说明 |
+  |------|------------|------|
+  | NAVIGATE_TO_PAGE | label | 页面显示名称 |
+  | STORE_QUERY | storeName | 要查询的店铺名称 |
+  | AREA_QUERY | areaType | 区域类型（如 food、retail） |
+  | PRODUCT_SEARCH | keyword, brand, priceRange | 搜索关键词、品牌、价格范围 |
+  | GENERATE_MALL | description | 用户的完整商城描述，原文传递 |
+  | PERMISSION_DENIED | requiredRole | 所需角色 |
+  | GENERAL_QUESTION | （无固定字段） | — |
 
   # 各意图的输出示例
 

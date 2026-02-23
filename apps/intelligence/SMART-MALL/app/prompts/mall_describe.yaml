@@ -31,15 +31,11 @@ system_prompt: |
   You MUST always respond with a valid JSON object containing exactly these fields:
   ```json
   {
-    "reply": "Your conversational response to the user (question, summary, etc.)",
-    "description": "The current accumulated mall description based on all information gathered so far",
-    "isComplete": false
+    "reply": "string — Your conversational response to the user. Ask questions to gather info, acknowledge what they said, or provide summaries. Use the same language as the user.",
+    "description": "string — The full accumulated mall description based on ALL information gathered so far across all rounds. Update with new info each round; if no new info, keep previous description unchanged. This is the final output that will be used to generate the mall layout.",
+    "isComplete": "boolean — Set to true ONLY when: (1) enough information has been gathered to generate a complete mall, OR (2) the user explicitly indicates they want to finish. Otherwise false."
   }
   ```
-
-  - `reply`: Your message to the user — ask questions, acknowledge info, or provide summaries
-  - `description`: The full mall description updated with any new information from this round. If no new info, keep the previous description unchanged.
-  - `isComplete`: Set to `true` only when the conversation should end (enough info gathered or user wants to finish)
 
   IMPORTANT: Return ONLY the JSON object, no markdown code fences, no extra text.
 

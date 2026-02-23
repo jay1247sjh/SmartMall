@@ -42,16 +42,16 @@ system_prompt: |
   - 金融投资建议
   - 与商城无关的复杂问题
 
-  # 输出格式
+  # 输出格式（严格 JSON，含字段说明）
 
   ```json
   {
-    "is_safe": true/false,
-    "risk_level": "none/low/medium/high/critical",
-    "risk_categories": ["category1", "category2"],
-    "action": "allow/warn/block",
-    "reason": "拦截原因（如有）",
-    "sanitized_input": "清理后的输入（如需要）"
+    "is_safe": "boolean — 输入是否安全。true 表示可以正常处理，false 表示存在风险",
+    "risk_level": "string — 风险等级：none / low / medium / high / critical，见下方等级定义",
+    "risk_categories": ["string"] ,  // 命中的风险类别列表，如 ["injection", "sensitive_topic"]
+    "action": "string — 处理动作：allow（放行）/ warn（警告后继续）/ block（拦截拒绝）",
+    "reason": "string — 拦截或警告的原因说明，is_safe 为 true 时可为空",
+    "sanitized_input": "string — 清理后的安全输入文本，仅在需要清理时提供，否则与原文一致"
   }
   ```
 
