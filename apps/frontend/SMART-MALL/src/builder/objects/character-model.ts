@@ -372,6 +372,71 @@ export class CharacterController {
   }
   
   /**
+   * 基于墙面法线的滑动
+   * 找到最近的碰撞墙壁，将移动向量投影到墙壁切线方向
+   */
+  private slideAlongWall(
+    curX: number, curZ: number,
+    moveX: number, moveZ: number
+  ): { x: number; z: number } | null {
+    // 将 3D 坐标转换为 2D（x, -z）
+    const pos2D: Point2D = { x: curX, y: -curZ }
+    const target2D: Point2D = { x: curX + moveX, y: -(curZ + moveZ) }
+    
+    // 找到最近的墙壁线段
+    let minDist = Infinity
+    let nearestSeg: { start: Point2D; end: Point2D } | null = null
+    
+    for (const seg of this.wallSegments) {
+      const dist = this.pointToSegmentDistance(target2D, seg.start, seg.end)
+      if (dist < minDist) {
+        minDist = dist
+        nearestSeg = seg
+      }
+    }
+    
+    // 也检查边界多边形的边
+    if (this.boundary) {
+      const verts = this.boundary.vertices
+      for (let i = 0; i < verts.length; i++) {
+        const start = verts[i]!
+        const end = verts[(i + 1) % verts.length]!
+        const dist = this.pointToSegmentDistance(target2D, start, end)
+        if (dist < minDist) {
+          minDist = dist
+          nearestSeg = { start, end }
+        }
+      }
+    }
+    
+    if (!nearestSeg || minDist > this.collisionRadius * 3) return null
+    
+    // 计算墙壁切线方向
+    const wallDx = nearestSeg.end.x - nearestSeg.start.x
+    const wallDy = nearestSeg.end.y - nearestSeg.start.y
+    const wallLen = Math.sqrt(wallDx * wallDx + wallDy * wallDy)
+    if (wallLen < 0.001) return null
+    
+    const tangentX = wallDx / wallLen
+    const tangentY = wallDy / wallLen
+    
+    // 移动向量在 2D 空间中
+    const move2Dx = moveX
+    const move2Dy = -moveZ  // 3D z → 2D -y
+    
+    // 投影到切线方向
+    const dot = move2Dx * tangentX + move2Dy * tangentY
+    const slideX = dot * tangentX
+    const slideY = dot * tangentY
+    
+    // 转换回 3D 坐标
+    return {
+      x: curX + slideX,
+      z: curZ - slideY,  // 2D y → 3D -z
+    }
+  }
+  
+  /**
    * 检查位置是否与墙壁线段碰撞
    */
   private isCollidingWithWalls(x: number, z: number): boolean {
@@ -503,34 +568,51 @@ export class CharacterController {
     
     // 碰撞检测
     if (this.boundary) {
-      const checkPoints = [
-        { x: newX, z: newZ },
-        { x: newX + this.collisionRadius, z: newZ },
-        { x: newX - this.collisionRadius, z: newZ },
-        { x: newX, z: newZ + this.collisionRadius },
-        { x: newX, z: newZ - this.collisionRadius },
-      ]
+      const r = this.collisionRadius
       
-      let canMove = true
-      for (const pt of checkPoints) {
-        if (!this.isInsideBoundary(pt.x, pt.z)) {
-          canMove = false
-          break
-        }
+      // 5 个检查点：中心 + 四个方向
+      const allClear = (x: number, z: number): boolean => {
+        const pts = [
+          { x, z },
+          { x: x + r, z },
+          { x: x - r, z },
+          { x, z: z + r },
+          { x, z: z - r },
+        ]
+        return pts.every(pt => this.isInsideBoundary(pt.x, pt.z))
       }
       
-      if (canMove) {
+      if (allClear(newX, newZ)) {
+        // 完整移动可行
         this.character.position.x = newX
         this.character.position.z = newZ
+      } else if (this.wallSegments.length > 0) {
+        // 基于墙面法线的滑动
+        const slideResult = this.slideAlongWall(currentPos.x, currentPos.z, movement.x, movement.z)
+        if (slideResult && allClear(slideResult.x, slideResult.z)) {
+          this.character.position.x = slideResult.x
+          this.character.position.z = slideResult.z
+        } else {
+          // 法线滑动失败，回退到轴分解滑动（完整 5 点检测）
+          const canMoveX = allClear(newX, currentPos.z)
+          const canMoveZ = allClear(currentPos.x, newZ)
+          
+          if (canMoveX) {
+            this.character.position.x = newX
+          } else {
+            this.velocity.x = 0
+          }
+          
+          if (canMoveZ) {
+            this.character.position.z = newZ
+          } else {
+            this.velocity.z = 0
+          }
+        }
       } else {
-        // 尝试滑动
-        const canMoveX = this.isInsideBoundary(newX, currentPos.z) &&
-          this.isInsideBoundary(newX + this.collisionRadius, currentPos.z) &&
-          this.isInsideBoundary(newX - this.collisionRadius, currentPos.z)
-        
-        const canMoveZ = this.isInsideBoundary(currentPos.x, newZ) &&
-          this.isInsideBoundary(currentPos.x, newZ + this.collisionRadius) &&
-          this.isInsideBoundary(currentPos.x, newZ - this.collisionRadius)
+        // 无墙壁线段数据，使用轴分解滑动（完整 5 点检测）
+        const canMoveX = allClear(newX, currentPos.z)
+        const canMoveZ = allClear(currentPos.x, newZ)
         
         if (canMoveX) {
           this.character.position.x = newX
