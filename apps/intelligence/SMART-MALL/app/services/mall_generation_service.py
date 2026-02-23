@@ -2,13 +2,14 @@
 商城布局 LLM 生成服务
 
 通过 LangChain LCEL Chain 生成符合 MallLayoutData Schema 的商城布局数据。
+LLM 完全自主决定布局，后端只做格式校验和重叠检测。
 LLM 失败时自动降级到现有规则生成器。
 """
 
 import json
 import re
 import logging
-from typing import Tuple
+from typing import List, Tuple
 
 from langchain_core.output_parsers import StrOutputParser
 from langchain_core.prompts import ChatPromptTemplate
@@ -16,9 +17,41 @@ from langchain_core.prompts import ChatPromptTemplate
 from app.core.config import settings
 from app.core.llm_provider import get_llm
 from app.core.prompt_loader import PromptLoader
-from app.api.mall_generator import MallLayoutData, rule_based_generate
+from app.api.mall_generator import MallLayoutData, AreaData, rule_based_generate
 
 logger = logging.getLogger(__name__)
+
+
+# ============================================================
+# 几何工具 — 重叠检测（SAT 分离轴定理简化版：AABB）
+# ============================================================
+
+def _get_aabb(area: AreaData) -> Tuple[float, float, float, float]:
+    """获取区域的轴对齐包围盒 (min_x, min_y, max_x, max_y)"""
+    xs = [v.x for v in area.shape.vertices]
+    ys = [v.y for v in area.shape.vertices]
+    return min(xs), min(ys), max(xs), max(ys)
+
+
+def _aabb_overlap(a: Tuple[float, float, float, float],
+                  b: Tuple[float, float, float, float],
+                  tolerance: float = 0.1) -> bool:
+    """检查两个 AABB 是否重叠（允许 tolerance 的边缘接触）"""
+    return (a[0] < b[2] - tolerance and a[2] > b[0] + tolerance and
+            a[1] < b[3] - tolerance and a[3] > b[1] + tolerance)
+
+
+def check_floor_overlaps(areas: List[AreaData]) -> List[str]:
+    """
+    检查同一楼层内区域是否重叠。
+    返回重叠描述列表，空列表表示无重叠。
+    """
+    overlaps = []
+    for i in range(len(areas)):
+        for j in range(i + 1, len(areas)):
+            if _aabb_overlap(_get_aabb(areas[i]), _get_aabb(areas[j])):
+                overlaps.append(f"'{areas[i].name}' 与 '{areas[j].name}' 重叠")
+    return overlaps
 
 
 class MallGenerationService:
@@ -69,9 +102,17 @@ class MallGenerationService:
         # 调用 Chain
         result = await chain.ainvoke({"user_input": user_prompt})
 
-        # 提取并校验 JSON
+        # 提取并校验 JSON（格式校验）
         raw_json = self._extract_json(result)
         layout = MallLayoutData.model_validate(raw_json)
+
+        # 重叠检测
+        for floor in layout.floors:
+            overlaps = check_floor_overlaps(floor.areas)
+            if overlaps:
+                overlap_detail = "; ".join(overlaps)
+                logger.warning(f"Floor {floor.name} has overlapping areas: {overlap_detail}")
+                raise ValueError(f"楼层 {floor.name} 存在区域重叠: {overlap_detail}")
 
         logger.info(
             f"LLM generated mall layout: {layout.name}, "
