@@ -18,6 +18,13 @@ export type SupportedLocale = 'en' | 'zh-CN' | 'zh-TW' | 'ja' | 'ko' | 'es' | 'f
 /** 渲染质量 */
 export type RenderQuality = 'low' | 'medium' | 'high'
 
+/** 角色模型名称类型 */
+export type CharacterModelName =
+  | 'character-male-a' | 'character-male-b' | 'character-male-c'
+  | 'character-male-d' | 'character-male-e' | 'character-male-f'
+  | 'character-female-a' | 'character-female-b' | 'character-female-c'
+  | 'character-female-d' | 'character-female-e' | 'character-female-f'
+
 /** Toast 时长 */
 export type ToastDuration = 'short' | 'medium' | 'long'
 
@@ -31,6 +38,7 @@ export interface SettingsState {
   aiAssistantEnabled: boolean
   notificationsEnabled: boolean
   toastDuration: ToastDuration
+  characterModel: CharacterModelName
 }
 
 // ============================================================================
@@ -47,6 +55,7 @@ export const DEFAULT_SETTINGS: SettingsState = {
   aiAssistantEnabled: true,
   notificationsEnabled: true,
   toastDuration: 'medium',
+  characterModel: 'character-male-a',
 }
 
 /** Toast 时长映射（毫秒） */
@@ -85,4 +94,44 @@ export const LOCALE_DISPLAY_NAMES: Record<SupportedLocale, string> = {
   'es': 'Español',
   'fr': 'Français',
   'de': 'Deutsch',
+}
+
+// ============================================================================
+// 角色模型常量
+// ============================================================================
+
+/** 角色模型选项（按性别分组） */
+export const CHARACTER_MODEL_GROUPS: { label: string; i18nKey: string; models: CharacterModelName[] }[] = [
+  {
+    label: 'Male',
+    i18nKey: 'settings.characterMale',
+    models: [
+      'character-male-a', 'character-male-b', 'character-male-c',
+      'character-male-d', 'character-male-e', 'character-male-f',
+    ],
+  },
+  {
+    label: 'Female',
+    i18nKey: 'settings.characterFemale',
+    models: [
+      'character-female-a', 'character-female-b', 'character-female-c',
+      'character-female-d', 'character-female-e', 'character-female-f',
+    ],
+  },
+]
+
+/** 角色模型显示名称映射 */
+export const CHARACTER_MODEL_DISPLAY_NAMES: Record<CharacterModelName, string> = {
+  'character-male-a': 'Male A',
+  'character-male-b': 'Male B',
+  'character-male-c': 'Male C',
+  'character-male-d': 'Male D',
+  'character-male-e': 'Male E',
+  'character-male-f': 'Male F',
+  'character-female-a': 'Female A',
+  'character-female-b': 'Female B',
+  'character-female-c': 'Female C',
+  'character-female-d': 'Female D',
+  'character-female-e': 'Female E',
+  'character-female-f': 'Female F',
 }

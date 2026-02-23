@@ -131,6 +131,57 @@
               </Transition>
             </div>
 
+            <!-- Character Model (hover cascade) -->
+            <div
+              class="menu-item-wrap"
+              @mouseenter="openSubmenu('character')"
+              @mouseleave="scheduleCloseSubmenu('character')"
+            >
+              <div class="menu-item">
+                <svg class="menu-item__icon" width="16" height="16" viewBox="0 0 16 16" fill="none">
+                  <circle cx="8" cy="4.5" r="2.5" stroke="currentColor" stroke-width="1.2" />
+                  <path d="M3 14c0-2.8 2.2-5 5-5s5 2.2 5 5" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" />
+                </svg>
+                <span class="menu-item__label">{{ t('settings.characterModel') }}</span>
+                <svg class="menu-item__arrow" width="12" height="12" viewBox="0 0 12 12" fill="none">
+                  <path d="M4.5 2.5L8 6L4.5 9.5" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round" />
+                </svg>
+              </div>
+              <!-- Character model submenu -->
+              <Transition name="submenu-cascade">
+                <div
+                  v-if="hoveredSubmenu === 'character'"
+                  class="cascade-submenu cascade-submenu--character"
+                  @mouseenter="cancelCloseSubmenu"
+                  @mouseleave="scheduleCloseSubmenu('character')"
+                >
+                  <template v-for="(group, gi) in CHARACTER_MODEL_GROUPS" :key="group.label">
+                    <div v-if="gi > 0" class="cascade-submenu__divider" />
+                    <div class="cascade-submenu__group-label">{{ t(group.i18nKey) }}</div>
+                    <div class="character-grid">
+                      <button
+                        v-for="model in group.models"
+                        :key="model"
+                        class="character-card"
+                        :class="{ active: settingsStore.characterModel === model }"
+                        :title="CHARACTER_MODEL_DISPLAY_NAMES[model]"
+                        @click="settingsStore.setCharacterModel(model)"
+                      >
+                        <img
+                          :src="getThumbnail(model) || `/images/characters/${model}.svg`"
+                          :alt="CHARACTER_MODEL_DISPLAY_NAMES[model]"
+                          class="character-card__thumb"
+                          loading="lazy"
+                          @error="$event.target.style.display='none'"
+                        />
+                        <span class="character-card__name">{{ CHARACTER_MODEL_DISPLAY_NAMES[model].split(' ')[1] }}</span>
+                      </button>
+                    </div>
+                  </template>
+                </div>
+              </Transition>
+            </div>
+
             <!-- 3D Scene (hover cascade) -->
             <div
               class="menu-item-wrap"
@@ -323,7 +374,11 @@ import {
   RENDER_QUALITY_OPTIONS,
   TOAST_DURATION_OPTIONS,
   LOCALE_DISPLAY_NAMES,
+  CHARACTER_MODEL_GROUPS,
+  CHARACTER_MODEL_DISPLAY_NAMES,
 } from '@/types/settings'
+import type { CharacterModelName } from '@/types/settings'
+import { useCharacterThumbnails } from '@/composables/useCharacterThumbnails'
 
 interface Props {
   inline?: boolean
@@ -350,6 +405,11 @@ const router = useRouter()
 const settingsStore = useSettingsStore()
 const userStore = useUserStore()
 
+// 角色缩略图：运行时渲染 GLB → dataURL，缓存到 localStorage
+const { generate: generateThumbs, getThumbnail } = useCharacterThumbnails()
+const allModels = CHARACTER_MODEL_GROUPS.flatMap(g => g.models) as CharacterModelName[]
+generateThumbs(allModels)
+
 const username = computed(() => userStore.currentUser?.username ?? '')
 const avatarLetter = computed(() => username.value.charAt(0).toUpperCase() || 'U')
 const roleKey = computed(() => (userStore.role || 'USER').toLowerCase())
@@ -359,7 +419,7 @@ const panelRef = ref<HTMLElement | null>(null)
 const triggerRef = ref<HTMLElement | null>(null)
 
 // Hover cascade submenu state
-type SubmenuKey = 'theme' | 'language' | 'scene' | 'notifications' | 'about'
+type SubmenuKey = 'theme' | 'language' | 'character' | 'scene' | 'notifications' | 'about'
 const hoveredSubmenu = ref<SubmenuKey | null>(null)
 let closeTimer: ReturnType<typeof setTimeout> | null = null
 
@@ -369,6 +429,30 @@ function openSubmenu(key: SubmenuKey) {
     closeTimer = null
   }
   hoveredSubmenu.value = key
+  // 下一帧检测子菜单是否溢出屏幕边界
+  nextTick(() => {
+    const subs = panelRef.value?.querySelectorAll('.cascade-submenu') as NodeListOf<HTMLElement> | undefined
+    if (!subs) return
+    subs.forEach((el) => {
+      // 重置之前的调整
+      el.style.top = ''
+      el.classList.remove('cascade-submenu--flip')
+
+      const rect = el.getBoundingClientRect()
+      const margin = 8
+
+      // 水平溢出：翻转到左侧
+      if (rect.right > window.innerWidth - margin) {
+        el.classList.add('cascade-submenu--flip')
+      }
+
+      // 垂直溢出：向上偏移，使底部不超出视口
+      if (rect.bottom > window.innerHeight - margin) {
+        const overflow = rect.bottom - (window.innerHeight - margin)
+        el.style.top = `${-overflow}px`
+      }
+    })
+  })
 }
 
 function scheduleCloseSubmenu(_key: SubmenuKey) {
@@ -599,12 +683,42 @@ onBeforeUnmount(() => {
   left: calc(100% + 4px);
   top: 0;
   min-width: 180px;
+  max-height: calc(100vh - 32px);
+  overflow-y: auto;
   border: 1px solid var(--border-subtle);
   background: var(--bg-elevated);
   border-radius: var(--radius-xl);
   padding: 6px 0;
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
   z-index: 10001;
+
+  &::-webkit-scrollbar {
+    width: 4px;
+  }
+
+  &::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  &::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 2px;
+
+    &:hover {
+      background: rgba(255, 255, 255, 0.2);
+    }
+  }
+
+  &--flip {
+    left: auto;
+    right: calc(100% + 4px);
+  }
+
+  // Character submenu: wider to fit grid
+  &--character {
+    min-width: 240px;
+    width: 240px;
+  }
 
   &__item {
     display: flex;
@@ -645,6 +759,58 @@ onBeforeUnmount(() => {
     height: 1px;
     margin: 4px 10px;
     background: var(--border-subtle);
+  }
+}
+
+// ============================================================================
+// Character Grid (thumbnail cards)
+// ============================================================================
+.character-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 6px;
+  padding: 4px 10px 8px;
+}
+
+.character-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 4px;
+  border: 1px solid transparent;
+  background: transparent;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.12s ease;
+
+  &:hover {
+    background: var(--bg-tertiary);
+    border-color: var(--border-subtle);
+  }
+
+  &.active {
+    background: rgba(var(--accent-primary-rgb), 0.1);
+    border-color: var(--accent-primary);
+  }
+
+  &__thumb {
+    width: 48px;
+    height: 48px;
+    border-radius: 6px;
+    object-fit: cover;
+    background: var(--bg-tertiary);
+  }
+
+  &__name {
+    font-size: 11px;
+    color: var(--text-secondary);
+    line-height: 1;
+  }
+
+  &.active &__name {
+    color: var(--accent-primary);
+    font-weight: 500;
   }
 }
 
@@ -769,7 +935,7 @@ onBeforeUnmount(() => {
   transform: translateY(6px) scale(0.97);
 }
 
-// Cascade submenu slide-in from left
+// Cascade submenu slide-in from left (or right when flipped)
 .submenu-cascade-enter-active,
 .submenu-cascade-leave-active {
   transition: opacity 0.15s ease, transform 0.15s ease;
@@ -779,6 +945,13 @@ onBeforeUnmount(() => {
 .submenu-cascade-leave-to {
   opacity: 0;
   transform: translateX(-6px);
+}
+
+.cascade-submenu--flip {
+  .submenu-cascade-enter-from,
+  .submenu-cascade-leave-to {
+    transform: translateX(6px);
+  }
 }
 </style>
 

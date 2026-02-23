@@ -22,6 +22,7 @@ import type {
   RenderQuality,
   ToastDuration,
   SettingsState,
+  CharacterModelName,
 } from '@/types/settings'
 import {
   DEFAULT_SETTINGS,
@@ -96,6 +97,7 @@ export const useSettingsStore = defineStore('settings', () => {
   const aiAssistantEnabled = ref(DEFAULT_SETTINGS.aiAssistantEnabled)
   const notificationsEnabled = ref(DEFAULT_SETTINGS.notificationsEnabled)
   const toastDuration = ref<ToastDuration>(DEFAULT_SETTINGS.toastDuration)
+  const characterModel = ref<CharacterModelName>(DEFAULT_SETTINGS.characterModel)
 
   /** Element Plus 语言包（动态切换，由 setLanguage 更新） */
   const elementPlusLocale: Ref<Language> = ref(en)
@@ -115,6 +117,7 @@ export const useSettingsStore = defineStore('settings', () => {
       aiAssistantEnabled: aiAssistantEnabled.value,
       notificationsEnabled: notificationsEnabled.value,
       toastDuration: toastDuration.value,
+      characterModel: characterModel.value,
     }
   }
 
@@ -128,6 +131,7 @@ export const useSettingsStore = defineStore('settings', () => {
     aiAssistantEnabled.value = state.aiAssistantEnabled
     notificationsEnabled.value = state.notificationsEnabled
     toastDuration.value = state.toastDuration
+    characterModel.value = state.characterModel
   }
 
   /** 将主题和语言应用到 DOM */
@@ -228,6 +232,12 @@ export const useSettingsStore = defineStore('settings', () => {
     persist()
   }
 
+  /** 设置漫游角色模型 */
+  function setCharacterModel(model: CharacterModelName): void {
+    characterModel.value = model
+    persist()
+  }
+
   /** 从 localStorage 初始化设置 */
   async function initFromStorage(): Promise<void> {
     const stored = loadFromStorage()
@@ -267,6 +277,7 @@ export const useSettingsStore = defineStore('settings', () => {
     aiAssistantEnabled,
     notificationsEnabled,
     toastDuration,
+    characterModel,
     elementPlusLocale,
 
     // Actions
@@ -278,6 +289,7 @@ export const useSettingsStore = defineStore('settings', () => {
     toggleAiAssistant,
     setNotificationsEnabled,
     setToastDuration,
+    setCharacterModel,
     initFromStorage,
     resetToDefaults,
   }
