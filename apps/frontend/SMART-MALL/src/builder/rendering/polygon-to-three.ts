@@ -6,8 +6,8 @@
  */
 
 import * as THREE from 'three'
-import type { Point2D, Polygon } from '../geometry/types'
-import { calculateArea, getBoundingBox } from '../geometry/polygon'
+import type { Polygon } from '../geometry/types'
+import { getBoundingBox } from '../geometry/polygon'
 
 // ============================================================================
 // 类型定义
@@ -157,14 +157,16 @@ export function createPolygonMesh3D(
 
 /**
  * 创建多边形的边框线
+ * 使用 Shape 路径 + rotation.x = -PI/2，与 mesh 系列保持一致的坐标变换方式
  */
 export function createPolygonOutline(
   polygon: Polygon,
   color: number = 0xffffff,
   lineWidth: number = 1
 ): THREE.Line {
+  // 在 XY 平面构建路径（与 polygonToShape 一致）
   const points: THREE.Vector3[] = polygon.vertices.map(
-    v => new THREE.Vector3(v.x, 0, -v.y)  // 注意：Y 坐标取反以匹配 ExtrudeGeometry 的旋转
+    v => new THREE.Vector3(v.x, v.y, 0)
   )
   
   // 闭合路径
@@ -178,7 +180,10 @@ export function createPolygonOutline(
     linewidth: lineWidth,
   })
   
-  return new THREE.Line(geometry, material)
+  const line = new THREE.Line(geometry, material)
+  line.rotation.x = -Math.PI / 2  // 与 mesh 统一：XY 平面旋转到 XZ 平面
+  
+  return line
 }
 
 /**
@@ -244,6 +249,7 @@ function createMaterial(options: MeshOptions): THREE.MeshStandardMaterial {
 /**
  * 创建多边形的发光边框管道
  * 使用 TubeGeometry 沿轮廓挤出，配合 emissive 实现发光效果
+ * 在 XY 平面构建路径 + rotation.x = -PI/2，与 mesh 系列保持一致
  */
 export function createGlowOutline(
   polygon: Polygon,
@@ -261,9 +267,9 @@ export function createGlowOutline(
   const radius = options.radius ?? 0.06
   const opacity = options.opacity ?? 0.9
   
-  // 构建 3D 路径点（在 XZ 平面上）
+  // 在 XY 平面构建路径（与 polygonToShape 一致）
   const pathPoints: THREE.Vector3[] = polygon.vertices.map(
-    v => new THREE.Vector3(v.x, 0, -v.y)
+    v => new THREE.Vector3(v.x, v.y, 0)
   )
   // 闭合
   if (polygon.isClosed && pathPoints.length > 0) {
@@ -283,7 +289,10 @@ export function createGlowOutline(
     metalness: 0.1,
   })
   
-  return new THREE.Mesh(tubeGeometry, tubeMaterial)
+  const mesh = new THREE.Mesh(tubeGeometry, tubeMaterial)
+  mesh.rotation.x = -Math.PI / 2  // 与 mesh 统一：XY 平面旋转到 XZ 平面
+  
+  return mesh
 }
 
 /**
