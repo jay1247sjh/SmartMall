@@ -61,3 +61,22 @@ export type {
   AddFloorDialogProps,
   AddFloorDialogEmits,
 } from './AddFloorDialog.vue'
+
+export { default as CommandPalette } from './CommandPalette.vue'
+export type {
+  CommandPaletteProps,
+  CommandPaletteEmits,
+} from './CommandPalette.vue'
+
+export { default as BuilderInlineInput } from './BuilderInlineInput.vue'
+export type {
+  BuilderInlineInputProps,
+  BuilderInlineInputEmits,
+} from './BuilderInlineInput.vue'
+
+export { default as BuilderBottomDrawer } from './BuilderBottomDrawer.vue'
+export type {
+  BuilderBottomDrawerProps,
+  BuilderBottomDrawerEmits,
+} from './BuilderBottomDrawer.vue'
+

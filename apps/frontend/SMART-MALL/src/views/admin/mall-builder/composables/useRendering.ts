@@ -30,6 +30,7 @@ import {
   createInfoBoardModel,
   createClockModel,
   createFireExtinguisherModel,
+  getMaterialPresetByAreaType,
 } from '@/builder'
 import { AreaType, AREA_TYPE_COLORS } from '@smart-mall/shared-types'
 
@@ -350,6 +351,10 @@ export function useRendering() {
       const wallThickness = 0.1
       const uniformColor = 0x2a2a3a
 
+      // 从预设获取材质参数
+      const preset = getMaterialPresetByAreaType(area.type)
+      const matParams = preset?.materialParams
+
       const mesh = createPolygonMesh3D(
         area.shape,
         { depth: 0.1, bevelEnabled: false },
@@ -357,8 +362,14 @@ export function useRendering() {
           color: isOverlapping ? 0xff0000 : uniformColor,
           opacity: isSelected ? 0.9 : 0.7,
           transparent: true,
-          emissive: isSelected ? uniformColor : 0x000000,
-          emissiveIntensity: isSelected ? 0.3 : 0,
+          emissive: isSelected
+            ? uniformColor
+            : matParams?.emissive
+              ? parseInt(matParams.emissive.replace('#', ''), 16)
+              : 0x000000,
+          emissiveIntensity: isSelected ? 0.3 : (matParams?.emissiveIntensity ?? 0),
+          roughness: matParams?.roughness,
+          metalness: matParams?.metalness,
         }
       )
       mesh.position.y = yPosition
@@ -497,7 +508,6 @@ export function useRendering() {
     if (isRoamingMode && currentFloorId) {
       const roamingEnv = createRoamingEnvironment(project, {
         currentFloorId: currentFloorId,
-        wallHeight: 6,
         wallColor: 0xf0f0f0,
         floorColor: 0xf5f5f5,
         ceilingColor: 0xfafafa,

@@ -3,13 +3,7 @@
  * FloorPanel 组件
  *
  * 商城建模器楼层管理侧边栏，用于显示和管理楼层列表。
- *
- * 功能：
- * - 显示楼层列表：展示所有楼层及其信息
- * - 楼层选择：点击楼层切换当前编辑楼层
- * - 添加楼层：点击添加按钮创建新楼层
- * - 删除楼层：删除指定楼层（至少保留一个楼层）
- * - 面板折叠：支持折叠/展开面板
+ * 折叠态采用 Activity Bar 风格的垂直图标条。
  *
  * @example
  * ```vue
@@ -24,17 +18,17 @@
  * ```
  */
 import type { FloorDefinition } from '@/builder'
+import { useI18n } from 'vue-i18n'
+
+const { t } = useI18n()
 
 // ============================================================================
 // 类型定义
 // ============================================================================
 
 export interface FloorPanelProps {
-  /** 楼层列表 */
   floors: FloorDefinition[]
-  /** 当前选中的楼层 ID */
   currentFloorId: string
-  /** 面板是否折叠 */
   collapsed: boolean
 }
 
@@ -61,130 +55,95 @@ const emit = defineEmits<FloorPanelEmits>()
 // 方法
 // ============================================================================
 
-/**
- * 切换面板折叠状态
- */
 function toggleCollapsed() {
   emit('update:collapsed', !props.collapsed)
 }
 
-/**
- * 选择楼层
- * @param floorId 楼层 ID
- */
 function handleSelectFloor(floorId: string) {
   emit('select', floorId)
 }
 
-/**
- * 添加楼层
- */
 function handleAddFloor() {
   emit('add')
 }
 
-/**
- * 删除楼层
- * @param floorId 楼层 ID
- */
 function handleDeleteFloor(floorId: string) {
   emit('delete', floorId)
 }
 
-/**
- * 检查楼层是否为当前选中楼层
- * @param floorId 楼层 ID
- */
 function isCurrentFloor(floorId: string): boolean {
   return floorId === props.currentFloorId
 }
 
-/**
- * 检查是否可以删除楼层（至少保留一个楼层）
- */
 function canDeleteFloor(): boolean {
   return props.floors.length > 1
-}
-
-/**
- * 获取折叠按钮图标路径
- */
-function getCollapseIconPath(): string {
-  return props.collapsed ? 'M8 4l6 6-6 6' : 'M12 4l-6 6 6 6'
 }
 </script>
 
 <template>
   <aside :class="['floor-panel', { collapsed }]">
-    <!-- 面板头部 -->
-    <div class="panel-header">
-      <h3>楼层</h3>
-      <div class="panel-actions">
-        <!-- 添加楼层按钮 -->
-        <button 
-          class="btn-icon" 
-          title="添加楼层"
-          @click="handleAddFloor"
-        >
-          <svg viewBox="0 0 20 20" fill="none">
-            <path 
-              d="M10 4v12M4 10h12" 
-              stroke="currentColor" 
-              stroke-width="1.5" 
-              stroke-linecap="round"
-            />
-          </svg>
-        </button>
-        <!-- 折叠按钮 -->
-        <button 
-          class="btn-icon" 
-          title="折叠面板"
-          @click="toggleCollapsed"
-        >
-          <svg viewBox="0 0 20 20" fill="none">
-            <path 
-              :d="getCollapseIconPath()" 
-              stroke="currentColor" 
-              stroke-width="1.5" 
-              stroke-linecap="round"
-            />
-          </svg>
-        </button>
-      </div>
+    <!-- 折叠态：Activity Bar 垂直图标条 -->
+    <div
+      v-if="collapsed"
+      class="collapsed-bar"
+      :title="t('builder.floorPanel.expand')"
+      @click="toggleCollapsed"
+    >
+      <!-- 楼层图标 -->
+      <svg viewBox="0 0 20 20" fill="none">
+        <path d="M3 4h14M3 10h14M3 16h14" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+      </svg>
+      <!-- 展开箭头 › -->
+      <svg viewBox="0 0 20 20" fill="none" class="expand-arrow">
+        <path d="M8 4l6 6-6 6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
     </div>
-    
-    <!-- 楼层列表 -->
-    <div v-if="!collapsed" class="floor-list">
-      <div
-        v-for="floor in floors"
-        :key="floor.id"
-        v-memo="[floor.id, floor.name, floor.level, isCurrentFloor(floor.id)]"
-        :class="['floor-item', { active: isCurrentFloor(floor.id) }]"
-        @click="handleSelectFloor(floor.id)"
-      >
-        <div class="floor-info">
-          <span class="floor-name">{{ floor.name }}</span>
-          <span class="floor-level">Level {{ floor.level }}</span>
-        </div>
-        <div class="floor-actions">
-          <button 
-            class="btn-icon small" 
-            :disabled="!canDeleteFloor()"
-            title="删除楼层"
-            @click.stop="handleDeleteFloor(floor.id)"
-          >
+
+    <!-- 展开态：完整面板 -->
+    <template v-else>
+      <div class="panel-header">
+        <h3>{{ t('builder.floorPanel.title') }}</h3>
+        <div class="panel-actions">
+          <button class="btn-icon" :title="t('builder.floorPanel.addFloor')" @click="handleAddFloor">
             <svg viewBox="0 0 20 20" fill="none">
-              <path 
-                d="M5 5l10 10M15 5L5 15" 
-                stroke="currentColor" 
-                stroke-width="1.5" 
-                stroke-linecap="round"
-              />
+              <path d="M10 4v12M4 10h12" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+            </svg>
+          </button>
+          <button class="btn-icon" :title="t('builder.floorPanel.collapse')" @click="toggleCollapsed">
+            <svg viewBox="0 0 20 20" fill="none">
+              <path d="M12 4l-6 6 6 6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
             </svg>
           </button>
         </div>
       </div>
-    </div>
+
+      <div class="floor-list">
+        <div
+          v-for="floor in floors"
+          :key="floor.id"
+          v-memo="[floor.id, floor.name, floor.level, isCurrentFloor(floor.id)]"
+          :class="['floor-item', { active: isCurrentFloor(floor.id) }]"
+          @click="handleSelectFloor(floor.id)"
+        >
+          <div class="floor-info">
+            <span class="floor-name">{{ floor.name }}</span>
+            <span class="floor-level">Level {{ floor.level }}</span>
+          </div>
+          <div class="floor-actions">
+            <button
+              class="btn-icon small"
+              :disabled="!canDeleteFloor()"
+              :title="t('builder.floorPanel.deleteFloor')"
+              @click.stop="handleDeleteFloor(floor.id)"
+            >
+              <svg viewBox="0 0 20 20" fill="none">
+                <path d="M5 5l10 10M15 5L5 15" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+              </svg>
+            </button>
+          </div>
+        </div>
+      </div>
+    </template>
   </aside>
 </template>
 
@@ -216,17 +175,40 @@ function getCollapseIconPath(): string {
   overflow: hidden;
 
   &.collapsed {
-    width: 48px;
+    width: 40px;
+  }
+}
 
-    .panel-header h3 {
-      display: none;
-    }
+// ============================================================================
+// 折叠态：Activity Bar 图标条
+// ============================================================================
+.collapsed-bar {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: $space-3;
+  padding: $space-3 0;
+  cursor: pointer;
+  height: 100%;
 
-    .panel-actions {
-      width: 100%;
-      justify-content: center;
+  svg {
+    width: 20px;
+    height: 20px;
+    color: var(--text-secondary);
+    transition: color $duration-normal;
+  }
+
+  &:hover {
+    background: var(--bg-hover);
+
+    svg {
+      color: var(--text-primary);
     }
   }
+}
+
+.expand-arrow {
+  margin-top: auto;
 }
 
 // ============================================================================
@@ -267,7 +249,7 @@ function getCollapseIconPath(): string {
   }
 
   &:hover:not(:disabled) {
-    background: rgba(255, 255, 255, 0.08);
+    background: var(--bg-hover);
     color: var(--text-primary);
   }
 
@@ -303,14 +285,14 @@ function getCollapseIconPath(): string {
 .floor-item {
   @include flex-between;
   padding: $space-2 $space-3;
-  background: rgba(255, 255, 255, 0.03);
+  background: rgba(var(--white-rgb), 0.03);
   border: 1px solid transparent;
   border-radius: $radius-md;
   cursor: pointer;
   transition: all $duration-normal;
 
   &:hover {
-    background: rgba(255, 255, 255, 0.06);
+    background: rgba(var(--white-rgb), 0.06);
   }
 
   &.active {

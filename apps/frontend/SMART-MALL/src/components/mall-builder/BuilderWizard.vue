@@ -6,9 +6,11 @@
  */
 
 import { ref } from 'vue'
+import { useI18n } from 'vue-i18n'
 import type { MallTemplate, MallProject } from '@/builder'
 import { convertMallLayoutToProject } from '@/builder/converters/layout-converter'
 import { intelligenceApi } from '@/api/intelligence.api'
+import AiDescriptionChat from './AiDescriptionChat.vue'
 
 // ============================================================================
 // 类型定义
@@ -34,7 +36,7 @@ const props = withDefaults(defineProps<BuilderWizardProps>(), {
   visible: false,
   templates: () => [],
   selectedTemplate: null,
-  projectName: '我的商城',
+  projectName: '',
 })
 
 const emit = defineEmits<BuilderWizardEmits>()
@@ -47,6 +49,8 @@ const wizardMode = ref<'template' | 'ai'>('template')
 const aiDescription = ref('')
 const aiLoading = ref(false)
 const aiError = ref('')
+const showChatPanel = ref(false)
+const { t } = useI18n()
 
 // ============================================================================
 // 方法
@@ -253,6 +257,18 @@ function getCreateButtonText(): string {
             </svg>
             <span>支持指定楼层数、店铺品牌、商城尺寸等信息</span>
           </div>
+          <button class="btn-ai-assist" @click="showChatPanel = !showChatPanel">
+            <svg viewBox="0 0 16 16" fill="none" class="ai-assist-icon">
+              <path d="M2 4a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2H6l-3 3V9a2 2 0 0 1-1-2V4z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
+              <path d="M6 6h4M6 8.5h2.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" />
+            </svg>
+            <span>{{ t('builder.aiAssist') }}</span>
+          </button>
+          <AiDescriptionChat
+            v-show="showChatPanel"
+            v-model:currentDescription="aiDescription"
+            @generate="handleCreate"
+          />
         </div>
       </div>
 
@@ -535,6 +551,36 @@ function getCreateButtonText(): string {
   .hint-icon {
     width: 14px;
     height: 14px;
+    flex-shrink: 0;
+  }
+}
+
+// ============================================================================
+// AI 辅助按钮
+// ============================================================================
+.btn-ai-assist {
+  display: inline-flex;
+  align-items: center;
+  gap: $space-2;
+  margin-top: $space-3;
+  padding: $space-2 $space-3;
+  background: transparent;
+  border: 1px solid var(--border-subtle);
+  border-radius: $radius-md;
+  color: var(--text-secondary);
+  font-size: $font-size-sm;
+  cursor: pointer;
+  transition: all $duration-normal;
+
+  &:hover {
+    background: var(--bg-tertiary);
+    border-color: var(--border-muted);
+    color: var(--text-primary);
+  }
+
+  .ai-assist-icon {
+    width: 16px;
+    height: 16px;
     flex-shrink: 0;
   }
 }

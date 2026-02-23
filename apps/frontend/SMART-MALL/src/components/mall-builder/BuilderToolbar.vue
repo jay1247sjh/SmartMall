@@ -90,7 +90,7 @@ export interface BuilderToolbarEmits {
 
 const props = withDefaults(defineProps<BuilderToolbarProps>(), {
   projectName: '商城布局',
-  currentTool: 'select',
+  currentTool: 'pan',
   viewMode: 'edit',
   canUndo: false,
   canRedo: false,

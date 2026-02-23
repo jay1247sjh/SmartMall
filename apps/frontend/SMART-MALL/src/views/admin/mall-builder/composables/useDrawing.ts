@@ -31,7 +31,7 @@ export function useDrawing(
   gridSize: () => number,
   snapEnabled: () => boolean
 ) {
-  const currentTool = ref<Tool>('select')
+  const currentTool = ref<Tool>('pan')
   const isDrawing = ref(false)
   const drawPoints = ref<{ x: number; y: number }[]>([])
   const previewMesh = shallowRef<THREE.Mesh | null>(null)
@@ -268,7 +268,7 @@ export function useDrawing(
       project.outline = polygon
       cancelDraw()
       onOutlineUpdated()
-      setTool('select')
+      setTool('pan')
       return
     }
 

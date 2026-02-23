@@ -17,6 +17,7 @@ import { useRouter, useRoute } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import * as THREE from 'three'
 import { MallBuilderEngine } from '@/engine/mall-builder/MallBuilderEngine'
+import { useSettingsStore } from '@/stores/settings.store'
 
 // 导入 builder 模块
 import {
@@ -54,6 +55,9 @@ import {
   PropertyPanel,
   SceneLegend,
   AddFloorDialog,
+  CommandPalette,
+  BuilderInlineInput,
+  BuilderBottomDrawer,
   type LegendItem,
 } from '@/components/mall-builder'
 
@@ -77,6 +81,7 @@ import { areaTypes } from './mall-builder/config/areaTypes'
 const router = useRouter()
 const route = useRoute()
 const { t } = useI18n()
+const settingsStore = useSettingsStore()
 
 // 容器引用
 const containerRef = ref<HTMLElement | null>(null)
@@ -128,7 +133,7 @@ const loadProgress = ref(0)
 // 向导状态
 const showWizard = ref(true)
 const selectedTemplate = ref<MallTemplate | null>(null)
-const newProjectName = ref('我的商城')
+const newProjectName = ref('')
 
 // 视图模式
 const viewMode = ref<'edit' | 'orbit'>('edit')
@@ -150,7 +155,11 @@ const showFloorPanel = ref(true)
 const showPropertyPanel = ref(true)
 const showMaterialPanel = ref(true)
 const leftPanelCollapsed = ref(false)
+const rightPanelCollapsed = ref(false)
+const showCommandPalette = ref(false)
 const showSceneLegend = ref(true)
+const showInlineInput = ref(false)
+const showBottomDrawer = ref(false)
 
 // 材质面板状态
 const selectedMaterialId = ref<string | null>(null)
@@ -216,13 +225,13 @@ async function initEngine() {
       gridSize: 120,
       gridDivisions: 120,
       groundSize: 140,
-      groundColor: 0x0d0d0d,
       cameraPosition: { x: 0, y: 100, z: 60 },
       orbitTarget: { x: 0, y: 6, z: 0 },
       minDistance: 10,
       maxDistance: 500,
       maxPolarAngle: Math.PI / 2.2,
       orbitEnabled: false,
+      initialTheme: settingsStore.theme,
     })
 
     // 启动渲染循环
@@ -231,6 +240,10 @@ async function initEngine() {
     loadProgress.value = 60
     setupInteraction()
     loadProgress.value = 100
+
+    // 默认工具为 pan，需要启用轨道控制器
+    engine.value.setOrbitControlsEnabled(true)
+
     setTimeout(() => { isLoading.value = false }, 300)
   } catch (error) {
     console.error('[initEngine] 初始化失败:', error)
@@ -360,7 +373,6 @@ function createCustomProject() {
   router.replace({ params: { projectId: project.value.id } })
   
   showWizard.value = false
-  drawing.setTool('draw-outline')
   renderProject()  // 渲染空项目（显示网格和基础场景）
   saveHistory()
 }
@@ -463,7 +475,7 @@ function clearMaterialSelection() {
 function selectMaterial(preset: MaterialPreset) {
   selectedMaterialId.value = preset.id
   if (preset.isInfrastructure) {
-    drawing.setTool('select')
+    drawing.setTool('pan')
   } else {
     drawing.setTool('draw-rect')
   }
@@ -661,11 +673,6 @@ function enterRoamMode() {
   viewMode.value = 'orbit'
   controls.value.enabled = false
   
-  // 保持暗色主题背景
-  if (scene.value) {
-    scene.value.background = new THREE.Color(0x0a0a0a)
-  }
-  
   // 隐藏建模器网格和地板（漫游环境有自己的地板）
   const grid = scene.value.getObjectByName('mall-builder-grid')
   const ground = scene.value.getObjectByName('mall-builder-ground')
@@ -678,7 +685,7 @@ function enterRoamMode() {
   // 渲染完成后再添加角色，避免被 clearSceneObjects 清除
   const startPos = getAreaCenter(project.value.outline.vertices)
   const floorY = getCurrentFloorYPosition()
-  const controller = new CharacterController()
+  const controller = new CharacterController(settingsStore.characterModel)
   controller.setPosition(startPos.x, floorY, startPos.z)
   scene.value.add(controller.character)
   roaming.setCharacterController(controller)
@@ -711,11 +718,6 @@ function exitRoamMode() {
   if (!camera.value || !controls.value) return
   
   viewMode.value = 'edit'
-  
-  // 恢复场景背景色
-  if (scene.value) {
-    scene.value.background = new THREE.Color(0x0a0a0a)
-  }
   
   // 移除 canvas click handler
   if (roamCanvasClickHandler && engine.value) {
@@ -750,7 +752,9 @@ function exitRoamMode() {
     controls.value.update()
   }
   
-  controls.value.enabled = true
+  // 根据当前工具决定是否启用轨道控制器
+  // 只有 pan 工具才允许旋转视角，其他工具保持禁用
+  controls.value.enabled = drawing.currentTool.value === 'pan'
   renderProject()
 }
 
@@ -772,9 +776,6 @@ function handleRoamingFloorSwitch() {
   // 重新渲染场景（会重建漫游环境）
   renderProject()
 
-  // 保持暗色背景（renderProject 不会重设，但以防万一）
-  scene.value.background = new THREE.Color(0x0a0a0a)
-
   // 隐藏建模器网格和地板
   const grid = scene.value.getObjectByName('mall-builder-grid')
   const ground = scene.value.getObjectByName('mall-builder-ground')
@@ -784,7 +785,7 @@ function handleRoamingFloorSwitch() {
   // 重新创建角色
   const startPos = getAreaCenter(project.value.outline.vertices)
   const floorY = getCurrentFloorYPosition()
-  const controller = new CharacterController()
+  const controller = new CharacterController(settingsStore.characterModel)
   controller.setPosition(startPos.x, floorY, startPos.z)
   scene.value.add(controller.character)
   roaming.setCharacterController(controller)
@@ -830,6 +831,31 @@ function handleKeydown(e: KeyboardEvent) {
     if (e.key === 'o' || e.key === 'O') toggleOrbitMode()
     return
   }
+
+  // 命令面板快捷键
+  if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
+    e.preventDefault()
+    showCommandPalette.value = !showCommandPalette.value
+    return
+  }
+
+  // Cmd+J / Ctrl+J：切换 BottomDrawer（非漫游模式已在上方 return）
+  if ((e.metaKey || e.ctrlKey) && e.key === 'j') {
+    e.preventDefault()
+    showInlineInput.value = false
+    showBottomDrawer.value = !showBottomDrawer.value
+    return
+  }
+
+  // `/` 键：打开 InlineInput（非绘制模式、BottomDrawer 未打开时）
+  if (e.key === '/' && !showBottomDrawer.value) {
+    const drawTools = ['draw-rect', 'draw-poly', 'draw-outline']
+    if (!drawTools.includes(drawing.currentTool.value)) {
+      e.preventDefault()
+      showInlineInput.value = true
+      return
+    }
+  }
   
   if (e.key === 'Delete' || e.key === 'Backspace') {
     if (selectedArea.value) deleteSelectedArea()
@@ -848,9 +874,9 @@ function handleKeydown(e: KeyboardEvent) {
   if (e.key === 'Escape') {
     if (drawing.isDrawing.value) drawing.cancelDraw()
     else deselectAll()
-    drawing.setTool('select')
+    drawing.setTool('pan')
   }
-  if (e.key === 'v' || e.key === 'V') drawing.setTool('select')
+  if (e.key === 'v' || e.key === 'V') drawing.setTool('pan')
   if (e.key === 'r' || e.key === 'R') drawing.setTool('draw-rect')
   if (e.key === 'p' || e.key === 'P') drawing.setTool('draw-poly')
   if ((e.key === 'o' || e.key === 'O') && viewMode.value === 'edit') {
@@ -963,6 +989,13 @@ watch(() => floorMgmt.currentFloorId.value, () => {
     handleRoamingFloorSwitch()
   } else {
     renderProject()
+  }
+})
+
+// 监听主题变化，同步更新 3D 场景配色
+watch(() => settingsStore.theme, (newTheme) => {
+  if (engine.value) {
+    engine.value.updateThemeColors(newTheme)
   }
 })
 
@@ -1141,6 +1174,7 @@ function handleAreaUpdate(updatedArea: AreaDefinition) {
         :categories="categories"
         :expandedCategories="expandedCategories"
         :selectedMaterialId="selectedMaterialId"
+        v-model:collapsed="rightPanelCollapsed"
         @toggleCategory="toggleCategory"
         @selectMaterial="selectMaterial"
         @clearSelection="clearMaterialSelection"
@@ -1173,6 +1207,42 @@ function handleAreaUpdate(updatedArea: AreaDefinition) {
           {{ t('admin.exitRoam') }}
         </button>
       </div>
+
+      <!-- 命令面板 -->
+      <CommandPalette
+        v-model:visible="showCommandPalette"
+        @close="showCommandPalette = false"
+      />
+
+      <!-- AI 内联输入条 -->
+      <BuilderInlineInput
+        v-model:visible="showInlineInput"
+        @switch-to-drawer="showInlineInput = false; showBottomDrawer = true"
+      />
+
+      <!-- AI 底部触发条 -->
+      <div
+        v-if="!showBottomDrawer && !showInlineInput && viewMode === 'edit' && !isPreviewMode"
+        class="ai-trigger-bar"
+        @click="showBottomDrawer = true"
+      >
+        <svg class="ai-trigger-icon" viewBox="0 0 20 20" fill="none">
+          <path
+            d="M10 2a6 6 0 0 0-4.47 10.02L4 16l3.98-1.53A6 6 0 1 0 10 2Z"
+            stroke="currentColor"
+            stroke-width="1.5"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          />
+        </svg>
+        <span class="ai-trigger-text">{{ t('builder.aiTrigger.label') }}</span>
+        <kbd class="ai-trigger-kbd">Ctrl+J</kbd>
+      </div>
+
+      <!-- AI 底部抽屉 -->
+      <BuilderBottomDrawer
+        v-model:visible="showBottomDrawer"
+      />
 
       <!-- 底部状态栏（已隐藏） -->
     </template>
@@ -1295,6 +1365,60 @@ function handleAreaUpdate(updatedArea: AreaDefinition) {
 
 <style scoped lang="scss">
 // ============================================================================
+// AI Trigger Bar
+// ============================================================================
+.ai-trigger-bar {
+  position: absolute;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 90;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 14px;
+  background: rgba(var(--bg-secondary-rgb), 0.85);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(var(--accent-primary-rgb), 0.15);
+  border-bottom: none;
+  border-radius: 8px 8px 0 0;
+  color: var(--text-muted);
+  font-size: 12px;
+  cursor: pointer;
+  transition: all 0.15s;
+
+  &:hover {
+    background: rgba(var(--bg-secondary-rgb), 0.95);
+    color: var(--text-secondary);
+    border-color: rgba(var(--accent-primary-rgb), 0.3);
+  }
+}
+
+.ai-trigger-icon {
+  width: 14px;
+  height: 14px;
+  color: var(--accent-primary);
+  flex-shrink: 0;
+}
+
+.ai-trigger-text {
+  white-space: nowrap;
+}
+
+.ai-trigger-kbd {
+  display: inline-block;
+  padding: 1px 5px;
+  background: rgba(var(--accent-primary-rgb), 0.1);
+  border: 1px solid rgba(var(--accent-primary-rgb), 0.2);
+  border-radius: 3px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--accent-primary);
+  line-height: 1.4;
+}
+
+// ============================================================================
 // Preview Mode
 // ============================================================================
 .preview-toolbar {
@@ -1414,5 +1538,243 @@ function handleAreaUpdate(updatedArea: AreaDefinition) {
     line-height: 1.5;
     margin: 0;
   }
+}
+
+// ============================================================================
+// Modal (theme-aware)
+// ============================================================================
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(var(--black-rgb), 0.5);
+  backdrop-filter: blur(4px);
+}
+
+.modal {
+  width: 400px;
+  max-width: 90vw;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-subtle);
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--border-subtle);
+
+  h3 {
+    margin: 0;
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--text-primary);
+  }
+}
+
+.modal-body {
+  padding: 20px;
+
+  p {
+    margin: 0;
+    font-size: 14px;
+    color: var(--text-secondary);
+    line-height: 1.5;
+  }
+}
+
+.modal-hint {
+  font-size: 13px;
+  color: var(--text-muted);
+  margin-bottom: 12px;
+}
+
+.modal-footer {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 12px;
+  padding: 16px 20px;
+  border-top: 1px solid var(--border-subtle);
+}
+
+.btn-danger {
+  padding: 8px 16px;
+  background: var(--error);
+  border: none;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 500;
+  color: #fff;
+  cursor: pointer;
+  transition: background 0.15s ease;
+
+  &:hover {
+    background: var(--error-hover);
+  }
+}
+
+.modal-footer .btn-secondary {
+  padding: 8px 16px;
+  background: transparent;
+  border: 1px solid var(--border-subtle);
+  border-radius: 6px;
+  font-size: 14px;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all 0.15s ease;
+
+  &:hover {
+    background: var(--bg-hover);
+    color: var(--text-primary);
+    border-color: var(--border-muted);
+  }
+}
+
+.modal-footer .btn-primary {
+  padding: 8px 16px;
+  background: var(--accent-primary);
+  border: none;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 500;
+  color: #fff;
+  cursor: pointer;
+  transition: background 0.15s ease;
+
+  &:hover {
+    background: var(--accent-hover);
+  }
+
+  &:disabled {
+    background: var(--bg-tertiary);
+    color: var(--text-disabled);
+    cursor: not-allowed;
+  }
+}
+
+.btn-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  background: transparent;
+  border: none;
+  border-radius: 6px;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: all 0.15s ease;
+
+  &:hover {
+    background: var(--bg-hover);
+    color: var(--text-primary);
+  }
+
+  svg {
+    width: 16px;
+    height: 16px;
+  }
+}
+
+// ============================================================================
+// Help Modal
+// ============================================================================
+.help-modal {
+  width: 560px;
+}
+
+.help-section {
+  margin-bottom: 20px;
+
+  &:last-child {
+    margin-bottom: 0;
+  }
+
+  h4 {
+    margin: 0 0 12px;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--accent-primary);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+
+  ul {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  li {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 6px 0;
+    font-size: 13px;
+    color: var(--text-secondary);
+  }
+
+  kbd {
+    display: inline-block;
+    padding: 2px 8px;
+    background: rgba(var(--accent-primary-rgb), 0.12);
+    border: 1px solid rgba(var(--accent-primary-rgb), 0.25);
+    border-radius: 4px;
+    font-family: var(--font-mono);
+    font-size: 12px;
+    color: var(--accent-primary);
+  }
+}
+
+// ============================================================================
+// Floor Connection Modal
+// ============================================================================
+.floor-checkbox-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.floor-checkbox {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  background: var(--bg-hover);
+  border: 1px solid var(--border-subtle);
+  border-radius: 6px;
+  font-size: 13px;
+  color: var(--text-primary);
+  cursor: pointer;
+  transition: all 0.15s ease;
+
+  &:hover {
+    background: var(--bg-tertiary);
+    border-color: var(--border-muted);
+  }
+
+  input[type="checkbox"] {
+    accent-color: var(--accent-primary);
+  }
+}
+
+.current-badge {
+  margin-left: auto;
+  padding: 2px 8px;
+  background: rgba(var(--accent-primary-rgb), 0.12);
+  border-radius: 4px;
+  font-size: 11px;
+  color: var(--accent-primary);
 }
 </style>
