@@ -15,7 +15,7 @@ const containerRef = ref<HTMLElement | null>(null)
 let engine: BuilderEngine | null = null
 
 const project = ref<MallProject | null>(null)
-const currentTool = ref<string>('select')
+const currentTool = ref<string>('pan')
 const canUndo = ref(false)
 const canRedo = ref(false)
 

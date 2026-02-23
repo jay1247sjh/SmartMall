@@ -187,8 +187,15 @@ export class CharacterController {
     this.character.name = 'character'
     this.character.userData = { isCharacter: true, height: 1.7 }
     
-    // 异步加载真实模型
-    this.modelName = modelName || getRandomCharacterModel()
+    // 校验模型名称是否在可用列表中，无效则回退默认值
+    if (modelName && CHARACTER_MODELS.includes(modelName)) {
+      this.modelName = modelName
+    } else {
+      if (modelName) {
+        console.warn(`[CharacterController] 无效的模型名称: ${modelName}，回退使用默认模型 character-male-a`)
+      }
+      this.modelName = 'character-male-a'
+    }
     this.loadModel()
   }
   

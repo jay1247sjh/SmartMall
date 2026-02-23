@@ -202,8 +202,9 @@ function createFloorMaterial(color: number): THREE.MeshStandardMaterial {
   return new THREE.MeshStandardMaterial({
     map: texture,
     color: color,
-    roughness: 0.3,
-    metalness: 0.1,
+    roughness: 0.25,
+    metalness: 0.08,
+    envMapIntensity: 0.8,
     side: THREE.DoubleSide,
   })
 }
@@ -217,8 +218,9 @@ function createWallMaterial(color: number): THREE.MeshStandardMaterial {
   return new THREE.MeshStandardMaterial({
     map: texture,
     color: color,
-    roughness: 0.7,
-    metalness: 0.0,
+    roughness: 0.45,
+    metalness: 0.05,
+    envMapIntensity: 0.5,
     side: THREE.DoubleSide,
   })
 }
@@ -232,8 +234,9 @@ function createCeilingMaterial(color: number): THREE.MeshStandardMaterial {
   return new THREE.MeshStandardMaterial({
     map: texture,
     color: color,
-    roughness: 0.9,
-    metalness: 0.0,
+    roughness: 0.6,
+    metalness: 0.02,
+    envMapIntensity: 0.4,
     side: THREE.DoubleSide,
   })
 }
@@ -438,10 +441,21 @@ export function createRoamingEnvironment(
   })
   group.add(ceiling)
   
-  // 添加环境光照增强（提高亮度）
-  const ambientBoost = new THREE.AmbientLight(0xffffff, 0.8)  // 从 0.5 提高到 0.8
+  // 添加环境光照增强（提高亮度，补偿室内封闭空间的光照衰减）
+  const ambientBoost = new THREE.AmbientLight(0xffffff, 1.0)
   ambientBoost.name = 'roaming-ambient'
   group.add(ambientBoost)
+  
+  // 添加方向光（提供高光和阴影，增强 PBR 材质表现）
+  const dirLight = new THREE.DirectionalLight(0xfff8f0, 1.2)
+  dirLight.position.set(10, wallHeight * 0.9, -5)
+  dirLight.castShadow = true
+  dirLight.shadow.mapSize.width = 1024
+  dirLight.shadow.mapSize.height = 1024
+  dirLight.shadow.camera.near = 0.5
+  dirLight.shadow.camera.far = wallHeight * 3
+  dirLight.name = 'roaming-directional'
+  group.add(dirLight)
   
   return group
 }
@@ -458,6 +472,7 @@ export function clearRoamingEnvironment(scene: THREE.Scene): void {
         obj.name === 'floor-surface' || 
         obj.name === 'ceiling' ||
         obj.name === 'roaming-ambient' ||
+        obj.name === 'roaming-directional' ||
         obj.name === 'mall-furniture' ||
         obj.name.startsWith('wall-') ||
         obj.name.startsWith('baseboard-') ||

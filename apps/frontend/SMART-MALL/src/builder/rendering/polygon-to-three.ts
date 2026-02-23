@@ -47,6 +47,10 @@ export interface MeshOptions {
   emissive?: number
   /** 发光强度 */
   emissiveIntensity?: number
+  /** 粗糙度 (0-1) */
+  roughness?: number
+  /** 金属度 (0-1) */
+  metalness?: number
 }
 
 // ============================================================================
@@ -65,11 +69,13 @@ export function polygonToShape(polygon: Polygon): THREE.Shape {
   }
   
   // 移动到第一个点
-  shape.moveTo(vertices[0].x, vertices[0].y)
+  // Shape 在 XY 平面，经 rotation.x = -PI/2 后：(shapeX, shapeY) → 3D (shapeX, 0, -shapeY)
+  // 要让最终 3D 坐标为 (x, 0, -y)，Shape 坐标应为 (x, y)（不取反）
+  shape.moveTo(vertices[0]!.x, vertices[0]!.y)
   
   // 连接其余点
   for (let i = 1; i < vertices.length; i++) {
-    shape.lineTo(vertices[i].x, vertices[i].y)
+    shape.lineTo(vertices[i]!.x, vertices[i]!.y)
   }
   
   // 闭合路径
@@ -155,7 +161,7 @@ export function createPolygonOutline(
   
   // 闭合路径
   if (polygon.isClosed && points.length > 0) {
-    points.push(points[0].clone())
+    points.push(points[0]!.clone())
   }
   
   const geometry = new THREE.BufferGeometry().setFromPoints(points)
@@ -202,8 +208,8 @@ function createMaterial(options: MeshOptions): THREE.MeshStandardMaterial {
     wireframe: options.wireframe ?? false,
     emissive: options.emissive ?? 0x000000,
     emissiveIntensity: options.emissiveIntensity ?? 0,
-    roughness: 0.7,
-    metalness: 0.1,
+    roughness: options.roughness ?? 0.55,
+    metalness: options.metalness ?? 0.15,
   })
 }
 
@@ -215,7 +221,7 @@ export function getPolygonCenter(polygon: Polygon): THREE.Vector3 {
   return new THREE.Vector3(
     (box.minX + box.maxX) / 2,
     0,
-    (box.minY + box.maxY) / 2
+    -(box.minY + box.maxY) / 2
   )
 }
 

@@ -84,6 +84,13 @@ export interface MaterialPreset {
   commercialType?: CommercialSubType
   /** 所属商业店铺类型（仅 commercial 分类） */
   shopType?: CommercialShopType
+  /** PBR 材质参数（roughness/metalness/emissive） */
+  materialParams?: {
+    roughness: number
+    metalness: number
+    emissive: string
+    emissiveIntensity: number
+  }
 }
 
 /**

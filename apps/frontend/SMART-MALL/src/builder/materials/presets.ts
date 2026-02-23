@@ -27,6 +27,12 @@ export const MATERIAL_PRESETS: MaterialPreset[] = [
       description: '走廊区域不允许放置任何设施',
     },
     isVerticalConnection: false,
+    materialParams: {
+      roughness: 0.65,
+      metalness: 0.05,
+      emissive: '#9ca3af',
+      emissiveIntensity: 0.06,
+    },
   },
   {
     id: 'escalator',
@@ -42,6 +48,12 @@ export const MATERIAL_PRESETS: MaterialPreset[] = [
       description: '扶梯区域只能放置扶梯设施',
     },
     isVerticalConnection: true,
+    materialParams: {
+      roughness: 0.35,
+      metalness: 0.4,
+      emissive: '#14b8a6',
+      emissiveIntensity: 0.1,
+    },
   },
   {
     id: 'elevator',
@@ -57,6 +69,12 @@ export const MATERIAL_PRESETS: MaterialPreset[] = [
       description: '电梯区域只能放置电梯设施',
     },
     isVerticalConnection: true,
+    materialParams: {
+      roughness: 0.3,
+      metalness: 0.45,
+      emissive: '#10b981',
+      emissiveIntensity: 0.1,
+    },
   },
   {
     id: 'stairs',
@@ -72,6 +90,12 @@ export const MATERIAL_PRESETS: MaterialPreset[] = [
       description: '楼梯区域只能放置楼梯设施',
     },
     isVerticalConnection: true,
+    materialParams: {
+      roughness: 0.45,
+      metalness: 0.25,
+      emissive: '#06b6d4',
+      emissiveIntensity: 0.08,
+    },
   },
 
   // ============================================================================
@@ -91,6 +115,12 @@ export const MATERIAL_PRESETS: MaterialPreset[] = [
       description: '洗手间区域只能放置卫生设施',
     },
     isVerticalConnection: false,
+    materialParams: {
+      roughness: 0.5,
+      metalness: 0.1,
+      emissive: '#ec4899',
+      emissiveIntensity: 0.08,
+    },
   },
   {
     id: 'service-center',
@@ -106,6 +136,12 @@ export const MATERIAL_PRESETS: MaterialPreset[] = [
       description: '服务台区域用于客户服务',
     },
     isVerticalConnection: false,
+    materialParams: {
+      roughness: 0.45,
+      metalness: 0.15,
+      emissive: '#8b5cf6',
+      emissiveIntensity: 0.1,
+    },
   },
 
   // ============================================================================
@@ -125,6 +161,12 @@ export const MATERIAL_PRESETS: MaterialPreset[] = [
       description: '公共区域可放置多种设施',
     },
     isVerticalConnection: false,
+    materialParams: {
+      roughness: 0.6,
+      metalness: 0.05,
+      emissive: '#6b7280',
+      emissiveIntensity: 0.05,
+    },
   },
   {
     id: 'storage',
@@ -140,6 +182,12 @@ export const MATERIAL_PRESETS: MaterialPreset[] = [
       description: '储物间用于存放物品',
     },
     isVerticalConnection: false,
+    materialParams: {
+      roughness: 0.7,
+      metalness: 0.0,
+      emissive: '#78716c',
+      emissiveIntensity: 0.04,
+    },
   },
 
   // ============================================================================
