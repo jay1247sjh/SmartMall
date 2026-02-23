@@ -313,6 +313,7 @@ function getCreateButtonText(): string {
 .wizard-modal {
   width: 800px;
   max-width: 90vw;
+  height: 80vh;
   max-height: 90vh;
   background: var(--bg-secondary);
   border: 1px solid var(--border-muted);
@@ -618,7 +619,9 @@ function getCreateButtonText(): string {
 .btn-primary {
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   gap: $space-2;
+  min-width: 120px;
   padding: $space-2 $space-4;
   background: var(--accent-primary);
   border: none;
