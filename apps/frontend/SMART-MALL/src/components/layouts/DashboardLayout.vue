@@ -9,6 +9,7 @@ import { useI18n } from 'vue-i18n'
 import { useUserStore } from '@/stores'
 import UserCard from '@/components/layouts/UserCard.vue'
 import SettingsPanel from '@/components/settings/SettingsPanel.vue'
+import AiSidebar from '@/components/ai/AiSidebar.vue'
 import {
   ElContainer,
   ElAside,
@@ -24,27 +25,20 @@ import {
 import {
   House,
   Setting,
-  Shop,
-  Document,
-  Timer,
   Goods,
-  Edit,
-  Tools,
   User,
-  SwitchButton,
   ArrowLeft,
   ArrowRight,
   Back,
+  Refresh,
+  ChatDotRound,
 } from '@element-plus/icons-vue'
 
 interface Props {
   pageTitle: string
-  showBackButton?: boolean
 }
 
-withDefaults(defineProps<Props>(), {
-  showBackButton: false,
-})
+defineProps<Props>()
 
 const router = useRouter()
 const route = useRoute()
@@ -52,6 +46,15 @@ const userStore = useUserStore()
 const { t } = useI18n()
 
 const sidebarCollapsed = ref(false)
+const aiVisible = ref(false)
+
+// 一级页面不显示返回键
+const TOP_LEVEL_PATHS = ['/mall', '/']
+const isTopLevel = computed(() => TOP_LEVEL_PATHS.includes(route.path))
+
+function toggleAi() {
+  aiVisible.value = !aiVisible.value
+}
 
 interface MenuItem {
   titleKey: string
@@ -61,15 +64,9 @@ interface MenuItem {
 }
 
 const menuConfig: MenuItem[] = [
-  { titleKey: 'nav.backToMall', path: '/mall', icon: House },
+  { titleKey: 'nav.enterMall', path: '/mall', icon: House },
   { titleKey: 'nav.adminCenter', path: '/admin/dashboard', icon: Setting, roles: ['ADMIN'] },
-  { titleKey: 'nav.mallManage', path: '/admin/mall', icon: Shop, roles: ['ADMIN'] },
-  { titleKey: 'nav.areaApproval', path: '/admin/area-approval', icon: Document, roles: ['ADMIN'] },
-  { titleKey: 'nav.versionManage', path: '/admin/layout-version', icon: Timer, roles: ['ADMIN'] },
   { titleKey: 'nav.workspace', path: '/merchant/dashboard', icon: Goods, roles: ['MERCHANT'] },
-  { titleKey: 'nav.storeConfig', path: '/merchant/store-config', icon: Edit, roles: ['MERCHANT'] },
-  { titleKey: 'nav.areaApply', path: '/merchant/area-apply', icon: Document, roles: ['MERCHANT'] },
-  { titleKey: 'nav.builderTool', path: '/merchant/builder', icon: Tools, roles: ['MERCHANT'] },
   { titleKey: 'nav.profile', path: '/user/profile', icon: User },
 ]
 
@@ -86,7 +83,17 @@ function navigateTo(path: string) {
 }
 
 function goBack() {
-  router.back()
+  // 如果有浏览器历史记录则返回上一页，否则回到首页
+  if (window.history.length > 1) {
+    router.back()
+  } else {
+    router.push('/mall')
+  }
+}
+
+function refreshPage() {
+  router.replace({ path: route.fullPath, query: { ...route.query, _t: Date.now() } })
+    .then(() => router.go(0))
 }
 
 function handleLogout() {
@@ -148,22 +155,27 @@ function handleLogout() {
     <ElContainer direction="vertical" class="main-container">
       <ElHeader class="topbar" height="64px">
         <div class="topbar-left">
-          <ElButton
-            v-if="showBackButton"
-            :icon="Back"
-            circle
-            @click="goBack"
-          />
           <h1 class="page-title">{{ pageTitle }}</h1>
         </div>
-        
         <div class="topbar-right">
+          <ElTooltip v-if="!isTopLevel" :content="t('common.back')" placement="bottom">
+            <ElButton :icon="Back" circle size="small" @click="goBack" />
+          </ElTooltip>
+          <ElTooltip :content="t('common.refresh')" placement="bottom">
+            <ElButton :icon="Refresh" circle size="small" @click="refreshPage" />
+          </ElTooltip>
+          <button class="btn-ai-trigger" :class="{ active: aiVisible }" @click="toggleAi">
+            <ElIcon :size="18"><ChatDotRound /></ElIcon>
+          </button>
           <SettingsPanel trigger-mode="avatar" :avatar-size="32" show-logout @logout="handleLogout" />
         </div>
       </ElHeader>
 
       <ElMain class="content">
-        <slot />
+        <div class="content-body">
+          <slot />
+        </div>
+        <AiSidebar v-model:visible="aiVisible" />
       </ElMain>
     </ElContainer>
   </ElContainer>
@@ -337,12 +349,46 @@ function handleLogout() {
     .topbar-right {
       display: flex;
       align-items: center;
+      gap: $space-2;
+
+      .btn-ai-trigger {
+        width: 32px;
+        height: 32px;
+        background: transparent;
+        border: 1px solid var(--border-subtle);
+        border-radius: $radius-md;
+        color: var(--text-secondary);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        transition: all $duration-normal;
+
+        &:hover {
+          background: var(--bg-tertiary);
+          color: var(--text-primary);
+        }
+
+        &.active {
+          background: rgba(var(--accent-primary-rgb), 0.1);
+          border-color: rgba(var(--accent-primary-rgb), 0.3);
+          color: var(--accent-primary);
+        }
+      }
     }
   }
 
   .content {
-    padding: $space-6;
-    overflow-y: auto;
+    display: flex;
+    padding: 0;
+    overflow: hidden;
+
+    .content-body {
+      flex: 1;
+      min-width: 0;
+      padding: $space-6;
+      overflow-y: auto;
+    }
   }
 }
 

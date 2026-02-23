@@ -94,6 +94,12 @@ import i18n from '@/i18n'
  */
 import router from './router'
 
+/**
+ * AI 工具处理器注册
+ * 初始化 ToolHandlerRegistry 中的内置 handler
+ */
+import { initToolHandlers } from '@/agent/tool-handlers'
+
 // ============================================================================
 // 全局样式
 // ============================================================================
@@ -160,6 +166,12 @@ app.use(ElementPlus)
  * - 如果此时 Pinia 未注册，访问 store 会报错
  */
 app.use(router)
+
+/**
+ * 5. 初始化 AI 工具处理器注册表
+ * 注册内置的工具 handler（如 navigate_to_store）
+ */
+initToolHandlers(router)
 
 // ============================================================================
 // 挂载应用

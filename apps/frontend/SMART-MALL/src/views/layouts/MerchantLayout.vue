@@ -32,8 +32,8 @@
  * - 路由守卫会验证用户角色
  */
 import { ref } from 'vue'
-import { useUserStore, useAiStore } from '@/stores'
-import { useRouter } from 'vue-router'
+import { useUserStore } from '@/stores'
+import { useRouter, useRoute } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { cleanupOnLogout } from '@/router'
 import UserCard from '@/components/layouts/UserCard.vue'
@@ -47,12 +47,14 @@ import {
   ElMenu,
   ElMenuItem,
   ElIcon,
+  ElButton,
+  ElTooltip,
 } from 'element-plus'
-import { Box, HomeFilled, Shop, Document, Tools, ChatDotRound } from '@element-plus/icons-vue'
+import { Box, HomeFilled, Shop, Document, Tools, ChatDotRound, Back, RefreshRight } from '@element-plus/icons-vue'
 
 const userStore = useUserStore()
-const aiStore = useAiStore()
 const router = useRouter()
+const route = useRoute()
 const { t } = useI18n()
 
 const aiVisible = ref(false)
@@ -71,6 +73,14 @@ const menuItems = [
 function handleLogout() {
   userStore.clearUser()
   cleanupOnLogout(router)
+}
+
+function goBack() {
+  router.push('/mall')
+}
+
+function refreshPage() {
+  router.go(0)
 }
 
 function handleMenuSelect(path: string) {
@@ -106,8 +116,16 @@ function handleMenuSelect(path: string) {
 
     <ElContainer class="layout-main">
       <ElHeader class="layout-header">
-        <span class="breadcrumb">{{ t('nav.merchantCenter') }}</span>
+        <div class="topbar-left">
+          <span class="breadcrumb">{{ t('nav.merchantCenter') }}</span>
+        </div>
         <nav class="topbar-actions">
+          <ElTooltip :content="t('common.back')" placement="bottom">
+            <ElButton :icon="Back" circle size="small" class="topbar-btn" @click="goBack" />
+          </ElTooltip>
+          <ElTooltip :content="t('common.refresh')" placement="bottom">
+            <ElButton :icon="RefreshRight" circle size="small" class="topbar-btn" @click="refreshPage" />
+          </ElTooltip>
           <button class="btn-ai-trigger" :class="{ active: aiVisible }" @click="toggleAi">
             <ElIcon :size="18"><ChatDotRound /></ElIcon>
           </button>
@@ -220,7 +238,25 @@ function handleMenuSelect(path: string) {
       backdrop-filter: blur(20px);
       border-bottom: 1px solid var(--border-subtle);
 
+      .topbar-left {
+        display: flex;
+        align-items: center;
+        gap: $space-3;
+      }
+
       .breadcrumb { font-size: $font-size-base; color: var(--text-secondary); }
+
+      .topbar-btn {
+        background: transparent;
+        border-color: var(--border-subtle);
+        color: var(--text-secondary);
+
+        &:hover {
+          background: var(--bg-tertiary);
+          color: var(--text-primary);
+          border-color: var(--border-muted);
+        }
+      }
 
       .topbar-actions {
         display: flex;

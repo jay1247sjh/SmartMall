@@ -42,6 +42,7 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import type { RouteRecordRaw } from 'vue-router'
 import { setupRouterGuards } from './guards'
+import { setupRouterLoading } from './loading'
 
 // ============================================================================
 // 静态路由（无需权限）
@@ -197,6 +198,7 @@ const router = createRouter({
  * - 动态加载用户路由
  */
 setupRouterGuards(router)
+setupRouterLoading(router)
 
 // ============================================================================
 // 导出

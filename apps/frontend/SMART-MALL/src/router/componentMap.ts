@@ -53,18 +53,6 @@ export const AsyncMall3DView = defineAsyncComponent({
 })
 
 /**
- * AiChatPanel 异步组件
- * AI 功能，非首屏必需，需要异步加载优化
- * Requirements: 24.3
- */
-export const AsyncAiChatPanel = defineAsyncComponent({
-  loader: () => import('@/components/ai/AiChatPanel.vue'),
-  ...asyncComponentConfig,
-  delay: 100,        // AI 面板延迟更短
-  timeout: 10000     // AI 面板超时更短
-})
-
-/**
  * 组件映射表
  * key: 后端返回的组件标识符
  * value: 懒加载的组件或异步组件
