@@ -17,24 +17,8 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import type { ChatMessage, ChatResponse } from '@/api/intelligence.api'
+import { toolHandlerRegistry } from '@/agent/tool-handler-registry'
 import i18n from '@/i18n'
-
-/** 意图类型 */
-export type IntentType = 
-  | 'navigate'      // 页面导航
-  | 'search'        // 搜索
-  | 'action'        // 执行操作
-  | 'query'         // 查询信息
-  | 'chat'          // 普通对话
-
-/** 意图识别结果 */
-export interface IntentResult {
-  type: IntentType
-  target?: string           // 导航目标或搜索目标
-  action?: string           // 操作名称
-  params?: Record<string, unknown>
-  confidence: number        // 置信度 0-1
-}
 
 export const useAiStore = defineStore('ai', () => {
   // ========================================
@@ -56,9 +40,6 @@ export const useAiStore = defineStore('ai', () => {
     args: Record<string, unknown>
     message: string
   } | null>(null)
-  
-  /** 最近的意图识别结果 */
-  const lastIntent = ref<IntentResult | null>(null)
   
   /** 会话 ID */
   const sessionId = ref<string>(generateSessionId())
@@ -120,7 +101,6 @@ export const useAiStore = defineStore('ai', () => {
     messages.value = []
     sessionId.value = generateSessionId()
     pendingConfirmation.value = null
-    lastIntent.value = null
   }
   
   /** 设置发送状态 */
@@ -138,11 +118,6 @@ export const useAiStore = defineStore('ai', () => {
     pendingConfirmation.value = null
   }
   
-  /** 设置意图识别结果 */
-  function setLastIntent(intent: IntentResult | null) {
-    lastIntent.value = intent
-  }
-  
   /** 获取翻译文本 */
   function t(key: string, params?: Record<string, unknown>): string {
     return (i18n.global as unknown as { t: (key: string, params?: Record<string, unknown>) => string }).t(key, params)
@@ -152,40 +127,7 @@ export const useAiStore = defineStore('ai', () => {
   function handleResponse(response: ChatResponse) {
     console.log('[AI Store] handleResponse:', response.type, response)
     
-    if (response.type === 'navigate' && response.navigateTo) {
-      // 导航类型响应 - 由后端识别的导航意图
-      console.log('[AI Store] Adding navigate message')
-      addMessage({
-        role: 'assistant',
-        content: response.content || t('ai.navigatingTo', { label: response.navigateLabel }),
-        type: 'navigate',
-        navigateTo: response.navigateTo,
-        navigateLabel: response.navigateLabel,
-      })
-      // 设置意图结果，让组件执行导航
-      setLastIntent({
-        type: 'navigate',
-        target: response.navigateTo,
-        params: { label: response.navigateLabel },
-        confidence: response.confidence || 0.9,
-      })
-    } else if (response.type === 'mall_generated') {
-      // 商城布局生成成功
-      addMessage({
-        role: 'assistant',
-        content: response.content || t('ai.sidebar.mallGenerated'),
-        type: 'mall_generated',
-        action: response.action,
-        args: response.args,
-      })
-      // 设置意图结果，让组件可以处理生成的数据
-      setLastIntent({
-        type: 'action',
-        action: 'MALL_GENERATED',
-        params: response.args,
-        confidence: 1.0,
-      })
-    } else if (response.type === 'confirmation_required' || response.type === 'confirm') {
+    if (response.type === 'confirmation_required' || response.type === 'confirm') {
       setPendingConfirmation({
         action: response.action!,
         args: response.args!,
@@ -199,19 +141,23 @@ export const useAiStore = defineStore('ai', () => {
         args: response.args,
       })
     } else if (response.type === 'error') {
-      // 显示错误消息
-      const errorContent = response.content || response.message || t('ai.errorDefault')
       addMessage({
         role: 'assistant',
-        content: errorContent,
+        content: response.content || response.message || t('ai.errorDefault'),
         type: 'error',
       })
     } else {
+      // text 类型 — 统一处理
       addMessage({
         role: 'assistant',
         content: response.content || '',
         tool_results: response.toolResults,
       })
+    }
+
+    // 通用工具结果处理 — 通过注册表
+    if (response.toolResults && response.toolResults.length > 0) {
+      toolHandlerRegistry.handleToolResults(response.toolResults)
     }
   }
   
@@ -231,7 +177,6 @@ export const useAiStore = defineStore('ai', () => {
     messages,
     isSending,
     pendingConfirmation,
-    lastIntent,
     sessionId,
     
     // 计算属性
@@ -247,7 +192,6 @@ export const useAiStore = defineStore('ai', () => {
     setSending,
     setPendingConfirmation,
     clearPendingConfirmation,
-    setLastIntent,
     handleResponse,
     initWelcomeMessage,
   }

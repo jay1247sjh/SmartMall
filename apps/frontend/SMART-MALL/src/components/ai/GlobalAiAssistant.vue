@@ -30,9 +30,7 @@ import { ElInput, ElButton, ElIcon, ElUpload, ElMessage } from 'element-plus'
 import { Promotion, Picture, Close } from '@element-plus/icons-vue'
 import { intelligenceApi } from '@/api/intelligence.api'
 import AiFloatingTrigger from '@/components/ai/AiFloatingTrigger.vue'
-import { mallBuilderApi, toCreateRequest } from '@/api/mall-builder.api'
-import type { MallProject } from '@/builder/types/mall-project'
-import { useUserStore, useAiStore } from '@/stores'
+import { useAiStore } from '@/stores'
 
 // ============================================================================
 // 状态
@@ -41,12 +39,11 @@ import { useUserStore, useAiStore } from '@/stores'
 const router = useRouter()
 const route = useRoute()
 const { t } = useI18n()
-const userStore = useUserStore()
 const aiStore = useAiStore()
 
-/** 是否在 Admin 或 Merchant 路由下（AI 由 Layout 内的 AiSidebar 处理） */
+/** 是否在 Admin 或 Merchant 或 Mall Dashboard 路由下（AI 由 Layout 内的 AiSidebar 处理） */
 const isAdminOrMerchantRoute = computed(() => {
-  return route.path.startsWith('/admin') || route.path.startsWith('/merchant')
+  return route.path.startsWith('/admin') || route.path.startsWith('/merchant') || route.path.startsWith('/mall')
 })
 
 /** 输入框内容 */
@@ -201,25 +198,6 @@ function parseErrorMessage(error: unknown): string {
   return t('ai.sidebar.errorGeneral')
 }
 
-/** 处理导航意图 */
-function handleNavigationIntent(path: string, label: string) {
-  // 检查是否已在目标页面
-  if (route.path === path) {
-    aiStore.addMessage({
-      role: 'assistant',
-      content: t('ai.alreadyOnPage', { label }),
-    })
-    return
-  }
-  
-  // 执行导航
-  router.push(path)
-  aiStore.addMessage({
-    role: 'assistant',
-    content: t('ai.navigatingTo', { label }),
-  })
-}
-
 /** 发送消息 */
 async function sendMessage() {
   const text = inputText.value.trim()
@@ -257,55 +235,9 @@ async function sendMessage() {
     
     console.log('[AI] Response received:', response)
     
-    // 处理响应
+    // 处理响应 — 统一由 ai.store 的 handleResponse + ToolHandlerRegistry 处理
     aiStore.handleResponse(response)
     scrollToBottom()
-    
-    // 如果是导航类型，执行导航
-    if (response.type === 'navigate' && response.navigateTo) {
-      console.log('[AI] Navigate to:', response.navigateTo, 'Current:', route.path)
-      // 检查是否已在目标页面
-      if (route.path !== response.navigateTo) {
-        console.log('[AI] Executing navigation...')
-        router.push(response.navigateTo)
-      } else {
-        console.log('[AI] Already at target page')
-      }
-    }
-    
-    // 如果是商城生成类型，创建项目并导航到建模器页面
-    if (response.type === 'mall_generated' && response.args?.mallData) {
-      try {
-        // 将 AI 生成的数据转换为 MallProject 格式
-        const mallData = response.args.mallData as MallProject
-        
-        // 调用 API 创建项目
-        const createRequest = toCreateRequest(mallData)
-        const createdProject = await mallBuilderApi.createProject(createRequest)
-        
-        ElMessage.success(t('ai.sidebar.mallGenerated'))
-        
-        // 导航到带有项目 ID 的建模器页面
-        setTimeout(() => {
-          router.push(`/admin/builder/${createdProject.projectId}`)
-        }, 500)
-      } catch (error) {
-        console.error('Failed to create project:', error)
-        // 如果创建失败，回退到旧方式（存储到 localStorage）
-        localStorage.setItem('ai_generated_mall', JSON.stringify(response.args.mallData))
-        ElMessage.warning(t('ai.sidebar.mallSaveFailed'))
-        setTimeout(() => {
-          router.push('/admin/builder')
-        }, 500)
-      }
-    }
-    
-    // 处理工具调用结果
-    if (response.toolResults) {
-      for (const tr of response.toolResults) {
-        handleToolResult(tr.function, tr.result)
-      }
-    }
   } catch (error: unknown) {
     stopProcessing()
     
@@ -330,18 +262,6 @@ async function sendMessage() {
   }
 }
 
-/** 处理工具调用结果 */
-function handleToolResult(funcName: string, result: Record<string, unknown>) {
-  if (funcName === 'navigate_to_store' && result.success) {
-    const store = result.store as { id: string; position: { x: number; y: number; z: number } }
-    // 如果不在商城页面，先导航过去
-    if (!route.path.startsWith('/mall')) {
-      router.push('/mall')
-    }
-    // TODO: 通过事件总线或 store 通知 3D 场景导航
-  }
-}
-
 /** 确认操作 */
 async function confirmAction(confirmed: boolean) {
   if (!aiStore.pendingConfirmation) return
@@ -352,8 +272,7 @@ async function confirmAction(confirmed: boolean) {
   startProcessing()
 
   try {
-    const userId = userStore.currentUser?.userId || 'anonymous'
-    const response = await intelligenceApi.confirm(action, args, confirmed, userId)
+    const response = await intelligenceApi.confirm(action, args, confirmed)
     stopProcessing()
     aiStore.handleResponse(response)
   } catch (error) {

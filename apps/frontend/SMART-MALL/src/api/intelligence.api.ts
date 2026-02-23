@@ -38,6 +38,33 @@ export interface GenerateMallResponse {
   parseInfo?: Record<string, unknown>
 }
 
+/** 商城描述对话消息 */
+export interface DescribeMessage {
+  role: 'user' | 'assistant'
+  content: string
+}
+
+/** 商城描述对话请求 */
+export interface DescribeMallRequest {
+  messages: DescribeMessage[]
+  currentDescription: string
+  finish?: boolean
+}
+
+/** 轮次信息 */
+export interface DescribeRoundInfo {
+  current: number
+  max: number
+}
+
+/** 商城描述对话响应 */
+export interface DescribeMallResponse {
+  reply: string
+  description: string
+  isComplete: boolean
+  roundInfo: DescribeRoundInfo
+}
+
 /** 工具调用结果 */
 export interface ToolResult {
   function: string
@@ -59,17 +86,12 @@ export interface ChatRequest {
 /** 对话响应 */
 export interface ChatResponse {
   requestId: string
-  type: 'text' | 'navigate' | 'confirmation_required' | 'confirm' | 'error' | 'mall_generated'
+  type: 'text' | 'confirmation_required' | 'confirm' | 'error'
   content?: string
   message?: string
   action?: string
   args?: Record<string, unknown>
   toolResults?: ToolResult[]
-  intent?: string
-  confidence?: number
-  suggestions?: string[]
-  navigateTo?: string
-  navigateLabel?: string
   timestamp: string
 }
 
@@ -87,12 +109,10 @@ export interface ChatMessage {
   content: string
   image_url?: string
   timestamp: Date
-  type?: 'text' | 'navigate' | 'confirmation_required' | 'confirm' | 'error' | 'mall_generated'
+  type?: 'text' | 'confirmation_required' | 'confirm' | 'error'
   action?: string
   args?: Record<string, unknown>
   tool_results?: ToolResult[]
-  navigateTo?: string
-  navigateLabel?: string
 }
 
 // ============================================================================
@@ -206,6 +226,24 @@ export const intelligenceApi = {
     const { data } = await axios.post<GenerateMallResponse>(
       '/intelligence-api/mall/generate',
       { description } as GenerateMallRequest,
+      { timeout: 60000 },
+    )
+    return data
+  },
+
+  /**
+   * AI 多轮对话生成商城描述
+   *
+   * 直接调用 Intelligence Service 的 /mall/describe 端点。
+   * 通过 Vite 代理 /intelligence-api → Python 服务。
+   *
+   * @param request - 对话请求（消息历史 + 当前描述 + 完成标志）
+   * @returns 对话响应（AI回复 + 更新描述 + 完成状态 + 轮次信息）
+   */
+  async describeMall(request: DescribeMallRequest): Promise<DescribeMallResponse> {
+    const { data } = await axios.post<DescribeMallResponse>(
+      '/intelligence-api/mall/describe',
+      request,
       { timeout: 60000 },
     )
     return data

@@ -16,13 +16,11 @@
  * ============================================================================
  */
 import { ref, nextTick, watch, onUnmounted, computed } from 'vue'
-import { useRouter, useRoute } from 'vue-router'
+import { useRoute } from 'vue-router'
 import { ElInput, ElButton, ElIcon, ElUpload, ElMessage } from 'element-plus'
 import { Promotion, Picture, Close } from '@element-plus/icons-vue'
 import { useI18n } from 'vue-i18n'
 import { intelligenceApi } from '@/api/intelligence.api'
-import { mallBuilderApi, toCreateRequest } from '@/api/mall-builder.api'
-import type { MallProject } from '@/builder/types/mall-project'
 import { useAiStore } from '@/stores'
 
 // ============================================================================
@@ -47,7 +45,6 @@ const emit = defineEmits<{
 // ============================================================================
 
 const { t } = useI18n()
-const router = useRouter()
 const route = useRoute()
 const aiStore = useAiStore()
 
@@ -195,30 +192,6 @@ async function sendMessage() {
     stopProcessing()
     aiStore.handleResponse(response)
     scrollToBottom()
-
-    if (response.type === 'navigate' && response.navigateTo) {
-      if (route.path !== response.navigateTo) {
-        router.push(response.navigateTo)
-      }
-    }
-
-    if (response.type === 'mall_generated' && response.args?.mallData) {
-      try {
-        const mallData = response.args.mallData as MallProject
-        const createRequest = toCreateRequest(mallData)
-        const createdProject = await mallBuilderApi.createProject(createRequest)
-        ElMessage.success(t('ai.sidebar.mallGenerated'))
-        setTimeout(() => {
-          router.push(`/admin/builder/${createdProject.projectId}`)
-        }, 500)
-      } catch {
-        localStorage.setItem('ai_generated_mall', JSON.stringify(response.args.mallData))
-        ElMessage.warning(t('ai.sidebar.mallSaveFailed'))
-        setTimeout(() => {
-          router.push('/admin/builder')
-        }, 500)
-      }
-    }
   } catch (error: unknown) {
     stopProcessing()
     if (error instanceof Error && error.name === 'AbortError') return

@@ -2,7 +2,7 @@
  * AI 协议 - 事件载荷类型定义
  * 
  * 定义 AI 助手与 3D 场景交互的事件载荷结构。
- * 这些类型用于 AiChatPanel 组件向父组件传递 AI 指令。
+ * 这些类型用于 AI 组件向父组件传递 AI 指令。
  */
 
 import type { Vector3D } from '../domain/scene/scene.types'

@@ -1,169 +1,35 @@
 <script setup lang="ts">
 /**
- * ============================================================================
- * Smart Mall 根组件 (SmartMall.vue)
- * ============================================================================
- * 
- * 【组件职责】
- * 这是整个应用的根组件，负责：
- * 1. 配置 Element Plus 国际化（中文）
+ * Smart Mall 根组件
+ *
+ * 职责：
+ * 1. 配置 Element Plus 国际化
  * 2. 提供全局布局容器
  * 3. 渲染路由出口（router-view）
- * 4. 提供全局 AI 助手「小智」
- * 
- * 【组件层级】
- * SmartMall.vue (根组件)
- *   └── ElConfigProvider (Element Plus 配置)
- *         ├── router-view (路由出口)
- *         │     └── 各个页面组件 (LoginView, MallView, etc.)
- *         └── GlobalAiAssistant (全局 AI 助手)
- * 
- * 【为什么需要 ElConfigProvider？】
- * Element Plus 默认是英文界面，需要通过 ElConfigProvider 配置中文：
- * - 日期选择器的"确定"、"取消"按钮
- * - 分页组件的"共 X 条"
- * - 表格的"暂无数据"
- * - 等等...
- * 
- * 【设计决策】
- * - 使用 <main> 语义化标签作为容器
- * - 全屏布局（100vw x 100vh）
- * - overflow: hidden 防止出现滚动条
- * - 全局 AI 助手在所有页面可用
- * 
- * ============================================================================
+ *
+ * AI 助手和设置面板由各 Layout 组件自行集成，不在根组件挂载。
  */
 
-import { computed, onMounted } from 'vue'
-import { useRoute } from 'vue-router'
+import { onMounted } from 'vue'
 import { ElConfigProvider } from 'element-plus'
-import GlobalAiAssistant from '@/components/ai/GlobalAiAssistant.vue'
-import SettingsPanel from '@/components/settings/SettingsPanel.vue'
 import { useSettingsStore } from '@/stores'
 
-const route = useRoute()
 const settingsStore = useSettingsStore()
 
-/**
- * 是否显示全局 AI 助手
- * 
- * 【逻辑说明】
- * - 登录、注册、忘记密码等认证页面不显示
- * - 设置面板中禁用 AI 助手时不显示
- * - 其他所有页面都显示
- */
-const hiddenPages = ['/login', '/register', '/forgot-password', '/reset-password']
-
-const showAiAssistant = computed(() => {
-  return !hiddenPages.includes(route.path) && settingsStore.aiAssistantEnabled
-})
-
-/**
- * 是否显示全局设置面板（fixed 定位版本）
- * 
- * 在使用 DashboardLayout 的页面中，设置面板已集成到侧边栏，
- * 因此根组件的 fixed 版本不需要显示。
- * 认证页面也不显示。
- */
-const showGlobalSettings = computed(() => {
-  // DashboardLayout 页面和 admin/merchant 页面已有侧边栏设置
-  const dashboardPaths = ['/mall', '/admin', '/merchant', '/user']
-  const isInDashboard = dashboardPaths.some(p => route.path === p || route.path.startsWith(p + '/'))
-  return !hiddenPages.includes(route.path) && !isInDashboard
-})
-
-// 页面加载时从 localStorage 恢复设置
 onMounted(() => {
   settingsStore.initFromStorage()
 })
 </script>
 
 <template>
-  <!--
-    ============================================================================
-    Element Plus 全局配置
-    ============================================================================
-    
-    ElConfigProvider 用于配置 Element Plus 的全局选项：
-    - locale: 国际化语言包（这里使用中文）
-    - size: 组件默认尺寸（可选：large/default/small）
-    - zIndex: 弹出层的 z-index 基准值
-    - button: 按钮的全局配置
-    
-    所有子组件都会继承这些配置
-  -->
   <ElConfigProvider :locale="settingsStore.elementPlusLocale">
-    <!--
-      ============================================================================
-      应用主容器
-      ============================================================================
-      
-      使用 HTML5 语义化标签 <main>：
-      - 表示页面的主要内容区域
-      - 有助于屏幕阅读器识别
-      - 符合无障碍访问标准
-      
-      class="smart-mall" 用于应用全局样式
-    -->
     <main class="smart-mall">
-      <!--
-        ============================================================================
-        路由出口
-        ============================================================================
-        
-        router-view 是 Vue Router 的核心组件：
-        - 根据当前 URL 渲染对应的页面组件
-        - 当 URL 变化时，自动切换显示的组件
-        
-        【路由匹配示例】
-        - /login → LoginView.vue
-        - /mall → MallView.vue
-        - /admin/dashboard → AdminLayout.vue → DashboardView.vue
-        - /merchant/store-config → MerchantLayout.vue → StoreConfigView.vue
-      -->
       <router-view />
-      
-      <!--
-        ============================================================================
-        全局 AI 助手「小智」
-        ============================================================================
-        
-        在所有页面（除认证页面外）显示的 AI 助手：
-        - 悬浮按钮在右下角
-        - 点击展开聊天面板
-        - 支持意图识别和页面导航
-      -->
-      <GlobalAiAssistant v-if="showAiAssistant" />
-
-      <!-- 全局设置面板（左下角齿轮图标，仅非 Dashboard 页面显示） -->
-      <SettingsPanel v-if="showGlobalSettings" />
     </main>
   </ElConfigProvider>
 </template>
 
 <style scoped lang="scss">
-@use '@/assets/styles/scss/variables' as *;
-@use '@/assets/styles/scss/mixins' as *;
-
-/**
- * ============================================================================
- * 根组件样式
- * ============================================================================
- * 
- * 【设计目标】
- * 创建一个全屏容器，作为所有页面的基础布局
- * 
- * 【样式说明】
- * - width: 100vw - 视口宽度（viewport width）
- * - height: 100vh - 视口高度（viewport height）
- * - position: relative - 为子元素的绝对定位提供参考
- * - overflow: hidden - 隐藏溢出内容，防止出现滚动条
- * 
- * 【为什么用 vw/vh 而不是 100%？】
- * - 100% 是相对于父元素的尺寸
- * - 100vw/100vh 是相对于视口的尺寸
- * - 使用 vw/vh 可以确保容器始终占满整个屏幕
- */
 .smart-mall {
   width: 100vw;
   height: 100vh;
