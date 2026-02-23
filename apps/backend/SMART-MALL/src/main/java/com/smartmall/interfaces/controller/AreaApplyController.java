@@ -29,7 +29,7 @@ public class AreaApplyController {
     @GetMapping("/area/available")
     @PreAuthorize("hasRole('MERCHANT')")
     public ApiResponse<List<AvailableAreaDTO>> getAvailableAreas(
-            @RequestParam(required = false) String floorId) {
+            @RequestParam(value = "floorId", required = false) String floorId) {
         List<AvailableAreaDTO> areas = areaApplyService.getAvailableAreas(floorId);
         return ApiResponse.success(areas);
     }
@@ -74,7 +74,7 @@ public class AreaApplyController {
     @PostMapping("/admin/area/apply/{applyId}/approve")
     @PreAuthorize("hasRole('ADMIN')")
     public ApiResponse<Void> approveApplication(
-            @PathVariable String applyId,
+            @PathVariable("applyId") String applyId,
             Authentication authentication) {
         String adminId = authentication.getName();
         areaApplyService.approveApplication(applyId, adminId);
@@ -87,7 +87,7 @@ public class AreaApplyController {
     @PostMapping("/admin/area/apply/{applyId}/reject")
     @PreAuthorize("hasRole('ADMIN')")
     public ApiResponse<Void> rejectApplication(
-            @PathVariable String applyId,
+            @PathVariable("applyId") String applyId,
             @Valid @RequestBody RejectRequest request,
             Authentication authentication) {
         String adminId = authentication.getName();

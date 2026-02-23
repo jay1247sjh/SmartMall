@@ -33,21 +33,6 @@ public class AiChatResponse {
     @Schema(description = "工具调用结果")
     private List<ToolResult> toolResults;
     
-    @Schema(description = "意图类型")
-    private String intent;
-    
-    @Schema(description = "置信度")
-    private Double confidence;
-    
-    @Schema(description = "建议操作")
-    private List<String> suggestions;
-    
-    @Schema(description = "导航目标路径")
-    private String navigateTo;
-    
-    @Schema(description = "导航目标标签")
-    private String navigateLabel;
-    
     @Schema(description = "时间戳")
     private String timestamp;
     

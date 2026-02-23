@@ -76,22 +76,19 @@
 
 #### 2.2.1 请求结构
 
+> ⚠️ **迁移中**：`chat()` 方法已从旧的 `/api/intent/process`（camelCase）迁移到 `/api/chat`（snake_case）。  
+> 以下为当前 `/api/chat` 端点的请求结构。旧格式见 spec: `.kiro/specs/ai-agent-tool-call-integration/design.md`。
+
 ```json
 {
-  "requestId": "req_uuid_xxx",
-  "version": "1.0",
-  "timestamp": "2026-01-10T10:00:00Z",
+  "request_id": "req_uuid_xxx",
+  "user_id": "user_001",
+  "message": "Nike 店在哪里？",
+  "image_url": null,
   "context": {
-    "userId": "user_001",
-    "role": "USER",
-    "mallId": "mall_001",
-    "currentPosition": { "x": 10, "y": 0, "z": 10 },
-    "sessionId": "session_xxx"
-  },
-  "input": {
-    "type": "NATURAL_LANGUAGE",
-    "text": "Nike 店在哪里？",
-    "locale": "zh-CN"
+    "user_role": "USER",
+    "current_floor": "F1",
+    "position": { "x": 10, "y": 0, "z": 10 }
   }
 }
 ```

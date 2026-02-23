@@ -25,6 +25,9 @@ public class PublicMallController {
     @GetMapping("/published")
     public ApiResponse<ProjectResponse> getPublishedMall() {
         ProjectResponse response = mallBuilderService.getPublishedMall();
+        if (response == null) {
+            return ApiResponse.error("A4002", "暂无已发布的商城数据");
+        }
         return ApiResponse.success(response);
     }
 }
