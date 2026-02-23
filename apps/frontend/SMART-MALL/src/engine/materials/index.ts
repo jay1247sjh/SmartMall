@@ -14,4 +14,4 @@
  */
 
 export { MaterialManager } from './MaterialManager'
-export type { StandardMaterialOptions, BasicMaterialOptions } from './MaterialManager'
+export type { StandardMaterialOptions, BasicMaterialOptions, TexturedMaterialOptions, MaterialPresetType } from './MaterialManager'

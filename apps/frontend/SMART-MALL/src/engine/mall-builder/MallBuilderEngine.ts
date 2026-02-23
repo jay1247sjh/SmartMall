@@ -41,7 +41,10 @@
 
 import * as THREE from 'three'
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js'
-import { ThreeEngine, type EngineOptions } from '@/engine/ThreeEngine'
+import { ThreeEngine, type EngineOptions, type ThreePointLightConfig } from '@/engine/ThreeEngine'
+import { MaterialManager } from '@/engine/materials/MaterialManager'
+import { EnvironmentManager } from '@/engine/environment/EnvironmentManager'
+import { type SceneTheme, type SceneThemePreset, getSceneThemePreset } from './theme-presets'
 
 // ============================================================================
 // 类型定义
@@ -55,13 +58,13 @@ export interface MallBuilderEngineOptions extends EngineOptions {
   gridSize?: number
   /** 网格分割数（默认 120） */
   gridDivisions?: number
-  /** 网格主线颜色（默认 0x1f1f1f） */
+  /** 网格主线颜色（默认跟随主题） */
   gridCenterLineColor?: number
-  /** 网格线颜色（默认 0x151515） */
+  /** 网格线颜色（默认跟随主题） */
   gridLineColor?: number
   /** 地板大小（默认 140） */
   groundSize?: number
-  /** 地板颜色（默认 0x0d0d0d） */
+  /** 地板颜色（默认跟随主题） */
   groundColor?: number
   /** 相机初始位置 */
   cameraPosition?: { x: number; y: number; z: number }
@@ -75,6 +78,8 @@ export interface MallBuilderEngineOptions extends EngineOptions {
   maxPolarAngle?: number
   /** 是否默认启用轨道控制（默认 false） */
   orbitEnabled?: boolean
+  /** 初始主题（默认 'dark'） */
+  initialTheme?: SceneTheme
 }
 
 /**
@@ -109,11 +114,20 @@ export class MallBuilderEngine extends ThreeEngine {
   /** 轨道控制器（建模器专用，带更多配置） */
   private builderOrbitControls: OrbitControls | null = null
 
+  /** 材质管理器（用于创建预设材质） */
+  private materialManager: MaterialManager = new MaterialManager()
+
   /** 配置选项 */
   private builderOptions: MallBuilderEngineOptions
 
   /** 场景中心是否已初始化（防止每次 renderProject 都重置相机） */
   private sceneCenterInitialized = false
+
+  /** 当前主题 */
+  private currentTheme: SceneTheme = 'dark'
+
+  /** 当前主题预设 */
+  private themePreset: SceneThemePreset
 
   // ==========================================================================
   // 构造函数
@@ -126,9 +140,14 @@ export class MallBuilderEngine extends ThreeEngine {
    * @param options - 建模器引擎配置选项
    */
   constructor(container: HTMLElement, options: MallBuilderEngineOptions = {}) {
-    // 调用父类构造函数，设置深色背景
+    // 根据初始主题选择背景色
+    const initialTheme: SceneTheme = options.initialTheme ?? 'dark'
+    const preset = getSceneThemePreset(initialTheme)
+
+    // 调用父类构造函数
+    // 注意：后处理管线（SSAOPass）在场景几何体较少时会导致黑屏，暂时禁用
     super(container, {
-      backgroundColor: options.backgroundColor ?? 0x0a0a0a,
+      backgroundColor: options.backgroundColor ?? preset.backgroundColor,
       antialias: options.antialias ?? true,
       maxPixelRatio: options.maxPixelRatio ?? 2,
       cameraMode: 'orbit',
@@ -136,6 +155,8 @@ export class MallBuilderEngine extends ThreeEngine {
 
     // 保存配置
     this.builderOptions = options
+    this.currentTheme = initialTheme
+    this.themePreset = preset
 
     // 销毁父类创建的 OrbitController，MallBuilderEngine 使用自己的 builderOrbitControls
     // 两个 OrbitControls 绑定同一个 camera + DOM 会互相冲突
@@ -151,7 +172,9 @@ export class MallBuilderEngine extends ThreeEngine {
     // 添加建模器专用的场景元素
     this.setupBuilderGrid()
     this.setupBuilderGround()
-    this.setupBuilderLights()
+
+    // 生成程序化 envMap，为 PBR 材质提供环境反射
+    this.setupProceduralEnvironment()
   }
 
   // ==========================================================================
@@ -254,14 +277,13 @@ export class MallBuilderEngine extends ThreeEngine {
   private setupBuilderGrid(): void {
     const opts = this.builderOptions
 
-    // 创建网格辅助线
     const size = opts.gridSize ?? 120
     const divisions = opts.gridDivisions ?? 120
-    const centerLineColor = opts.gridCenterLineColor ?? 0x1f1f1f
-    const lineColor = opts.gridLineColor ?? 0x151515
+    const centerLineColor = opts.gridCenterLineColor ?? this.themePreset.gridCenterLineColor
+    const lineColor = opts.gridLineColor ?? this.themePreset.gridLineColor
 
     this.gridHelper = new THREE.GridHelper(size, divisions, centerLineColor, lineColor)
-    this.gridHelper.position.y = -0.02 // 稍微下沉，避免与地板 z-fighting
+    this.gridHelper.position.y = -0.02
     this.gridHelper.name = 'mall-builder-grid'
 
     this.scene.add(this.gridHelper)
@@ -275,21 +297,15 @@ export class MallBuilderEngine extends ThreeEngine {
   private setupBuilderGround(): void {
     const opts = this.builderOptions
 
-    // 创建地板几何体
     const size = opts.groundSize ?? 140
     const geometry = new THREE.PlaneGeometry(size, size)
 
-    // 创建地板材质
-    const color = opts.groundColor ?? 0x0d0d0d
-    const material = new THREE.MeshStandardMaterial({
-      color,
-      roughness: 0.95,
-    })
+    const color = opts.groundColor ?? this.themePreset.groundColor
+    const material = this.materialManager.getPresetMaterial('reflectiveFloor', { color })
 
-    // 创建地板网格
     this.groundMesh = new THREE.Mesh(geometry, material)
-    this.groundMesh.rotation.x = -Math.PI / 2 // 旋转为水平
-    this.groundMesh.position.y = -0.03 // 稍微下沉
+    this.groundMesh.rotation.x = -Math.PI / 2
+    this.groundMesh.position.y = -0.03
     this.groundMesh.receiveShadow = true
     this.groundMesh.name = 'mall-builder-ground'
 
@@ -297,33 +313,69 @@ export class MallBuilderEngine extends ThreeEngine {
   }
 
   /**
-   * 设置建模器专用灯光
+   * 程序化生成环境贴图并应用到场景
    *
-   * 覆盖父类的灯光设置，使用更适合建模器的配置
+   * 使用 PMREMGenerator 从渐变色球体生成 envMap，
+   * 为 PBR 材质提供环境反射效果，增强表面光泽和深度感。
+   * 仅设置 scene.environment（不设为 scene.background，保持纯色背景）。
+   *
+   * 失败时输出警告日志并继续正常运行。
    */
-  private setupBuilderLights(): void {
-    // 移除父类添加的灯光
-    const lightsToRemove: THREE.Light[] = []
-    this.scene.traverse((object) => {
-      if (object instanceof THREE.Light) {
-        lightsToRemove.push(object)
+  private setupProceduralEnvironment(): void {
+    try {
+      const envManager = new EnvironmentManager(this.renderer)
+      const envMap = envManager.generateProceduralEnvMap({
+        topColor: this.themePreset.envMapTopColor,
+        bottomColor: this.themePreset.envMapBottomColor,
+      })
+
+      if (envMap) {
+        this.scene.environment = envMap
+        this.materialManager.setGlobalEnvMap(envMap)
       }
-    })
-    lightsToRemove.forEach((light) => this.scene.remove(light))
+    } catch (error) {
+      console.warn('[MallBuilderEngine] Failed to setup procedural environment, continuing without envMap:', error)
+    }
+  }
 
-    // 添加环境光（稍亮一些）
-    const ambientLight = new THREE.AmbientLight(0xffffff, 0.7)
-    ambientLight.name = 'mall-builder-ambient-light'
-    this.scene.add(ambientLight)
-
-    // 添加方向光（从更高的位置照射）
-    const directionalLight = new THREE.DirectionalLight(0xffffff, 0.6)
-    directionalLight.position.set(30, 80, 30)
-    directionalLight.castShadow = true
-    directionalLight.shadow.mapSize.width = 2048
-    directionalLight.shadow.mapSize.height = 2048
-    directionalLight.name = 'mall-builder-directional-light'
-    this.scene.add(directionalLight)
+  /**
+   * 覆盖父类的默认光照配置，使用适合建模器暗色主题的三点光照参数
+   *
+   * 暗色主题特点：
+   * - 整体光照强度较低，避免过亮
+   * - 主光源偏暖色调（0xfff5e6），模拟柔和的工作灯
+   * - 补光灯偏冷色调（0xc8d8e8），增加层次感
+   * - 轮廓光微弱，仅勾勒边缘
+   * - 半球光使用深色天空和更深的地面色
+   */
+  protected override getDefaultLightConfig(): ThreePointLightConfig {
+    // themePreset may not be initialized yet when called from parent constructor's setupLights()
+    const preset = this.themePreset ?? getSceneThemePreset('dark')
+    return {
+      keyLight: {
+        color: 0xfff5e6,
+        intensity: preset.keyLightIntensity,
+        position: new THREE.Vector3(30, 80, 30),
+        castShadow: true,
+        shadowMapSize: 2048,
+        shadowCameraRange: 80,
+      },
+      fillLight: {
+        color: 0xc8d8e8,
+        intensity: preset.fillLightIntensity,
+        position: new THREE.Vector3(-20, 40, -20),
+      },
+      rimLight: {
+        color: 0xffffff,
+        intensity: preset.rimLightIntensity,
+        position: new THREE.Vector3(0, 50, -40),
+      },
+      hemisphereLight: {
+        skyColor: preset.hemisphereSkyColor,
+        groundColor: preset.hemisphereGroundColor,
+        intensity: preset.hemisphereLightIntensity,
+      },
+    }
   }
 
   // ==========================================================================
@@ -502,10 +554,12 @@ export class MallBuilderEngine extends ThreeEngine {
     if (points.length >= 3) {
       const shape = new THREE.Shape()
       const firstPoint = points[0]!
-      shape.moveTo(firstPoint.x, -firstPoint.y)
+      // Shape 在 XY 平面，经 rotation.x = -PI/2 后：(shapeX, shapeY) → 3D (shapeX, 0, -shapeY)
+      // 要让最终 3D 坐标为 (x, 0, -y)，Shape 坐标应为 (x, y)（不取反）
+      shape.moveTo(firstPoint.x, firstPoint.y)
       for (let i = 1; i < points.length; i++) {
         const point = points[i]!
-        shape.lineTo(point.x, -point.y)
+        shape.lineTo(point.x, point.y)
       }
       shape.closePath()
 
@@ -701,6 +755,98 @@ export class MallBuilderEngine extends ThreeEngine {
   }
 
   // ==========================================================================
+  // 公共方法 - 主题切换
+  // ==========================================================================
+
+  /**
+   * 获取当前主题
+   */
+  public getTheme(): SceneTheme {
+    return this.currentTheme
+  }
+
+  /**
+   * 获取当前主题的背景色
+   */
+  public getThemeBackgroundColor(): number {
+    return this.themePreset.backgroundColor
+  }
+
+  /**
+   * 切换 3D 场景主题色
+   *
+   * 更新 scene.background、地板材质、网格颜色、envMap、灯光参数。
+   * 网格需要销毁重建（GridHelper 不支持运行时改色）。
+   *
+   * @param theme - 'dark' | 'light'
+   */
+  public updateThemeColors(theme: SceneTheme): void {
+    if (theme === this.currentTheme) return
+
+    this.currentTheme = theme
+    this.themePreset = getSceneThemePreset(theme)
+
+    // 1. 更新场景背景
+    this.scene.background = new THREE.Color(this.themePreset.backgroundColor)
+
+    // 2. 更新地板材质颜色
+    if (this.groundMesh) {
+      const mat = this.groundMesh.material as THREE.MeshStandardMaterial
+      mat.color.setHex(this.themePreset.groundColor)
+      mat.needsUpdate = true
+    }
+
+    // 3. 重建网格（GridHelper 不支持运行时改色）
+    if (this.gridHelper) {
+      const pos = this.gridHelper.position.clone()
+      this.scene.remove(this.gridHelper)
+      this.gridHelper.dispose()
+
+      const opts = this.builderOptions
+      const size = opts.gridSize ?? 120
+      const divisions = opts.gridDivisions ?? 120
+      this.gridHelper = new THREE.GridHelper(
+        size, divisions,
+        this.themePreset.gridCenterLineColor,
+        this.themePreset.gridLineColor
+      )
+      this.gridHelper.position.copy(pos)
+      this.gridHelper.name = 'mall-builder-grid'
+      this.scene.add(this.gridHelper)
+    }
+
+    // 4. 重新生成 envMap
+    this.setupProceduralEnvironment()
+
+    // 5. 更新灯光参数
+    this.scene.traverse((obj) => {
+      if (obj instanceof THREE.HemisphereLight) {
+        obj.color.setHex(this.themePreset.hemisphereSkyColor)
+        obj.groundColor.setHex(this.themePreset.hemisphereGroundColor)
+        obj.intensity = this.themePreset.hemisphereLightIntensity
+      }
+    })
+
+    // 更新 key / fill / rim light 强度
+    const lightNames = ['key-light', 'fill-light', 'rim-light']
+    const intensities = [
+      this.themePreset.keyLightIntensity,
+      this.themePreset.fillLightIntensity,
+      this.themePreset.rimLightIntensity,
+    ]
+    this.scene.traverse((obj) => {
+      if (obj instanceof THREE.DirectionalLight) {
+        const idx = lightNames.indexOf(obj.name)
+        if (idx !== -1) {
+          obj.intensity = intensities[idx]!
+        }
+      }
+    })
+
+    this.requestRender()
+  }
+
+  // ==========================================================================
   // 重写父类方法
   // ==========================================================================
 
@@ -718,6 +864,9 @@ export class MallBuilderEngine extends ThreeEngine {
       this.builderOrbitControls.dispose()
       this.builderOrbitControls = null
     }
+
+    // 销毁材质管理器
+    this.materialManager.dispose()
 
     // 清除网格和地板引用
     this.gridHelper = null

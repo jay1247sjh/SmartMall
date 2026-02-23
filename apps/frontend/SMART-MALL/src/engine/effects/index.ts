@@ -15,3 +15,6 @@
 
 export { HighlightEffect } from './HighlightEffect'
 export type { HighlightOptions } from './HighlightEffect'
+
+export { PostProcessingPipeline } from './PostProcessingPipeline'
+export type { PostProcessingOptions } from './PostProcessingPipeline'

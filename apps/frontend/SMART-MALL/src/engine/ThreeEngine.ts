@@ -16,6 +16,8 @@
 
 import * as THREE from 'three'
 import { CameraController, OrbitController, createPerspectiveCamera, type ThirdPersonCameraConfig } from './camera'
+import { PostProcessingPipeline, type PostProcessingOptions } from './effects/PostProcessingPipeline'
+import { EnvironmentManager } from './environment/EnvironmentManager'
 import { RaycasterManager } from './interaction'
 
 // ============================================================================
@@ -30,6 +32,80 @@ import { RaycasterManager } from './interaction'
 export type CameraMode = 'orbit' | 'follow'
 
 /**
+ * 质量等级
+ * - 'high': 全部后处理通道启用
+ * - 'medium': 禁用 Bloom
+ * - 'low': 禁用 SSAO 和 Bloom
+ */
+export type QualityLevel = 'high' | 'medium' | 'low'
+
+/**
+ * 质量等级预设配置映射
+ */
+export const QUALITY_PRESETS: Record<QualityLevel, {
+  ssaoEnabled: boolean
+  bloomEnabled: boolean
+  fxaaEnabled: boolean
+  shadowMapSize: number
+  toneMappingExposure: number
+}> = {
+  high: {
+    ssaoEnabled: true,
+    bloomEnabled: true,
+    fxaaEnabled: true,
+    shadowMapSize: 2048,
+    toneMappingExposure: 1.0,
+  },
+  medium: {
+    ssaoEnabled: true,
+    bloomEnabled: false,
+    fxaaEnabled: true,
+    shadowMapSize: 1024,
+    toneMappingExposure: 1.0,
+  },
+  low: {
+    ssaoEnabled: false,
+    bloomEnabled: false,
+    fxaaEnabled: true,
+    shadowMapSize: 512,
+    toneMappingExposure: 1.0,
+  },
+}
+
+/**
+ * 三点光照配置
+ */
+export interface ThreePointLightConfig {
+  /** 主光源（Key Light） */
+  keyLight: {
+    color: number
+    intensity: number
+    position: THREE.Vector3
+    castShadow: boolean
+    shadowMapSize: number
+    shadowCameraRange: number
+  }
+  /** 补光灯（Fill Light） */
+  fillLight: {
+    color: number
+    intensity: number
+    position: THREE.Vector3
+  }
+  /** 轮廓光（Rim Light） */
+  rimLight: {
+    color: number
+    intensity: number
+    position: THREE.Vector3
+  }
+  /** 半球光 */
+  hemisphereLight: {
+    skyColor: number
+    groundColor: number
+    intensity: number
+  }
+}
+
+/**
  * 引擎配置选项
  */
 export interface EngineOptions {
@@ -41,6 +117,28 @@ export interface EngineOptions {
   maxPixelRatio?: number
   /** 相机控制模式，默认 'orbit' */
   cameraMode?: CameraMode
+  /** 色调映射算法，默认 ACESFilmicToneMapping */
+  toneMapping?: THREE.ToneMapping
+  /** 色调映射曝光值，默认 1.0 */
+  toneMappingExposure?: number
+  /** 输出色彩空间，默认 SRGBColorSpace */
+  outputColorSpace?: THREE.ColorSpace
+  /** 是否启用环境贴图，默认 false */
+  enableEnvironmentMap?: boolean
+  /** 是否启用后处理管线，默认 false */
+  enablePostProcessing?: boolean
+  /** 后处理管线配置选项 */
+  postProcessingOptions?: PostProcessingOptions
+  /** 是否启用雾效，默认 false */
+  fogEnabled?: boolean
+  /** 雾效颜色（十六进制），默认 0xcccccc */
+  fogColor?: number
+  /** 雾效近距离，默认 10 */
+  fogNear?: number
+  /** 雾效远距离，默认 200 */
+  fogFar?: number
+  /** 质量等级，默认 'high' */
+  qualityLevel?: QualityLevel
 }
 
 // ============================================================================
@@ -100,6 +198,30 @@ export class ThreeEngine {
   protected onRenderCallbacks: Array<(delta: number) => void> = []
 
   // ==========================================================================
+  // 受保护属性 - 环境贴图管理（子类可访问）
+  // ==========================================================================
+
+  /** 环境贴图管理器 */
+  protected environmentManager: EnvironmentManager | null = null
+
+  /** 当前加载的环境贴图引用（用于后续传递给 MaterialManager） */
+  protected currentEnvMap: THREE.Texture | null = null
+
+  // ==========================================================================
+  // 受保护属性 - 后处理管线（子类可访问）
+  // ==========================================================================
+
+  /** 后处理管线 */
+  protected postProcessing: PostProcessingPipeline | null = null
+
+  // ==========================================================================
+  // 受保护属性 - 质量等级（子类可访问）
+  // ==========================================================================
+
+  /** 当前质量等级 */
+  protected currentQualityLevel: QualityLevel = 'high'
+
+  // ==========================================================================
   // 构造函数
   // ==========================================================================
 
@@ -119,6 +241,9 @@ export class ThreeEngine {
     // 设置相机模式，默认为 orbit（轨道模式）
     this.currentMode = options.cameraMode ?? 'orbit'
 
+    // 设置质量等级，默认为 'high'
+    this.currentQualityLevel = options.qualityLevel ?? 'high'
+
     // 按顺序初始化各个组件
     this.scene = this.createScene(options)           // 1. 创建场景
     this.renderer = this.createRenderer(options)     // 2. 创建渲染器
@@ -132,6 +257,28 @@ export class ThreeEngine {
 
     // 设置光源
     this.setupLights()
+
+    // 如果启用环境贴图，创建 EnvironmentManager
+    if (options.enableEnvironmentMap) {
+      this.environmentManager = new EnvironmentManager(this.renderer)
+    }
+
+    // 如果启用后处理管线，创建 PostProcessingPipeline
+    if (options.enablePostProcessing) {
+      try {
+        this.postProcessing = new PostProcessingPipeline(
+          this.renderer,
+          this.scene,
+          this.camera,
+          options.postProcessingOptions,
+        )
+        // 应用初始质量等级配置到后处理通道
+        this.applyQualityPreset(this.currentQualityLevel)
+      } catch (e) {
+        console.warn('[ThreeEngine] Failed to initialize post-processing pipeline, falling back to direct rendering:', e)
+        this.postProcessing = null
+      }
+    }
 
     // 设置事件监听器
     this.setupEventListeners()
@@ -153,6 +300,14 @@ export class ThreeEngine {
     // 设置背景颜色，默认浅灰色 0xf0f0f0
     scene.background = new THREE.Color(options.backgroundColor ?? 0xf0f0f0)
 
+    // 设置雾效（增强深度感知）
+    if (options.fogEnabled) {
+      const fogColor = options.fogColor ?? 0xcccccc
+      const fogNear = options.fogNear ?? 10
+      const fogFar = options.fogFar ?? 200
+      scene.fog = new THREE.Fog(fogColor, fogNear, fogFar)
+    }
+
     return scene
   }
 
@@ -161,7 +316,7 @@ export class ThreeEngine {
    *
    * Renderer 负责将 3D 场景绘制到 2D 画布上
    */
-  private createRenderer(options: EngineOptions): THREE.WebGLRenderer {
+  protected createRenderer(options: EngineOptions): THREE.WebGLRenderer {
     // 创建渲染器，配置抗锯齿和透明背景
     const renderer = new THREE.WebGLRenderer({
       antialias: options.antialias ?? true,  // 抗锯齿，让边缘更平滑
@@ -177,6 +332,16 @@ export class ThreeEngine {
     // 设置像素比率（高 DPI 屏幕会更清晰，但也更耗性能）
     // 限制最大值为 2，平衡清晰度和性能
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, options.maxPixelRatio ?? 2))
+
+    // 色调映射：将 HDR 亮度范围映射到显示器可显示范围
+    // 默认使用 ACESFilmicToneMapping，提供电影级色彩表现
+    renderer.toneMapping = options.toneMapping ?? THREE.ACESFilmicToneMapping
+
+    // 色调映射曝光值：控制整体亮度，默认 1.0
+    renderer.toneMappingExposure = options.toneMappingExposure ?? 1.0
+
+    // 输出色彩空间：确保颜色在 sRGB 空间正确显示
+    renderer.outputColorSpace = options.outputColorSpace ?? THREE.SRGBColorSpace
 
     // 开启阴影
     renderer.shadowMap.enabled = true
@@ -217,23 +382,81 @@ export class ThreeEngine {
    * 设置场景光源
    *
    * 没有光源，物体会是全黑的
+   *
+   * 使用三点光照系统：主光源（Key Light）、补光灯（Fill Light）、轮廓光（Rim Light）
+   * 加上 HemisphereLight 模拟天空与地面的自然色彩过渡
    */
-  private setupLights(): void {
-    // 环境光：均匀照亮所有物体，没有方向
-    // 参数：颜色, 强度
-    const ambientLight = new THREE.AmbientLight(0xffffff, 0.5)
-    this.scene.add(ambientLight)
+  protected setupLights(): void {
+    const config = this.getDefaultLightConfig()
 
-    // 方向光：模拟太阳光，有方向，可以产生阴影
-    const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8)
-    // 设置光源位置（从右上方照射）
-    directionalLight.position.set(10, 20, 10)
-    // 开启阴影投射
-    directionalLight.castShadow = true
-    // 设置阴影贴图分辨率（越高越清晰，但越耗性能）
-    directionalLight.shadow.mapSize.width = 2048
-    directionalLight.shadow.mapSize.height = 2048
-    this.scene.add(directionalLight)
+    // 主光源（Key Light）：场景主要照明，带阴影
+    const keyLight = new THREE.DirectionalLight(config.keyLight.color, config.keyLight.intensity)
+    keyLight.position.copy(config.keyLight.position)
+    keyLight.castShadow = config.keyLight.castShadow
+    keyLight.shadow.mapSize.width = config.keyLight.shadowMapSize
+    keyLight.shadow.mapSize.height = config.keyLight.shadowMapSize
+    keyLight.shadow.camera.left = -config.keyLight.shadowCameraRange
+    keyLight.shadow.camera.right = config.keyLight.shadowCameraRange
+    keyLight.shadow.camera.top = config.keyLight.shadowCameraRange
+    keyLight.shadow.camera.bottom = -config.keyLight.shadowCameraRange
+    keyLight.shadow.camera.near = 0.5
+    keyLight.shadow.camera.far = 100
+    keyLight.name = 'key-light'
+    this.scene.add(keyLight)
+
+    // 补光灯（Fill Light）：从对侧柔和补光，减少暗部对比
+    const fillLight = new THREE.DirectionalLight(config.fillLight.color, config.fillLight.intensity)
+    fillLight.position.copy(config.fillLight.position)
+    fillLight.name = 'fill-light'
+    this.scene.add(fillLight)
+
+    // 轮廓光（Rim Light）：从背后照射，勾勒物体边缘轮廓
+    const rimLight = new THREE.DirectionalLight(config.rimLight.color, config.rimLight.intensity)
+    rimLight.position.copy(config.rimLight.position)
+    rimLight.name = 'rim-light'
+    this.scene.add(rimLight)
+
+    // 半球光：模拟天空（暖白）与地面（冷灰）的自然色彩过渡
+    const hemiLight = new THREE.HemisphereLight(
+      config.hemisphereLight.skyColor,
+      config.hemisphereLight.groundColor,
+      config.hemisphereLight.intensity,
+    )
+    hemiLight.name = 'hemisphere-light'
+    this.scene.add(hemiLight)
+  }
+
+  /**
+   * 获取默认三点光照配置
+   *
+   * 子类可覆盖此方法以自定义光照参数
+   */
+  protected getDefaultLightConfig(): ThreePointLightConfig {
+    return {
+      keyLight: {
+        color: 0xffffff,
+        intensity: 0.8,
+        position: new THREE.Vector3(10, 20, 10),
+        castShadow: true,
+        shadowMapSize: 2048,
+        shadowCameraRange: 50,
+      },
+      fillLight: {
+        color: 0xffffff,
+        intensity: 0.3,
+        position: new THREE.Vector3(-8, 10, -8),
+      },
+      rimLight: {
+        color: 0xffffff,
+        intensity: 0.4,
+        position: new THREE.Vector3(0, 15, -15),
+      },
+      hemisphereLight: {
+        skyColor: 0xffeedd,
+        groundColor: 0x8899aa,
+        intensity: 0.3,
+      },
+    }
   }
 
   /**
@@ -264,6 +487,9 @@ export class ThreeEngine {
 
     // 更新渲染器尺寸
     this.renderer.setSize(width, height)
+
+    // 同步更新后处理管线尺寸
+    this.postProcessing?.setSize(width, height)
 
     // 请求重新渲染
     this.requestRender()
@@ -395,10 +621,12 @@ export class ThreeEngine {
 
     // 按需渲染：只有 needsRender 为 true 时才渲染，节省 GPU 性能
     if (this.needsRender) {
-      // 核心！渲染器把场景画到画布上
-      // scene: 要绘制的内容（所有物体、灯光）
-      // camera: 从哪个视角看（决定画面内容）
-      this.renderer.render(this.scene, this.camera)
+      // 后处理管线启用时使用 postProcessing.render()，否则直接渲染
+      if (this.postProcessing) {
+        this.postProcessing.render()
+      } else {
+        this.renderer.render(this.scene, this.camera)
+      }
       // 重置标志，等待下次 requestRender() 调用
       this.needsRender = false
     }
@@ -428,6 +656,37 @@ export class ThreeEngine {
    */
   public clearFollowTarget(): void {
     this.cameraController?.clearFollowTarget()
+  }
+
+  // ==========================================================================
+  // 环境贴图
+  // ==========================================================================
+
+  /**
+   * 加载并应用 HDR 环境贴图
+   *
+   * 懒创建 EnvironmentManager（如果尚未创建）。
+   * 加载成功后将环境贴图应用到场景，并存储引用供后续使用。
+   *
+   * @param url - HDR 文件路径
+   */
+  public async loadEnvironmentMap(url: string): Promise<void> {
+    // 懒创建 EnvironmentManager
+    if (!this.environmentManager) {
+      this.environmentManager = new EnvironmentManager(this.renderer)
+    }
+
+    const envMap = await this.environmentManager.loadHDR(url)
+
+    if (envMap) {
+      this.environmentManager.applyToScene(this.scene)
+      this.currentEnvMap = envMap
+
+      // TODO: Task 5.1 — 调用 materialManager.setGlobalEnvMap(envMap)
+      // 将环境贴图传递给 MaterialManager，使所有 PBR 材质自动获得环境反射
+
+      this.requestRender()
+    }
   }
 
   // ==========================================================================
@@ -542,6 +801,23 @@ export class ThreeEngine {
       }
     }
 
+    // 销毁环境贴图管理器
+    try {
+      this.environmentManager?.dispose()
+    } catch (e) {
+      console.warn('[ThreeEngine] Error disposing environment manager:', e)
+    }
+    this.environmentManager = null
+    this.currentEnvMap = null
+
+    // 销毁后处理管线
+    try {
+      this.postProcessing?.dispose()
+    } catch (e) {
+      console.warn('[ThreeEngine] Error disposing post-processing pipeline:', e)
+    }
+    this.postProcessing = null
+
     // 遍历场景中的所有对象，释放几何体和材质
     this.scene.traverse((object) => {
       if (object instanceof THREE.Mesh) {
@@ -642,6 +918,43 @@ export class ThreeEngine {
   /** 获取射线检测管理器 */
   public getRaycasterManager(): RaycasterManager {
     return this.raycasterManager
+  }
+
+  /** 获取后处理管线（未启用时返回 null） */
+  public getPostProcessing(): PostProcessingPipeline | null {
+    return this.postProcessing
+  }
+
+  // ==========================================================================
+  // 质量等级控制
+  // ==========================================================================
+
+  /**
+   * 设置质量等级，根据预设配置后处理通道
+   */
+  public setQualityLevel(level: QualityLevel): void {
+    this.currentQualityLevel = level
+    this.applyQualityPreset(level)
+    this.requestRender()
+  }
+
+  /**
+   * 获取当前质量等级
+   */
+  public getQualityLevel(): QualityLevel {
+    return this.currentQualityLevel
+  }
+
+  /**
+   * 应用质量预设到后处理通道
+   */
+  private applyQualityPreset(level: QualityLevel): void {
+    if (!this.postProcessing) return
+
+    const preset = QUALITY_PRESETS[level]
+    this.postProcessing.setPassEnabled('ssao', preset.ssaoEnabled)
+    this.postProcessing.setPassEnabled('bloom', preset.bloomEnabled)
+    this.postProcessing.setPassEnabled('fxaa', preset.fxaaEnabled)
   }
 
   // ==========================================================================

@@ -55,6 +55,29 @@ export interface StandardMaterialOptions {
 }
 
 /**
+ * 纹理材质配置选项
+ * 扩展标准材质，支持漫反射贴图、法线贴图和粗糙度贴图
+ */
+export interface TexturedMaterialOptions extends StandardMaterialOptions {
+  /** 漫反射贴图 */
+  map?: THREE.Texture
+  /** 法线贴图 */
+  normalMap?: THREE.Texture
+  /** 粗糙度贴图 */
+  roughnessMap?: THREE.Texture
+  /** 环境反射强度（默认 1.0） */
+  envMapIntensity?: number
+}
+
+/**
+ * 材质预设类型
+ * - glass: 玻璃/透明材质（透明、低粗糙度、高金属度）
+ * - reflectiveFloor: 反射地板材质（低粗糙度、微反射）
+ * - matte: 哑光材质（高粗糙度、无金属度）
+ */
+export type MaterialPresetType = 'glass' | 'reflectiveFloor' | 'matte'
+
+/**
  * 基础材质配置选项
  * 用于创建 MeshBasicMaterial（不受光照影响）
  */
@@ -90,6 +113,12 @@ export class MaterialManager {
    * 基础材质缓存
    */
   private basicMaterialCache: Map<string, THREE.MeshBasicMaterial> = new Map()
+
+  /**
+   * 全局环境贴图
+   * 设置后，所有新创建和已缓存的 PBR 材质都会自动获得环境反射
+   */
+  private globalEnvMap: THREE.Texture | null = null
 
   // ==========================================================================
   // 构造函数
@@ -128,7 +157,12 @@ export class MaterialManager {
     // 缓存未命中，需要创建新的材质实例
     const material = this.createStandardMaterial(options)
 
-    // 步骤 4: 存入缓存
+    // 步骤 4: 应用全局环境贴图（如果已设置）
+    if (this.globalEnvMap) {
+      material.envMap = this.globalEnvMap
+    }
+
+    // 步骤 5: 存入缓存
     // 下次相同配置可以直接复用
     this.standardMaterialCache.set(key, material)
 
@@ -163,6 +197,119 @@ export class MaterialManager {
     this.basicMaterialCache.set(key, material)
 
     return material
+  }
+
+  /**
+   * 获取纹理材质
+   *
+   * 创建带有漫反射贴图、法线贴图和粗糙度贴图的 PBR 材质。
+   * 缓存键包含纹理 ID，确保相同纹理配置的材质被正确复用。
+   *
+   * @param options - 纹理材质配置选项
+   * @returns MeshStandardMaterial 实例
+   */
+  public getTexturedMaterial(options: TexturedMaterialOptions): THREE.MeshStandardMaterial {
+    // 步骤 1: 生成包含纹理 ID 的缓存键
+    const key = this.generateTexturedKey(options)
+
+    // 步骤 2: 检查缓存（复用 standardMaterialCache）
+    const cached = this.standardMaterialCache.get(key)
+    if (cached) {
+      return cached
+    }
+
+    // 步骤 3: 创建带纹理的标准材质
+    const material = this.createStandardMaterial(options)
+
+    // 步骤 4: 设置纹理贴图
+    if (options.map) {
+      material.map = options.map
+    }
+    if (options.normalMap) {
+      material.normalMap = options.normalMap
+    }
+    if (options.roughnessMap) {
+      material.roughnessMap = options.roughnessMap
+    }
+
+    // 步骤 5: 应用环境贴图
+    if (this.globalEnvMap) {
+      material.envMap = this.globalEnvMap
+    }
+    if (options.envMapIntensity !== undefined) {
+      material.envMapIntensity = options.envMapIntensity
+    }
+
+    // 步骤 6: 标记需要更新
+    material.needsUpdate = true
+
+    // 步骤 7: 存入缓存
+    this.standardMaterialCache.set(key, material)
+
+    return material
+  }
+
+  /**
+   * 获取预设材质
+   *
+   * 根据预设类型创建常用材质，支持通过 overrides 自定义部分属性。
+   * 内部使用 getStandardMaterial，自动享受缓存复用。
+   *
+   * 预设参数：
+   * - glass: 透明玻璃（opacity=0.3, roughness=0.05, metalness=0.9, transparent=true）
+   * - reflectiveFloor: 微反射地板（roughness=0.2, metalness=0.1）
+   * - matte: 哑光表面（roughness=0.9, metalness=0.0）
+   *
+   * @param preset - 预设类型
+   * @param overrides - 可选的属性覆盖
+   * @returns MeshStandardMaterial 实例
+   */
+  public getPresetMaterial(
+    preset: MaterialPresetType,
+    overrides?: Partial<StandardMaterialOptions>
+  ): THREE.MeshStandardMaterial {
+    const presetDefaults: Record<MaterialPresetType, StandardMaterialOptions> = {
+      glass: {
+        color: 0xffffff,
+        transparent: true,
+        opacity: 0.3,
+        roughness: 0.05,
+        metalness: 0.9,
+      },
+      reflectiveFloor: {
+        color: 0x808080,
+        roughness: 0.2,
+        metalness: 0.1,
+      },
+      matte: {
+        color: 0xffffff,
+        roughness: 0.9,
+        metalness: 0.0,
+      },
+    }
+
+    const defaults = presetDefaults[preset]
+    const merged: StandardMaterialOptions = { ...defaults, ...overrides }
+
+    return this.getStandardMaterial(merged)
+  }
+
+  /**
+   * 设置全局环境贴图
+   *
+   * 将环境贴图应用到所有已缓存的 PBR 材质，
+   * 后续创建的新材质也会自动获得环境反射效果。
+   *
+   * @param envMap - 环境贴图纹理
+   */
+  public setGlobalEnvMap(envMap: THREE.Texture): void {
+    this.globalEnvMap = envMap
+
+    // 遍历所有已缓存的标准材质，设置 envMap
+    this.standardMaterialCache.forEach((material) => {
+      material.envMap = envMap
+      material.needsUpdate = true
+    })
   }
 
   // ==========================================================================
@@ -223,6 +370,28 @@ export class MaterialManager {
     // 步骤 2: 拼接成缓存键
     // 前缀 'basic' 表示基础材质，与标准材质区分
     return `basic_${color}_${opacity}_${transparent}_${wireframe}`
+  }
+
+  /**
+   * 生成纹理材质的缓存键
+   *
+   * 在标准材质缓存键基础上追加纹理 ID，
+   * 使用 THREE.Texture.id 标识纹理，无纹理时使用 'none'。
+   *
+   * @param options - 纹理材质配置
+   * @returns 缓存键字符串
+   */
+  private generateTexturedKey(options: TexturedMaterialOptions): string {
+    // 步骤 1: 生成基础标准材质部分的缓存键
+    const baseKey = this.generateStandardKey(options)
+
+    // 步骤 2: 提取纹理 ID，无纹理时使用 'none'
+    const texId = options.map ? options.map.id : 'none'
+    const nrmId = options.normalMap ? options.normalMap.id : 'none'
+    const rghId = options.roughnessMap ? options.roughnessMap.id : 'none'
+
+    // 步骤 3: 拼接完整缓存键
+    return `${baseKey}_tex:${texId}_nrm:${nrmId}_rgh:${rghId}`
   }
 
   // ==========================================================================
@@ -296,21 +465,39 @@ export class MaterialManager {
    */
   public dispose(): void {
     // 步骤 1: 清理标准材质缓存
-    // 遍历所有缓存的材质，调用 dispose() 释放 GPU 资源
+    // 遍历所有缓存的材质，释放关联纹理后再 dispose 材质本身
     this.standardMaterialCache.forEach((material) => {
-      material.dispose()
+      try {
+        // 释放关联的纹理资源
+        if (material.map) {
+          material.map.dispose()
+        }
+        if (material.normalMap) {
+          material.normalMap.dispose()
+        }
+        if (material.roughnessMap) {
+          material.roughnessMap.dispose()
+        }
+        material.dispose()
+      } catch (e) {
+        console.warn('Failed to dispose standard material:', e)
+      }
     })
     // 清空 Map
     this.standardMaterialCache.clear()
 
     // 步骤 2: 清理基础材质缓存
     this.basicMaterialCache.forEach((material) => {
-      material.dispose()
+      try {
+        material.dispose()
+      } catch (e) {
+        console.warn('Failed to dispose basic material:', e)
+      }
     })
     this.basicMaterialCache.clear()
 
-    // 注意：材质的 dispose() 会释放 GPU 中的着色器程序
-    // 如果材质有纹理，纹理需要单独 dispose()
+    // 步骤 3: 清除全局环境贴图引用
+    this.globalEnvMap = null
   }
 
   // ==========================================================================

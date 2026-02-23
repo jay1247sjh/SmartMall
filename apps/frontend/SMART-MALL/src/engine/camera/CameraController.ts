@@ -509,29 +509,10 @@ export class CameraController {
       this.camera.position.lerp(idealPosition, smoothness)
     }
 
-    // 5. 让相机看向目标（通常是角色的头部）
-    //    不使用 camera.lookAt()，因为当相机接近目标正上方时
-    //    lookAt 的 world up (0,1,0) 和 forward 向量平行，
-    //    导致万向锁（gimbal lock），视角突然翻转。
-    //    改用手动构建旋转矩阵，以 yaw 方向作为稳定的 up 参考。
+    // 5. 让相机看向目标（角色头部位置）
     const lookAtPosition = targetPosition.clone()
     lookAtPosition.y += lookAtHeightOffset
-
-    const forward = new THREE.Vector3().subVectors(lookAtPosition, this.camera.position).normalize()
-    // 用 yaw 方向构建一个稳定的 right 向量，避免万向锁
-    const worldUp = new THREE.Vector3(0, 1, 0)
-    const right = new THREE.Vector3().crossVectors(forward, worldUp)
-
-    if (right.lengthSq() < 0.0001) {
-      // forward 几乎和 worldUp 平行（极端俯视），用 yaw 方向作为 fallback right
-      right.set(Math.cos(this.yaw), 0, -Math.sin(this.yaw))
-    }
-    right.normalize()
-
-    const up = new THREE.Vector3().crossVectors(right, forward).normalize()
-    const m = new THREE.Matrix4()
-    m.makeBasis(right, up, forward.negate())
-    this.camera.quaternion.setFromRotationMatrix(m)
+    this.camera.lookAt(lookAtPosition)
 
     // 6. 通知外部相机发生变化（触发渲染）
     this.notifyChange()
