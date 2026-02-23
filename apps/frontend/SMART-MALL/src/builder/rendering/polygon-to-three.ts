@@ -51,6 +51,14 @@ export interface MeshOptions {
   roughness?: number
   /** 金属度 (0-1) */
   metalness?: number
+  /** 是否使用磨砂玻璃材质（MeshPhysicalMaterial） */
+  glassEffect?: boolean
+  /** 透射率 (0-1)，glassEffect 启用时有效 */
+  transmission?: number
+  /** 折射率，glassEffect 启用时有效 */
+  ior?: number
+  /** 厚度，glassEffect 启用时有效 */
+  thickness?: number
 }
 
 // ============================================================================
@@ -197,9 +205,29 @@ export function createPolygonEdges(
 
 /**
  * 创建材质
+ * 支持普通 MeshStandardMaterial 和磨砂玻璃 MeshPhysicalMaterial
  */
 function createMaterial(options: MeshOptions): THREE.MeshStandardMaterial {
   const isTransparent = options.transparent ?? (options.opacity !== undefined && options.opacity < 1)
+  
+  // 磨砂玻璃效果：使用 MeshPhysicalMaterial
+  if (options.glassEffect) {
+    return new THREE.MeshPhysicalMaterial({
+      color: options.color ?? 0x60a5fa,
+      opacity: options.opacity ?? 1,
+      transparent: isTransparent,
+      side: options.doubleSide ? THREE.DoubleSide : THREE.FrontSide,
+      wireframe: options.wireframe ?? false,
+      emissive: options.emissive ?? 0x000000,
+      emissiveIntensity: options.emissiveIntensity ?? 0,
+      roughness: options.roughness ?? 0.3,
+      metalness: options.metalness ?? 0.0,
+      transmission: options.transmission ?? 0.6,
+      ior: options.ior ?? 1.5,
+      thickness: options.thickness ?? 0.5,
+    }) as unknown as THREE.MeshStandardMaterial
+  }
+  
   return new THREE.MeshStandardMaterial({
     color: options.color ?? 0x60a5fa,
     opacity: options.opacity ?? 1,
@@ -211,6 +239,51 @@ function createMaterial(options: MeshOptions): THREE.MeshStandardMaterial {
     roughness: options.roughness ?? 0.55,
     metalness: options.metalness ?? 0.15,
   })
+}
+
+/**
+ * 创建多边形的发光边框管道
+ * 使用 TubeGeometry 沿轮廓挤出，配合 emissive 实现发光效果
+ */
+export function createGlowOutline(
+  polygon: Polygon,
+  options: {
+    color?: number
+    emissive?: number
+    emissiveIntensity?: number
+    radius?: number
+    opacity?: number
+  } = {}
+): THREE.Mesh {
+  const color = options.color ?? 0x60a5fa
+  const emissive = options.emissive ?? color
+  const emissiveIntensity = options.emissiveIntensity ?? 0.8
+  const radius = options.radius ?? 0.06
+  const opacity = options.opacity ?? 0.9
+  
+  // 构建 3D 路径点（在 XZ 平面上）
+  const pathPoints: THREE.Vector3[] = polygon.vertices.map(
+    v => new THREE.Vector3(v.x, 0, -v.y)
+  )
+  // 闭合
+  if (polygon.isClosed && pathPoints.length > 0) {
+    pathPoints.push(pathPoints[0]!.clone())
+  }
+  
+  const curve = new THREE.CatmullRomCurve3(pathPoints, false, 'catmullrom', 0.0)
+  const tubeGeometry = new THREE.TubeGeometry(curve, pathPoints.length * 8, radius, 6, false)
+  
+  const tubeMaterial = new THREE.MeshStandardMaterial({
+    color,
+    emissive,
+    emissiveIntensity,
+    transparent: true,
+    opacity,
+    roughness: 0.3,
+    metalness: 0.1,
+  })
+  
+  return new THREE.Mesh(tubeGeometry, tubeMaterial)
 }
 
 /**

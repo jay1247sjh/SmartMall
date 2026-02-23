@@ -7,6 +7,7 @@ import type { MallProject, AreaDefinition } from '@/builder'
 import {
   createPolygonMesh3D,
   createPolygonOutline,
+  createGlowOutline,
   createFloorMesh,
   calculateFloorYPosition,
   createRoamingEnvironment,
@@ -346,10 +347,11 @@ export function useRendering() {
     } else if (isFacility) {
       renderFacilityModel(scene, area, yPosition, isSelected, fullHeight)
     } else {
-      // 普通区域 — 统一中性色，不按品牌区分
+      // 普通区域 — 磨砂玻璃效果 + 发光边框
       const wallHeight = fullHeight ? 2.8 : 0.45
       const wallThickness = 0.1
       const uniformColor = 0x2a2a3a
+      const glowColor = isOverlapping ? 0xff4444 : 0x60a5fa
 
       // 从预设获取材质参数
       const preset = getMaterialPresetByAreaType(area.type)
@@ -360,16 +362,20 @@ export function useRendering() {
         { depth: 0.1, bevelEnabled: false },
         {
           color: isOverlapping ? 0xff0000 : uniformColor,
-          opacity: isSelected ? 0.9 : 0.7,
+          opacity: isSelected ? 0.95 : 0.75,
           transparent: true,
+          glassEffect: true,
+          transmission: isSelected ? 0.4 : 0.6,
+          roughness: isSelected ? 0.15 : 0.3,
+          metalness: 0.0,
+          ior: 1.5,
+          thickness: 0.5,
           emissive: isSelected
             ? uniformColor
             : matParams?.emissive
               ? parseInt(matParams.emissive.replace('#', ''), 16)
               : 0x000000,
-          emissiveIntensity: isSelected ? 0.3 : (matParams?.emissiveIntensity ?? 0),
-          roughness: matParams?.roughness,
-          metalness: matParams?.metalness,
+          emissiveIntensity: isSelected ? 0.4 : (matParams?.emissiveIntensity ?? 0),
         }
       )
       mesh.position.y = yPosition
@@ -387,14 +393,18 @@ export function useRendering() {
         scene.add(wallGroup)
       }
 
-      const outline = createPolygonOutline(
-        area.shape,
-        isSelected ? 0xffffff : 0x3f3f46,
-        isSelected ? 2 : 1
-      )
-      outline.position.y = yPosition + 0.11
-      outline.userData = { isArea: true, areaId: area.id }
-      scene.add(outline)
+      // 发光边框管道（替代简单线条）
+      const glowOutline = createGlowOutline(area.shape, {
+        color: isSelected ? 0xffffff : glowColor,
+        emissive: isSelected ? 0xffffff : glowColor,
+        emissiveIntensity: isSelected ? 1.2 : 0.6,
+        radius: isSelected ? 0.08 : 0.05,
+        opacity: isSelected ? 1.0 : 0.85,
+      })
+      glowOutline.position.y = yPosition + 0.11
+      glowOutline.userData = { isArea: true, areaId: area.id }
+      glowOutline.name = `outline-${area.id}`
+      scene.add(glowOutline)
     }
 
     // 添加区域名称标签
