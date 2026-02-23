@@ -151,8 +151,8 @@ def parse_mall_description(description: str, config: Dict[str, Any]) -> Dict[str
         result["mall_size"]["width"] = int(size_match.group(1))
         result["mall_size"]["height"] = int(size_match.group(2))
 
-    # 提取最小区域数 (如 "至少20个区域")
-    min_areas_match = re.search(r'至少\s*(\d+)\s*个?\s*区域', description)
+    # 提取最小区域数 (如 "至少20个区域"、"20个区域"、"严格限制20个区域")
+    min_areas_match = re.search(r'(?:至少|限制|严格限制)?\s*(\d+)\s*个?\s*区域', description)
     if min_areas_match:
         result["min_areas"] = int(min_areas_match.group(1))
 
@@ -305,11 +305,13 @@ def generate_mall_layout(
     floor_count = parsed_info["floor_count"]
     min_areas = parsed_info.get("min_areas", 0)
 
-    # 精确分配区域数到每层（总数严格等于 min_areas）
+    # 精确分配区域数到每层（总数严格等于 min_areas，含走廊）
+    # 每层有 1 个走廊，从总数中扣除后分配非走廊区域
     floor_targets: List[int] = [0] * floor_count
     if min_areas > 0:
-        base = min_areas // floor_count
-        remainder = min_areas % floor_count
+        non_corridor_total = max(min_areas - floor_count, 0)
+        base = non_corridor_total // floor_count
+        remainder = non_corridor_total % floor_count
         for i in range(floor_count):
             floor_targets[i] = base + (1 if i < remainder else 0)
 
