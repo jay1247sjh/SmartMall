@@ -89,8 +89,8 @@ export interface DisplaySettings {
 /**
  * 门/入口定义
  * 
- * 定义楼层轮廓墙壁上的门洞位置。
- * 门属于楼层（在楼层外轮廓墙壁上开口）。
+ * 定义区域墙壁上的门洞位置。
+ * 门属于区域（在区域边界墙壁上开口）。
  */
 export interface DoorDefinition {
   /** 门唯一标识 */
@@ -129,8 +129,6 @@ export interface FloorDefinition {
   inheritOutline: boolean
   /** 区域列表 */
   areas: AreaDefinition[]
-  /** 门/入口列表（在楼层轮廓墙壁上的开口） */
-  doors?: DoorDefinition[]
   /** 背景图片 */
   backgroundImage?: BackgroundImage
   /** 楼层颜色（用于3D预览） */
@@ -175,6 +173,8 @@ export interface AreaDefinition {
   color: string
   /** 区域属性 */
   properties: AreaProperties
+  /** 门/入口列表（在区域边界墙壁上的开口） */
+  doors?: DoorDefinition[]
   /** 是否可见 */
   visible: boolean
   /** 是否锁定 */

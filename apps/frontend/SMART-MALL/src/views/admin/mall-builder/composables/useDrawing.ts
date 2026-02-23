@@ -18,7 +18,7 @@ import {
   isVerticalConnectionAreaType,
 } from '@/builder'
 
-export type Tool = 'select' | 'pan' | 'draw-rect' | 'draw-poly' | 'draw-outline' | 'edit-vertex'
+export type Tool = 'select' | 'pan' | 'draw-rect' | 'draw-poly' | 'draw-outline' | 'edit-vertex' | 'place-door'
 
 export interface DrawingState {
   isDrawing: boolean

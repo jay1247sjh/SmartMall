@@ -8,6 +8,8 @@ import * as THREE from 'three'
 import type { VerticalConnection, ConnectionRenderOptions } from './types'
 import { getConnectionTypeColor } from './vertical'
 import type { Point2D } from '@smart-mall/shared-types'
+import { getCentroid } from '../geometry/polygon'
+import type { Polygon } from '../geometry/types'
 
 /**
  * 默认渲染选项
@@ -172,20 +174,12 @@ export function clearConnectionIndicators(scene: THREE.Scene): void {
 }
 
 /**
- * 获取区域中心点
+ * 获取区域中心点（复用 polygon.ts 的 getCentroid，加 2D→3D 坐标映射）
  */
 export function getAreaCenter(vertices: Point2D[]): { x: number; z: number } {
-  if (vertices.length === 0) {
-    return { x: 0, z: 0 }
-  }
-  
-  const sum = vertices.reduce(
-    (acc, v) => ({ x: acc.x + v.x, y: acc.y + v.y }),
-    { x: 0, y: 0 }
-  )
-  
+  const centroid = getCentroid({ vertices, isClosed: true })
   return {
-    x: sum.x / vertices.length,
-    z: -sum.y / vertices.length, // 注意 Y 坐标取反
+    x: centroid.x,
+    z: -centroid.y, // Y 坐标取反映射到 3D 空间 Z 轴
   }
 }

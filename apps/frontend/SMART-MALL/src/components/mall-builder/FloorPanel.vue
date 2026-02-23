@@ -17,7 +17,7 @@
  * />
  * ```
  */
-import type { FloorDefinition } from '@/builder'
+import type { FloorDefinition, DoorDefinition } from '@/builder'
 import { useI18n } from 'vue-i18n'
 
 const { t } = useI18n()
@@ -30,6 +30,8 @@ export interface FloorPanelProps {
   floors: FloorDefinition[]
   currentFloorId: string
   collapsed: boolean
+  doors: DoorDefinition[]
+  hoveredDoorId: string | null
 }
 
 export interface FloorPanelEmits {
@@ -37,6 +39,7 @@ export interface FloorPanelEmits {
   (e: 'select', floorId: string): void
   (e: 'add'): void
   (e: 'delete', floorId: string): void
+  (e: 'deleteDoor', doorId: string): void
 }
 
 // ============================================================================
@@ -47,6 +50,8 @@ const props = withDefaults(defineProps<FloorPanelProps>(), {
   floors: () => [],
   currentFloorId: '',
   collapsed: false,
+  doors: () => [],
+  hoveredDoorId: null,
 })
 
 const emit = defineEmits<FloorPanelEmits>()
@@ -141,6 +146,42 @@ function canDeleteFloor(): boolean {
               </svg>
             </button>
           </div>
+        </div>
+      </div>
+
+      <!-- 门列表 -->
+      <div v-if="doors.length > 0" class="door-section">
+        <div class="door-section-header">
+          <svg viewBox="0 0 20 20" fill="none" width="14" height="14">
+            <rect x="4" y="2" width="12" height="16" rx="1" stroke="currentColor" stroke-width="1.5"/>
+            <circle cx="14" cy="10" r="1" fill="currentColor"/>
+          </svg>
+          <span>{{ t('builder.floorPanel.doors') }}</span>
+        </div>
+        <div
+          v-for="door in doors"
+          :key="door.id"
+          :class="['door-item', { hovered: hoveredDoorId === door.id }]"
+        >
+          <div class="door-info">
+            <span class="door-name">{{ door.name || `Door` }}</span>
+            <span class="door-meta">{{ t('builder.floorPanel.wallIndex', { index: door.wallIndex }) }}</span>
+          </div>
+          <button
+            class="btn-icon small"
+            :title="t('builder.floorPanel.deleteDoor')"
+            @click.stop="emit('deleteDoor', door.id)"
+          >
+            <svg viewBox="0 0 20 20" fill="none">
+              <path d="M5 5l10 10M15 5L5 15" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+            </svg>
+          </button>
+        </div>
+      </div>
+      <div v-else class="door-section">
+        <div class="door-section-empty">
+          <span>{{ t('builder.floorPanel.noDoors') }}</span>
+          <span class="door-hint">{{ t('builder.floorPanel.doorHint') }}</span>
         </div>
       </div>
     </template>
@@ -331,5 +372,90 @@ function canDeleteFloor(): boolean {
   .floor-item:hover & {
     opacity: 1;
   }
+}
+
+// ============================================================================
+// 门列表
+// ============================================================================
+.door-section {
+  padding: $space-2;
+  border-top: 1px solid var(--border-subtle);
+}
+
+.door-section-header {
+  @include flex-center-y;
+  gap: $space-2;
+  padding: $space-1 $space-2;
+  font-size: $font-size-xs;
+  font-weight: $font-weight-semibold;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+
+  svg {
+    color: var(--text-muted);
+  }
+}
+
+.door-section-empty {
+  padding: $space-2;
+  font-size: $font-size-xs;
+  color: var(--text-muted);
+  text-align: center;
+
+  .door-hint {
+    display: block;
+    margin-top: 2px;
+    font-size: 10px;
+    color: var(--text-disabled);
+  }
+}
+
+.door-item {
+  @include flex-between;
+  padding: $space-1 $space-3;
+  border-radius: $radius-md;
+  transition: background $duration-normal;
+
+  &:hover {
+    background: rgba(var(--white-rgb), 0.04);
+
+    .btn-icon {
+      opacity: 1;
+    }
+  }
+
+  &.hovered {
+    background: rgba(34, 197, 94, 0.12);
+    outline: 1px solid rgba(34, 197, 94, 0.3);
+
+    .door-name {
+      color: #22c55e;
+    }
+
+    .btn-icon {
+      opacity: 1;
+    }
+  }
+
+  .btn-icon {
+    opacity: 0;
+    transition: opacity $duration-normal;
+  }
+}
+
+.door-info {
+  @include flex-column;
+  gap: 1px;
+}
+
+.door-name {
+  font-size: $font-size-xs;
+  color: var(--text-primary);
+}
+
+.door-meta {
+  font-size: 10px;
+  color: var(--text-muted);
 }
 </style>

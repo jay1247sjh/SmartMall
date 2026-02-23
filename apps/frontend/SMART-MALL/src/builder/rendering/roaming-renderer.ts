@@ -12,7 +12,6 @@
 import * as THREE from 'three'
 import type { Point2D, Polygon } from '../geometry/types'
 import type { MallProject, DoorDefinition } from '../types'
-import { distance as pointDistance } from '../geometry/polygon'
 import { polygonToShape, calculateFloorYPosition } from './polygon-to-three'
 
 // ============================================================================
@@ -32,8 +31,6 @@ export interface RoamingRenderOptions {
   ceilingColor?: number
   /** 墙壁厚度 */
   wallThickness?: number
-  /** 楼层门/入口定义 */
-  doors?: DoorDefinition[]
 }
 
 // ============================================================================
@@ -511,11 +508,10 @@ export function createRoamingEnvironment(
   })
   group.add(floor)
   
-  // 创建墙壁（使用精致的墙面材质，支持门/入口）
+  // 创建墙壁（使用精致的墙面材质）
   const walls = createWalls(outline, wallHeight, yPos, {
     color: options.wallColor ?? 0xf0f0f0,
     thickness: options.wallThickness ?? 0.3,
-    doors: options.doors ?? currentFloor.doors,
   })
   group.add(walls)
   

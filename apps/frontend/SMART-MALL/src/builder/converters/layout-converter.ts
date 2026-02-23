@@ -5,6 +5,7 @@
  */
 
 import type { Point2D, Polygon } from '../geometry/types'
+import { calculateArea, calculatePerimeter } from '../geometry/polygon'
 import type {
   MallProject,
   FloorDefinition,
@@ -79,43 +80,6 @@ const AREA_TYPE_MAP: Record<string, AreaType> = {
 }
 
 // ============================================================================
-// 几何计算
-// ============================================================================
-
-/**
- * 计算多边形面积（Shoelace 公式）
- */
-export function calculatePolygonArea(vertices: Point2D[]): number {
-  if (vertices.length < 3) return 0
-  let area = 0
-  for (let i = 0; i < vertices.length; i++) {
-    const j = (i + 1) % vertices.length
-    const vi = vertices[i]!
-    const vj = vertices[j]!
-    area += vi.x * vj.y
-    area -= vj.x * vi.y
-  }
-  return Math.abs(area / 2)
-}
-
-/**
- * 计算多边形周长
- */
-export function calculatePolygonPerimeter(vertices: Point2D[]): number {
-  if (vertices.length < 2) return 0
-  let perimeter = 0
-  for (let i = 0; i < vertices.length; i++) {
-    const j = (i + 1) % vertices.length
-    const vi = vertices[i]!
-    const vj = vertices[j]!
-    const dx = vj.x - vi.x
-    const dy = vj.y - vi.y
-    perimeter += Math.sqrt(dx * dx + dy * dy)
-  }
-  return perimeter
-}
-
-// ============================================================================
 // 转换函数
 // ============================================================================
 
@@ -132,8 +96,8 @@ function convertOutline(outline: Outline): Polygon {
 
 function convertArea(area: AreaData): AreaDefinition {
   const shape = convertOutline(area.shape)
-  const areaValue = calculatePolygonArea(shape.vertices)
-  const perimeter = calculatePolygonPerimeter(shape.vertices)
+  const areaValue = calculateArea(shape)
+  const perimeter = calculatePerimeter(shape)
 
   const properties: AreaProperties = {
     area: Math.round(areaValue * 100) / 100,

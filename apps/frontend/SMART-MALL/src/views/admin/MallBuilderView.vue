@@ -70,6 +70,7 @@ import {
   useVerticalConnections,
   useRoamingMode,
   useRendering,
+  useDoorPlacement,
 } from './mall-builder/composables'
 
 import { areaTypes } from './mall-builder/config/areaTypes'
@@ -121,6 +122,9 @@ const roaming = useRoamingMode({
   cameraHeight: 1.2,
   smoothness: 1,
 })
+
+// 门放置
+const doorPlacement = useDoorPlacement(() => engine.value)
 
 // ============================================================================
 // 本地状态
@@ -273,6 +277,10 @@ function handleMouseDown(e: MouseEvent) {
 function handleMouseMove(e: MouseEvent) {
   if (viewMode.value === 'orbit') return
   if (drawing.currentTool.value === 'pan') return
+  if (drawing.currentTool.value === 'place-door') {
+    doorPlacement.handleDoorMouseMove(e, selectedArea.value)
+    return
+  }
   drawing.handleMouseMove(e)
 }
 
@@ -291,6 +299,14 @@ function handleMouseUp(e: MouseEvent) {
 function handleClick(e: MouseEvent) {
   if (viewMode.value === 'orbit') return
   if (drawing.currentTool.value === 'pan') return
+  if (drawing.currentTool.value === 'place-door') {
+    doorPlacement.handleDoorClick(
+      e,
+      selectedArea.value,
+      () => { renderProject(); saveHistory() },
+    )
+    return
+  }
   if (drawing.currentTool.value === 'select') {
     const intersect = raycastAreas(e.clientX, e.clientY)
     if (intersect) {
@@ -879,6 +895,7 @@ function handleKeydown(e: KeyboardEvent) {
   if (e.key === 'v' || e.key === 'V') drawing.setTool('pan')
   if (e.key === 'r' || e.key === 'R') drawing.setTool('draw-rect')
   if (e.key === 'p' || e.key === 'P') drawing.setTool('draw-poly')
+  if (e.key === 'd' || e.key === 'D') drawing.setTool('place-door')
   if ((e.key === 'o' || e.key === 'O') && viewMode.value === 'edit') {
     toggleOrbitMode()
   }
@@ -999,6 +1016,13 @@ watch(() => settingsStore.theme, (newTheme) => {
   }
 })
 
+// 监听门悬停状态，更新 3D 门模型高亮
+watch(() => doorPlacement.hoveredDoorId.value, (newId, oldId) => {
+  if (!scene.value) return
+  if (newId === oldId) return
+  rendering.setDoorHighlight(scene.value, newId)
+})
+
 // ============================================================================
 // 子组件事件处理
 // ============================================================================
@@ -1020,8 +1044,13 @@ function handleProjectNameUpdate(name: string) {
 /**
  * 处理工具选择
  */
-function handleSelectTool(tool: 'select' | 'pan' | 'draw-rect' | 'draw-poly' | 'draw-outline') {
+function handleSelectTool(tool: 'select' | 'pan' | 'draw-rect' | 'draw-poly' | 'draw-outline' | 'place-door') {
   drawing.setTool(tool)
+  // 切换工具时清除门悬停高亮
+  if (tool !== 'place-door') {
+    doorPlacement.hoveredDoorId.value = null
+    if (scene.value) rendering.setDoorHighlight(scene.value, null)
+  }
 }
 
 /**
@@ -1038,6 +1067,20 @@ function handleCreateFromAI(aiProject: MallProject) {
 }
 
 /**
+ * 从向导加载已保存的项目
+ */
+async function handleLoadSavedProject(projectId: string) {
+  const loaded = await projectMgmt.loadFromServer(projectId)
+  if (loaded) {
+    project.value = loaded
+    floorMgmt.initFloor(loaded)
+    showWizard.value = false
+    renderProject()
+    saveHistory()
+  }
+}
+
+/**
  * 处理区域属性更新
  */
 function handleAreaUpdate(updatedArea: AreaDefinition) {
@@ -1049,6 +1092,17 @@ function handleAreaUpdate(updatedArea: AreaDefinition) {
     renderProject()
     saveHistory()
   }
+}
+
+/**
+ * 处理删除门
+ */
+function handleDeleteDoor(doorId: string) {
+  doorPlacement.removeDoor(
+    selectedArea.value,
+    doorId,
+    () => { renderProject(); saveHistory() },
+  )
 }
 </script>
 
@@ -1083,6 +1137,7 @@ function handleAreaUpdate(updatedArea: AreaDefinition) {
       @create="createNewProject"
       @createCustom="createCustomProject"
       @createFromAI="handleCreateFromAI"
+      @loadProject="handleLoadSavedProject"
       @cancel="goBack"
     />
 
@@ -1152,10 +1207,13 @@ function handleAreaUpdate(updatedArea: AreaDefinition) {
         v-if="showFloorPanel && (viewMode === 'edit' || isPreviewMode) && !(isPreviewMode && viewMode === 'orbit')"
         :floors="project?.floors || []"
         :currentFloorId="floorMgmt.currentFloorId.value"
+        :doors="selectedArea?.doors ?? []"
+        :hoveredDoorId="doorPlacement.hoveredDoorId.value"
         v-model:collapsed="leftPanelCollapsed"
         @select="selectFloor"
         @add="openAddFloorModal"
         @delete="deleteFloor"
+        @deleteDoor="handleDeleteDoor"
       />
 
       <!-- 右侧属性面板 (使用子组件) -->

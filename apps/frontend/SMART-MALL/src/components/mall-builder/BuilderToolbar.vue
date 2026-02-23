@@ -41,7 +41,7 @@
 // ============================================================================
 
 /** 绘制工具类型 */
-export type DrawingTool = 'select' | 'pan' | 'draw-rect' | 'draw-poly' | 'draw-outline'
+export type DrawingTool = 'select' | 'pan' | 'draw-rect' | 'draw-poly' | 'draw-outline' | 'place-door'
 
 /** 工具按钮配置 */
 interface ToolButtonConfig {
@@ -112,6 +112,8 @@ const toolButtons: ToolButtonConfig[] = [
   { tool: 'draw-poly', title: '绘制多边形 (P)', icon: 'M10 2l8 6-3 10H5L2 8l8-6z' },
   { tool: 'draw-outline', title: '绘制商城轮廓', icon: 'M3 3h14v14H3V3z', extraCircles: true },
   { special: 'reset-outline', title: '重置商城轮廓', icon: 'M4 4l12 12M16 4L4 16' },
+  { divider: true },
+  { tool: 'place-door', title: '放置门 (D)', icon: 'M6 3v14M14 3v14M6 10h8' },
 ]
 
 // ============================================================================
@@ -129,7 +131,7 @@ function handleBack() {
  * 处理工具选择
  */
 function handleSelectTool(tool: string) {
-  if (tool === 'select' || tool === 'pan' || tool === 'draw-rect' || tool === 'draw-poly' || tool === 'draw-outline') {
+  if (tool === 'select' || tool === 'pan' || tool === 'draw-rect' || tool === 'draw-poly' || tool === 'draw-outline' || tool === 'place-door') {
     emit('selectTool', tool as DrawingTool)
   }
 }

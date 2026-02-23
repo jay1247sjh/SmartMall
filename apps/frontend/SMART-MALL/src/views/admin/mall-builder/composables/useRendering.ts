@@ -14,6 +14,7 @@ import {
   clearRoamingEnvironment,
   clearConnectionIndicators,
   getAreaCenter,
+  getEdges,
   createElevatorModel,
   createEscalatorModel,
   createStairsModel,
@@ -97,6 +98,129 @@ export function createAreaLabel(text: string, color: string): THREE.Sprite {
 }
 
 /**
+ * 在一条边上创建带有多扇门的墙壁
+ *
+ * 将整条边按门的位置切割为：墙段 → 门洞 → 墙段 → 门洞 → 墙段
+ * 每个门洞包含：玻璃门面 + 门框 + 上方横梁
+ */
+function createEdgeWithDoors(
+  group: THREE.Group,
+  v1: { x: number; y: number },
+  v2: { x: number; y: number },
+  doors: { position: number; width: number; id?: string }[],
+  yPosition: number,
+  wallHeight: number,
+  wallThickness: number,
+  wallMaterial: THREE.MeshStandardMaterial,
+  glassMaterial: THREE.MeshStandardMaterial,
+  frameMaterial: THREE.MeshStandardMaterial,
+) {
+  const dx = v2.x - v1.x
+  const dy = v2.y - v1.y
+  const edgeLength = Math.sqrt(dx * dx + dy * dy)
+  const angle = Math.atan2(dy, dx)
+  const dirX = dx / edgeLength
+  const dirY = dy / edgeLength
+
+  const doorHeight = wallHeight * 0.85
+
+  // 将门按位置排序，计算每扇门在边上的绝对起止位置
+  const sortedDoors = [...doors]
+    .map(d => {
+      const center = d.position * edgeLength
+      const halfW = Math.min(d.width, edgeLength * 0.9) / 2
+      return { start: Math.max(0, center - halfW), end: Math.min(edgeLength, center + halfW), id: d.id }
+    })
+    .sort((a, b) => a.start - b.start)
+
+  // 沿边遍历，交替生成墙段和门洞
+  let cursor = 0
+
+  for (const door of sortedDoors) {
+    // 门前的墙段
+    const wallLen = door.start - cursor
+    if (wallLen > 0.1) {
+      const mid = cursor + wallLen / 2
+      const wall = new THREE.Mesh(
+        new THREE.BoxGeometry(wallLen, wallHeight, wallThickness),
+        wallMaterial,
+      )
+      wall.position.set(v1.x + dirX * mid, yPosition + wallHeight / 2, -(v1.y + dirY * mid))
+      wall.rotation.y = -angle
+      wall.castShadow = true
+      wall.receiveShadow = true
+      group.add(wall)
+    }
+
+    // 门洞 — 包裹在子 Group 中，标记 doorId 用于 hover 检测
+    const doorMid = (door.start + door.end) / 2
+    const actualWidth = door.end - door.start
+    const doorGroup = new THREE.Group()
+    const doorId = door.id || `__default_${Math.round(door.start * 100)}`
+    doorGroup.name = `door-group-${doorId}`
+    doorGroup.userData = { isDoorGroup: true, doorId }
+
+    // 上方横梁
+    const topBeamH = wallHeight - doorHeight
+    if (topBeamH > 0.05) {
+      const beam = new THREE.Mesh(
+        new THREE.BoxGeometry(actualWidth, topBeamH, wallThickness),
+        wallMaterial,
+      )
+      beam.position.set(
+        v1.x + dirX * doorMid, yPosition + doorHeight + topBeamH / 2, -(v1.y + dirY * doorMid),
+      )
+      beam.rotation.y = -angle
+      beam.castShadow = true
+      doorGroup.add(beam)
+    }
+
+    // 玻璃门面
+    const glass = new THREE.Mesh(
+      new THREE.BoxGeometry(actualWidth - 0.1, doorHeight - 0.1, 0.05),
+      glassMaterial.clone(),
+    )
+    glass.position.set(v1.x + dirX * doorMid, yPosition + doorHeight / 2, -(v1.y + dirY * doorMid))
+    glass.rotation.y = -angle
+    glass.userData = { isDoorGlass: true, doorId }
+    doorGroup.add(glass)
+
+    // 门框
+    const ft = 0.08
+    const leftFrame = new THREE.Mesh(new THREE.BoxGeometry(ft, doorHeight, ft), frameMaterial.clone())
+    leftFrame.position.set(v1.x + dirX * door.start, yPosition + doorHeight / 2, -(v1.y + dirY * door.start))
+    leftFrame.rotation.y = -angle
+    leftFrame.userData = { isDoorFrame: true, doorId }
+    doorGroup.add(leftFrame)
+
+    const rightFrame = new THREE.Mesh(new THREE.BoxGeometry(ft, doorHeight, ft), frameMaterial.clone())
+    rightFrame.position.set(v1.x + dirX * door.end, yPosition + doorHeight / 2, -(v1.y + dirY * door.end))
+    rightFrame.rotation.y = -angle
+    rightFrame.userData = { isDoorFrame: true, doorId }
+    doorGroup.add(rightFrame)
+
+    group.add(doorGroup)
+    cursor = door.end
+  }
+
+  // 最后一扇门之后的墙段
+  const tailLen = edgeLength - cursor
+  if (tailLen > 0.1) {
+    const mid = cursor + tailLen / 2
+    const wall = new THREE.Mesh(
+      new THREE.BoxGeometry(tailLen, wallHeight, wallThickness),
+      wallMaterial,
+    )
+    wall.position.set(v1.x + dirX * mid, yPosition + wallHeight / 2, -(v1.y + dirY * mid))
+    wall.rotation.y = -angle
+    wall.castShadow = true
+    wall.receiveShadow = true
+    group.add(wall)
+  }
+}
+
+
+/**
  * 创建区域墙壁和入口门面
  */
 export function createAreaWalls(
@@ -113,7 +237,7 @@ export function createAreaWalls(
   const vertices = area.shape.vertices
   if (vertices.length < 3) return group
 
-  // 计算每条边的长度，找出最长边作为入口
+  // 计算每条边的长度，找出最长边作为默认入口
   let maxEdgeLength = 0
   let entranceEdgeIndex = 0
 
@@ -127,14 +251,13 @@ export function createAreaWalls(
     }
   }
 
-  // 墙壁材质
+  // 材质
   const wallMaterial = new THREE.MeshStandardMaterial({
     color: isSelected ? 0xffffff : 0x4a4a5a,
     roughness: 0.8,
     metalness: 0.1,
   } as THREE.MeshStandardMaterialParameters)
 
-  // 入口门面材质（中性玻璃效果，不使用品牌色）
   const glassMaterial = new THREE.MeshStandardMaterial({
     color: 0x4a4a5a,
     transparent: true,
@@ -143,14 +266,12 @@ export function createAreaWalls(
     metalness: 0.3,
   } as THREE.MeshStandardMaterialParameters)
 
-  // 门框材质
   const frameMaterial = new THREE.MeshStandardMaterial({
     color: 0x2a2a3a,
     roughness: 0.5,
     metalness: 0.5,
   } as THREE.MeshStandardMaterialParameters)
 
-  // 为每条边创建墙壁
   for (let i = 0; i < vertices.length; i++) {
     const v1 = vertices[i]!
     const v2 = vertices[(i + 1) % vertices.length]!
@@ -163,100 +284,30 @@ export function createAreaWalls(
     const midX = (v1.x + v2.x) / 2
     const midY = (v1.y + v2.y) / 2
 
-    if (i === entranceEdgeIndex) {
-      // 入口边：创建带门的门面
-      const doorWidth = Math.min(edgeLength * 0.6, 4)
-      const doorHeight = wallHeight * 0.85
-      const sideWallWidth = (edgeLength - doorWidth) / 2
+    // 收集该边上的门
+    const edgeDoors = (area.doors ?? []).filter(d => d.wallIndex === i)
 
-      // 左侧墙
-      if (sideWallWidth > 0.1) {
-        const leftWall = new THREE.Mesh(
-          new THREE.BoxGeometry(sideWallWidth, wallHeight, wallThickness),
-          wallMaterial
-        )
-        const leftOffset = -(edgeLength / 2) + (sideWallWidth / 2)
-        leftWall.position.set(
-          midX + leftOffset * Math.cos(angle),
-          yPosition + wallHeight / 2,
-          -(midY + leftOffset * Math.sin(angle))
-        )
-        leftWall.rotation.y = -angle
-        leftWall.castShadow = true
-        leftWall.receiveShadow = true
-        group.add(leftWall)
-      }
-
-      // 右侧墙
-      if (sideWallWidth > 0.1) {
-        const rightWall = new THREE.Mesh(
-          new THREE.BoxGeometry(sideWallWidth, wallHeight, wallThickness),
-          wallMaterial
-        )
-        const rightOffset = (edgeLength / 2) - (sideWallWidth / 2)
-        rightWall.position.set(
-          midX + rightOffset * Math.cos(angle),
-          yPosition + wallHeight / 2,
-          -(midY + rightOffset * Math.sin(angle))
-        )
-        rightWall.rotation.y = -angle
-        rightWall.castShadow = true
-        rightWall.receiveShadow = true
-        group.add(rightWall)
-      }
-
-      // 门上方的横梁
-      const topBeamHeight = wallHeight - doorHeight
-      if (topBeamHeight > 0.05) {
-        const topBeam = new THREE.Mesh(
-          new THREE.BoxGeometry(doorWidth, topBeamHeight, wallThickness),
-          wallMaterial
-        )
-        topBeam.position.set(midX, yPosition + doorHeight + topBeamHeight / 2, -midY)
-        topBeam.rotation.y = -angle
-        topBeam.castShadow = true
-        group.add(topBeam)
-      }
-
-      // 玻璃门面
-      const glassPanel = new THREE.Mesh(
-        new THREE.BoxGeometry(doorWidth - 0.1, doorHeight - 0.1, 0.05),
-        glassMaterial
+    if (edgeDoors.length > 0) {
+      // 有门的边：统一切割墙段和门洞
+      createEdgeWithDoors(
+        group, v1, v2,
+        edgeDoors.map(d => ({ position: d.position, width: d.width, id: d.id })),
+        yPosition, wallHeight, wallThickness,
+        wallMaterial, glassMaterial, frameMaterial,
       )
-      glassPanel.position.set(midX, yPosition + doorHeight / 2, -midY)
-      glassPanel.rotation.y = -angle
-      group.add(glassPanel)
-
-      // 门框
-      const frameThickness = 0.08
-      const leftFrame = new THREE.Mesh(
-        new THREE.BoxGeometry(frameThickness, doorHeight, frameThickness),
-        frameMaterial
+    } else if (i === entranceEdgeIndex && !(area.doors?.length)) {
+      // 没有手动放置门时，默认入口边：在中心位置放一扇门
+      createEdgeWithDoors(
+        group, v1, v2,
+        [{ position: 0.5, width: Math.min(edgeLength * 0.6, 4), id: `__default_entrance_${area.id}` }],
+        yPosition, wallHeight, wallThickness,
+        wallMaterial, glassMaterial, frameMaterial,
       )
-      leftFrame.position.set(
-        midX - (doorWidth / 2) * Math.cos(angle),
-        yPosition + doorHeight / 2,
-        -(midY - (doorWidth / 2) * Math.sin(angle))
-      )
-      leftFrame.rotation.y = -angle
-      group.add(leftFrame)
-
-      const rightFrame = new THREE.Mesh(
-        new THREE.BoxGeometry(frameThickness, doorHeight, frameThickness),
-        frameMaterial
-      )
-      rightFrame.position.set(
-        midX + (doorWidth / 2) * Math.cos(angle),
-        yPosition + doorHeight / 2,
-        -(midY + (doorWidth / 2) * Math.sin(angle))
-      )
-      rightFrame.rotation.y = -angle
-      group.add(rightFrame)
     } else {
-      // 普通边：创建实心墙壁
+      // 普通边：实心墙壁
       const wall = new THREE.Mesh(
         new THREE.BoxGeometry(edgeLength, wallHeight, wallThickness),
-        wallMaterial
+        wallMaterial,
       )
       wall.position.set(midX, yPosition + wallHeight / 2, -midY)
       wall.rotation.y = -angle
@@ -268,6 +319,7 @@ export function createAreaWalls(
 
   return group
 }
+
 
 /**
  * 根据类型创建基础设施模型
@@ -488,6 +540,62 @@ export function useRendering() {
   }
 
   /**
+   * 渲染门指示器（编辑模式下在区域边上显示门的位置标记）
+   */
+  function renderDoorIndicators(
+    scene: THREE.Scene,
+    area: AreaDefinition,
+    yPosition: number,
+  ) {
+    const doors = area.doors
+    if (!doors?.length) return
+
+    const edges = getEdges(area.shape)
+
+    // 共享材质：所有门指示器复用同一个 MeshStandardMaterial
+    const sharedMaterial = new THREE.MeshStandardMaterial({
+      color: 0x22c55e,
+      emissive: 0x22c55e,
+      emissiveIntensity: 0.8,
+      transparent: true,
+      opacity: 0.9,
+    })
+
+    for (const door of doors) {
+      const edge = edges[door.wallIndex]
+      if (!edge) continue
+
+      const dx = edge.end.x - edge.start.x
+      const dy = edge.end.y - edge.start.y
+      const edgeLen = Math.sqrt(dx * dx + dy * dy)
+      const dirX = dx / edgeLen
+      const dirY = dy / edgeLen
+
+      // 门中心位置
+      const cx = edge.start.x + dirX * door.position * edgeLen
+      const cy = edge.start.y + dirY * door.position * edgeLen
+
+      // 门宽度方向上的两端
+      const halfW = door.width / 2
+      const x1 = cx - dirX * halfW
+      const y1 = cy - dirY * halfW
+      const x2 = cx + dirX * halfW
+      const y2 = cy + dirY * halfW
+
+      // 用发光管道绘制门段（亮绿色）
+      const points = [
+        new THREE.Vector3(x1, yPosition + 0.15, -y1),
+        new THREE.Vector3(x2, yPosition + 0.15, -y2),
+      ]
+      const curve = new THREE.LineCurve3(points[0], points[1])
+      const tubeGeo = new THREE.TubeGeometry(curve, 1, 0.12, 6, false)
+      const tube = new THREE.Mesh(tubeGeo, sharedMaterial)
+      tube.name = `door-indicator-${door.id}`
+      scene.add(tube)
+    }
+  }
+
+  /**
    * 渲染完整项目
    */
   function renderProject(
@@ -564,6 +672,10 @@ export function useRendering() {
         // 渲染楼层的区域
         floor.areas.forEach(area => {
           renderArea(scene, area, yPos + 0.1, useFullHeight, selectedAreaId, overlappingAreas, showLabels)
+          // 编辑模式下渲染区域的门指示器
+          if (!isRoamingMode && area.doors?.length) {
+            renderDoorIndicators(scene, area, yPos + 0.1)
+          }
         })
       } else {
         // 非当前楼层只显示淡化的轮廓线
@@ -577,6 +689,68 @@ export function useRendering() {
     return outlineCenter
   }
 
+  // 高亮材质（绿色发光）
+  const highlightGlassMat = new THREE.MeshStandardMaterial({
+    color: 0x22c55e,
+    transparent: true,
+    opacity: 0.5,
+    roughness: 0.1,
+    metalness: 0.3,
+    emissive: 0x22c55e,
+    emissiveIntensity: 0.6,
+  })
+  const highlightFrameMat = new THREE.MeshStandardMaterial({
+    color: 0x16a34a,
+    roughness: 0.5,
+    metalness: 0.5,
+    emissive: 0x22c55e,
+    emissiveIntensity: 0.4,
+  })
+
+  /** 缓存被高亮门的原始材质，用于恢复 */
+  const savedMaterials = new Map<string, { mesh: THREE.Mesh; material: THREE.Material }[]>()
+
+  /**
+   * 设置门 3D 模型高亮状态
+   * @param scene 当前场景
+   * @param doorId 要高亮的门 ID（null 表示取消所有高亮）
+   */
+  function setDoorHighlight(scene: THREE.Scene, doorId: string | null) {
+    // 恢复之前高亮的门
+    for (const [id, entries] of savedMaterials) {
+      if (id === doorId) continue
+      for (const entry of entries) {
+        entry.mesh.material = entry.material
+      }
+      savedMaterials.delete(id)
+    }
+
+    if (!doorId) return
+    if (savedMaterials.has(doorId)) return // 已经高亮
+
+    // 在场景中查找门 group
+    let doorGroup: THREE.Group | null = null
+    scene.traverse((obj) => {
+      if (obj.userData.isDoorGroup && obj.userData.doorId === doorId) {
+        doorGroup = obj as THREE.Group
+      }
+    })
+    if (!doorGroup) return
+
+    // 替换子 mesh 材质
+    const entries: { mesh: THREE.Mesh; material: THREE.Material }[] = []
+    ;(doorGroup as THREE.Group).traverse((child) => {
+      if (!(child instanceof THREE.Mesh)) return
+      entries.push({ mesh: child, material: child.material as THREE.Material })
+      if (child.userData.isDoorGlass) {
+        child.material = highlightGlassMat
+      } else if (child.userData.isDoorFrame) {
+        child.material = highlightFrameMat
+      }
+    })
+    savedMaterials.set(doorId, entries)
+  }
+
   return {
     renderArea,
     renderVerticalConnectionModel,
@@ -586,5 +760,6 @@ export function useRendering() {
     createAreaWalls,
     createInfrastructureModel,
     getAreaBounds,
+    setDoorHighlight,
   }
 }

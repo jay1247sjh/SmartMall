@@ -20,4 +20,6 @@ export const toolButtons: ToolButtonConfig[] = [
   { tool: 'draw-poly', title: '绘制多边形 (P)', icon: 'M10 2l8 6-3 10H5L2 8l8-6z' },
   { tool: 'draw-outline', title: '绘制商城轮廓', icon: 'M3 3h14v14H3V3z', extraCircles: true },
   { special: 'reset-outline', title: '重置商城轮廓', icon: 'M4 4l12 12M16 4L4 16' },
+  { divider: true },
+  { tool: 'place-door', title: '放置门 (D)', icon: 'M6 3v14M14 3v14M6 10h8' },
 ]

@@ -20,7 +20,7 @@ import {
 } from '@/builder'
 
 // 类型定义
-export type Tool = 'select' | 'pan' | 'draw-rect' | 'draw-poly' | 'draw-outline' | 'edit-vertex'
+export type Tool = 'select' | 'pan' | 'draw-rect' | 'draw-poly' | 'draw-outline' | 'edit-vertex' | 'place-door'
 export type ViewMode = 'edit' | 'orbit'
 
 export interface SavedCameraState {
