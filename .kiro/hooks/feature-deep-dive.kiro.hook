@@ -1,6 +1,6 @@
 {
   "enabled": true,
-  "name": "功能模块全链路分析",
+  "name": "Feature Deep Dive",
   "description": "当手动触发时，深入分析指定功能模块的完整实现链路，包括入口点、执行流程、状态变更、关键抽象、边界情况和开发指导",
   "version": "1",
   "when": {

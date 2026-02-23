@@ -170,6 +170,15 @@ const iconComponent = computed(() => {
       &::placeholder {
         color: var(--text-muted);
       }
+
+      /* 覆盖浏览器 autofill 的白色背景 */
+      &:-webkit-autofill,
+      &:-webkit-autofill:hover,
+      &:-webkit-autofill:focus {
+        -webkit-text-fill-color: var(--text-primary);
+        -webkit-box-shadow: 0 0 0 1000px transparent inset;
+        transition: background-color 5000s ease-in-out 0s;
+      }
     }
 
     &.is-error .el-input__wrapper {

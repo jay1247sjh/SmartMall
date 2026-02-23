@@ -909,7 +909,7 @@ onDeactivated(() => {
 
 | 布局 | Element Plus 组件 | 自定义组件 |
 |------|------------------|-----------|
-| `AdminLayout` | ElContainer, ElAside, ElHeader, ElMain, ElMenu, ElMenuItem, ElIcon | UserCard, AiSidebar |
+| `AdminLayout` | ElContainer, ElAside, ElHeader, ElMain, ElMenu, ElMenuItem, ElIcon | UserCard |
 | `MerchantLayout` | ElContainer, ElAside, ElHeader, ElMain, ElMenu, ElMenuItem, ElButton, ElIcon, ElTag | - |
 | `MainLayout` | ElContainer, ElHeader, ElMain, ElMenu, ElMenuItem, ElButton, ElIcon | - |
 
