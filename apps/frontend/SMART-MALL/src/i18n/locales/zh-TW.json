@@ -169,7 +169,12 @@
       "expand": "展開樓層面板",
       "collapse": "收起樓層面板",
       "addFloor": "新增樓層",
-      "deleteFloor": "刪除樓層"
+      "deleteFloor": "刪除樓層",
+      "doors": "門",
+      "noDoors": "暫無門",
+      "doorHint": "使用門工具 (D) 放置",
+      "wallIndex": "牆壁 {index}",
+      "deleteDoor": "刪除門"
     },
     "materialPanel": {
       "title": "材質",
@@ -200,6 +205,12 @@
     },
     "aiTrigger": {
       "label": "AI 助手"
+    },
+    "wizard": {
+      "savedProjects": "我的專案",
+      "orCreateNew": "或建立新專案",
+      "floorCount": "{count} 層",
+      "areaCount": "{count} 區域"
     }
   },
   "auth": {

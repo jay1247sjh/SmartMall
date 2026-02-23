@@ -169,7 +169,12 @@
       "expand": "Développer le panneau des étages",
       "collapse": "Réduire le panneau des étages",
       "addFloor": "Ajouter un étage",
-      "deleteFloor": "Supprimer l'étage"
+      "deleteFloor": "Supprimer l'étage",
+      "doors": "Portes",
+      "noDoors": "Aucune porte",
+      "doorHint": "Utilisez l'outil porte (D)",
+      "wallIndex": "Mur {index}",
+      "deleteDoor": "Supprimer la porte"
     },
     "materialPanel": {
       "title": "Matériaux",
@@ -200,6 +205,12 @@
     },
     "aiTrigger": {
       "label": "Assistant IA"
+    },
+    "wizard": {
+      "savedProjects": "Mes projets",
+      "orCreateNew": "ou créer un nouveau projet",
+      "floorCount": "{count} étages",
+      "areaCount": "{count} zones"
     }
   },
   "auth": {

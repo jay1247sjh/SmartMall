@@ -169,7 +169,12 @@
       "expand": "Expandir panel de pisos",
       "collapse": "Contraer panel de pisos",
       "addFloor": "Agregar piso",
-      "deleteFloor": "Eliminar piso"
+      "deleteFloor": "Eliminar piso",
+      "doors": "Puertas",
+      "noDoors": "Sin puertas",
+      "doorHint": "Use la herramienta de puerta (D)",
+      "wallIndex": "Pared {index}",
+      "deleteDoor": "Eliminar puerta"
     },
     "materialPanel": {
       "title": "Materiales",
@@ -200,6 +205,12 @@
     },
     "aiTrigger": {
       "label": "Asistente IA"
+    },
+    "wizard": {
+      "savedProjects": "Mis proyectos",
+      "orCreateNew": "o crear un nuevo proyecto",
+      "floorCount": "{count} pisos",
+      "areaCount": "{count} zonas"
     }
   },
   "auth": {

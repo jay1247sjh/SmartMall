@@ -169,7 +169,12 @@
       "expand": "Etagenpanel ausklappen",
       "collapse": "Etagenpanel einklappen",
       "addFloor": "Etage hinzufügen",
-      "deleteFloor": "Etage löschen"
+      "deleteFloor": "Etage löschen",
+      "doors": "Türen",
+      "noDoors": "Keine Türen",
+      "doorHint": "Türwerkzeug (D) verwenden",
+      "wallIndex": "Wand {index}",
+      "deleteDoor": "Tür löschen"
     },
     "materialPanel": {
       "title": "Materialien",
@@ -200,6 +205,12 @@
     },
     "aiTrigger": {
       "label": "KI-Assistent"
+    },
+    "wizard": {
+      "savedProjects": "Meine Projekte",
+      "orCreateNew": "oder neues Projekt erstellen",
+      "floorCount": "{count} Etagen",
+      "areaCount": "{count} Bereiche"
     }
   },
   "auth": {

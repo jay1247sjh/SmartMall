@@ -169,7 +169,12 @@
       "expand": "フロアパネルを展開",
       "collapse": "フロアパネルを折りたたむ",
       "addFloor": "フロアを追加",
-      "deleteFloor": "フロアを削除"
+      "deleteFloor": "フロアを削除",
+      "doors": "ドア",
+      "noDoors": "ドアなし",
+      "doorHint": "ドアツール (D) で配置",
+      "wallIndex": "壁 {index}",
+      "deleteDoor": "ドアを削除"
     },
     "materialPanel": {
       "title": "マテリアル",
@@ -200,6 +205,12 @@
     },
     "aiTrigger": {
       "label": "AI アシスタント"
+    },
+    "wizard": {
+      "savedProjects": "マイプロジェクト",
+      "orCreateNew": "または新規プロジェクトを作成",
+      "floorCount": "{count}階",
+      "areaCount": "{count}エリア"
     }
   },
   "auth": {

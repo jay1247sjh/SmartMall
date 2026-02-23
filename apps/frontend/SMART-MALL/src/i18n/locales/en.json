@@ -583,7 +583,12 @@
       "expand": "Expand floor panel",
       "collapse": "Collapse floor panel",
       "addFloor": "Add floor",
-      "deleteFloor": "Delete floor"
+      "deleteFloor": "Delete floor",
+      "doors": "Doors",
+      "noDoors": "No doors placed",
+      "doorHint": "Use door tool (D) to place",
+      "wallIndex": "Wall {index}",
+      "deleteDoor": "Delete door"
     },
     "materialPanel": {
       "title": "Materials",
@@ -614,6 +619,12 @@
     },
     "aiTrigger": {
       "label": "AI Assistant"
+    },
+    "wizard": {
+      "savedProjects": "My Projects",
+      "orCreateNew": "or create a new project",
+      "floorCount": "{count} floors",
+      "areaCount": "{count} areas"
     }
   },
   "userMgmt": {

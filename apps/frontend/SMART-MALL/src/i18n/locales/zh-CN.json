@@ -583,7 +583,12 @@
       "expand": "展开楼层面板",
       "collapse": "收起楼层面板",
       "addFloor": "添加楼层",
-      "deleteFloor": "删除楼层"
+      "deleteFloor": "删除楼层",
+      "doors": "门",
+      "noDoors": "暂无门",
+      "doorHint": "使用门工具 (D) 放置",
+      "wallIndex": "墙壁 {index}",
+      "deleteDoor": "删除门"
     },
     "materialPanel": {
       "title": "材质",
@@ -614,6 +619,12 @@
     },
     "aiTrigger": {
       "label": "AI 助手"
+    },
+    "wizard": {
+      "savedProjects": "我的项目",
+      "orCreateNew": "或创建新项目",
+      "floorCount": "{count} 层",
+      "areaCount": "{count} 区域"
     }
   },
   "userMgmt": {

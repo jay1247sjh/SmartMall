@@ -23,12 +23,23 @@ export interface BuilderWizardProps {
   projectName: string
 }
 
+export interface SavedProject {
+  projectId: string
+  name: string
+  description?: string
+  floorCount: number
+  areaCount: number
+  createdAt: string
+  updatedAt: string
+}
+
 export interface BuilderWizardEmits {
   (e: 'update:selectedTemplate', template: MallTemplate | null): void
   (e: 'update:projectName', name: string): void
   (e: 'create'): void
   (e: 'createCustom'): void
   (e: 'createFromAI', project: MallProject): void
+  (e: 'loadProject', projectId: string): void
   (e: 'cancel'): void
 }
 
@@ -51,6 +62,41 @@ const aiLoading = ref(false)
 const aiError = ref('')
 const showChatPanel = ref(false)
 const { t } = useI18n()
+
+// ============================================================================
+// 已保存项目
+// ============================================================================
+
+const savedProjects = ref<SavedProject[]>([])
+const isLoadingProjects = ref(false)
+
+async function loadSavedProjects() {
+  isLoadingProjects.value = true
+  try {
+    const { mallBuilderApi } = await import('@/api/mall-builder.api')
+    savedProjects.value = await mallBuilderApi.getProjectList()
+  } catch (err) {
+    console.error('加载项目列表失败:', err)
+  } finally {
+    isLoadingProjects.value = false
+  }
+}
+
+function handleLoadProject(projectId: string) {
+  emit('loadProject', projectId)
+}
+
+function formatDate(dateStr: string): string {
+  const d = new Date(dateStr)
+  const pad = (n: number) => String(n).padStart(2, '0')
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`
+}
+
+// 组件挂载时加载已保存项目
+import { onMounted } from 'vue'
+onMounted(() => {
+  loadSavedProjects()
+})
 
 // ============================================================================
 // 方法
@@ -121,7 +167,7 @@ function canCreate(): boolean {
 
 function getCreateButtonText(): string {
   if (wizardMode.value === 'ai') {
-    return aiLoading.value ? '生成中...' : 'AI 生成'
+    return 'AI 生成'
   }
   return props.selectedTemplate ? '创建项目' : '开始绘制'
 }
@@ -138,6 +184,41 @@ function getCreateButtonText(): string {
 
       <!-- 向导主体 -->
       <div class="wizard-body">
+        <!-- 已保存项目 -->
+        <div v-if="savedProjects.length > 0" class="saved-projects-section">
+          <label>{{ t('builder.wizard.savedProjects') }}</label>
+          <div class="saved-projects-list">
+            <div
+              v-for="proj in savedProjects"
+              :key="proj.projectId"
+              class="saved-project-item"
+              @click="handleLoadProject(proj.projectId)"
+            >
+              <div class="project-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="20" height="20">
+                  <path d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"/>
+                </svg>
+              </div>
+              <div class="project-info">
+                <span class="project-name">{{ proj.name }}</span>
+                <span class="project-meta">
+                  {{ t('builder.wizard.floorCount', { count: proj.floorCount }) }} · {{ t('builder.wizard.areaCount', { count: proj.areaCount }) }} · {{ formatDate(proj.updatedAt) }}
+                </span>
+              </div>
+              <div class="project-arrow">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
+                  <path d="M9 18l6-6-6-6"/>
+                </svg>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 分隔线 -->
+        <div v-if="savedProjects.length > 0" class="section-divider">
+          <span class="divider-text">{{ t('builder.wizard.orCreateNew') }}</span>
+        </div>
+
         <!-- 项目名称输入 -->
         <div class="form-group">
           <label>项目名称</label>
@@ -276,11 +357,11 @@ function getCreateButtonText(): string {
       <div class="wizard-footer">
         <button class="btn-secondary" @click="handleCancel">取消</button>
         <button
-          class="btn-primary"
-          :disabled="!canCreate()"
+          :class="['btn-primary', { 'is-loading': aiLoading }]"
+          :disabled="!canCreate() && !aiLoading"
           @click="handleCreate"
         >
-          <svg v-if="aiLoading" class="loading-spinner" viewBox="0 0 16 16" fill="none">
+          <svg v-if="aiLoading" class="wizard-spinner" width="16" height="16" viewBox="0 0 16 16" fill="none">
             <circle cx="8" cy="8" r="6" stroke="currentColor" stroke-width="2" stroke-dasharray="28" stroke-dashoffset="8" />
           </svg>
           {{ getCreateButtonText() }}
@@ -293,6 +374,106 @@ function getCreateButtonText(): string {
 <style scoped lang="scss">
 @use '@/assets/styles/scss/variables' as *;
 @use '@/assets/styles/scss/mixins' as *;
+
+// ============================================================================
+// 已保存项目区域
+// ============================================================================
+.saved-projects-section {
+  margin-bottom: $space-5;
+
+  label {
+    display: block;
+    font-size: $font-size-sm;
+    font-weight: $font-weight-medium;
+    color: var(--text-secondary);
+    margin-bottom: $space-3;
+  }
+}
+
+.saved-projects-list {
+  display: flex;
+  flex-direction: column;
+  gap: $space-2;
+  max-height: 180px;
+  overflow-y: auto;
+  @include scrollbar-custom;
+}
+
+.saved-project-item {
+  display: flex;
+  align-items: center;
+  gap: $space-3;
+  padding: $space-3 $space-4;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid var(--border-subtle);
+  border-radius: $radius-md;
+  cursor: pointer;
+  transition: all $duration-normal;
+
+  &:hover {
+    background: rgba(255, 255, 255, 0.05);
+    border-color: var(--accent-primary);
+  }
+
+  .project-icon {
+    flex-shrink: 0;
+    color: var(--text-muted);
+  }
+
+  .project-info {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+
+    .project-name {
+      font-size: $font-size-base;
+      font-weight: $font-weight-medium;
+      color: var(--text-primary);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .project-meta {
+      font-size: $font-size-xs;
+      color: var(--text-muted);
+    }
+  }
+
+  .project-arrow {
+    flex-shrink: 0;
+    color: var(--text-muted);
+    transition: transform $duration-normal;
+  }
+
+  &:hover .project-arrow {
+    transform: translateX(2px);
+    color: var(--accent-primary);
+  }
+}
+
+.section-divider {
+  display: flex;
+  align-items: center;
+  gap: $space-4;
+  margin-bottom: $space-5;
+
+  &::before,
+  &::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: var(--border-subtle);
+  }
+
+  .divider-text {
+    font-size: $font-size-sm;
+    color: var(--text-muted);
+    white-space: nowrap;
+  }
+}
 
 // ============================================================================
 // 向导遮罩层
@@ -643,15 +824,22 @@ function getCreateButtonText(): string {
     color: var(--text-disabled);
     cursor: not-allowed;
   }
+
+  &.is-loading {
+    background: var(--accent-primary);
+    color: #fff;
+    opacity: 0.85;
+    cursor: wait;
+    pointer-events: none;
+  }
 }
 
 // ============================================================================
 // 加载动画
 // ============================================================================
-.loading-spinner {
-  width: 16px;
-  height: 16px;
-  flex-shrink: 0;
+.wizard-spinner {
+  width: 18px;
+  height: 18px;
   animation: spin 1s linear infinite;
 }
 

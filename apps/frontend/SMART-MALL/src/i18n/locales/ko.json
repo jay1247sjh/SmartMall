@@ -169,7 +169,12 @@
       "expand": "층 패널 펼치기",
       "collapse": "층 패널 접기",
       "addFloor": "층 추가",
-      "deleteFloor": "층 삭제"
+      "deleteFloor": "층 삭제",
+      "doors": "문",
+      "noDoors": "문 없음",
+      "doorHint": "문 도구 (D)로 배치",
+      "wallIndex": "벽 {index}",
+      "deleteDoor": "문 삭제"
     },
     "materialPanel": {
       "title": "재질",
@@ -200,6 +205,12 @@
     },
     "aiTrigger": {
       "label": "AI 어시스턴트"
+    },
+    "wizard": {
+      "savedProjects": "내 프로젝트",
+      "orCreateNew": "또는 새 프로젝트 만들기",
+      "floorCount": "{count}층",
+      "areaCount": "{count}개 영역"
     }
   },
   "auth": {
