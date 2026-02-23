@@ -46,6 +46,7 @@ import axios, {
   type InternalAxiosRequestConfig 
 } from 'axios'
 import { useUserStore } from '@/stores'
+import { setupLoadingInterceptor } from './loading-interceptor'
 
 // ============================================================================
 // 类型定义
@@ -82,6 +83,9 @@ export interface RequestConfig extends AxiosRequestConfig {
   
   /** 是否显示错误提示（预留，可配合 UI 组件使用） */
   showError?: boolean
+  
+  /** 是否显示全屏加载（配合 Loading Store 使用） */
+  showLoading?: boolean
   
   /** 是否已重试（内部使用，防止无限重试） */
   _retry?: boolean
@@ -578,6 +582,12 @@ instance.interceptors.response.use(
     return Promise.reject(new HttpError(errorMessage, errorCode, error.response?.status))
   }
 )
+
+// ============================================================================
+// Loading 拦截器
+// ============================================================================
+
+setupLoadingInterceptor(instance)
 
 // ============================================================================
 // 请求方法封装
