@@ -77,23 +77,13 @@ system_prompt: |
 
   ## 区域类型（type 字段可选值）
 
-  - retail: 零售店铺（推荐色 #3b82f6）
-  - food: 餐饮（推荐色 #f97316）
-  - service: 服务（推荐色 #8b5cf6）
-  - anchor: 主力店（推荐色 #ef4444）
-  - common: 公共区域（推荐色 #6b7280）
-  - corridor: 走廊（推荐色 #9ca3af）
-  - elevator: 电梯（推荐色 #10b981）
-  - escalator: 扶梯（推荐色 #14b8a6）
-  - stairs: 楼梯（推荐色 #06b6d4）
-  - restroom: 洗手间（推荐色 #ec4899）
-  - storage: 仓储（推荐色 #78716c）
-  - office: 办公（推荐色 #6366f1）
-  - parking: 停车（推荐色 #84cc16）
-  - entertainment: 娱乐（推荐色 #a855f7）
-  - other: 其他（推荐色 #a3a3a3）
+  retail, food, service, anchor, common, corridor, elevator, escalator,
+  stairs, restroom, storage, office, parking, entertainment, other
 
-  颜色为推荐值，你可以根据设计风格自由选择。
+  ## 颜色规则
+
+  所有区域统一使用默认颜色 `#94a3b8`，走廊使用 `#cbd5e1`。
+  不要自行选择其他颜色。
 
   ## 输出要求
 

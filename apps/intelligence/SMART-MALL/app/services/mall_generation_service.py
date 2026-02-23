@@ -50,13 +50,21 @@ class MallGenerationService:
         user_prompt = PromptLoader.format_user_prompt(
             self.PROMPT_NAME, description=description
         )
+        params = PromptLoader.get_parameters(self.PROMPT_NAME)
 
-        # 构造 LCEL Chain
+        # 构造 LCEL Chain，使用 prompt YAML 中的参数覆盖默认值
         prompt = ChatPromptTemplate.from_messages([
             ("system", system_prompt),
             ("human", "{user_input}"),
         ])
-        chain = prompt | get_llm() | StrOutputParser()
+        llm = get_llm()
+        if params:
+            llm = llm.bind(
+                temperature=params.get("temperature"),
+                max_tokens=params.get("max_tokens"),
+                top_p=params.get("top_p"),
+            )
+        chain = prompt | llm | StrOutputParser()
 
         # 调用 Chain
         result = await chain.ainvoke({"user_input": user_prompt})
