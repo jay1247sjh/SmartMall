@@ -11,6 +11,24 @@
 
 ## [Unreleased] - 2026-01-26
 
+### Added - 新增
+
+#### 全局加载状态管理 Store
+
+**stores/loading.store.ts - 新增 Loading Store（Pinia Composition API）**
+- ✅ 新增 `isRouteLoading` 响应式状态，用于路由切换进度条控制
+- ✅ 新增 `activeRequestCount` 请求计数器，跟踪需要显示加载状态的并发请求
+- ✅ 新增 `isFullscreenVisible` 全屏遮罩可见性状态
+- ✅ 实现 `incrementRequests` / `decrementRequests` 方法，计数归零时触发遮罩关闭
+- ✅ 实现 300ms 最短显示时间逻辑（`MINIMUM_DISPLAY_TIME`），防止加载状态闪烁
+- ✅ 实现 `forceReset` 方法，强制重置所有加载状态和请求计数
+- ✅ 计数器 clamp 到 0，防止过度 decrement 导致负数
+- ✅ 全屏遮罩使用 `ElLoading.service()` 实现，带 lock 和半透明背景
+
+**变更原因**:
+- 属于 global-loading-system spec 任务 1.2
+- 为路由进度条、Axios 拦截器、区域加载等功能提供集中式状态管理基础
+
 ### Changed - 变更
 
 #### AdminLayout AI Copilot Sidebar 集成

@@ -592,6 +592,7 @@ components/
 | `stores/builder.store.ts` | ✅ 完成 | 建模器状态管理 |
 | `stores/system.store.ts` | ✅ 完成 | 系统状态管理 |
 | `stores/ai.store.ts` | ✅ 完成 | AI 状态管理 |
+| `stores/loading.store.ts` | ✅ 完成 | 全局加载状态管理（路由加载、全屏遮罩、请求计数） |
 | `agent/index.ts` | ✅ 完成 | AI Agent 前端集成 |
 | `router/index.ts` | ✅ 完成 | 路由配置（含所有页面路由） |
 | `engine/camera/cameraFactory.ts` | ✅ 完成 | 相机工厂（统一创建逻辑） |
@@ -619,7 +620,7 @@ components/
 | `api/product.api.ts` | ✅ 完成 | 商品管理 API |
 | `views/merchant/ProductManageView.vue` | ✅ 完成 | 商品管理页面 |
 | `views/admin/AdminStoreManageView.vue` | ✅ 完成 | 管理员店铺管理 |
-| `stores/` | ✅ 完成 | Pinia 状态管理（user, mall, builder, system） |
+| `stores/` | ✅ 完成 | Pinia 状态管理（user, mall, builder, system, loading） |
 
 ---
 

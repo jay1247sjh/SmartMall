@@ -21,3 +21,6 @@ export * from './builder.store'
 
 // 设置状态
 export * from './settings.store'
+
+// 加载状态
+export * from './loading.store'
