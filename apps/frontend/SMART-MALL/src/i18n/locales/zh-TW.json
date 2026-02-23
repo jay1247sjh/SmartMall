@@ -26,7 +26,10 @@
     "resetDefaults": "恢復預設值",
     "logout": "登出",
     "logoutConfirm": "確定要登出嗎？",
-    "backToHome": "返回首頁"
+    "backToHome": "返回首頁",
+    "characterModel": "漫遊角色",
+    "characterMale": "男性",
+    "characterFemale": "女性"
   },
   "common": {
     "confirm": "確認",
@@ -38,7 +41,9 @@
     "success": "成功",
     "warning": "警告",
     "noData": "暫無資料",
-    "retry": "重試"
+    "retry": "重試",
+    "back": "返回",
+    "refresh": "重新整理"
   },
   "nav": {
     "backToMall": "返回商城",
@@ -50,13 +55,15 @@
     "mallBuilder": "商城建模",
     "areaApproval": "區域審批",
     "versionManage": "版本管理",
+    "userManage": "帳號管理",
     "workspace": "工作區",
     "storeConfig": "店鋪設定",
     "areaApply": "區域申請",
     "builderTool": "建模工具",
     "profile": "個人中心",
     "mall": "商城",
-    "home": "首頁"
+    "home": "首頁",
+    "enterMall": "進入商城"
   },
   "roles": {
     "admin": "管理員",
@@ -141,5 +148,82 @@
     "confirmAction": "確認執行此操作嗎？",
     "errorDefault": "抱歉，處理時出現錯誤，請重試。",
     "inputPlaceholder": "輸入訊息，如「打開商品管理」..."
+  },
+  "builder": {
+    "aiAssist": "AI 輔助",
+    "aiAssistTooltip": "透過 AI 引導生成商城描述",
+    "finishConversation": "完成對話",
+    "sendMessage": "發送",
+    "chatPlaceholder": "描述您的商城需求...",
+    "chatLoading": "AI 正在思考...",
+    "chatError": "取得回覆失敗，請重試",
+    "retry": "重試",
+    "roundCount": "第 {current}/{max} 輪",
+    "roundWarning": "對話即將達到上限",
+    "conversationComplete": "對話已完成",
+    "resumeConversation": "繼續補充",
+    "generateFromDescription": "按照此描述生成商城",
+    "aiGreeting": "正在啟動 AI 助手...",
+    "floorPanel": {
+      "title": "樓層",
+      "expand": "展開樓層面板",
+      "collapse": "收起樓層面板",
+      "addFloor": "新增樓層",
+      "deleteFloor": "刪除樓層"
+    },
+    "materialPanel": {
+      "title": "材質",
+      "expand": "展開材質面板",
+      "collapse": "收起材質面板",
+      "clearSelection": "清除選擇",
+      "placeHint": "點擊場景放置",
+      "drawHint": "使用繪製工具放置"
+    },
+    "commandPalette": {
+      "placeholder": "輸入 AI 指令...",
+      "cancel": "取消",
+      "error": "指令執行失敗，請重試",
+      "stepAnalyze": "分析意圖",
+      "stepSearch": "檢索上下文",
+      "stepGenerate": "生成回答"
+    },
+    "inlineInput": {
+      "placeholder": "向 AI 提問...",
+      "error": "請求失敗，請重試",
+      "cancel": "取消"
+    },
+    "bottomDrawer": {
+      "placeholder": "輸入訊息...",
+      "send": "傳送",
+      "dragHint": "拖曳調整大小",
+      "collapse": "收起面板"
+    },
+    "aiTrigger": {
+      "label": "AI 助手"
+    }
+  },
+  "auth": {
+    "username": "使用者名稱",
+    "password": "密碼",
+    "forgotPassword": "忘記密碼",
+    "login": {
+      "brandHeadline": "重新定義商城管理的可能性",
+      "brandSubtitle": "融合 3D 可視化與 AI 智慧，打造下一代商業空間管理平台",
+      "welcomeBack": "歡迎回來",
+      "description": "登入以繼續使用 Smart Mall",
+      "usernamePlaceholder": "輸入使用者名稱",
+      "passwordPlaceholder": "輸入密碼",
+      "enterUsername": "請輸入使用者名稱",
+      "enterPassword": "請輸入密碼",
+      "loginBtn": "登入",
+      "loggingIn": "登入中...",
+      "loginFailed": "登入失敗，請重試",
+      "createAccount": "建立帳號",
+      "feature3dVisualization": "透過 3D 可視化技術，讓商城管理變得直觀高效",
+      "featureAiAssistant": "智慧 AI 助手隨時待命，一句話完成複雜操作",
+      "featureDataAnalysis": "即時數據分析，洞察每一個商業機會",
+      "featureDragEdit": "拖曳式店鋪編輯，所見即所得的空間設計",
+      "featureMultiDevice": "多端協同工作，隨時隨地掌控全局"
+    }
   }
 }

@@ -26,7 +26,10 @@
     "resetDefaults": "기본값으로 초기화",
     "logout": "로그아웃",
     "logoutConfirm": "로그아웃 하시겠습니까?",
-    "backToHome": "홈으로 돌아가기"
+    "backToHome": "홈으로 돌아가기",
+    "characterModel": "로밍 캐릭터",
+    "characterMale": "남성",
+    "characterFemale": "여성"
   },
   "common": {
     "confirm": "확인",
@@ -38,7 +41,9 @@
     "success": "성공",
     "warning": "경고",
     "noData": "데이터 없음",
-    "retry": "재시도"
+    "retry": "재시도",
+    "back": "뒤로",
+    "refresh": "새로고침"
   },
   "nav": {
     "backToMall": "몰로 돌아가기",
@@ -50,13 +55,15 @@
     "mallBuilder": "몰 빌더",
     "areaApproval": "구역 승인",
     "versionManage": "버전 관리",
+    "userManage": "계정 관리",
     "workspace": "워크스페이스",
     "storeConfig": "매장 설정",
     "areaApply": "구역 신청",
     "builderTool": "빌더 도구",
     "profile": "프로필",
     "mall": "몰",
-    "home": "홈"
+    "home": "홈",
+    "enterMall": "몰 입장"
   },
   "roles": {
     "admin": "관리자",
@@ -141,5 +148,82 @@
     "confirmAction": "이 작업을 실행하시겠습니까?",
     "errorDefault": "죄송합니다. 오류가 발생했습니다. 다시 시도해주세요.",
     "inputPlaceholder": "메시지를 입력하세요 (예: 「상품 관리 열어줘」)..."
+  },
+  "builder": {
+    "aiAssist": "AI 어시스트",
+    "aiAssistTooltip": "AI 가이드로 몰 설명 생성",
+    "finishConversation": "대화 완료",
+    "sendMessage": "전송",
+    "chatPlaceholder": "몰 요구사항을 입력하세요...",
+    "chatLoading": "AI가 생각 중입니다...",
+    "chatError": "응답을 가져오지 못했습니다. 다시 시도해주세요.",
+    "retry": "재시도",
+    "roundCount": "라운드 {current}/{max}",
+    "roundWarning": "대화 한도에 가까워지고 있습니다",
+    "conversationComplete": "대화가 완료되었습니다",
+    "resumeConversation": "추가 정보 입력",
+    "generateFromDescription": "이 설명으로 몰 생성",
+    "aiGreeting": "AI 어시스턴트 시작 중...",
+    "floorPanel": {
+      "title": "층",
+      "expand": "층 패널 펼치기",
+      "collapse": "층 패널 접기",
+      "addFloor": "층 추가",
+      "deleteFloor": "층 삭제"
+    },
+    "materialPanel": {
+      "title": "재질",
+      "expand": "재질 패널 펼치기",
+      "collapse": "재질 패널 접기",
+      "clearSelection": "선택 해제",
+      "placeHint": "장면을 클릭하여 배치",
+      "drawHint": "그리기 도구로 배치"
+    },
+    "commandPalette": {
+      "placeholder": "AI 명령 입력...",
+      "cancel": "취소",
+      "error": "명령 실행 실패, 다시 시도해 주세요",
+      "stepAnalyze": "의도 분석 중",
+      "stepSearch": "컨텍스트 검색 중",
+      "stepGenerate": "응답 생성 중"
+    },
+    "inlineInput": {
+      "placeholder": "AI에게 질문하기...",
+      "error": "요청 실패, 다시 시도해 주세요",
+      "cancel": "취소"
+    },
+    "bottomDrawer": {
+      "placeholder": "메시지를 입력하세요...",
+      "send": "전송",
+      "dragHint": "드래그하여 크기 조절",
+      "collapse": "패널 접기"
+    },
+    "aiTrigger": {
+      "label": "AI 어시스턴트"
+    }
+  },
+  "auth": {
+    "username": "사용자 이름",
+    "password": "비밀번호",
+    "forgotPassword": "비밀번호 찾기",
+    "login": {
+      "brandHeadline": "몰 관리의 가능성을 재정의하다",
+      "brandSubtitle": "3D 시각화와 AI를 결합하여 차세대 상업 공간 관리 플랫폼 구축",
+      "welcomeBack": "다시 오신 것을 환영합니다",
+      "description": "Smart Mall을 계속 이용하려면 로그인하세요",
+      "usernamePlaceholder": "사용자 이름 입력",
+      "passwordPlaceholder": "비밀번호 입력",
+      "enterUsername": "사용자 이름을 입력해주세요",
+      "enterPassword": "비밀번호를 입력해주세요",
+      "loginBtn": "로그인",
+      "loggingIn": "로그인 중...",
+      "loginFailed": "로그인 실패, 다시 시도해주세요",
+      "createAccount": "계정 만들기",
+      "feature3dVisualization": "3D 시각화 기술로 직관적이고 효율적인 몰 관리",
+      "featureAiAssistant": "AI 어시스턴트가 항상 대기, 한마디로 복잡한 작업 완료",
+      "featureDataAnalysis": "실시간 데이터 분석으로 모든 비즈니스 기회 포착",
+      "featureDragEdit": "드래그 앤 드롭 매장 편집, 위지윅 공간 디자인",
+      "featureMultiDevice": "멀티 디바이스 협업, 언제 어디서나 전체 관리"
+    }
   }
 }

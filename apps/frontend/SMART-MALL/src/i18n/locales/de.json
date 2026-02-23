@@ -26,7 +26,10 @@
     "resetDefaults": "Zurücksetzen",
     "logout": "Abmelden",
     "logoutConfirm": "Möchten Sie sich wirklich abmelden?",
-    "backToHome": "Zurück zur Startseite"
+    "backToHome": "Zurück zur Startseite",
+    "characterModel": "Rundgang-Charakter",
+    "characterMale": "Männlich",
+    "characterFemale": "Weiblich"
   },
   "common": {
     "confirm": "Bestätigen",
@@ -38,7 +41,9 @@
     "success": "Erfolg",
     "warning": "Warnung",
     "noData": "Keine Daten",
-    "retry": "Erneut versuchen"
+    "retry": "Erneut versuchen",
+    "back": "Zurück",
+    "refresh": "Aktualisieren"
   },
   "nav": {
     "backToMall": "Zurück zum Center",
@@ -50,13 +55,15 @@
     "mallBuilder": "Center-Builder",
     "areaApproval": "Bereichsgenehmigung",
     "versionManage": "Versionsverwaltung",
+    "userManage": "Kontoverwaltung",
     "workspace": "Arbeitsbereich",
     "storeConfig": "Shop-Einstellungen",
     "areaApply": "Bereichsantrag",
     "builderTool": "Modellierungstool",
     "profile": "Profil",
     "mall": "Einkaufszentrum",
-    "home": "Startseite"
+    "home": "Startseite",
+    "enterMall": "Center betreten"
   },
   "roles": {
     "admin": "Administrator",
@@ -141,5 +148,82 @@
     "confirmAction": "Diese Aktion bestätigen?",
     "errorDefault": "Entschuldigung, ein Fehler ist aufgetreten. Bitte versuchen Sie es erneut.",
     "inputPlaceholder": "Nachricht eingeben, z.B. \"Produktverwaltung öffnen\"..."
+  },
+  "builder": {
+    "aiAssist": "KI-Assistent",
+    "aiAssistTooltip": "KI-Anleitung zur Erstellung der Einkaufszentrum-Beschreibung",
+    "finishConversation": "Gespräch beenden",
+    "sendMessage": "Senden",
+    "chatPlaceholder": "Beschreiben Sie Ihre Anforderungen...",
+    "chatLoading": "KI denkt nach...",
+    "chatError": "Antwort fehlgeschlagen. Bitte erneut versuchen.",
+    "retry": "Erneut versuchen",
+    "roundCount": "Runde {current}/{max}",
+    "roundWarning": "Gesprächslimit wird erreicht",
+    "conversationComplete": "Gespräch abgeschlossen",
+    "resumeConversation": "Weitere Details ergänzen",
+    "generateFromDescription": "Einkaufszentrum aus dieser Beschreibung generieren",
+    "aiGreeting": "KI-Assistent wird gestartet...",
+    "floorPanel": {
+      "title": "Etagen",
+      "expand": "Etagenpanel ausklappen",
+      "collapse": "Etagenpanel einklappen",
+      "addFloor": "Etage hinzufügen",
+      "deleteFloor": "Etage löschen"
+    },
+    "materialPanel": {
+      "title": "Materialien",
+      "expand": "Materialpanel ausklappen",
+      "collapse": "Materialpanel einklappen",
+      "clearSelection": "Auswahl aufheben",
+      "placeHint": "Klicken Sie auf die Szene zum Platzieren",
+      "drawHint": "Verwenden Sie Zeichenwerkzeuge zum Platzieren"
+    },
+    "commandPalette": {
+      "placeholder": "KI-Befehl eingeben...",
+      "cancel": "Abbrechen",
+      "error": "Befehl fehlgeschlagen, bitte erneut versuchen",
+      "stepAnalyze": "Absicht analysieren",
+      "stepSearch": "Kontext abrufen",
+      "stepGenerate": "Antwort generieren"
+    },
+    "inlineInput": {
+      "placeholder": "Frag die KI...",
+      "error": "Anfrage fehlgeschlagen, bitte erneut versuchen",
+      "cancel": "Abbrechen"
+    },
+    "bottomDrawer": {
+      "placeholder": "Nachricht eingeben...",
+      "send": "Senden",
+      "dragHint": "Ziehen zum Ändern der Größe",
+      "collapse": "Panel einklappen"
+    },
+    "aiTrigger": {
+      "label": "KI-Assistent"
+    }
+  },
+  "auth": {
+    "username": "Benutzername",
+    "password": "Passwort",
+    "forgotPassword": "Passwort vergessen?",
+    "login": {
+      "brandHeadline": "Die Möglichkeiten der Einkaufszentrum-Verwaltung neu definieren",
+      "brandSubtitle": "3D-Visualisierung und KI-Intelligenz vereint für die Verwaltungsplattform der nächsten Generation",
+      "welcomeBack": "Willkommen zurück",
+      "description": "Melden Sie sich an, um Smart Mall weiter zu nutzen",
+      "usernamePlaceholder": "Benutzername eingeben",
+      "passwordPlaceholder": "Passwort eingeben",
+      "enterUsername": "Bitte geben Sie Ihren Benutzernamen ein",
+      "enterPassword": "Bitte geben Sie Ihr Passwort ein",
+      "loginBtn": "Anmelden",
+      "loggingIn": "Anmeldung läuft...",
+      "loginFailed": "Anmeldung fehlgeschlagen, bitte erneut versuchen",
+      "createAccount": "Konto erstellen",
+      "feature3dVisualization": "Intuitive und effiziente Center-Verwaltung durch 3D-Visualisierung",
+      "featureAiAssistant": "KI-Assistent immer bereit, komplexe Aufgaben mit einem Befehl erledigen",
+      "featureDataAnalysis": "Echtzeit-Datenanalyse, um jede Geschäftsmöglichkeit zu erfassen",
+      "featureDragEdit": "Drag-and-Drop Shop-Bearbeitung mit WYSIWYG-Raumdesign",
+      "featureMultiDevice": "Multi-Geräte-Zusammenarbeit, jederzeit und überall die Kontrolle behalten"
+    }
   }
 }

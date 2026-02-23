@@ -26,7 +26,10 @@
     "resetDefaults": "Réinitialiser",
     "logout": "Déconnexion",
     "logoutConfirm": "Voulez-vous vraiment vous déconnecter ?",
-    "backToHome": "Retour à l'accueil"
+    "backToHome": "Retour à l'accueil",
+    "characterModel": "Personnage de visite",
+    "characterMale": "Masculin",
+    "characterFemale": "Féminin"
   },
   "common": {
     "confirm": "Confirmer",
@@ -38,7 +41,9 @@
     "success": "Succès",
     "warning": "Avertissement",
     "noData": "Aucune donnée",
-    "retry": "Réessayer"
+    "retry": "Réessayer",
+    "back": "Retour",
+    "refresh": "Actualiser"
   },
   "nav": {
     "backToMall": "Retour au centre",
@@ -50,13 +55,15 @@
     "mallBuilder": "Constructeur du centre",
     "areaApproval": "Approbation des zones",
     "versionManage": "Gestion des versions",
+    "userManage": "Gestion des comptes",
     "workspace": "Espace de travail",
     "storeConfig": "Config. boutique",
     "areaApply": "Demande de zone",
     "builderTool": "Outil de modélisation",
     "profile": "Profil",
     "mall": "Centre commercial",
-    "home": "Accueil"
+    "home": "Accueil",
+    "enterMall": "Entrer dans le centre"
   },
   "roles": {
     "admin": "Administrateur",
@@ -141,5 +148,82 @@
     "confirmAction": "Confirmer cette action ?",
     "errorDefault": "Désolé, une erreur est survenue. Veuillez réessayer.",
     "inputPlaceholder": "Tapez un message, par exemple « Ouvrir la gestion des produits »..."
+  },
+  "builder": {
+    "aiAssist": "Assistant IA",
+    "aiAssistTooltip": "Obtenez l'aide de l'IA pour créer la description du centre commercial",
+    "finishConversation": "Terminer la conversation",
+    "sendMessage": "Envoyer",
+    "chatPlaceholder": "Décrivez les besoins de votre centre commercial...",
+    "chatLoading": "L'IA réfléchit...",
+    "chatError": "Échec de la réponse. Veuillez réessayer.",
+    "retry": "Réessayer",
+    "roundCount": "Tour {current}/{max}",
+    "roundWarning": "Approche de la limite de conversation",
+    "conversationComplete": "Conversation terminée",
+    "resumeConversation": "Continuer à compléter",
+    "generateFromDescription": "Générer le centre commercial à partir de cette description",
+    "aiGreeting": "Démarrage de l'assistant IA...",
+    "floorPanel": {
+      "title": "Étages",
+      "expand": "Développer le panneau des étages",
+      "collapse": "Réduire le panneau des étages",
+      "addFloor": "Ajouter un étage",
+      "deleteFloor": "Supprimer l'étage"
+    },
+    "materialPanel": {
+      "title": "Matériaux",
+      "expand": "Développer le panneau des matériaux",
+      "collapse": "Réduire le panneau des matériaux",
+      "clearSelection": "Effacer la sélection",
+      "placeHint": "Cliquez sur la scène pour placer",
+      "drawHint": "Utilisez les outils de dessin pour placer"
+    },
+    "commandPalette": {
+      "placeholder": "Entrez une commande IA...",
+      "cancel": "Annuler",
+      "error": "Échec de la commande, veuillez réessayer",
+      "stepAnalyze": "Analyse de l'intention",
+      "stepSearch": "Recherche du contexte",
+      "stepGenerate": "Génération de la réponse"
+    },
+    "inlineInput": {
+      "placeholder": "Demandez à l'IA...",
+      "error": "Échec de la requête, veuillez réessayer",
+      "cancel": "Annuler"
+    },
+    "bottomDrawer": {
+      "placeholder": "Saisissez un message...",
+      "send": "Envoyer",
+      "dragHint": "Glisser pour redimensionner",
+      "collapse": "Réduire le panneau"
+    },
+    "aiTrigger": {
+      "label": "Assistant IA"
+    }
+  },
+  "auth": {
+    "username": "Nom d'utilisateur",
+    "password": "Mot de passe",
+    "forgotPassword": "Mot de passe oublié ?",
+    "login": {
+      "brandHeadline": "Redéfinir les possibilités de gestion des centres commerciaux",
+      "brandSubtitle": "Alliant visualisation 3D et intelligence artificielle pour construire la plateforme de gestion d'espaces commerciaux de nouvelle génération",
+      "welcomeBack": "Bon retour",
+      "description": "Connectez-vous pour continuer à utiliser Smart Mall",
+      "usernamePlaceholder": "Entrez le nom d'utilisateur",
+      "passwordPlaceholder": "Entrez le mot de passe",
+      "enterUsername": "Veuillez entrer votre nom d'utilisateur",
+      "enterPassword": "Veuillez entrer votre mot de passe",
+      "loginBtn": "Se connecter",
+      "loggingIn": "Connexion en cours...",
+      "loginFailed": "Échec de la connexion, veuillez réessayer",
+      "createAccount": "Créer un compte",
+      "feature3dVisualization": "Gestion intuitive et efficace du centre commercial grâce à la visualisation 3D",
+      "featureAiAssistant": "Assistant IA toujours prêt, accomplissez des tâches complexes en une seule commande",
+      "featureDataAnalysis": "Analyse de données en temps réel pour saisir chaque opportunité commerciale",
+      "featureDragEdit": "Édition de boutiques par glisser-déposer, conception spatiale WYSIWYG",
+      "featureMultiDevice": "Collaboration multi-appareils, gardez le contrôle à tout moment et en tout lieu"
+    }
   }
 }

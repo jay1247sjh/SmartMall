@@ -26,7 +26,10 @@
     "resetDefaults": "恢复默认设置",
     "logout": "退出登录",
     "logoutConfirm": "确定要退出登录吗？",
-    "backToHome": "返回首页"
+    "backToHome": "返回首页",
+    "characterModel": "漫游角色",
+    "characterMale": "男性",
+    "characterFemale": "女性"
   },
   "common": {
     "confirm": "确认",
@@ -38,7 +41,9 @@
     "success": "成功",
     "warning": "警告",
     "noData": "暂无数据",
-    "retry": "重试"
+    "retry": "重试",
+    "back": "返回",
+    "refresh": "刷新"
   },
   "nav": {
     "backToMall": "返回商城",
@@ -50,13 +55,15 @@
     "mallBuilder": "商城建模",
     "areaApproval": "区域审批",
     "versionManage": "版本管理",
+    "userManage": "账号管理",
     "workspace": "工作区",
     "storeConfig": "店铺配置",
     "areaApply": "区域申请",
     "builderTool": "建模工具",
     "profile": "个人中心",
     "mall": "商城",
-    "home": "首页"
+    "home": "首页",
+    "enterMall": "进入商城"
   },
   "roles": {
     "admin": "管理员",
@@ -175,7 +182,26 @@
     "passwordTooShort": "密码长度不能少于6位",
     "passwordMismatch": "两次输入的密码不一致",
     "resetting": "重置中...",
-    "resetFailed": "重置失败，请重试"
+    "resetFailed": "重置失败，请重试",
+    "login": {
+      "brandHeadline": "重新定义商城管理的可能性",
+      "brandSubtitle": "融合 3D 可视化与 AI 智能，打造下一代商业空间管理平台",
+      "welcomeBack": "欢迎回来",
+      "description": "登录以继续使用 Smart Mall",
+      "usernamePlaceholder": "输入用户名",
+      "passwordPlaceholder": "输入密码",
+      "enterUsername": "请输入用户名",
+      "enterPassword": "请输入密码",
+      "loginBtn": "登录",
+      "loggingIn": "登录中...",
+      "loginFailed": "登录失败，请重试",
+      "createAccount": "创建账号",
+      "feature3dVisualization": "通过 3D 可视化技术，让商城管理变得直观高效",
+      "featureAiAssistant": "智能 AI 助手随时待命，一句话完成复杂操作",
+      "featureDataAnalysis": "实时数据分析，洞察每一个商业机会",
+      "featureDragEdit": "拖拽式店铺编辑，所见即所得的空间设计",
+      "featureMultiDevice": "多端协同工作，随时随地掌控全局"
+    }
   },
   "admin": {
     "floorStructure": "楼层结构",
@@ -280,7 +306,8 @@
       "confirmActivateMsg": "确定要激活用户 \"{username}\" 吗？激活后该用户可以正常登录系统。",
       "userActivated": "用户已激活",
       "operationFailed": "操作失败：",
-      "unknownError": "未知错误"
+      "unknownError": "未知错误",
+      "cannotOperateAdmin": "不允许对管理员账户执行此操作"
     }
   },
   "profile": {
@@ -536,7 +563,58 @@
     "opacity": "透明度",
     "scale": "缩放",
     "removeImage": "移除图片",
-    "importRefImage": "导入参考图"
+    "importRefImage": "导入参考图",
+    "aiAssist": "AI 辅助",
+    "aiAssistTooltip": "通过 AI 引导生成商城描述",
+    "finishConversation": "完成对话",
+    "sendMessage": "发送",
+    "chatPlaceholder": "描述您的商城需求...",
+    "chatLoading": "AI 正在思考...",
+    "chatError": "获取回复失败，请重试",
+    "retry": "重试",
+    "roundCount": "第 {current}/{max} 轮",
+    "roundWarning": "对话即将达到上限",
+    "conversationComplete": "对话已完成",
+    "resumeConversation": "继续补充",
+    "generateFromDescription": "按照此描述生成商城",
+    "aiGreeting": "正在启动 AI 助手...",
+    "floorPanel": {
+      "title": "楼层",
+      "expand": "展开楼层面板",
+      "collapse": "收起楼层面板",
+      "addFloor": "添加楼层",
+      "deleteFloor": "删除楼层"
+    },
+    "materialPanel": {
+      "title": "材质",
+      "expand": "展开材质面板",
+      "collapse": "收起材质面板",
+      "clearSelection": "清除选择",
+      "placeHint": "点击场景放置",
+      "drawHint": "使用绘制工具放置"
+    },
+    "commandPalette": {
+      "placeholder": "输入 AI 指令...",
+      "cancel": "取消",
+      "error": "指令执行失败，请重试",
+      "stepAnalyze": "分析意图",
+      "stepSearch": "检索上下文",
+      "stepGenerate": "生成回答"
+    },
+    "inlineInput": {
+      "placeholder": "向 AI 提问...",
+      "error": "请求失败，请重试",
+      "cancel": "取消"
+    },
+    "bottomDrawer": {
+      "placeholder": "输入消息...",
+      "send": "发送",
+      "dragHint": "拖拽调整大小",
+      "collapse": "收起面板"
+    },
+    "aiTrigger": {
+      "label": "AI 助手"
+    }
   },
   "userMgmt": {
     "username": "用户名",

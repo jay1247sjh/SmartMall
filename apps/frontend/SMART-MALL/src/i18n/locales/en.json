@@ -26,7 +26,10 @@
     "resetDefaults": "Reset to Defaults",
     "logout": "Log Out",
     "logoutConfirm": "Are you sure you want to log out?",
-    "backToHome": "Back to Home"
+    "backToHome": "Back to Home",
+    "characterModel": "Roaming Character",
+    "characterMale": "Male",
+    "characterFemale": "Female"
   },
   "common": {
     "confirm": "Confirm",
@@ -38,7 +41,9 @@
     "success": "Success",
     "warning": "Warning",
     "noData": "No Data",
-    "retry": "Retry"
+    "retry": "Retry",
+    "back": "Back",
+    "refresh": "Refresh"
   },
   "nav": {
     "backToMall": "Back to Mall",
@@ -50,13 +55,15 @@
     "mallBuilder": "Mall Builder",
     "areaApproval": "Area Approval",
     "versionManage": "Version Management",
+    "userManage": "User Management",
     "workspace": "Workspace",
     "storeConfig": "Store Config",
     "areaApply": "Area Application",
     "builderTool": "Builder Tool",
     "profile": "Profile",
     "mall": "Mall",
-    "home": "Home"
+    "home": "Home",
+    "enterMall": "Enter Mall"
   },
   "roles": {
     "admin": "Admin",
@@ -175,7 +182,26 @@
     "passwordTooShort": "Password must be at least 6 characters",
     "passwordMismatch": "Passwords do not match",
     "resetting": "Resetting...",
-    "resetFailed": "Reset failed, please try again"
+    "resetFailed": "Reset failed, please try again",
+    "login": {
+      "brandHeadline": "Redefine the possibilities of mall management",
+      "brandSubtitle": "Combining 3D visualization and AI intelligence to build the next-gen commercial space management platform",
+      "welcomeBack": "Welcome Back",
+      "description": "Log in to continue using Smart Mall",
+      "usernamePlaceholder": "Enter username",
+      "passwordPlaceholder": "Enter password",
+      "enterUsername": "Please enter your username",
+      "enterPassword": "Please enter your password",
+      "loginBtn": "Log In",
+      "loggingIn": "Logging in...",
+      "loginFailed": "Login failed, please try again",
+      "createAccount": "Create Account",
+      "feature3dVisualization": "Intuitive and efficient mall management through 3D visualization",
+      "featureAiAssistant": "AI assistant always ready, complete complex tasks with a single command",
+      "featureDataAnalysis": "Real-time data analytics to capture every business opportunity",
+      "featureDragEdit": "Drag-and-drop store editing with WYSIWYG spatial design",
+      "featureMultiDevice": "Multi-device collaboration, stay in control anytime, anywhere"
+    }
   },
   "admin": {
     "floorStructure": "Floor Structure",
@@ -280,7 +306,8 @@
       "confirmActivateMsg": "Are you sure you want to activate user \"{username}\"? The user will be able to log in after activation.",
       "userActivated": "User has been activated",
       "operationFailed": "Operation failed: ",
-      "unknownError": "Unknown error"
+      "unknownError": "Unknown error",
+      "cannotOperateAdmin": "This operation is not allowed on admin accounts"
     }
   },
   "profile": {
@@ -536,7 +563,58 @@
     "opacity": "Opacity",
     "scale": "Scale",
     "removeImage": "Remove Image",
-    "importRefImage": "Import Reference Image"
+    "importRefImage": "Import Reference Image",
+    "aiAssist": "AI Assist",
+    "aiAssistTooltip": "Get AI guidance to build your mall description",
+    "finishConversation": "Finish Conversation",
+    "sendMessage": "Send",
+    "chatPlaceholder": "Describe your mall requirements...",
+    "chatLoading": "AI is thinking...",
+    "chatError": "Failed to get response. Please retry.",
+    "retry": "Retry",
+    "roundCount": "Round {current}/{max}",
+    "roundWarning": "Approaching conversation limit",
+    "conversationComplete": "Conversation complete",
+    "resumeConversation": "Continue adding details",
+    "generateFromDescription": "Generate mall from this description",
+    "aiGreeting": "Starting AI assistant...",
+    "floorPanel": {
+      "title": "Floors",
+      "expand": "Expand floor panel",
+      "collapse": "Collapse floor panel",
+      "addFloor": "Add floor",
+      "deleteFloor": "Delete floor"
+    },
+    "materialPanel": {
+      "title": "Materials",
+      "expand": "Expand material panel",
+      "collapse": "Collapse material panel",
+      "clearSelection": "Clear selection",
+      "placeHint": "Click scene to place",
+      "drawHint": "Use drawing tools to place"
+    },
+    "commandPalette": {
+      "placeholder": "Enter AI command...",
+      "cancel": "Cancel",
+      "error": "Command failed, please try again",
+      "stepAnalyze": "Analyzing intent",
+      "stepSearch": "Retrieving context",
+      "stepGenerate": "Generating response"
+    },
+    "inlineInput": {
+      "placeholder": "Ask AI anything...",
+      "error": "Request failed, please try again",
+      "cancel": "Cancel"
+    },
+    "bottomDrawer": {
+      "placeholder": "Type a message...",
+      "send": "Send",
+      "dragHint": "Drag to resize",
+      "collapse": "Collapse panel"
+    },
+    "aiTrigger": {
+      "label": "AI Assistant"
+    }
   },
   "userMgmt": {
     "username": "Username",

@@ -26,7 +26,10 @@
     "resetDefaults": "Restablecer valores",
     "logout": "Cerrar sesión",
     "logoutConfirm": "¿Seguro que desea cerrar sesión?",
-    "backToHome": "Volver al inicio"
+    "backToHome": "Volver al inicio",
+    "characterModel": "Personaje de paseo",
+    "characterMale": "Masculino",
+    "characterFemale": "Femenino"
   },
   "common": {
     "confirm": "Confirmar",
@@ -38,7 +41,9 @@
     "success": "Éxito",
     "warning": "Advertencia",
     "noData": "Sin datos",
-    "retry": "Reintentar"
+    "retry": "Reintentar",
+    "back": "Volver",
+    "refresh": "Actualizar"
   },
   "nav": {
     "backToMall": "Volver al centro",
@@ -50,13 +55,15 @@
     "mallBuilder": "Constructor del centro",
     "areaApproval": "Aprobación de zonas",
     "versionManage": "Gestión de versiones",
+    "userManage": "Gestión de cuentas",
     "workspace": "Espacio de trabajo",
     "storeConfig": "Config. de tienda",
     "areaApply": "Solicitud de zona",
     "builderTool": "Herramienta de diseño",
     "profile": "Perfil",
     "mall": "Centro comercial",
-    "home": "Inicio"
+    "home": "Inicio",
+    "enterMall": "Entrar al centro"
   },
   "roles": {
     "admin": "Administrador",
@@ -141,5 +148,82 @@
     "confirmAction": "¿Confirmar esta acción?",
     "errorDefault": "Lo sentimos, ocurrió un error. Por favor, inténtelo de nuevo.",
     "inputPlaceholder": "Escribe un mensaje, por ejemplo «Abrir gestión de productos»..."
+  },
+  "builder": {
+    "aiAssist": "Asistente IA",
+    "aiAssistTooltip": "Obtén guía de IA para crear la descripción del centro comercial",
+    "finishConversation": "Finalizar conversación",
+    "sendMessage": "Enviar",
+    "chatPlaceholder": "Describe los requisitos de tu centro comercial...",
+    "chatLoading": "La IA está pensando...",
+    "chatError": "Error al obtener respuesta. Por favor, reintenta.",
+    "retry": "Reintentar",
+    "roundCount": "Ronda {current}/{max}",
+    "roundWarning": "Acercándose al límite de conversación",
+    "conversationComplete": "Conversación completada",
+    "resumeConversation": "Seguir añadiendo detalles",
+    "generateFromDescription": "Generar centro comercial con esta descripción",
+    "aiGreeting": "Iniciando asistente IA...",
+    "floorPanel": {
+      "title": "Pisos",
+      "expand": "Expandir panel de pisos",
+      "collapse": "Contraer panel de pisos",
+      "addFloor": "Agregar piso",
+      "deleteFloor": "Eliminar piso"
+    },
+    "materialPanel": {
+      "title": "Materiales",
+      "expand": "Expandir panel de materiales",
+      "collapse": "Contraer panel de materiales",
+      "clearSelection": "Limpiar selección",
+      "placeHint": "Haga clic en la escena para colocar",
+      "drawHint": "Use herramientas de dibujo para colocar"
+    },
+    "commandPalette": {
+      "placeholder": "Ingrese comando IA...",
+      "cancel": "Cancelar",
+      "error": "Error al ejecutar el comando, intente de nuevo",
+      "stepAnalyze": "Analizando intención",
+      "stepSearch": "Buscando contexto",
+      "stepGenerate": "Generando respuesta"
+    },
+    "inlineInput": {
+      "placeholder": "Pregunta a la IA...",
+      "error": "Solicitud fallida, intente de nuevo",
+      "cancel": "Cancelar"
+    },
+    "bottomDrawer": {
+      "placeholder": "Escribe un mensaje...",
+      "send": "Enviar",
+      "dragHint": "Arrastra para redimensionar",
+      "collapse": "Contraer panel"
+    },
+    "aiTrigger": {
+      "label": "Asistente IA"
+    }
+  },
+  "auth": {
+    "username": "Nombre de usuario",
+    "password": "Contraseña",
+    "forgotPassword": "¿Olvidó su contraseña?",
+    "login": {
+      "brandHeadline": "Redefinir las posibilidades de la gestión de centros comerciales",
+      "brandSubtitle": "Combinando visualización 3D e inteligencia artificial para construir la plataforma de gestión de espacios comerciales de próxima generación",
+      "welcomeBack": "Bienvenido de vuelta",
+      "description": "Inicie sesión para continuar usando Smart Mall",
+      "usernamePlaceholder": "Ingrese nombre de usuario",
+      "passwordPlaceholder": "Ingrese contraseña",
+      "enterUsername": "Por favor ingrese su nombre de usuario",
+      "enterPassword": "Por favor ingrese su contraseña",
+      "loginBtn": "Iniciar sesión",
+      "loggingIn": "Iniciando sesión...",
+      "loginFailed": "Error de inicio de sesión, intente de nuevo",
+      "createAccount": "Crear cuenta",
+      "feature3dVisualization": "Gestión intuitiva y eficiente del centro comercial mediante visualización 3D",
+      "featureAiAssistant": "Asistente IA siempre listo, complete tareas complejas con un solo comando",
+      "featureDataAnalysis": "Análisis de datos en tiempo real para captar cada oportunidad de negocio",
+      "featureDragEdit": "Edición de tiendas con arrastrar y soltar, diseño espacial WYSIWYG",
+      "featureMultiDevice": "Colaboración multidispositivo, mantenga el control en cualquier momento y lugar"
+    }
   }
 }
