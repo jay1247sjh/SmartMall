@@ -139,4 +139,149 @@ uvicorn app.main:app --reload --port 8000
 
 | Role | Username | Password |
 |------|----------|----------|
-|
+| Admin | admin | 123456 |
+| Merchant | merchant | 123456 |
+| User | user | 123456 |
+
+---
+
+## Project Structure
+
+```
+SmartMall/
+├── apps/
+│   ├── frontend/SMART-MALL/          # Vue 3 Frontend
+│   │   └── src/
+│   │       ├── api/                   #   HTTP client layer
+│   │       ├── agent/                 #   AI chat integration
+│   │       ├── builder/               #   Mall modeling tools
+│   │       ├── components/            #   Shared UI components
+│   │       ├── composables/           #   Vue composables
+│   │       ├── domain/                #   Domain models & entities
+│   │       ├── engine/                #   Three.js rendering engine
+│   │       ├── i18n/                  #   Internationalization
+│   │       ├── orchestrator/          #   Action dispatch & RCAC
+│   │       ├── protocol/              #   Communication protocols
+│   │       ├── router/                #   Routes & guards
+│   │       ├── stores/                #   Pinia state management
+│   │       └── views/                 #   Page views
+│   │
+│   ├── backend/SMART-MALL/            # Spring Boot Backend
+│   │   └── src/main/java/com/smartmall/
+│   │       ├── interfaces/            #   Controllers & DTOs
+│   │       ├── application/           #   Application services
+│   │       ├── domain/                #   Entities & repositories
+│   │       ├── infrastructure/        #   DB, cache, config
+│   │       └── common/                #   Shared utilities
+│   │
+│   └── intelligence/SMART-MALL/       # FastAPI AI Service
+│       └── app/
+│           ├── api/                   #   Route handlers
+│           ├── core/                  #   LLM, Agent, RAG, Memory
+│           ├── services/              #   Business services
+│           ├── schemas/               #   Pydantic models
+│           └── prompts/               #   YAML prompt configs
+│
+├── infra/                             # Docker infrastructure
+│   ├── docker-compose.yml             #   PG + Redis + Milvus + Etcd + MinIO
+│   └── init-db/                       #   Database init scripts
+│
+├── packages/                          # Shared packages
+│   └── shared-types/                  #   Cross-service type definitions
+│
+├── study/                             # Learning modules (01-23)
+└── .kiro/steering/                    # AI collaboration rules
+```
+
+---
+
+
+## API Overview
+
+### Auth
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| POST | `/api/auth/login` | Login |
+| POST | `/api/auth/register` | Register |
+| POST | `/api/auth/forgot-password` | Forgot password |
+| POST | `/api/auth/reset-password` | Reset password |
+
+### Mall Builder
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | `/api/mall-builder/projects` | List projects |
+| POST | `/api/mall-builder/projects` | Create project |
+| GET | `/api/mall-builder/projects/{id}` | Get project |
+| PUT | `/api/mall-builder/projects/{id}` | Update project |
+| DELETE | `/api/mall-builder/projects/{id}` | Delete project |
+
+### AI Chat
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| POST | `/api/chat` | Chat (text + image) |
+| POST | `/api/chat/stream` | SSE streaming chat |
+
+### AI Generation
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| POST | `/api/mall/generate` | Generate mall layout from description |
+| POST | `/api/mall/describe` | Multi-turn mall description dialog |
+| POST | `/api/store/generate-layout` | Generate store interior layout |
+
+### RAG
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| POST | `/api/rag/search/stores` | Semantic store search |
+| POST | `/api/rag/search/products` | Semantic product search |
+| POST | `/api/rag/sync/trigger` | Trigger data sync |
+
+---
+
+## Database
+
+| Parameter | Value |
+|-----------|-------|
+| Host | localhost |
+| Port | **5433** (not default 5432) |
+| Database | smartmall |
+| Username | smartmall |
+| Password | smartmall123 |
+
+JDBC: `jdbc:postgresql://localhost:5433/smartmall`
+
+---
+
+## Learning Resources
+
+The project includes 23 learning modules using Socratic teaching method:
+
+| Range | Topics |
+|-------|--------|
+| 01-11 | Frontend: Login, Router, Pinia, Three.js, Builder, Orchestrator |
+| 12-17 | Backend: Spring Boot, MyBatis-Plus, JWT, Security |
+| 18-19 | Frontend Advanced: i18n, Performance |
+| 20-22 | Business: Area Permission, Store Management, Product |
+| 23 | AI: Agent, RAG, Memory, Function Calling |
+
+See [study/README.md](study/README.md) for the full learning path.
+
+---
+
+## Contributing
+
+1. Fork the repository
+2. Create your feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit using [Conventional Commits](https://www.conventionalcommits.org/) (`feat(scope): description`)
+4. Push to the branch (`git push origin feature/amazing-feature`)
+5. Open a Pull Request
+
+---
+
+## License
+
+[MIT](LICENSE)
