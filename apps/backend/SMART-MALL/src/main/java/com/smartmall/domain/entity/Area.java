@@ -44,6 +44,9 @@ public class Area extends BaseEntity {
     
     private Boolean locked;
     
+    @TableField(typeHandler = com.baomidou.mybatisplus.extension.handlers.JacksonTypeHandler.class)
+    private Object doors;
+    
     /**
      * 区域状态: AVAILABLE(可申请), OCCUPIED(已占用), LOCKED(锁定)
      */

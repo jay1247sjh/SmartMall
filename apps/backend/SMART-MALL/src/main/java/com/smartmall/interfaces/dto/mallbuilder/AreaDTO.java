@@ -34,4 +34,6 @@ public class AreaDTO {
     private Boolean visible = true;
     
     private Boolean locked = false;
+    
+    private Object doors;
 }

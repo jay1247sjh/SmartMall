@@ -288,6 +288,7 @@ public class MallBuilderService {
         area.setRental(areaDTO.getRental());
         area.setVisible(areaDTO.getVisible());
         area.setLocked(areaDTO.getLocked());
+        area.setDoors(areaDTO.getDoors());
         
         areaMapper.insert(area);
     }
@@ -463,6 +464,7 @@ public class MallBuilderService {
         response.setRental(area.getRental());
         response.setVisible(area.getVisible());
         response.setLocked(area.getLocked());
+        response.setDoors(area.getDoors());
         response.setStatus(area.getStatus() != null ? area.getStatus().getValue() : AreaStatus.AVAILABLE.getValue());
         return response;
     }

@@ -113,6 +113,8 @@ export interface AreaDTO {
   visible?: boolean
   /** 是否锁定 */
   locked?: boolean
+  /** 门定义列表 */
+  doors?: unknown[]
 }
 
 /**
@@ -185,6 +187,7 @@ export interface AreaResponse {
   rental?: Record<string, unknown>
   visible: boolean
   locked: boolean
+  doors?: unknown[]
   status?: 'AVAILABLE' | 'LOCKED' | 'PENDING' | 'AUTHORIZED' | 'OCCUPIED'
 }
 
@@ -348,6 +351,7 @@ function toAreaDTO(area: AreaDefinition): AreaDTO {
     rental: area.rental as unknown as Record<string, unknown> | undefined,
     visible: area.visible,
     locked: area.locked,
+    doors: area.doors as unknown[] | undefined,
   }
 }
 
@@ -418,6 +422,7 @@ function toAreaDefinition(dto: AreaResponse): AreaDefinition {
       suitableFor: props?.suitableFor as string[] | undefined,
       notes: props?.notes as string | undefined,
     },
+    doors: dto.doors as AreaDefinition['doors'],
     visible: dto.visible,
     locked: dto.locked,
     merchantId: dto.merchantId,

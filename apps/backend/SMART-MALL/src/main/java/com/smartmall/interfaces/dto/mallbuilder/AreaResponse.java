@@ -30,5 +30,7 @@ public class AreaResponse {
     
     private Boolean locked;
     
+    private Object doors;
+    
     private String status;
 }
