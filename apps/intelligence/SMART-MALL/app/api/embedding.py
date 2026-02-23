@@ -1,13 +1,15 @@
 """
 Embedding 接口
 
-生成文本的向量表示，用于 RAG 检索
+使用 LangChain Embedding 提供商（Ollama bge-m3 + Qwen fallback）生成文本向量表示。
 """
 
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 from typing import List, Optional
 import logging
+
+from app.core.embedding_provider import get_embeddings, get_current_provider_name
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
@@ -36,62 +38,54 @@ class EmbeddingResponse(BaseModel):
 async def generate_embeddings(request: EmbeddingRequest) -> EmbeddingResponse:
     """
     生成文本的向量表示
-    
-    - 输入: 文本列表
-    - 输出: 向量列表
+
+    使用 LangChain Embedding 提供商：
+    - 主：Ollama bge-m3（本地，1024 维）
+    - 备：Qwen Embedding（远程）
     """
     try:
         logger.info(f"Generating embeddings for {len(request.texts)} texts")
-        
-        # TODO: 实际调用 Embedding 模型
-        # 当前返回 Mock 数据（随机向量）
-        
-        import random
-        dimension = 1536  # OpenAI ada-002 维度
-        
-        embeddings = []
-        for i, text in enumerate(request.texts):
-            # 生成伪随机向量（实际应调用 Embedding API）
-            random.seed(hash(text))
-            embedding = [random.uniform(-1, 1) for _ in range(dimension)]
-            embeddings.append(EmbeddingResult(
-                index=i,
-                embedding=embedding
-            ))
-        
+
+        embeddings_provider = get_embeddings()
+        vectors = await embeddings_provider.aembed_documents(request.texts)
+
+        provider_name = get_current_provider_name()
+        dimension = len(vectors[0]) if vectors else 0
+
+        results = [
+            EmbeddingResult(index=i, embedding=vec)
+            for i, vec in enumerate(vectors)
+        ]
+
         return EmbeddingResponse(
-            model="mock-embedding",
+            model=provider_name,
             dimension=dimension,
-            embeddings=embeddings
+            embeddings=results
         )
-        
+
     except Exception as e:
         logger.error(f"Embedding error: {str(e)}")
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=f"Embedding 生成失败: {str(e)}")
 
 
 @router.get("/embedding/models")
 async def get_available_models():
     """获取可用的 Embedding 模型"""
+    current = get_current_provider_name()
     return {
+        "current": current,
         "models": [
             {
-                "name": "text-embedding-ada-002",
-                "provider": "openai",
-                "dimension": 1536,
-                "maxTokens": 8191
+                "name": "bge-m3:latest",
+                "provider": "ollama",
+                "dimension": 1024,
+                "description": "本地 Ollama bge-m3 模型（主）"
             },
             {
-                "name": "text-embedding-3-small",
-                "provider": "openai",
-                "dimension": 1536,
-                "maxTokens": 8191
+                "name": "qwen-embedding",
+                "provider": "qwen",
+                "dimension": 1024,
+                "description": "Qwen Embedding（备用）"
             },
-            {
-                "name": "text-embedding-3-large",
-                "provider": "openai",
-                "dimension": 3072,
-                "maxTokens": 8191
-            }
         ]
     }

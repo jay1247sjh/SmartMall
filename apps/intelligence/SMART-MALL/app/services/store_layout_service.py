@@ -11,9 +11,11 @@ import re
 import logging
 from typing import List, Dict, Any
 
+from langchain_core.output_parsers import StrOutputParser
+from langchain_core.prompts import ChatPromptTemplate
+
 from app.core.config import settings
-from app.core.llm.factory import LLMFactory
-from app.core.llm.base import Message
+from app.core.llm_provider import get_llm
 from app.core.prompt_loader import PromptLoader
 from app.schemas.store_layout import (
     StoreLayoutData,
@@ -138,7 +140,7 @@ class StoreLayoutService:
         area_boundary: List[Dict[str, float]],
         available_materials: List[Dict[str, Any]],
     ) -> StoreLayoutData:
-        """通过 LLM 生成布局"""
+        """通过 LangChain LCEL Chain 生成布局"""
         # 获取主题信息
         theme_info = THEME_PRESETS.get(theme, {})
         theme_name = theme_info.get("name", theme)
@@ -154,29 +156,24 @@ class StoreLayoutService:
             area_boundary=json.dumps(area_boundary, ensure_ascii=False),
             available_materials=json.dumps(available_materials, ensure_ascii=False),
         )
-        params = PromptLoader.get_parameters(self.PROMPT_NAME)
 
-        # 构造消息
-        messages = [
-            Message(role="system", content=system_prompt),
-            Message(role="user", content=user_prompt),
-        ]
+        # 构造 LCEL Chain
+        prompt = ChatPromptTemplate.from_messages([
+            ("system", system_prompt),
+            ("human", "{user_input}"),
+        ])
+        chain = prompt | get_llm() | StrOutputParser()
 
-        # 调用 LLM
-        llm = LLMFactory.create()
-        result = await llm.chat(
-            messages=messages,
-            temperature=params.get("temperature", 0.3),
-            max_tokens=params.get("max_tokens", 4000),
-        )
+        # 调用 Chain
+        result = await chain.ainvoke({"user_input": user_prompt})
 
         # 提取并校验 JSON
-        raw_json = self._extract_json(result.content)
+        raw_json = self._extract_json(result)
         layout = StoreLayoutData.model_validate(raw_json)
 
         logger.info(
             f"LLM generated store layout: theme={theme_name}, "
-            f"{len(layout.objects)} objects, model={result.model}"
+            f"{len(layout.objects)} objects"
         )
         return layout
 
@@ -268,15 +265,11 @@ class StoreLayoutService:
         raise ValueError("Failed to extract valid JSON from LLM response")
 
     def _is_llm_available(self) -> bool:
-        """检查 LLM 是否可用"""
-        provider = settings.LLM_PROVIDER.lower()
-        key_map = {
-            "qwen": settings.QWEN_API_KEY,
-            "openai": settings.OPENAI_API_KEY,
-            "deepseek": settings.DEEPSEEK_API_KEY,
-        }
-        api_key = key_map.get(provider, "")
-        return bool(api_key and api_key.strip())
+        """检查 LLM 是否可用（OpenRouter 或 Qwen API Key 已配置）"""
+        return bool(
+            (settings.OPENROUTER_API_KEY and settings.OPENROUTER_API_KEY.strip())
+            or (settings.QWEN_API_KEY and settings.QWEN_API_KEY.strip())
+        )
 
     def _get_theme_display_name(self, theme: str) -> str:
         """获取主题显示名称"""

@@ -1,7 +1,7 @@
 """
 商城布局 LLM 生成服务
 
-通过 LLM 生成符合 MallLayoutData Schema 的商城布局数据。
+通过 LangChain LCEL Chain 生成符合 MallLayoutData Schema 的商城布局数据。
 LLM 失败时自动降级到现有规则生成器。
 """
 
@@ -10,9 +10,11 @@ import re
 import logging
 from typing import Tuple
 
+from langchain_core.output_parsers import StrOutputParser
+from langchain_core.prompts import ChatPromptTemplate
+
 from app.core.config import settings
-from app.core.llm.factory import LLMFactory
-from app.core.llm.base import Message
+from app.core.llm_provider import get_llm
 from app.core.prompt_loader import PromptLoader
 from app.api.mall_generator import (
     MallLayoutData,
@@ -46,35 +48,30 @@ class MallGenerationService:
         return self._fallback_generate(description), "rule_based"
 
     async def _generate_with_llm(self, description: str) -> MallLayoutData:
-        """通过 LLM 生成布局"""
+        """通过 LangChain LCEL Chain 生成布局"""
         # 加载 Prompt
         system_prompt = PromptLoader.get_system_prompt(self.PROMPT_NAME)
         user_prompt = PromptLoader.format_user_prompt(
             self.PROMPT_NAME, description=description
         )
-        params = PromptLoader.get_parameters(self.PROMPT_NAME)
 
-        # 构造消息
-        messages = [
-            Message(role="system", content=system_prompt),
-            Message(role="user", content=user_prompt),
-        ]
+        # 构造 LCEL Chain
+        prompt = ChatPromptTemplate.from_messages([
+            ("system", system_prompt),
+            ("human", "{user_input}"),
+        ])
+        chain = prompt | get_llm() | StrOutputParser()
 
-        # 调用 LLM
-        llm = LLMFactory.create()
-        result = await llm.chat(
-            messages=messages,
-            temperature=params.get("temperature", 0.3),
-            max_tokens=params.get("max_tokens", 4000),
-        )
+        # 调用 Chain
+        result = await chain.ainvoke({"user_input": user_prompt})
 
         # 提取并校验 JSON
-        raw_json = self._extract_json(result.content)
+        raw_json = self._extract_json(result)
         layout = MallLayoutData.model_validate(raw_json)
 
         logger.info(
             f"LLM generated mall layout: {layout.name}, "
-            f"{len(layout.floors)} floors, model={result.model}"
+            f"{len(layout.floors)} floors"
         )
         return layout
 
@@ -104,15 +101,11 @@ class MallGenerationService:
         raise ValueError("Failed to extract valid JSON from LLM response")
 
     def _is_llm_available(self) -> bool:
-        """检查 LLM 是否可用（API Key 已配置）"""
-        provider = settings.LLM_PROVIDER.lower()
-        key_map = {
-            "qwen": settings.QWEN_API_KEY,
-            "openai": settings.OPENAI_API_KEY,
-            "deepseek": settings.DEEPSEEK_API_KEY,
-        }
-        api_key = key_map.get(provider, "")
-        return bool(api_key and api_key.strip())
+        """检查 LLM 是否可用（OpenRouter 或 Qwen API Key 已配置）"""
+        return bool(
+            (settings.OPENROUTER_API_KEY and settings.OPENROUTER_API_KEY.strip())
+            or (settings.QWEN_API_KEY and settings.QWEN_API_KEY.strip())
+        )
 
     def _fallback_generate(self, description: str) -> MallLayoutData:
         """降级到规则生成器"""

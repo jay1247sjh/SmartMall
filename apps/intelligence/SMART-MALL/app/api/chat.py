@@ -2,45 +2,47 @@
 智能对话接口
 
 支持：
-- 纯文本对话
-- 图片+文字对话（视觉理解）
-- Function Calling
+- 纯文本对话（通过 LangChain AgentExecutor）
+- 图片+文字对话（视觉理解，通过 get_vision_llm）
+- Function Calling（通过 @tool 工具集）
+
+重构后使用 SmartMallAgentFactory + MemoryManager 替代旧 MallAgent，
+保持响应结构不变（request_id, type, content, action, args, message,
+tool_results, model, tokens_used, timestamp）。
+
+Requirements: 18.5
 """
 
-from fastapi import APIRouter, HTTPException, Depends
+from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 from typing import Optional, List, Dict, Any
-from datetime import datetime
+from datetime import datetime, timezone
+import json
 import logging
 
-from app.core.agent.mall_agent import MallAgent
+from app.core.agent.agent import (
+    SmartMallAgentFactory,
+    is_unsafe_input,
+    process_with_vision,
+    SAFE_RESPONSE,
+)
+from app.core.memory.manager import MemoryManager
 from app.core.errors import parse_llm_error
+from app.core.config import get_settings
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
 
 
-# 全局 Agent 实例
-_agent: Optional[MallAgent] = None
-
-
-def get_agent() -> MallAgent:
-    """获取 Agent 单例（用于依赖注入）"""
-    global _agent
-    if _agent is None:
-        _agent = MallAgent()
-    return _agent
-
-
-# ============ 请求/响应模型 ============
+# ============ 请求/响应模型（保持不变） ============
 
 class ChatRequest(BaseModel):
     """对话请求"""
     request_id: str
     user_id: str
     message: str
-    image_url: Optional[str] = None  # 图片 URL（可选）
-    context: Optional[Dict[str, Any]] = None  # 上下文（位置、历史等）
+    image_url: Optional[str] = None
+    context: Optional[Dict[str, Any]] = None
 
 
 class ToolResult(BaseModel):
@@ -64,63 +66,129 @@ class ChatResponse(BaseModel):
     timestamp: str
 
 
+# ============ 辅助函数 ============
+
+def _extract_tool_results(intermediate_steps: list) -> Optional[List[ToolResult]]:
+    """从 AgentExecutor 的 intermediate_steps 提取工具调用结果"""
+    if not intermediate_steps:
+        return None
+    results = []
+    for action, observation in intermediate_steps:
+        tool_result = observation if isinstance(observation, dict) else {"result": str(observation)}
+        args = action.tool_input if isinstance(action.tool_input, dict) else {"input": str(action.tool_input)}
+        results.append(ToolResult(
+            function=action.tool,
+            args=args,
+            result=tool_result,
+        ))
+    return results or None
+
+
+def _detect_confirmation(tool_results: Optional[List[ToolResult]]) -> Optional[ToolResult]:
+    """检测工具结果中是否有需要确认的操作"""
+    if not tool_results:
+        return None
+    for tr in tool_results:
+        if isinstance(tr.result, dict) and tr.result.get("type") == "confirmation_required":
+            return tr
+    return None
+
+
+def _now_iso() -> str:
+    return datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
+
+
 # ============ 接口实现 ============
 
 @router.post("/chat", response_model=ChatResponse)
-async def chat(
-    request: ChatRequest,
-    agent: MallAgent = Depends(get_agent)
-) -> ChatResponse:
-    """
-    智能对话接口
-    
-    支持：
-    - 纯文本：用户输入文字，返回文字或执行操作
-    - 图片+文字：用户上传图片并提问，进行视觉理解
-    
-    示例：
-    - "Nike 店在哪？" → 导航到 Nike 店
-    - "帮我买一双跑鞋，500以内" → 搜索 → 推荐 → 加购 → 下单
-    - [图片] + "我想吃类似的菜" → 视觉理解 → 推荐餐厅
+async def chat(request: ChatRequest) -> ChatResponse:
+    """智能对话接口
+
+    使用 SmartMallAgentFactory + MemoryManager。
+    保持响应结构与旧版完全一致。
     """
     try:
         logger.info(f"[{request.request_id}] Chat: {request.message[:50]}...")
-        
-        result = await agent.process(
-            user_input=request.message,
-            image_url=request.image_url,
-            context=request.context
-        )
-        
+
+        # 安全输入检查
+        if is_unsafe_input(request.message):
+            return ChatResponse(
+                request_id=request.request_id,
+                type="text",
+                content=SAFE_RESPONSE,
+                timestamp=_now_iso(),
+            )
+
+        # 图片+文字 → 视觉模型
+        if request.image_url:
+            vision_result = await process_with_vision(request.message, request.image_url)
+            return ChatResponse(
+                request_id=request.request_id,
+                type="text",
+                content=vision_result,
+                timestamp=_now_iso(),
+            )
+
+        # 构建记忆上下文
+        memory = MemoryManager(user_id=request.user_id)
+        prompt_context = await memory.build_prompt_context(request.message)
+
+        # 提取 chat_history（system prompt 之后、当前输入之前的消息）
+        chat_history = []
+        for msg in prompt_context[1:-1]:  # 跳过第一条 system 和最后一条 user
+            if msg["role"] != "system":
+                chat_history.append(msg)
+
+        system_message = prompt_context[0]["content"] if prompt_context else ""
+
+        # 调用 AgentExecutor
+        settings = get_settings()
+        agent = SmartMallAgentFactory.create(streaming=False)
+        result = await agent.ainvoke({
+            "input": request.message,
+            "system_message": system_message,
+            "chat_history": chat_history,
+        })
+
+        output = result.get("output", "")
+        steps = result.get("intermediate_steps", [])
+        tool_results = _extract_tool_results(steps)
+
+        # 检测确认请求
+        confirmation = _detect_confirmation(tool_results)
+        if confirmation:
+            return ChatResponse(
+                request_id=request.request_id,
+                type="confirmation_required",
+                action=confirmation.function,
+                args=confirmation.result.get("args", {}),
+                message=confirmation.result.get("message", "此操作需要确认"),
+                tool_results=tool_results,
+                model=settings.OPENROUTER_MODEL,
+                timestamp=_now_iso(),
+            )
+
+        # 保存对话到记忆
+        await memory.save_turn(request.message, output)
+
         return ChatResponse(
             request_id=request.request_id,
-            type=result.get("type", "text"),
-            content=result.get("content"),
-            action=result.get("action"),
-            args=result.get("args"),
-            message=result.get("message"),
-            tool_results=[
-                ToolResult(**tr) for tr in result.get("tool_results", [])
-            ] if result.get("tool_results") else None,
-            model=result.get("model"),
-            tokens_used=result.get("tokens_used"),
-            timestamp=datetime.utcnow().isoformat() + "Z"
+            type="text",
+            content=output,
+            tool_results=tool_results,
+            model=settings.OPENROUTER_MODEL,
+            timestamp=_now_iso(),
         )
-        
+
     except Exception as e:
         logger.error(f"[{request.request_id}] Error: {str(e)}")
-        
-        # 解析错误并返回友好消息
         status_code, error_type, user_message = parse_llm_error(e)
-        logger.warning(f"[{request.request_id}] Parsed error: type={error_type}, status={status_code}")
-        
-        # 返回错误响应而非抛出异常，让前端能正常处理
         return ChatResponse(
             request_id=request.request_id,
             type="error",
             content=user_message,
             message=error_type,
-            timestamp=datetime.utcnow().isoformat() + "Z"
+            timestamp=_now_iso(),
         )
 
 
@@ -134,42 +202,44 @@ class ConfirmRequest(BaseModel):
 
 
 @router.post("/chat/confirm", response_model=ChatResponse)
-async def confirm_action(
-    request: ConfirmRequest,
-    agent: MallAgent = Depends(get_agent)
-) -> ChatResponse:
-    """
-    确认操作接口
-    
-    当 chat 接口返回 type=confirmation_required 或 type=confirm 时，
-    前端需要调用此接口确认或取消操作。
+async def confirm_action(request: ConfirmRequest) -> ChatResponse:
+    """确认操作接口
+
+    当 chat 接口返回 type=confirmation_required 时，
+    前端调用此接口确认或取消操作。
     """
     try:
         logger.info(f"[{request.request_id}] Confirm: {request.action}, confirmed={request.confirmed}")
-        
+
         if not request.confirmed:
             return ChatResponse(
                 request_id=request.request_id,
                 type="text",
                 content="好的，已取消操作。还有什么可以帮您的吗？",
-                timestamp=datetime.utcnow().isoformat() + "Z"
+                timestamp=_now_iso(),
             )
-        
-        # 执行已确认的操作
-        result = await agent._execute_function(
-            request.action,
-            request.args,
-            context=None
-        )
-        
-        # 根据操作类型返回不同消息
+
+        # 直接调用对应的 LangChain tool
+        from app.core.agent.tools_langchain import ALL_TOOLS
+        target_tool = next((t for t in ALL_TOOLS if t.name == request.action), None)
+        if not target_tool:
+            return ChatResponse(
+                request_id=request.request_id,
+                type="error",
+                content=f"未知操作: {request.action}",
+                timestamp=_now_iso(),
+            )
+
+        result = await target_tool.ainvoke(request.args)
+        result_dict = result if isinstance(result, dict) else {"result": str(result)}
+
         if request.action == "create_order":
-            content = f"订单创建成功！请在支付页面完成支付。"
+            content = "订单创建成功！请在支付页面完成支付。"
         elif request.action == "add_to_cart":
-            content = f"已添加到购物车！{result.get('message', '')}"
+            content = f"已添加到购物车！{result_dict.get('message', '')}"
         else:
-            content = result.get("message", "操作成功")
-        
+            content = result_dict.get("message", "操作成功")
+
         return ChatResponse(
             request_id=request.request_id,
             type="text",
@@ -177,21 +247,18 @@ async def confirm_action(
             tool_results=[ToolResult(
                 function=request.action,
                 args=request.args,
-                result=result
+                result=result_dict,
             )],
-            timestamp=datetime.utcnow().isoformat() + "Z"
+            timestamp=_now_iso(),
         )
-        
+
     except Exception as e:
         logger.error(f"[{request.request_id}] Confirm error: {str(e)}")
-        
-        # 解析错误并返回友好消息
         status_code, error_type, user_message = parse_llm_error(e)
-        
         return ChatResponse(
             request_id=request.request_id,
             type="error",
             content=user_message,
             message=error_type,
-            timestamp=datetime.utcnow().isoformat() + "Z"
+            timestamp=_now_iso(),
         )

@@ -1,7 +1,10 @@
 """
 RAG (Retrieval-Augmented Generation) 模块
 
-提供基于 Milvus 向量数据库和 LangChain 的语义检索能力
+提供基于 Milvus 向量数据库和 LangChain 的语义检索能力。
+
+Embedding: 使用 app.core.embedding_provider.get_embeddings()（LangChain 接口）
+Retriever: 使用 RAGRetrieverFactory（基于 langchain-milvus）
 """
 
 from app.core.rag.milvus_client import MilvusClient
@@ -27,12 +30,9 @@ __all__ = [
     "LOCATIONS_SCHEMA",
 ]
 
-# 延迟导入（避免循环依赖，模块创建后再添加）
+
 def __getattr__(name):
-    if name == "SmartMallRetriever":
-        from app.core.rag.retriever import SmartMallRetriever
-        return SmartMallRetriever
-    elif name == "RAGService":
+    if name == "RAGService":
         from app.core.rag.service import RAGService
         return RAGService
     raise AttributeError(f"module {__name__!r} has no attribute {name!r}")

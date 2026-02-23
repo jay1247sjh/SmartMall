@@ -45,10 +45,10 @@ from langchain_core.retrievers import BaseRetriever
 
 # Milvus 向量数据库客户端
 from app.core.rag.milvus_client import MilvusClient, get_milvus_client
-# 文本向量化服务
+# 文本向量化服务（旧版，仅用于 DataSyncService 兼容）
 from app.core.rag.embedding import EmbeddingService, get_embedding_service
 # 检索器和过滤表达式构建器
-from app.core.rag.retriever import SmartMallRetriever, build_filter_expr, RAGRetrieverFactory
+from app.core.rag.retriever import build_filter_expr, RAGRetrieverFactory
 # 数据库集合的 Schema 定义
 from app.core.rag.schemas import STORES_SCHEMA, PRODUCTS_SCHEMA, LOCATIONS_SCHEMA
 # 应用配置
@@ -560,24 +560,16 @@ class RAGService:
         top_k = top_k or settings.RAG_TOP_K
         score_threshold = score_threshold or settings.RAG_SCORE_THRESHOLD
         
-        # 构建过滤表达式（Milvus 查询语法）
-        filter_expr = build_filter_expr(category=category, floor=floor)
-        
-        # 创建检索器实例
-        retriever = SmartMallRetriever(
-            milvus_client=self.milvus_client,
-            embedding_service=self.embedding_service,
-            collection_name="stores",  # 指定店铺集合
+        # 使用 RAGRetrieverFactory 创建检索器
+        retriever = RAGRetrieverFactory.create_filtered_retriever(
+            collection_name="stores",
+            category=category,
+            floor=floor,
             top_k=top_k,
-            score_threshold=score_threshold
         )
         
-        # 如果有过滤条件，应用到检索器
-        if filter_expr:
-            retriever.with_filter(filter_expr)
-        
-        # 执行异步检索
-        documents = await retriever._aget_relevant_documents(query)
+        # 执行检索
+        documents = await retriever.ainvoke(query)
         
         # 将 LangChain Document 转换为 StoreSearchResult 对象
         results = []
@@ -627,28 +619,18 @@ class RAGService:
         top_k = top_k or settings.RAG_TOP_K
         score_threshold = score_threshold or settings.RAG_SCORE_THRESHOLD
         
-        # 构建过滤条件
-        filter_expr = build_filter_expr(
+        # 使用 RAGRetrieverFactory 创建检索器
+        retriever = RAGRetrieverFactory.create_filtered_retriever(
+            collection_name="products",
             category=category,
             brand=brand,
             min_price=min_price,
-            max_price=max_price
-        )
-        
-        # 创建 Retriever
-        retriever = SmartMallRetriever(
-            milvus_client=self.milvus_client,
-            embedding_service=self.embedding_service,
-            collection_name="products",
+            max_price=max_price,
             top_k=top_k,
-            score_threshold=score_threshold
         )
-        
-        if filter_expr:
-            retriever.with_filter(filter_expr)
         
         # 执行检索
-        documents = await retriever._aget_relevant_documents(query)
+        documents = await retriever.ainvoke(query)
         
         # 转换为结果对象
         results = []
@@ -747,14 +729,11 @@ class RAGService:
             )
             
             # 将上下文提供给 LLM
-            from app.core.llm import get_llm_service
+            from app.core.llm_provider import get_llm
             
-            llm = get_llm_service()
-            response = await llm.chat(
-                messages=[
-                    {"role": "system", "content": f"参考信息：\n{context}"},
-                    {"role": "user", "content": query}
-                ]
+            llm = get_llm()
+            response = await llm.ainvoke(
+                f"参考信息：\n{context}\n\n用户问题：{query}"
             )
             ```
         

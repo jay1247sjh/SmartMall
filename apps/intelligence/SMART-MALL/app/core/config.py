@@ -64,7 +64,7 @@ class Settings(BaseSettings):
     
     # LLM 参数
     LLM_TEMPERATURE: float = 0.3
-    LLM_MAX_TOKENS: int = 2000
+    LLM_MAX_TOKENS: int = 4096
     LLM_TIMEOUT: int = 30
     
     # ============ Milvus 向量数据库配置 ============
