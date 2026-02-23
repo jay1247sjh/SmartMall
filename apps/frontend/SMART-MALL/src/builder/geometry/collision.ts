@@ -7,7 +7,7 @@
 
 import { getEdges, getCentroid, distance } from './polygon'
 import type { Point2D, LineSegment, Polygon } from './types'
-import type { FloorDefinition } from '../types/mall-project.types'
+import type { FloorDefinition, DoorDefinition } from '../types/mall-project.types'
 import { AreaType, isShopAreaType } from '@smart-mall/shared-types'
 
 /**
@@ -83,6 +83,85 @@ export function extractWallSegments(floor: FloorDefinition): LineSegment[] {
 
   return segments
 }
+
+/**
+ * 从楼层轮廓提取墙壁碰撞线段（门洞处留空）
+ *
+ * 遍历轮廓的每条边，如果该边上有门定义，则将门洞区域挖空，
+ * 只保留门两侧的墙壁线段。无门的边整条作为碰撞墙壁。
+ *
+ * @param outline - 商城轮廓多边形
+ * @param doors - 门定义数组（可选）
+ * @returns 轮廓墙壁碰撞线段数组（门洞处已挖空）
+ */
+export function extractOutlineWallSegments(
+  outline: Polygon,
+  doors?: DoorDefinition[],
+): LineSegment[] {
+  const edges = getEdges(outline)
+  if (!doors || doors.length === 0) return edges
+
+  const segments: LineSegment[] = []
+
+  for (let i = 0; i < edges.length; i++) {
+    const edge = edges[i]!
+    const edgeDoors = doors.filter((d) => d.wallIndex === i)
+
+    if (edgeDoors.length === 0) {
+      segments.push(edge)
+      continue
+    }
+
+    const edgeLen = distance(edge.start, edge.end)
+    if (edgeLen < 0.01) continue
+
+    const dx = (edge.end.x - edge.start.x) / edgeLen
+    const dy = (edge.end.y - edge.start.y) / edgeLen
+
+    // 将门按 position 排序，计算每个门在边上的间隙
+    const sorted = [...edgeDoors].sort((a, b) => a.position - b.position)
+    const gaps: Array<{ start: number; end: number }> = sorted.map((door) => {
+      const center = door.position * edgeLen
+      const half = door.width / 2
+      return {
+        start: Math.max(0, center - half),
+        end: Math.min(edgeLen, center + half),
+      }
+    })
+
+    // 合并重叠间隙
+    const merged: Array<{ start: number; end: number }> = []
+    for (const g of gaps) {
+      const last = merged[merged.length - 1]
+      if (last && g.start <= last.end) {
+        last.end = Math.max(last.end, g.end)
+      } else {
+        merged.push({ ...g })
+      }
+    }
+
+    // 生成间隙之间的墙壁线段
+    let cursor = 0
+    for (const gap of merged) {
+      if (gap.start - cursor > 0.05) {
+        segments.push({
+          start: { x: edge.start.x + dx * cursor, y: edge.start.y + dy * cursor },
+          end: { x: edge.start.x + dx * gap.start, y: edge.start.y + dy * gap.start },
+        })
+      }
+      cursor = gap.end
+    }
+    if (edgeLen - cursor > 0.05) {
+      segments.push({
+        start: { x: edge.start.x + dx * cursor, y: edge.start.y + dy * cursor },
+        end: edge.end,
+      })
+    }
+  }
+
+  return segments
+}
+
 
 /**
  * 获取商城外轮廓边界顶点

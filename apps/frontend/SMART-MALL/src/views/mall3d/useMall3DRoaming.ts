@@ -15,6 +15,7 @@ import type { ThreeEngine as ThreeEngineType } from '@/engine'
 import {
   CharacterController,
   extractWallSegments,
+  extractOutlineWallSegments,
   getOutlineBoundary,
   getInitialPosition,
 } from '@/builder'
@@ -147,7 +148,10 @@ export function useMall3DRoaming(options: UseMall3DRoamingOptions): UseMall3DRoa
       controller.setPosition(initialPos.x, 0, -initialPos.y) // 2D y → 3D -z
       controller.setMoveSpeed('normal') // 使用 normal 预设（速度 3），与建模器一致
       controller.setBoundary(getOutlineBoundary(project.outline))
-      controller.setWallSegments(extractWallSegments(firstFloor))
+      // 合并区域墙壁线段 + 轮廓墙壁线段（门洞处留空）
+      const areaWalls = extractWallSegments(firstFloor)
+      const outlineWalls = extractOutlineWallSegments(project.outline, firstFloor.doors)
+      controller.setWallSegments([...areaWalls, ...outlineWalls])
       scene.add(controller.character)
 
       // Step 5: 启动漫游模式

@@ -10,8 +10,9 @@
  */
 
 import * as THREE from 'three'
-import type { Polygon } from '../geometry/types'
-import type { MallProject } from '../types'
+import type { Point2D, Polygon } from '../geometry/types'
+import type { MallProject, DoorDefinition } from '../types'
+import { distance as pointDistance } from '../geometry/polygon'
 import { polygonToShape, calculateFloorYPosition } from './polygon-to-three'
 
 // ============================================================================
@@ -31,6 +32,8 @@ export interface RoamingRenderOptions {
   ceilingColor?: number
   /** 墙壁厚度 */
   wallThickness?: number
+  /** 楼层门/入口定义 */
+  doors?: DoorDefinition[]
 }
 
 // ============================================================================
@@ -246,7 +249,91 @@ function createCeilingMaterial(color: number): THREE.MeshStandardMaterial {
 // ============================================================================
 
 /**
+ * 墙壁线段（门分割后的结果）
+ */
+interface WallSegmentInfo {
+  start: Point2D
+  end: Point2D
+  length: number
+  angle: number
+}
+
+/**
+ * 将一条墙壁边按门的位置分割为多个线段
+ */
+function splitWallByDoors(
+  start: Point2D,
+  end: Point2D,
+  wallIndex: number,
+  doors: DoorDefinition[]
+): WallSegmentInfo[] {
+  const dx = end.x - start.x
+  const dy = end.y - start.y
+  const edgeLen = Math.sqrt(dx * dx + dy * dy)
+  const angle = Math.atan2(dy, dx)
+  
+  // 筛选属于这条边的门，按 position 排序
+  const wallDoors = doors
+    .filter(d => d.wallIndex === wallIndex)
+    .sort((a, b) => a.position - b.position)
+  
+  if (wallDoors.length === 0) {
+    return [{ start, end, length: edgeLen, angle }]
+  }
+  
+  const segments: WallSegmentInfo[] = []
+  const dirX = dx / edgeLen
+  const dirY = dy / edgeLen
+  
+  let cursor = 0 // 当前位置（沿边的距离）
+  
+  for (const door of wallDoors) {
+    const doorCenter = door.position * edgeLen
+    const halfWidth = door.width / 2
+    const doorStart = Math.max(0, doorCenter - halfWidth)
+    const doorEnd = Math.min(edgeLen, doorCenter + halfWidth)
+    
+    // 门前的墙段
+    if (doorStart > cursor + 0.05) {
+      const segStart: Point2D = {
+        x: start.x + dirX * cursor,
+        y: start.y + dirY * cursor,
+      }
+      const segEnd: Point2D = {
+        x: start.x + dirX * doorStart,
+        y: start.y + dirY * doorStart,
+      }
+      segments.push({
+        start: segStart,
+        end: segEnd,
+        length: doorStart - cursor,
+        angle,
+      })
+    }
+    
+    cursor = doorEnd
+  }
+  
+  // 最后一个门之后的墙段
+  if (cursor < edgeLen - 0.05) {
+    const segStart: Point2D = {
+      x: start.x + dirX * cursor,
+      y: start.y + dirY * cursor,
+    }
+    segments.push({
+      start: segStart,
+      end,
+      length: edgeLen - cursor,
+      angle,
+    })
+  }
+  
+  return segments
+}
+
+/**
  * 创建商城轮廓的墙壁（封闭空间）
+ * 支持门/入口：在指定位置留出缺口
  */
 export function createWalls(
   outline: Polygon,
@@ -256,6 +343,7 @@ export function createWalls(
     color?: number
     thickness?: number
     opacity?: number
+    doors?: DoorDefinition[]
   } = {}
 ): THREE.Group {
   const group = new THREE.Group()
@@ -272,63 +360,60 @@ export function createWalls(
   
   // 创建共享的墙壁材质
   const wallMaterial = createWallMaterial(wallColor)
+  const doors = options.doors ?? []
   
-  // 为每条边创建墙壁
+  // 为每条边创建墙壁（支持门分割）
+  let wallIdx = 0
   for (let i = 0; i < vertices.length; i++) {
     const start = vertices[i]!
     const end = vertices[(i + 1) % vertices.length]!
     
-    // 计算墙壁长度和角度
-    const dx = end.x - start.x
-    const dy = end.y - start.y
-    const length = Math.sqrt(dx * dx + dy * dy)
-    const angle = Math.atan2(dy, dx)
+    // 按门位置分割墙壁
+    const wallSegments = splitWallByDoors(start, end, i, doors)
     
-    // 创建墙壁几何体
-    const wallGeometry = new THREE.BoxGeometry(length, height, thickness)
-    
-    const wall = new THREE.Mesh(wallGeometry, wallMaterial)
-    
-    // 定位墙壁
-    const centerX = (start.x + end.x) / 2
-    const centerY = (start.y + end.y) / 2
-    wall.position.set(centerX, yPosition + height / 2, -centerY)
-    wall.rotation.y = -angle
-    
-    wall.castShadow = true
-    wall.receiveShadow = true
-    wall.name = `wall-${i}`
-    
-    group.add(wall)
+    for (const seg of wallSegments) {
+      const wallGeometry = new THREE.BoxGeometry(seg.length, height, thickness)
+      const wall = new THREE.Mesh(wallGeometry, wallMaterial)
+      
+      const centerX = (seg.start.x + seg.end.x) / 2
+      const centerY = (seg.start.y + seg.end.y) / 2
+      wall.position.set(centerX, yPosition + height / 2, -centerY)
+      wall.rotation.y = -seg.angle
+      
+      wall.castShadow = true
+      wall.receiveShadow = true
+      wall.name = `wall-${wallIdx++}`
+      
+      group.add(wall)
+    }
   }
   
-  // 添加踢脚线
+  // 添加踢脚线（同样支持门分割）
   const baseboardMaterial = new THREE.MeshStandardMaterial({
     color: 0x4a4a4a,
     roughness: 0.5,
     metalness: 0.2,
   })
   
+  let baseIdx = 0
   for (let i = 0; i < vertices.length; i++) {
     const start = vertices[i]!
     const end = vertices[(i + 1) % vertices.length]!
     
-    const dx = end.x - start.x
-    const dy = end.y - start.y
-    const length = Math.sqrt(dx * dx + dy * dy)
-    const angle = Math.atan2(dy, dx)
+    const wallSegments = splitWallByDoors(start, end, i, doors)
     
-    // 踢脚线
-    const baseboardGeometry = new THREE.BoxGeometry(length + 0.02, 0.15, thickness + 0.05)
-    const baseboard = new THREE.Mesh(baseboardGeometry, baseboardMaterial)
-    
-    const centerX = (start.x + end.x) / 2
-    const centerY = (start.y + end.y) / 2
-    baseboard.position.set(centerX, yPosition + 0.075, -centerY)
-    baseboard.rotation.y = -angle
-    baseboard.name = `baseboard-${i}`
-    
-    group.add(baseboard)
+    for (const seg of wallSegments) {
+      const baseboardGeometry = new THREE.BoxGeometry(seg.length + 0.02, 0.15, thickness + 0.05)
+      const baseboard = new THREE.Mesh(baseboardGeometry, baseboardMaterial)
+      
+      const centerX = (seg.start.x + seg.end.x) / 2
+      const centerY = (seg.start.y + seg.end.y) / 2
+      baseboard.position.set(centerX, yPosition + 0.075, -centerY)
+      baseboard.rotation.y = -seg.angle
+      baseboard.name = `baseboard-${baseIdx++}`
+      
+      group.add(baseboard)
+    }
   }
   
   return group
@@ -426,10 +511,11 @@ export function createRoamingEnvironment(
   })
   group.add(floor)
   
-  // 创建墙壁（使用精致的墙面材质）
+  // 创建墙壁（使用精致的墙面材质，支持门/入口）
   const walls = createWalls(outline, wallHeight, yPos, {
     color: options.wallColor ?? 0xf0f0f0,
     thickness: options.wallThickness ?? 0.3,
+    doors: options.doors ?? currentFloor.doors,
   })
   group.add(walls)
   
