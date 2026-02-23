@@ -27,35 +27,18 @@ logger = logging.getLogger(__name__)
 
 
 # ============================================================
-# 主题预设配置
+# 主题预设配置（从 YAML 加载）
 # ============================================================
 
-THEME_PRESETS: Dict[str, Dict[str, Any]] = {
-    "japanese_cafe": {
-        "name": "日式简约咖啡店",
-        "description": "简约木质风格的咖啡店",
-        "materials": ["counter", "coffeeMachine", "sofa", "roundTable", "displayCase"],
-        "style_hints": "木质色调，简约布局，留出足够的走动空间",
-    },
-    "fashion_store": {
-        "name": "潮流服装店",
-        "description": "现代时尚的服装零售店",
-        "materials": ["clothingRack", "fittingRoom", "displayStand", "cashRegister", "mirror"],
-        "style_hints": "开放式布局，展示区域为主，试衣间靠墙",
-    },
-    "chinese_restaurant": {
-        "name": "中式餐饮店",
-        "description": "中式风格的餐饮店",
-        "materials": ["diningTable", "chair", "kitchenArea", "cashRegister", "menuBoard"],
-        "style_hints": "餐桌均匀分布，厨房区靠后，收银台靠近入口",
-    },
-    "tech_store": {
-        "name": "科技数码店",
-        "description": "现代科技感的数码产品店",
-        "materials": ["displayCase", "experienceDesk", "cashRegister", "accessoryRack"],
-        "style_hints": "展示柜沿墙排列，体验台居中，配件架靠近收银台",
-    },
-}
+def _load_theme_presets() -> Dict[str, Dict[str, Any]]:
+    """从 store_themes.yaml 加载主题预设"""
+    config = PromptLoader.load("store_themes")
+    return config.get("themes", {})
+
+
+def get_theme_presets() -> Dict[str, Dict[str, Any]]:
+    """获取主题预设（供外部模块使用）"""
+    return _load_theme_presets()
 
 
 class StoreLayoutService:
@@ -142,7 +125,8 @@ class StoreLayoutService:
     ) -> StoreLayoutData:
         """通过 LangChain LCEL Chain 生成布局"""
         # 获取主题信息
-        theme_info = THEME_PRESETS.get(theme, {})
+        theme_presets = _load_theme_presets()
+        theme_info = theme_presets.get(theme, {})
         theme_name = theme_info.get("name", theme)
         style_hints = theme_info.get("style_hints", "")
 
@@ -273,5 +257,6 @@ class StoreLayoutService:
 
     def _get_theme_display_name(self, theme: str) -> str:
         """获取主题显示名称"""
-        preset = THEME_PRESETS.get(theme)
+        presets = _load_theme_presets()
+        preset = presets.get(theme)
         return preset["name"] if preset else theme

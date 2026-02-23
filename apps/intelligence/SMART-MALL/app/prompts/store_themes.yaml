@@ -1,0 +1,50 @@
+# 店铺布局主题预设配置
+# 定义可用的店铺主题及其布局参数
+
+name: "store_themes"
+version: "1.0"
+description: "店铺布局主题预设"
+
+themes:
+  japanese_cafe:
+    name: "日式简约咖啡店"
+    description: "简约木质风格的咖啡店"
+    materials:
+      - counter
+      - coffeeMachine
+      - sofa
+      - roundTable
+      - displayCase
+    style_hints: "木质色调，简约布局，留出足够的走动空间"
+
+  fashion_store:
+    name: "潮流服装店"
+    description: "现代时尚的服装零售店"
+    materials:
+      - clothingRack
+      - fittingRoom
+      - displayStand
+      - cashRegister
+      - mirror
+    style_hints: "开放式布局，展示区域为主，试衣间靠墙"
+
+  chinese_restaurant:
+    name: "中式餐饮店"
+    description: "中式风格的餐饮店"
+    materials:
+      - diningTable
+      - chair
+      - kitchenArea
+      - cashRegister
+      - menuBoard
+    style_hints: "餐桌均匀分布，厨房区靠后，收银台靠近入口"
+
+  tech_store:
+    name: "科技数码店"
+    description: "现代科技感的数码产品店"
+    materials:
+      - displayCase
+      - experienceDesk
+      - cashRegister
+      - accessoryRack
+    style_hints: "展示柜沿墙排列，体验台居中，配件架靠近收银台"

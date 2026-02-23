@@ -286,26 +286,8 @@ MALL_TOOLS: List[Dict[str, Any]] = [
     }
 ]
 
-# 操作安全级别
-OPERATION_LEVELS = {
-    # 安全操作（直接执行）
-    "navigate_to_store": "safe",
-    "navigate_to_area": "safe",
-    "search_products": "safe",
-    "search_stores": "safe",
-    "search_by_image": "safe",
-    "get_product_detail": "safe",
-    "get_store_info": "safe",
-    "get_cart": "safe",
-    "recommend_products": "safe",
-    "recommend_restaurants": "safe",
-    
-    # 需确认操作
-    "add_to_cart": "confirm",
-    
-    # 关键操作（需强确认）
-    "create_order": "critical",
-}
+# 操作安全级别（单一数据源在 tools_langchain.py 的 SAFETY_LEVELS）
+from app.core.agent.tools_langchain import SAFETY_LEVELS as OPERATION_LEVELS  # noqa: F401
 
 
 def get_tools_for_context(has_image: bool = False) -> List[Dict[str, Any]]:

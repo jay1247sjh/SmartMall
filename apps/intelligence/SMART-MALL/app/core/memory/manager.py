@@ -18,17 +18,14 @@ from app.core.memory.short_term import MemoryMessage, ShortTermMemory
 from app.core.memory.mid_term import MidTermMemory
 from app.core.memory.long_term import LongTermMemory
 from app.core.memory.summarizer import Summarizer
+from app.core.prompt_loader import PromptLoader
 
 logger = logging.getLogger(__name__)
 
-SYSTEM_PROMPT = (
-    "你是 Smart Mall 智能导购助手。你可以帮助用户：\n"
-    "1. 导航到指定店铺或区域\n"
-    "2. 搜索商品和店铺\n"
-    "3. 推荐餐厅和商品\n"
-    "4. 回答关于商城的问题\n"
-    "请用中文回答，保持友好和专业。"
-)
+
+def _get_system_prompt() -> str:
+    """从 system.yaml 加载系统提示词"""
+    return PromptLoader.get_system_prompt("system")
 
 
 class MemoryManager:
@@ -65,7 +62,7 @@ class MemoryManager:
         messages: List[Dict[str, str]] = []
 
         # 1. SYSTEM_PROMPT
-        messages.append({"role": "system", "content": SYSTEM_PROMPT})
+        messages.append({"role": "system", "content": _get_system_prompt()})
 
         # 2. 长期记忆（用户偏好）
         preferences = await self.long_term.load()

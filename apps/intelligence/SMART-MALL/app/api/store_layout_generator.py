@@ -11,7 +11,7 @@ from app.schemas.store_layout import (
     GenerateStoreLayoutRequest,
     GenerateStoreLayoutResponse,
 )
-from app.services.store_layout_service import StoreLayoutService, THEME_PRESETS
+from app.services.store_layout_service import StoreLayoutService, get_theme_presets
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
@@ -69,7 +69,7 @@ async def generate_store_layout(
 async def get_layout_themes():
     """获取可用的店铺布局主题列表"""
     themes = []
-    for key, preset in THEME_PRESETS.items():
+    for key, preset in get_theme_presets().items():
         themes.append({
             "id": key,
             "name": preset["name"],

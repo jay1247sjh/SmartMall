@@ -98,7 +98,7 @@ class LLMProvider:
             api_key=settings.OPENROUTER_API_KEY,
             base_url=settings.OPENROUTER_BASE_URL,
             model=settings.OPENROUTER_VISION_MODEL,
-            temperature=0.2,
+            temperature=settings.VISION_LLM_TEMPERATURE,
             max_tokens=settings.LLM_MAX_TOKENS,
         )
 

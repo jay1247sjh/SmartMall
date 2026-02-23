@@ -21,6 +21,7 @@ from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.runnables import RunnableBranch, RunnableLambda, RunnablePassthrough
 
 from app.core.llm_provider import get_llm
+from app.core.prompt_loader import PromptLoader
 
 logger = logging.getLogger(__name__)
 
@@ -28,17 +29,14 @@ logger = logging.getLogger(__name__)
 VALID_INTENTS = {"chat", "search", "navigate", "recommend"}
 DEFAULT_INTENT = "chat"
 
-# 意图分类 Prompt
-CLASSIFY_PROMPT = ChatPromptTemplate.from_messages([
-    ("system",
-     "你是一个意图分类器。根据用户输入，判断其意图类别。\n"
-     "只输出以下四个类别之一，不要输出任何其他内容：\n"
-     "- chat: 闲聊、问候、一般问答、评价咨询\n"
-     "- search: 搜索商品、查找店铺、查询商品信息\n"
-     "- navigate: 导航到某个店铺或区域、问路\n"
-     "- recommend: 推荐商品、推荐餐厅、求推荐\n"),
-    ("human", "{input}"),
-])
+
+def _get_classify_prompt() -> ChatPromptTemplate:
+    """从 intent.yaml 加载意图分类 Prompt"""
+    system_prompt = PromptLoader.get_system_prompt("intent")
+    return ChatPromptTemplate.from_messages([
+        ("system", system_prompt),
+        ("human", "{input}"),
+    ])
 
 
 def _parse_intent(raw: str) -> str:
@@ -59,7 +57,7 @@ async def classify_intent(data: Dict[str, Any]) -> Dict[str, Any]:
     """对用户输入进行意图分类"""
     user_input = data.get("input", "")
     try:
-        chain = CLASSIFY_PROMPT | get_llm() | StrOutputParser()
+        chain = _get_classify_prompt() | get_llm() | StrOutputParser()
         raw = await chain.ainvoke({"input": user_input})
         intent = _parse_intent(raw)
     except Exception as e:

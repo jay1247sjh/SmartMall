@@ -20,8 +20,7 @@ from langchain_classic.callbacks import AsyncIteratorCallbackHandler
 from pydantic import BaseModel
 
 from app.core.agent.agent import SmartMallAgentFactory, is_unsafe_input, SAFE_RESPONSE
-from app.core.llm_provider import get_llm
-from app.core.config import get_settings
+from app.core.prompt_loader import PromptLoader
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
@@ -62,15 +61,12 @@ async def chat_stream(request: StreamChatRequest):
     async def event_generator():
         try:
             agent = SmartMallAgentFactory.create(streaming=True)
-            settings = get_settings()
 
             task = asyncio.create_task(
                 agent.ainvoke(
                     {
                         "input": request.message,
-                        "system_message": settings.SYSTEM_PROMPT
-                            if hasattr(settings, "SYSTEM_PROMPT")
-                            else "你是智能商城导购助手。",
+                        "system_message": PromptLoader.get_system_prompt("system"),
                         "chat_history": [],
                     },
                     config={"callbacks": [callback]},

@@ -125,7 +125,7 @@ async def lifespan(app: FastAPI):
 app = FastAPI(
     title="Smart Mall Intelligence Service",
     description="智能商城导购系统 - 智能服务",
-    version="1.0.0",
+    version=settings.CONFIG_VERSION,
     lifespan=lifespan
 )
 
@@ -185,7 +185,7 @@ async def root():
     """根路径"""
     return {
         "service": "Smart Mall Intelligence Service",
-        "version": "1.0.0",
+        "version": settings.CONFIG_VERSION,
         "status": "running"
     }
 

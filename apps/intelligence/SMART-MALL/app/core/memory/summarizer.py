@@ -15,18 +15,6 @@ from app.core.memory.short_term import MemoryMessage
 
 logger = logging.getLogger(__name__)
 
-SUMMARIZE_PROMPT = (
-    "你是一个对话摘要助手。请将以下对话压缩为结构化摘要。\n"
-    "必须保留以下信息：\n"
-    "1. 用户导购意图（用户想买什么、去哪里）\n"
-    "2. 已推荐商品（已经推荐过的商品和店铺）\n"
-    "3. 用户偏好（品牌、价格、风格等偏好）\n"
-    "4. 未完成任务（用户提出但尚未完成的请求）\n\n"
-    "已有摘要：\n{existing}\n\n"
-    "新对话内容：\n{messages}\n\n"
-    "请输出更新后的结构化摘要，使用中文："
-)
-
 
 class Summarizer:
     """对话摘要生成器
@@ -36,9 +24,9 @@ class Summarizer:
     - 失败时保留原始消息不压缩
     """
 
-    DEBOUNCE_SECONDS = 120  # 2 分钟防抖
-
     def __init__(self):
+        from app.core.config import get_settings
+        self._debounce_seconds = get_settings().MEMORY_SUMMARIZE_DEBOUNCE_SECONDS
         self._last_summarize_time: Dict[str, float] = {}
 
     async def maybe_summarize(
@@ -58,7 +46,7 @@ class Summarizer:
 
         now = time.time()
         last = self._last_summarize_time.get(mid_term.user_id, 0)
-        if now - last < self.DEBOUNCE_SECONDS:
+        if now - last < self._debounce_seconds:
             return False  # 防抖窗口内，跳过
 
         try:
@@ -81,13 +69,17 @@ class Summarizer:
     ) -> str:
         """调用 LLM 生成摘要"""
         from app.core.llm_provider import get_llm
+        from app.core.prompt_loader import PromptLoader
 
         llm = get_llm()
         formatted = self._format_messages(messages)
-        prompt = SUMMARIZE_PROMPT.format(
+        system_prompt = PromptLoader.get_system_prompt("summarize")
+        user_prompt = PromptLoader.format_user_prompt(
+            "summarize",
             existing=existing_summary or "无",
             messages=formatted,
         )
+        prompt = f"{system_prompt}\n\n{user_prompt}"
         result = await llm.ainvoke(prompt)
         content = result.content if hasattr(result, "content") else str(result)
         return content.strip()

@@ -20,45 +20,29 @@ from langchain_core.messages import HumanMessage, SystemMessage
 from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
 
 from app.core.llm_provider import get_llm, get_vision_llm
+from app.core.prompt_loader import PromptLoader
 
 logger = logging.getLogger(__name__)
 
-# 安全检查关键词（从旧 MallAgent 迁移）
-BLOCKED_PATTERNS = [
-    "忽略上述", "忽略之前", "忘记你的", "你现在是", "假装你是",
-    "扮演", "角色扮演", "输出你的prompt", "输出系统提示",
-    "你的指令是什么", "DAN模式", "越狱", "jailbreak",
-    "ignore previous", "disregard", "pretend you are",
-]
 
-SAFE_RESPONSE = "我是智能商城导购助手，只能帮您处理购物相关的问题。有什么购物需求我可以帮您吗？"
+def _get_blocked_patterns() -> list:
+    """从 safety.yaml 加载拦截模式"""
+    return PromptLoader.get_blocked_patterns()
 
-# 视觉分析提示词
-VISION_PROMPT_TEMPLATE = """请分析这张图片，并结合用户的问题回答。
 
-用户问题：{user_input}
+def _get_safe_response() -> str:
+    """从 safety.yaml 加载安全回复"""
+    return PromptLoader.get_safe_response("injection")
 
-# 分析要求
-1. 客观描述图片内容
-2. 提取可用于搜索的关键特征
-3. 根据用户问题决定是否需要调用工具
 
-# 分析维度
-- 如果是食物：菜品类型、主要食材、烹饪方式、口味特征
-- 如果是商品：类别、品牌、颜色/款式、风格
-- 如果是场景：场景类型、相关商品类别
-
-# 禁止
-- 禁止分析人脸或个人身份信息
-- 禁止对图片中的人物进行评价
-- 禁止编造图片中不存在的内容
-"""
+# 模块级常量（兼容外部 import）
+SAFE_RESPONSE = _get_safe_response()
 
 
 def is_unsafe_input(user_input: str) -> bool:
     """检查输入是否包含不安全内容（注入攻击等）"""
     input_lower = user_input.lower()
-    return any(p.lower() in input_lower for p in BLOCKED_PATTERNS)
+    return any(p.lower() in input_lower for p in _get_blocked_patterns())
 
 
 async def process_with_vision(user_input: str, image_url: str) -> str:
@@ -68,7 +52,7 @@ async def process_with_vision(user_input: str, image_url: str) -> str:
     视觉模型不可用时返回友好错误而非降级到文本模型。
     """
     vision_llm = get_vision_llm()
-    prompt = VISION_PROMPT_TEMPLATE.format(user_input=user_input)
+    prompt = PromptLoader.format_user_prompt("vision", user_input=user_input)
     message = HumanMessage(content=[
         {"type": "text", "text": prompt},
         {"type": "image_url", "image_url": {"url": image_url}},
@@ -142,7 +126,7 @@ class SmartMallAgentFactory:
         return AgentExecutor(
             agent=agent,
             tools=tools,
-            max_iterations=10,
+            max_iterations=settings.AGENT_MAX_ITERATIONS,
             handle_parsing_errors=True,
             return_intermediate_steps=True,
         )

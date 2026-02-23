@@ -20,6 +20,7 @@ from app.schemas.rag import (
     FloorSearchItem,
 )
 from app.schemas.base import DataResponse, ListResponse, BaseResponse
+from app.core.config import get_settings
 
 logger = logging.getLogger(__name__)
 
@@ -31,7 +32,9 @@ router = APIRouter(prefix="/floors", tags=["Floors"])
 floors_db: Dict[str, dict] = {}
 stores_db: Dict[str, dict] = {}  # store_id -> {"floor_id": ...}
 
-EMBEDDING_DIM = 1536
+
+def _get_embedding_dim() -> int:
+    return get_settings().EMBEDDING_DIMENSION
 
 
 # ---------------------------------------------------------------------------
@@ -40,8 +43,9 @@ EMBEDDING_DIM = 1536
 
 def _generate_embedding(text: str) -> List[float]:
     """Generate a deterministic mock embedding seeded by text hash."""
+    dim = _get_embedding_dim()
     rng = random.Random(hash(text))
-    return [rng.uniform(-1, 1) for _ in range(EMBEDDING_DIM)]
+    return [rng.uniform(-1, 1) for _ in range(dim)]
 
 
 def _floor_to_item(record: dict) -> FloorItem:
@@ -94,7 +98,7 @@ async def create_floor(request: FloorCreateRequest):
     try:
         floor_id = str(uuid.uuid4())
 
-        embedding = _generate_embedding(request.layout_description) if request.layout_description else [0.0] * EMBEDDING_DIM
+        embedding = _generate_embedding(request.layout_description) if request.layout_description else [0.0] * _get_embedding_dim()
 
         record = {
             "floor_id": floor_id,
@@ -157,7 +161,7 @@ async def update_floor(floor_id: str, request: FloorUpdateRequest):
 
         if request.layout_description is not None:
             record["layout_description"] = request.layout_description
-            record["embedding"] = _generate_embedding(request.layout_description) if request.layout_description else [0.0] * EMBEDDING_DIM
+            record["embedding"] = _generate_embedding(request.layout_description) if request.layout_description else [0.0] * _get_embedding_dim()
 
         if request.store_ids is not None:
             record["store_ids"] = request.store_ids

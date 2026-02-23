@@ -119,20 +119,24 @@ class Settings(BaseSettings):
     MEMORY_SHORT_TERM_ROUNDS: int = 10
     MEMORY_SUMMARY_THRESHOLD: int = 5
     MEMORY_MID_TERM_TTL_DAYS: int = 7
+    MEMORY_SUMMARIZE_DEBOUNCE_SECONDS: int = 120
 
     # ============ Session 检测配置 ============
     SESSION_TIMEOUT_MINUTES: int = 30
     SESSION_SCAN_INTERVAL_MINUTES: int = 5
 
+    # ============ Agent 配置 ============
+    AGENT_MAX_ITERATIONS: int = 10
+    VISION_LLM_TEMPERATURE: float = 0.2
+
+    # ============ 商城描述对话配置 ============
+    MALL_DESCRIBE_MAX_ROUNDS: int = 50
+    MALL_DESCRIBE_WARN_THRESHOLD: int = 45
+
     # 缓存配置
     REDIS_URL: str = "redis://localhost:6379/0"
     REDIS_MAX_CONNECTIONS: int = 20
     CACHE_TTL: int = 300  # 5 分钟
-    
-    # 兼容旧配置
-    VECTOR_DB_TYPE: str = "milvus"
-    VECTOR_DB_URL: str = "http://localhost:19530"
-    VECTOR_DB_API_KEY: str = ""
     
     # 配置元信息
     CONFIG_VERSION: str = "1.0.0"

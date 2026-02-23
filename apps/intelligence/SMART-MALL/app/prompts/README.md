@@ -9,10 +9,17 @@
 | 文件 | 用途 | 版本 |
 |------|------|------|
 | `system.yaml` | 系统级提示词，定义 AI 助手核心行为 | 2.0 |
-| `intent.yaml` | 意图识别提示词 | 2.0 |
+| `intent.yaml` | 意图识别提示词 | 3.0 |
 | `action.yaml` | Action 生成提示词 | 2.0 |
 | `vision.yaml` | 视觉理解提示词 | 2.0 |
 | `safety.yaml` | 安全防护配置 | 2.0 |
+| `mall_generation.yaml` | LLM 商城生成提示词 | - |
+| `mall_fallback.yaml` | 规则降级生成配置 | - |
+| `mall_describe.yaml` | 商城描述多轮对话提示词 | 1.0 |
+| `store_layout.yaml` | 店铺布局生成提示词 | 1.0 |
+| `store_themes.yaml` | 店铺主题预设配置 | 1.0 |
+| `summarize.yaml` | 对话摘要生成提示词 | 1.0 |
+| `chat_messages.yaml` | 对话消息模板 | 1.0 |
 
 ---
 

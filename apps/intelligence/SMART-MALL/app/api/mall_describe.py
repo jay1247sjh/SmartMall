@@ -16,6 +16,8 @@ from langchain_core.messages import SystemMessage, HumanMessage, AIMessage
 
 from app.core.llm_provider import get_llm
 from app.core.errors import parse_llm_error
+from app.core.config import get_settings
+from app.core.prompt_loader import PromptLoader
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
@@ -39,7 +41,7 @@ class DescribeMallRequest(BaseModel):
 class RoundInfo(BaseModel):
     """轮次信息"""
     current: int
-    max: int = 50
+    max: int
 
 
 class DescribeMallResponse(BaseModel):
@@ -48,46 +50,6 @@ class DescribeMallResponse(BaseModel):
     description: str
     isComplete: bool
     roundInfo: RoundInfo
-
-
-# ============ 系统提示词 ============
-
-SYSTEM_PROMPT = """You are a professional mall planning consultant. Your job is to guide the user through a structured conversation to gather information about their mall, then generate a comprehensive mall description.
-
-## Your Behavior
-
-1. **Ask structured questions** about the following topics (one or two at a time):
-   - Mall name and overall size/scale
-   - Number of floors and floor themes
-   - Business types per floor (retail, food, entertainment, etc.)
-   - Specific brands or stores the user wants
-   - Facilities: elevators, escalators, restrooms, entrances, parking
-   - Any special features or requirements
-
-2. **Language detection**: Detect the language the user is writing in and ALWAYS respond in the SAME language. If the user writes in Chinese, respond in Chinese. If in English, respond in English. Match the user's language exactly.
-
-3. **Progressive description building**: After each round, update the mall description with all information gathered so far. The description should become more detailed as the conversation progresses.
-
-4. **Context summarization**: Periodically summarize the information you've gathered to keep the conversation focused and avoid redundancy. This helps maintain coherence across many rounds.
-
-5. **Completion**: When you have gathered enough information OR the user indicates they want to finish, set isComplete to true and provide a final comprehensive summary.
-
-## Output Format
-
-You MUST always respond with a valid JSON object containing exactly these fields:
-```json
-{
-  "reply": "Your conversational response to the user (question, summary, etc.)",
-  "description": "The current accumulated mall description based on all information gathered so far",
-  "isComplete": false
-}
-```
-
-- `reply`: Your message to the user — ask questions, acknowledge info, or provide summaries
-- `description`: The full mall description updated with any new information from this round. If no new info, keep the previous description unchanged.
-- `isComplete`: Set to `true` only when the conversation should end (enough info gathered or user wants to finish)
-
-IMPORTANT: Return ONLY the JSON object, no markdown code fences, no extra text."""
 
 
 # ============ 辅助函数 ============
@@ -110,15 +72,17 @@ def _build_llm_messages(
     构建发送给 LLM 的消息列表。
     
     结构：
-    1. System prompt
+    1. System prompt（从 mall_describe.yaml 加载）
     2. 当前描述上下文（如果非空）
     3. 对话历史
     4. 控制消息（finish / warning）
     """
+    settings = get_settings()
     messages = []
 
     # 1. System prompt
-    messages.append(SystemMessage(content=SYSTEM_PROMPT))
+    system_prompt = PromptLoader.get_system_prompt("mall_describe")
+    messages.append(SystemMessage(content=system_prompt))
 
     # 2. 当前描述上下文
     if request.currentDescription.strip():
@@ -135,23 +99,21 @@ def _build_llm_messages(
 
     # 4. 控制消息
     if request.finish:
-        messages.append(HumanMessage(
-            content=(
-                "The user wants to finish the conversation now. "
-                "Please provide a final comprehensive summary and a complete mall description. "
-                "Set isComplete to true in your response."
-            )
-        ))
+        finish_msg = PromptLoader.get_config_value(
+            "mall_describe", "messages", "finish_instruction",
+            default="Please provide a final comprehensive summary. Set isComplete to true."
+        )
+        messages.append(HumanMessage(content=finish_msg))
 
-    if current_round >= 45:
-        messages.append(HumanMessage(
-            content=(
-                f"Warning: This is round {current_round} out of 50. "
-                "The conversation is approaching its limit. "
-                "Please warn the user about the approaching limit and try to wrap up "
-                "the description with the information gathered so far."
-            )
-        ))
+    if current_round >= settings.MALL_DESCRIBE_WARN_THRESHOLD:
+        warn_template = PromptLoader.get_config_value(
+            "mall_describe", "messages", "round_warning",
+            default="Warning: approaching round limit."
+        )
+        messages.append(HumanMessage(content=warn_template.format(
+            current_round=current_round,
+            max_rounds=settings.MALL_DESCRIBE_MAX_ROUNDS,
+        )))
 
     return messages
 
@@ -209,17 +171,23 @@ async def describe_mall(request: DescribeMallRequest) -> DescribeMallResponse:
     """
     try:
         current_round = _calculate_round(request.messages)
+        settings = get_settings()
+        max_rounds = settings.MALL_DESCRIBE_MAX_ROUNDS
 
         logger.info(f"Mall describe request: round={current_round}, "
                      f"messages={len(request.messages)}, finish={request.finish}")
 
         # 超过轮次限制，直接返回完成
-        if current_round > 50:
+        if current_round > max_rounds:
+            exceeded_msg = PromptLoader.get_config_value(
+                "mall_describe", "messages", "max_rounds_exceeded",
+                default="对话已达到最大轮次限制。"
+            )
             return DescribeMallResponse(
-                reply="对话已达到最大轮次限制。以下是根据已收集信息生成的商城描述。",
+                reply=exceeded_msg,
                 description=request.currentDescription,
                 isComplete=True,
-                roundInfo=RoundInfo(current=50, max=50),
+                roundInfo=RoundInfo(current=max_rounds, max=max_rounds),
             )
 
         # 构建 LLM 消息
@@ -240,7 +208,7 @@ async def describe_mall(request: DescribeMallRequest) -> DescribeMallResponse:
             reply=parsed["reply"],
             description=parsed["description"],
             isComplete=is_complete,
-            roundInfo=RoundInfo(current=current_round, max=50),
+            roundInfo=RoundInfo(current=current_round, max=max_rounds),
         )
 
     except Exception as e:
@@ -253,6 +221,6 @@ async def describe_mall(request: DescribeMallRequest) -> DescribeMallResponse:
             isComplete=False,
             roundInfo=RoundInfo(
                 current=_calculate_round(request.messages),
-                max=50,
+                max=get_settings().MALL_DESCRIBE_MAX_ROUNDS,
             ),
         )

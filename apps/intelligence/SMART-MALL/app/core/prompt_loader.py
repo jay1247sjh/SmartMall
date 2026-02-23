@@ -105,6 +105,30 @@ class PromptLoader:
         return responses.get(category, responses.get("default", "抱歉，我无法处理这个请求。"))
     
     @classmethod
+    def get_config_value(cls, name: str, *keys: str, default: Any = None) -> Any:
+        """
+        从 YAML 配置中按路径获取嵌套值
+        
+        Args:
+            name: 提示词名称
+            *keys: 嵌套键路径，如 ("messages", "finish_instruction")
+            default: 默认值
+            
+        Returns:
+            配置值，找不到时返回 default
+        """
+        config = cls.load(name)
+        current = config
+        for key in keys:
+            if isinstance(current, dict):
+                current = current.get(key)
+            else:
+                return default
+            if current is None:
+                return default
+        return current
+
+    @classmethod
     def reload(cls, name: Optional[str] = None) -> None:
         """
         重新加载提示词

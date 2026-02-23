@@ -29,6 +29,7 @@ from app.core.agent.agent import (
 from app.core.memory.manager import MemoryManager
 from app.core.errors import parse_llm_error
 from app.core.config import get_settings
+from app.core.prompt_loader import PromptLoader
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
@@ -212,10 +213,14 @@ async def confirm_action(request: ConfirmRequest) -> ChatResponse:
         logger.info(f"[{request.request_id}] Confirm: {request.action}, confirmed={request.confirmed}")
 
         if not request.confirmed:
+            cancelled_msg = PromptLoader.get_config_value(
+                "chat_messages", "confirm", "cancelled",
+                default="好的，已取消操作。还有什么可以帮您的吗？"
+            )
             return ChatResponse(
                 request_id=request.request_id,
                 type="text",
-                content="好的，已取消操作。还有什么可以帮您的吗？",
+                content=cancelled_msg,
                 timestamp=_now_iso(),
             )
 
@@ -223,22 +228,33 @@ async def confirm_action(request: ConfirmRequest) -> ChatResponse:
         from app.core.agent.tools_langchain import ALL_TOOLS
         target_tool = next((t for t in ALL_TOOLS if t.name == request.action), None)
         if not target_tool:
+            unknown_msg = PromptLoader.get_config_value(
+                "chat_messages", "confirm", "unknown_action",
+                default="未知操作: {action}"
+            ).format(action=request.action)
             return ChatResponse(
                 request_id=request.request_id,
                 type="error",
-                content=f"未知操作: {request.action}",
+                content=unknown_msg,
                 timestamp=_now_iso(),
             )
 
         result = await target_tool.ainvoke(request.args)
         result_dict = result if isinstance(result, dict) else {"result": str(result)}
 
-        if request.action == "create_order":
-            content = "订单创建成功！请在支付页面完成支付。"
-        elif request.action == "add_to_cart":
-            content = f"已添加到购物车！{result_dict.get('message', '')}"
+        # 从 YAML 加载 action 成功消息
+        action_messages = PromptLoader.get_config_value(
+            "chat_messages", "confirm", "action_success", default={}
+        )
+        if request.action in action_messages:
+            content = action_messages[request.action].format(
+                message=result_dict.get("message", "")
+            )
         else:
-            content = result_dict.get("message", "操作成功")
+            content = result_dict.get(
+                "message",
+                action_messages.get("default", "操作成功"),
+            )
 
         return ChatResponse(
             request_id=request.request_id,
