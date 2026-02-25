@@ -25,6 +25,7 @@
  * 3. 布局组件
  *    - FilterBar：筛选栏
  *    - MessageAlert：消息提示
+ *    - InlinePagination：轻量分页
  *
  * 使用示例：
  * ```vue
@@ -59,6 +60,9 @@ export { default as ActionButton } from './ActionButton.vue'
 // 布局组件
 export { default as FilterBar } from './FilterBar.vue'
 export { default as MessageAlert } from './MessageAlert.vue'
+export { default as InlinePagination } from './InlinePagination.vue'
+export { default as NativeSelectField } from './NativeSelectField.vue'
+export { default as FormDialogShell } from './FormDialogShell.vue'
 
 // 加载状态组件
 export { default as LoadingSpinner } from './LoadingSpinner.vue'

@@ -1,13 +1,14 @@
-﻿<script setup lang="ts">
+<script setup lang="ts">
+import type { StoreDTO, StoreQueryRequest } from '@/api/store.api'
 /**
  * 管理员店铺管理视图
  * 管理员查看和管理所有店铺的页面
  */
-import { ref, computed, onMounted, watch } from 'vue'
-import { FilterBar, MessageAlert, StatusBadge, ActionButton, ConfirmModal } from '@/components'
-import { useMessage, useFormatters, useStatusConfig } from '@/composables'
+import { computed, onMounted, ref, watch } from 'vue'
+import { useRoute } from 'vue-router'
 import { storeApi } from '@/api'
-import type { StoreDTO, StoreQueryRequest } from '@/api/store.api'
+import { ActionButton, CustomSelect, FilterBar, InlinePagination, MessageAlert, StatusBadge } from '@/components'
+import { useFormatters, useMessage } from '@/composables'
 
 // ============================================================================
 // Composables
@@ -15,7 +16,7 @@ import type { StoreDTO, StoreQueryRequest } from '@/api/store.api'
 
 const { message, success, error } = useMessage()
 const { formatDate } = useFormatters()
-const { getStatusText, getStatusClass } = useStatusConfig('store')
+const route = useRoute()
 
 // ============================================================================
 // State
@@ -27,15 +28,26 @@ const total = ref(0)
 const currentPage = ref(1)
 const pageSize = ref(10)
 
+const VALID_STATUS_VALUES = new Set(['', 'PENDING', 'ACTIVE', 'INACTIVE', 'CLOSED'])
+
+function normalizeStatusQuery(value: unknown): string {
+  if (typeof value !== 'string') {
+    return ''
+  }
+  const normalized = value.toUpperCase()
+  return VALID_STATUS_VALUES.has(normalized) ? normalized : ''
+}
+
 const filters = ref<StoreQueryRequest>({
-  status: '',
+  status: normalizeStatusQuery(route.query.status),
   category: '',
   keyword: '',
 })
 
 const isProcessing = ref(false)
-const showCloseDialog = ref(false)
 const closeTarget = ref<StoreDTO | null>(null)
+const closeReason = ref('')
+const closeReasonError = ref('')
 
 // ============================================================================
 // Computed
@@ -61,6 +73,10 @@ const categoryOptions = [
 
 const totalPages = computed(() => Math.ceil(total.value / pageSize.value))
 
+function getErrorMessage(err: unknown, fallback: string): string {
+  return err instanceof Error && err.message ? err.message : fallback
+}
+
 // ============================================================================
 // Methods
 // ============================================================================
@@ -71,9 +87,11 @@ async function loadData() {
     const response = await storeApi.getAllStores(filters.value, currentPage.value, pageSize.value)
     stores.value = response.records
     total.value = response.total
-  } catch (e) {
+  }
+  catch {
     error('加载数据失败')
-  } finally {
+  }
+  finally {
     isLoading.value = false
   }
 }
@@ -89,38 +107,56 @@ function handlePageChange(page: number) {
 }
 
 async function approveStore(store: StoreDTO) {
-  if (store.status !== 'PENDING') return
-  
+  if (store.status !== 'PENDING')
+    return
+
   isProcessing.value = true
   try {
     await storeApi.approveStore(store.storeId)
     store.status = 'ACTIVE'
     success('店铺审批通过')
-  } catch (e: any) {
-    error(e.message || '审批失败')
-  } finally {
+  }
+  catch (e: unknown) {
+    error(getErrorMessage(e, '审批失败'))
+  }
+  finally {
     isProcessing.value = false
   }
 }
 
 function openCloseDialog(store: StoreDTO) {
   closeTarget.value = store
-  showCloseDialog.value = true
+  closeReason.value = ''
+  closeReasonError.value = ''
 }
 
-async function confirmCloseStore(reason: string) {
-  if (!closeTarget.value) return
-  
+function cancelCloseStore() {
+  closeTarget.value = null
+  closeReason.value = ''
+  closeReasonError.value = ''
+}
+
+async function confirmCloseStore() {
+  if (!closeTarget.value)
+    return
+  const reason = closeReason.value.trim()
+  if (!reason) {
+    closeReasonError.value = '请输入关闭原因'
+    return
+  }
+
   isProcessing.value = true
   try {
     await storeApi.closeStore(closeTarget.value.storeId, reason)
     closeTarget.value.status = 'CLOSED'
     closeTarget.value.closeReason = reason
-    showCloseDialog.value = false
-    success('店铺已关闭')
-  } catch (e: any) {
-    error(e.message || '关闭失败')
-  } finally {
+    success(`店铺「${closeTarget.value.name}」已关闭`)
+    cancelCloseStore()
+  }
+  catch (e: unknown) {
+    error(getErrorMessage(e, '关闭失败'))
+  }
+  finally {
     isProcessing.value = false
   }
 }
@@ -132,6 +168,25 @@ async function confirmCloseStore(reason: string) {
 onMounted(loadData)
 
 watch([() => filters.value.status, () => filters.value.category], handleSearch)
+
+watch(
+  () => closeReason.value,
+  (value) => {
+    if (value.trim()) {
+      closeReasonError.value = ''
+    }
+  },
+)
+
+watch(
+  () => route.query.status,
+  (value) => {
+    const nextStatus = normalizeStatusQuery(value)
+    if (filters.value.status !== nextStatus) {
+      filters.value.status = nextStatus
+    }
+  },
+)
 </script>
 
 <template>
@@ -140,26 +195,54 @@ watch([() => filters.value.status, () => filters.value.category], handleSearch)
 
     <!-- 筛选栏 -->
     <FilterBar :total="total" total-label="家店铺">
-      <select v-model="filters.status" class="select">
-        <option v-for="opt in statusOptions" :key="opt.value" :value="opt.value">{{ opt.label }}</option>
-      </select>
-      <select v-model="filters.category" class="select">
-        <option v-for="opt in categoryOptions" :key="opt.value" :value="opt.value">{{ opt.label }}</option>
-      </select>
-      <input 
-        v-model="filters.keyword" 
-        type="text" 
-        class="input search-input" 
+      <CustomSelect v-model="filters.status" :options="statusOptions" placeholder="全部状态" />
+      <CustomSelect v-model="filters.category" :options="categoryOptions" placeholder="全部分类" />
+      <input
+        v-model="filters.keyword"
+        type="text"
+        class="input search-input"
         placeholder="搜索店铺名称..."
         @keyup.enter="handleSearch"
-      />
-      <button class="btn btn-primary" @click="handleSearch">搜索</button>
+      >
+      <button class="btn btn-primary" @click="handleSearch">
+        搜索
+      </button>
     </FilterBar>
+
+    <section v-if="closeTarget" class="close-panel">
+      <p class="close-panel-title">
+        关闭店铺「{{ closeTarget.name }}」
+      </p>
+      <p class="close-panel-desc">
+        此操作会将店铺状态变更为已关闭，请填写关闭原因后确认。
+      </p>
+      <div class="close-panel-actions">
+        <input
+          v-model="closeReason"
+          type="text"
+          class="input close-reason-input"
+          placeholder="请输入关闭原因"
+          :disabled="isProcessing"
+          @keyup.enter="confirmCloseStore"
+        >
+        <button class="btn btn-danger" :disabled="isProcessing" @click="confirmCloseStore">
+          {{ isProcessing ? '处理中...' : '确认关闭' }}
+        </button>
+        <button class="btn btn-secondary" :disabled="isProcessing" @click="cancelCloseStore">
+          取消
+        </button>
+      </div>
+      <p v-if="closeReasonError" class="close-panel-error">
+        {{ closeReasonError }}
+      </p>
+    </section>
 
     <!-- 店铺列表 -->
     <section class="store-table-container">
-      <div v-if="isLoading" class="loading">加载中...</div>
-      
+      <div v-if="isLoading" class="loading">
+        加载中...
+      </div>
+
       <table v-else-if="stores.length > 0" class="store-table">
         <thead>
           <tr>
@@ -176,7 +259,9 @@ watch([() => filters.value.status, () => filters.value.category], handleSearch)
           <tr v-for="store in stores" :key="store.storeId">
             <td>
               <div class="store-name-cell">
-                <div class="store-avatar">{{ store.name.charAt(0) }}</div>
+                <div class="store-avatar">
+                  {{ store.name.charAt(0) }}
+                </div>
                 <span>{{ store.name }}</span>
               </div>
             </td>
@@ -200,30 +285,18 @@ watch([() => filters.value.status, () => filters.value.category], handleSearch)
         </tbody>
       </table>
 
-      <div v-else class="empty">暂无店铺数据</div>
+      <div v-else class="empty">
+        暂无店铺数据
+      </div>
     </section>
 
     <!-- 分页 -->
-    <nav v-if="totalPages > 1" class="pagination">
-      <button class="page-btn" :disabled="currentPage === 1" @click="handlePageChange(currentPage - 1)">上一页</button>
-      <span class="page-info">{{ currentPage }} / {{ totalPages }}</span>
-      <button class="page-btn" :disabled="currentPage === totalPages" @click="handlePageChange(currentPage + 1)">下一页</button>
-    </nav>
-
-    <!-- 关闭店铺对话框 -->
-    <ConfirmModal
-      v-model:visible="showCloseDialog"
-      title="关闭店铺"
-      confirm-text="确认关闭"
-      confirm-variant="danger"
-      require-reason
-      reason-label="关闭原因"
-      reason-placeholder="请输入关闭原因"
-      :processing="isProcessing"
-      @confirm="confirmCloseStore"
-    >
-      <p class="warning-text">确定要关闭店铺「{{ closeTarget?.name }}」吗？此操作不可撤销。</p>
-    </ConfirmModal>
+    <InlinePagination
+      :current-page="currentPage"
+      :total-pages="totalPages"
+      :disabled="isLoading"
+      @change="handlePageChange"
+    />
   </main>
 </template>
 
@@ -245,15 +318,82 @@ watch([() => filters.value.status, () => filters.value.category], handleSearch)
 }
 
 .search-input {
-  width: 200px;
+  width: 260px;
 }
 
 .btn {
   @include btn-base;
+
   padding: $space-2 + 2 $space-5;
+
+  min-width: 92px;
+
+  white-space: nowrap;
 
   &-primary {
     @include btn-primary;
+  }
+
+  &-secondary {
+    @include btn-secondary;
+  }
+
+  &-danger {
+    @include btn-danger;
+  }
+}
+
+.close-panel {
+  @include card-base;
+
+  padding: $space-4 $space-5;
+
+  border-color: rgba(var(--error-rgb), 0.25);
+
+  background: rgba(var(--error-rgb), 0.06);
+
+  .close-panel-title {
+    margin: 0;
+
+    font-size: $font-size-lg;
+
+    font-weight: $font-weight-semibold;
+
+    color: var(--text-primary);
+  }
+
+  .close-panel-desc {
+    margin: $space-2 0 0;
+
+    color: var(--text-secondary);
+
+    font-size: $font-size-base;
+  }
+
+  .close-panel-actions {
+    margin-top: $space-4;
+
+    display: flex;
+
+    gap: $space-3;
+
+    align-items: center;
+
+    flex-wrap: wrap;
+  }
+
+  .close-reason-input {
+    min-width: 280px;
+
+    flex: 1;
+  }
+
+  .close-panel-error {
+    margin: $space-2 0 0;
+
+    color: var(--error);
+
+    font-size: $font-size-sm + 1;
   }
 }
 
@@ -298,24 +438,4 @@ watch([() => filters.value.status, () => filters.value.category], handleSearch)
 }
 
 // 分页
-.pagination {
-  @include pagination;
-  padding: $space-4;
-
-  .page-btn {
-    @include pagination-btn;
-    background: var(--bg-tertiary);
-    border: 1px solid var(--border-muted);
-  }
-
-  .page-info {
-    @include pagination-info;
-  }
-}
-
-.warning-text {
-  color: var(--error);
-  font-size: $font-size-base;
-  margin: 0;
-}
 </style>

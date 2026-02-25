@@ -94,8 +94,16 @@ function handleDelete(event: Event) {
   @include hover-highlight;
 
   &.active {
-    background: var(--accent-muted);
-    border-color: rgba(var(--accent-primary-rgb), 0.3);
+    background: rgba(var(--accent-primary-rgb), 0.14);
+    border-color: rgba(var(--accent-primary-rgb), 0.34);
+
+    .store-name {
+      color: var(--accent-primary);
+    }
+
+    .store-location {
+      color: var(--text-primary);
+    }
   }
 }
 
@@ -103,7 +111,7 @@ function handleDelete(event: Event) {
   width: 40px;
   height: 40px;
   border-radius: $radius-md + 2;
-  background: $gradient-admin;
+  background: linear-gradient(135deg, var(--accent-primary) 0%, var(--accent-hover) 100%);
   @include flex-center;
   font-size: $font-size-base + 2;
   font-weight: $font-weight-semibold;

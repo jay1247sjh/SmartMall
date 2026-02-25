@@ -43,16 +43,6 @@ export const AsyncMallBuilderView = defineAsyncComponent({
 })
 
 /**
- * Mall3DView 异步组件
- * 400+ 行，包含 3D 渲染，需要异步加载优化
- * Requirements: 24.2
- */
-export const AsyncMall3DView = defineAsyncComponent({
-  loader: () => import('@/views/Mall3DView.vue'),
-  ...asyncComponentConfig
-})
-
-/**
  * 组件映射表
  * key: 后端返回的组件标识符
  * value: 懒加载的组件或异步组件
@@ -67,8 +57,8 @@ export const componentMap: Record<string, (() => Promise<Component>) | Component
 
   // ===== 公共页面 =====
   'MallView': () => import('@/views/MallView.vue'),
-  // Mall3DView 使用异步组件优化（400+ 行，包含 3D 渲染）
-  'Mall3DView': AsyncMall3DView,
+  // 用户端 3D 漫游与商家预览统一复用 MallBuilderView
+  'Mall3DView': AsyncMallBuilderView,
   'LoginView': () => import('@/views/LoginView.vue'),
   // BuilderView 使用异步组件优化（包含 Three.js）
   'BuilderView': AsyncMallBuilderView,
@@ -91,9 +81,12 @@ export const componentMap: Record<string, (() => Promise<Component>) | Component
   'MerchantAreaPermission': () => import('@/views/merchant/AreaPermissionView.vue'),
   'MerchantProduct': () => import('@/views/merchant/ProductManageView.vue'),
   'MerchantBuilder': () => import('@/views/merchant/BuilderView.vue'),
+  'MerchantMallPreview': AsyncMallBuilderView,
 
   // ===== 用户页面 =====
   'UserProfile': () => import('@/views/user/ProfileView.vue'),
+  'UserProductDetail': () => import('@/views/user/ProductDetailView.vue'),
+  'UserStoreProducts': () => import('@/views/user/StoreProductsView.vue'),
 
   // ===== 错误页面 =====
   'NotFound': () => import('@/views/errors/NotFoundView.vue'),

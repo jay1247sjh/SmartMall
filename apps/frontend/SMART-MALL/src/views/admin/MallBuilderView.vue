@@ -18,6 +18,8 @@ import { useI18n } from 'vue-i18n'
 import * as THREE from 'three'
 import { MallBuilderEngine } from '@/engine/mall-builder/MallBuilderEngine'
 import { useSettingsStore } from '@/stores/settings.store'
+import { getPublishedMallData } from '@/api/mall-manage.api'
+import { toMallProject } from '@/api/mall-builder.api'
 
 // 导入 builder 模块
 import {
@@ -83,6 +85,9 @@ const router = useRouter()
 const route = useRoute()
 const { t } = useI18n()
 const settingsStore = useSettingsStore()
+const isMerchantPreviewRoute = route.name === 'MerchantMallPreview' || route.path === '/merchant/mall-preview'
+const isUserPreviewRoute = route.name === 'Mall3D' || route.path === '/mall/3d'
+const isPublishedPreviewRoute = isMerchantPreviewRoute || isUserPreviewRoute
 
 // 容器引用
 const containerRef = ref<HTMLElement | null>(null)
@@ -121,6 +126,10 @@ const roaming = useRoamingMode({
   cameraDistance: 4,
   cameraHeight: 1.2,
   smoothness: 1,
+  autoAlignWhenUnlocked: false,
+  yawConstraintEnabled: true,
+  yawConstraintHalfAngleDeg: 45,
+  yawConstraintCenterOffsetDeg: 180,
 })
 
 // 门放置
@@ -135,7 +144,7 @@ const isLoading = ref(true)
 const loadProgress = ref(0)
 
 // 向导状态
-const showWizard = ref(true)
+const showWizard = ref(!isPublishedPreviewRoute)
 const selectedTemplate = ref<MallTemplate | null>(null)
 const newProjectName = ref('')
 
@@ -144,7 +153,9 @@ const viewMode = ref<'edit' | 'orbit'>('edit')
 const savedCameraState = ref<{ position: THREE.Vector3; target: THREE.Vector3 } | null>(null)
 
 // 预览模式
+type PreviewContext = 'merchant' | 'user' | 'adminVersion' | null
 const isPreviewMode = ref(false)
+const previewContext = ref<PreviewContext>(null)
 const previewVersionNumber = ref<string | null>(null)
 const previewError = ref<string | null>(null)
 
@@ -194,6 +205,13 @@ const showLeaveConfirm = ref(false)
 const showProjectListModal = ref(false)
 const pendingNavigation = ref<(() => void) | null>(null)
 
+// 保存反馈状态
+const saveToastVisible = ref(false)
+const saveToastType = ref<'success' | 'error'>('success')
+const saveToastMessage = ref('')
+const lastSavedAt = ref<Date | null>(null)
+let saveToastTimer: ReturnType<typeof setTimeout> | null = null
+
 // 模板列表
 const templates = computed(() => getAllTemplates())
 
@@ -212,6 +230,73 @@ const legendItems = computed<LegendItem[]>(() =>
 const scene = computed(() => engine.value?.scene || null)
 const camera = computed(() => engine.value?.camera || null)
 const controls = computed(() => engine.value?.getOrbitControls() || null)
+const hasUnsavedChanges = computed(() => {
+  if (isPreviewMode.value) return false
+  return projectMgmt.checkUnsavedChanges(project.value)
+})
+const saveStatusText = computed(() => {
+  if (!project.value) return ''
+  if (isPreviewMode.value) return ''
+  if (projectMgmt.isSaving.value) return '正在保存...'
+  if (hasUnsavedChanges.value) return '有未保存更改'
+  if (lastSavedAt.value) return `已保存于 ${formatSaveTime(lastSavedAt.value)}`
+  return '尚未保存'
+})
+const previewBackTarget = computed(() => {
+  if (previewContext.value === 'merchant') return '/merchant/dashboard'
+  if (previewContext.value === 'user') return '/mall'
+  return '/admin/layout-version'
+})
+const previewBackText = computed(() =>
+  previewContext.value === 'adminVersion' ? t('admin.backToVersionList') : t('common.back')
+)
+const showPreviewVersion = computed(() =>
+  previewContext.value === 'adminVersion' && !!previewVersionNumber.value
+)
+
+/**
+ * 统一同步建模器 OrbitControls 状态：
+ * - 仅编辑模式 + pan 工具下启用
+ * - 漫游模式下强制禁用，避免与 follow 相机并发控制同一 camera
+ */
+function syncBuilderOrbitControlsState() {
+  if (!engine.value) return
+  const shouldEnableOrbit = viewMode.value === 'edit' && drawing.currentTool.value === 'pan'
+  engine.value.setOrbitControlsEnabled(shouldEnableOrbit)
+}
+
+function clearSaveToastTimer() {
+  if (saveToastTimer) {
+    clearTimeout(saveToastTimer)
+    saveToastTimer = null
+  }
+}
+
+function showSaveToast(type: 'success' | 'error', message: string, durationMs: number) {
+  clearSaveToastTimer()
+  saveToastType.value = type
+  saveToastMessage.value = message
+  saveToastVisible.value = true
+  saveToastTimer = setTimeout(() => {
+    saveToastVisible.value = false
+    saveToastTimer = null
+  }, durationMs)
+}
+
+function formatSaveTime(date: Date): string {
+  const year = date.getFullYear()
+  const month = String(date.getMonth() + 1).padStart(2, '0')
+  const day = String(date.getDate()).padStart(2, '0')
+  const hours = String(date.getHours()).padStart(2, '0')
+  const minutes = String(date.getMinutes()).padStart(2, '0')
+  const seconds = String(date.getSeconds()).padStart(2, '0')
+  return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`
+}
+
+function setLastSavedAtFromProject(loadedProject: MallProject) {
+  const parsed = new Date(loadedProject.updatedAt)
+  lastSavedAt.value = Number.isNaN(parsed.getTime()) ? new Date() : parsed
+}
 
 // ============================================================================
 // 引擎初始化
@@ -245,8 +330,8 @@ async function initEngine() {
     setupInteraction()
     loadProgress.value = 100
 
-    // 默认工具为 pan，需要启用轨道控制器
-    engine.value.setOrbitControlsEnabled(true)
+    // 根据当前上下文统一同步 OrbitControls 状态
+    syncBuilderOrbitControlsState()
 
     setTimeout(() => { isLoading.value = false }, 300)
   } catch (error) {
@@ -372,9 +457,11 @@ function raycastAreas(clientX: number, clientY: number): THREE.Intersection | nu
 // ============================================================================
 
 function createNewProject() {
+  if (isPreviewMode.value) return
   if (!selectedTemplate.value) return
 
   project.value = projectMgmt.createFromTemplate(selectedTemplate.value, newProjectName.value)
+  lastSavedAt.value = null
   floorMgmt.initFloor(project.value)
   router.replace({ params: { projectId: project.value.id } })
   
@@ -384,7 +471,9 @@ function createNewProject() {
 }
 
 function createCustomProject() {
+  if (isPreviewMode.value) return
   project.value = projectMgmt.createCustomProject(newProjectName.value)
+  lastSavedAt.value = null
   floorMgmt.initFloor(project.value)
   router.replace({ params: { projectId: project.value.id } })
   
@@ -463,6 +552,7 @@ function deselectAll() {
 }
 
 function deleteSelectedArea() {
+  if (isPreviewMode.value) return
   if (!floorMgmt.currentFloor.value || !selectedArea.value) return
 
   const index = floorMgmt.currentFloor.value.areas.findIndex(a => a.id === selectedArea.value!.id)
@@ -489,6 +579,7 @@ function clearMaterialSelection() {
 }
 
 function selectMaterial(preset: MaterialPreset) {
+  if (isPreviewMode.value) return
   selectedMaterialId.value = preset.id
   if (preset.isInfrastructure) {
     drawing.setTool('pan')
@@ -511,10 +602,11 @@ function toggleCategory(category: MaterialCategory) {
 // ============================================================================
 
 function saveHistory() {
-  history.saveHistory(project.value, projectMgmt.markUnsaved)
+  history.saveHistory(project.value)
 }
 
 function undo() {
+  if (isPreviewMode.value) return
   const restored = history.undo()
   if (restored) {
     project.value = restored
@@ -523,6 +615,7 @@ function undo() {
 }
 
 function redo() {
+  if (isPreviewMode.value) return
   const restored = history.redo()
   if (restored) {
     project.value = restored
@@ -539,6 +632,7 @@ const existingLevels = computed(() =>
 )
 
 function handleFloorCreated(data: { name: string; level: number; height: number; layoutDescription: string }) {
+  if (isPreviewMode.value) return
   if (!project.value) return
 
   // 使用 composable 的 newFloorForm 来创建楼层
@@ -555,10 +649,12 @@ function handleFloorCreated(data: { name: string; level: number; height: number;
 }
 
 function openAddFloorModal() {
+  if (isPreviewMode.value) return
   floorMgmt.showAddFloorModal.value = true
 }
 
 function deleteFloor(floorId: string) {
+  if (isPreviewMode.value) return
   if (floorMgmt.deleteFloor(floorId)) {
     renderProject()
     saveHistory()
@@ -588,6 +684,7 @@ async function handleExport() {
 }
 
 async function handleImport(event: Event) {
+  if (isPreviewMode.value) return
   const input = event.target as HTMLInputElement
   const file = input.files?.[0]
   if (!file) return
@@ -597,6 +694,7 @@ async function handleImport(event: Event) {
     const imported = importProject(text)
     if (imported) {
       project.value = imported
+      lastSavedAt.value = null
       floorMgmt.initFloor(imported)
       showWizard.value = false
       renderProject()
@@ -614,7 +712,7 @@ async function handleImport(event: Event) {
 // ============================================================================
 
 function goBack() {
-  if (projectMgmt.hasUnsavedChanges.value) {
+  if (!isPreviewMode.value && projectMgmt.checkUnsavedChanges(project.value)) {
     showLeaveConfirm.value = true
     pendingNavigation.value = () => router.push('/admin')
   } else {
@@ -637,12 +735,14 @@ function cancelLeave() {
 
 function resetCamera() {
   if (!camera.value || !controls.value) return
+  if (viewMode.value === 'orbit') return
   camera.value.position.set(0, 100, 60)
   controls.value.target.set(0, 6, 0)
   controls.value.update()
 }
 
 function resetOutline() {
+  if (isPreviewMode.value) return
   if (!project.value) return
   project.value.outline = { vertices: [] }
   drawing.setTool('draw-outline')
@@ -659,6 +759,17 @@ function toggleOrbitMode() {
     enterRoamMode()
   } else {
     exitRoamMode()
+  }
+}
+
+function handlePreviewRoamToggle() {
+  const willEnterRoam = viewMode.value === 'edit'
+  toggleOrbitMode()
+
+  if (willEnterRoam) {
+    requestAnimationFrame(() => {
+      engine.value?.requestPointerLock()
+    })
   }
 }
 
@@ -687,7 +798,7 @@ function enterRoamMode() {
   }
   
   viewMode.value = 'orbit'
-  controls.value.enabled = false
+  syncBuilderOrbitControlsState()
   
   // 隐藏建模器网格和地板（漫游环境有自己的地板）
   const grid = scene.value.getObjectByName('mall-builder-grid')
@@ -768,9 +879,8 @@ function exitRoamMode() {
     controls.value.update()
   }
   
-  // 根据当前工具决定是否启用轨道控制器
-  // 只有 pan 工具才允许旋转视角，其他工具保持禁用
-  controls.value.enabled = drawing.currentTool.value === 'pan'
+  // 恢复编辑态后统一同步 OrbitControls 状态
+  syncBuilderOrbitControlsState()
   renderProject()
 }
 
@@ -818,14 +928,8 @@ function handleRoamingFloorSwitch() {
     controller.setWallSegments(wallSegments)
   }
 
-  // 更新跟随目标到新角色
-  engine.value.setFollowTarget(controller.character, {
-    distance: 4,
-    lookAtHeightOffset: 1.2,
-    smoothness: 1,
-    mouseSensitivity: 0.003,
-    pitchLimit: { min: -0.3, max: 1.0 },
-  })
+  // 更新跟随目标到新角色（复用 roaming 统一相机配置，避免配置分叉）
+  roaming.rebindFollowTarget(controller.character)
 }
 
 // ============================================================================
@@ -844,7 +948,7 @@ function handleKeydown(e: KeyboardEvent) {
 
   // 预览模式：仅允许漫游切换，屏蔽编辑快捷键
   if (isPreviewMode.value) {
-    if (e.key === 'o' || e.key === 'O') toggleOrbitMode()
+    if (e.key === 'o' || e.key === 'O') handlePreviewRoamToggle()
     return
   }
 
@@ -912,30 +1016,77 @@ function handleKeyup(e: KeyboardEvent) {
 // ============================================================================
 
 async function handleSave() {
-  if (!project.value) return
+  if (isPreviewMode.value) return
+  if (!project.value || projectMgmt.isSaving.value) return
   
   try {
-    await projectMgmt.saveToServer(project.value)
+    const saved = await projectMgmt.saveToServer(project.value)
+    if (saved) {
+      lastSavedAt.value = new Date()
+      showSaveToast('success', '保存成功', 2000)
+      return
+    }
+
+    showSaveToast('error', projectMgmt.saveMessage.value || '保存失败，请重试', 4000)
   } catch (error) {
     console.error('保存失败:', error)
+    showSaveToast('error', '保存失败，请重试', 4000)
   }
 }
 
 async function handlePublish() {
+  if (isPreviewMode.value) return
   if (!project.value || !projectMgmt.serverProjectId.value) {
     // 未保存过的项目需要先保存
     if (project.value) {
       const saved = await projectMgmt.saveToServer(project.value)
-      if (!saved) return
+      if (!saved) {
+        showSaveToast('error', projectMgmt.saveMessage.value || '保存失败，无法发布', 4000)
+        return
+      }
+      lastSavedAt.value = new Date()
     } else {
       return
     }
   }
   
   try {
-    await projectMgmt.publishToServer(projectMgmt.serverProjectId.value!)
+    const published = await projectMgmt.publishToServer(projectMgmt.serverProjectId.value!)
+    if (published) {
+      showSaveToast('success', '发布成功', 2000)
+      return
+    }
+    showSaveToast('error', projectMgmt.saveMessage.value || '发布失败，请重试', 4000)
   } catch (error) {
     console.error('发布失败:', error)
+    showSaveToast('error', '发布失败，请重试', 4000)
+  }
+}
+
+function backFromPreview() {
+  router.push(previewBackTarget.value)
+}
+
+async function loadMerchantPublishedPreview(): Promise<boolean> {
+  try {
+    const published = await getPublishedMallData()
+    if (!published) {
+      previewError.value = '暂无已发布商城，请联系管理员发布后再预览'
+      return false
+    }
+
+    const loaded = toMallProject(published)
+    project.value = loaded
+    floorMgmt.initFloor(loaded)
+    renderProject()
+    return true
+  } catch (err: any) {
+    if (err?.code === 'A5006' || err?.status === 404) {
+      previewError.value = '暂无已发布商城，请联系管理员发布后再预览'
+    } else {
+      previewError.value = '商城预览加载失败，请稍后重试'
+    }
+    return false
   }
 }
 
@@ -948,10 +1099,20 @@ onMounted(async () => {
   window.addEventListener('keydown', handleKeydown)
   window.addEventListener('keyup', handleKeyup)
 
+  // 商家/用户只读预览模式（加载已发布版本）
+  if (isPublishedPreviewRoute) {
+    isPreviewMode.value = true
+    previewContext.value = isMerchantPreviewRoute ? 'merchant' : 'user'
+    showWizard.value = false
+    await loadMerchantPublishedPreview()
+    return
+  }
+
   // 检测预览模式（版本快照）
   const versionId = route.query.versionId as string | undefined
   const versionNumber = route.query.versionNumber as string | undefined
   if (versionId) {
+    previewContext.value = 'adminVersion'
     const loaded = await projectMgmt.loadFromVersionSnapshot(versionId)
     if (loaded) {
       project.value = loaded
@@ -974,10 +1135,12 @@ onMounted(async () => {
     const loaded = await projectMgmt.loadFromServer(projectIdFromUrl)
     if (loaded) {
       project.value = loaded
+      setLastSavedAtFromProject(loaded)
       floorMgmt.initFloor(loaded)
       showWizard.value = false
       renderProject()
       saveHistory()
+      projectMgmt.markSaved(loaded)
     } else {
       // 项目不存在或加载失败，清除 URL 中的 projectId 并显示向导
       console.warn('项目加载失败，显示创建向导')
@@ -988,6 +1151,7 @@ onMounted(async () => {
 })
 
 onUnmounted(() => {
+  clearSaveToastTimer()
   window.removeEventListener('keydown', handleKeydown)
   window.removeEventListener('keyup', handleKeyup)
   roaming.dispose()
@@ -1008,6 +1172,14 @@ watch(() => floorMgmt.currentFloorId.value, () => {
     renderProject()
   }
 })
+
+watch(
+  [() => viewMode.value, () => drawing.currentTool.value],
+  () => {
+    syncBuilderOrbitControlsState()
+  },
+  { immediate: true }
+)
 
 // 监听主题变化，同步更新 3D 场景配色
 watch(() => settingsStore.theme, (newTheme) => {
@@ -1031,6 +1203,7 @@ watch(() => doorPlacement.hoveredDoorId.value, (newId, oldId) => {
  * 处理向导模板选择更新
  */
 function handleTemplateUpdate(template: MallTemplate | null) {
+  if (isPreviewMode.value) return
   selectedTemplate.value = template
 }
 
@@ -1038,6 +1211,7 @@ function handleTemplateUpdate(template: MallTemplate | null) {
  * 处理向导项目名称更新
  */
 function handleProjectNameUpdate(name: string) {
+  if (isPreviewMode.value) return
   newProjectName.value = name
 }
 
@@ -1045,6 +1219,7 @@ function handleProjectNameUpdate(name: string) {
  * 处理工具选择
  */
 function handleSelectTool(tool: 'select' | 'pan' | 'draw-rect' | 'draw-poly' | 'draw-outline' | 'place-door') {
+  if (isPreviewMode.value) return
   drawing.setTool(tool)
   // 切换工具时清除门悬停高亮
   if (tool !== 'place-door') {
@@ -1057,7 +1232,9 @@ function handleSelectTool(tool: 'select' | 'pan' | 'draw-rect' | 'draw-poly' | '
  * 处理 AI 生成的项目
  */
 function handleCreateFromAI(aiProject: MallProject) {
+  if (isPreviewMode.value) return
   project.value = aiProject
+  lastSavedAt.value = null
   floorMgmt.initFloor(aiProject)
   router.replace({ params: { projectId: aiProject.id } })
 
@@ -1070,13 +1247,16 @@ function handleCreateFromAI(aiProject: MallProject) {
  * 从向导加载已保存的项目
  */
 async function handleLoadSavedProject(projectId: string) {
+  if (isPreviewMode.value) return
   const loaded = await projectMgmt.loadFromServer(projectId)
   if (loaded) {
     project.value = loaded
+    setLastSavedAtFromProject(loaded)
     floorMgmt.initFloor(loaded)
     showWizard.value = false
     renderProject()
     saveHistory()
+    projectMgmt.markSaved(loaded)
   }
 }
 
@@ -1084,6 +1264,7 @@ async function handleLoadSavedProject(projectId: string) {
  * 处理区域属性更新
  */
 function handleAreaUpdate(updatedArea: AreaDefinition) {
+  if (isPreviewMode.value) return
   if (!floorMgmt.currentFloor.value || !selectedArea.value) return
   
   const index = floorMgmt.currentFloor.value.areas.findIndex(a => a.id === selectedArea.value!.id)
@@ -1098,6 +1279,7 @@ function handleAreaUpdate(updatedArea: AreaDefinition) {
  * 处理删除门
  */
 function handleDeleteDoor(doorId: string) {
+  if (isPreviewMode.value) return
   doorPlacement.removeDoor(
     selectedArea.value,
     doorId,
@@ -1128,6 +1310,7 @@ function handleDeleteDoor(doorId: string) {
 
     <!-- 项目创建向导 (使用子组件) -->
     <BuilderWizard
+      v-if="!isPreviewMode"
       :visible="showWizard && !isLoading"
       :templates="templates"
       :selectedTemplate="selectedTemplate"
@@ -1145,18 +1328,18 @@ function handleDeleteDoor(doorId: string) {
     <template v-if="!showWizard && !isLoading">
       <!-- 预览模式工具栏 -->
       <div v-if="isPreviewMode" class="preview-toolbar">
-        <button class="btn-back" @click="router.push('/admin/layout-version')">
+        <button class="btn-back" @click="backFromPreview">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
             <path d="M19 12H5M12 19l-7-7 7-7"/>
           </svg>
-          {{ t('admin.backToVersionList') }}
+          {{ previewBackText }}
         </button>
         <div class="preview-info">
           <span class="preview-badge">{{ t('admin.previewMode') }}</span>
-          <span v-if="previewVersionNumber" class="preview-version">{{ previewVersionNumber }}</span>
+          <span v-if="showPreviewVersion" class="preview-version">{{ previewVersionNumber }}</span>
         </div>
         <div class="preview-actions">
-          <button class="btn-secondary" @click="toggleOrbitMode">
+          <button class="btn-secondary" @click="handlePreviewRoamToggle">
             {{ viewMode === 'orbit' ? t('admin.exitRoam') : t('admin.roamMode') }}
           </button>
         </div>
@@ -1170,24 +1353,26 @@ function handleDeleteDoor(doorId: string) {
             <path d="M12 8v4M12 16h.01"/>
           </svg>
           <p class="error-text">{{ previewError }}</p>
-          <button class="btn-back" @click="router.push('/admin/layout-version')">
+          <button class="btn-back" @click="backFromPreview">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
               <path d="M19 12H5M12 19l-7-7 7-7"/>
             </svg>
-            {{ t('admin.backToVersionList') }}
+            {{ previewBackText }}
           </button>
         </div>
       </div>
 
       <!-- 顶部工具栏 (使用子组件) -->
       <BuilderToolbar
-        v-else
+        v-else-if="!isPreviewMode"
         :projectName="project?.name || t('admin.mallLayout')"
         :currentTool="drawing.currentTool.value"
         :viewMode="viewMode"
         :canUndo="history.canUndo.value"
         :canRedo="history.canRedo.value"
         :isSaving="projectMgmt.isSaving.value"
+        :saveStatusText="saveStatusText"
+        :hasUnsavedChanges="hasUnsavedChanges"
         :isPublishing="projectMgmt.isPublishing.value"
         @back="goBack"
         @selectTool="handleSelectTool"
@@ -1201,6 +1386,16 @@ function handleDeleteDoor(doorId: string) {
         @save="handleSave"
         @publish="handlePublish"
       />
+      <Transition name="save-toast-fade">
+        <div
+          v-if="saveToastVisible"
+          :class="['save-toast', `type-${saveToastType}`]"
+          role="status"
+          aria-live="polite"
+        >
+          {{ saveToastMessage }}
+        </div>
+      </Transition>
 
       <!-- 左侧楼层面板 (使用子组件) -->
       <FloorPanel
@@ -1209,6 +1404,7 @@ function handleDeleteDoor(doorId: string) {
         :currentFloorId="floorMgmt.currentFloorId.value"
         :doors="selectedArea?.doors ?? []"
         :hoveredDoorId="doorPlacement.hoveredDoorId.value"
+        :readonly="isPreviewMode"
         v-model:collapsed="leftPanelCollapsed"
         @select="selectFloor"
         @add="openAddFloorModal"
@@ -1423,6 +1619,54 @@ function handleDeleteDoor(doorId: string) {
 
 <style scoped lang="scss">
 // ============================================================================
+// Save Toast
+// ============================================================================
+.save-toast {
+  position: absolute;
+  top: 68px;
+  right: 18px;
+  z-index: 120;
+  padding: 9px 14px;
+  border-radius: 8px;
+  border: 1px solid transparent;
+  font-size: 13px;
+  font-weight: 500;
+  backdrop-filter: blur(10px);
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.16);
+
+  &.type-success {
+    background: rgba(22, 163, 74, 0.14);
+    border-color: rgba(22, 163, 74, 0.32);
+    color: #16a34a;
+  }
+
+  &.type-error {
+    background: rgba(220, 38, 38, 0.14);
+    border-color: rgba(220, 38, 38, 0.32);
+    color: #dc2626;
+  }
+}
+
+.save-toast-fade-enter-active,
+.save-toast-fade-leave-active {
+  transition: all 0.2s ease;
+}
+
+.save-toast-fade-enter-from,
+.save-toast-fade-leave-to {
+  opacity: 0;
+  transform: translateY(-6px);
+}
+
+@media (max-width: 1200px) {
+  .save-toast {
+    right: 12px;
+    top: 62px;
+    font-size: 12px;
+  }
+}
+
+// ============================================================================
 // AI Trigger Bar
 // ============================================================================
 .ai-trigger-bar {
@@ -1489,9 +1733,8 @@ function handleDeleteDoor(doorId: string) {
   align-items: center;
   justify-content: space-between;
   padding: 12px 16px;
-  background: rgba(10, 10, 11, 0.9);
-  backdrop-filter: blur(12px);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgb(var(--bg-primary-rgb));
+  border-bottom: none;
 }
 
 .btn-back {
@@ -1499,18 +1742,18 @@ function handleDeleteDoor(doorId: string) {
   align-items: center;
   gap: 6px;
   padding: 8px 14px;
-  background: transparent;
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(var(--bg-secondary-rgb), 0.7);
+  border: 1px solid var(--border-subtle);
   border-radius: 6px;
-  color: #a1a1aa;
+  color: var(--text-secondary);
   font-size: 13px;
   cursor: pointer;
   transition: all 0.15s;
 
   &:hover {
-    background: rgba(255, 255, 255, 0.05);
-    color: #e8eaed;
-    border-color: rgba(255, 255, 255, 0.2);
+    background: rgba(var(--bg-secondary-rgb), 0.95);
+    color: var(--text-primary);
+    border-color: var(--border-muted);
   }
 
   svg {
@@ -1529,13 +1772,13 @@ function handleDeleteDoor(doorId: string) {
   background: rgba(59, 130, 246, 0.15);
   border: 1px solid rgba(59, 130, 246, 0.3);
   border-radius: 4px;
-  color: #60a5fa;
+  color: var(--accent-primary);
   font-size: 12px;
   font-weight: 500;
 }
 
 .preview-version {
-  color: #a1a1aa;
+  color: var(--text-secondary);
   font-size: 13px;
   font-family: 'SF Mono', 'Fira Code', 'Consolas', monospace;
 }
@@ -1546,17 +1789,18 @@ function handleDeleteDoor(doorId: string) {
 
   .btn-secondary {
     padding: 8px 14px;
-    background: transparent;
-    border: 1px solid rgba(255, 255, 255, 0.1);
+    background: rgba(var(--bg-secondary-rgb), 0.7);
+    border: 1px solid var(--border-subtle);
     border-radius: 6px;
-    color: #a1a1aa;
+    color: var(--text-secondary);
     font-size: 13px;
     cursor: pointer;
     transition: all 0.15s;
 
     &:hover {
-      background: rgba(255, 255, 255, 0.05);
-      color: #e8eaed;
+      background: rgba(var(--bg-secondary-rgb), 0.95);
+      color: var(--text-primary);
+      border-color: var(--border-muted);
     }
   }
 }

@@ -36,14 +36,14 @@ import {
   ElTag,
 } from 'element-plus'
 import { ArrowRight, Shop, User, Document, Clock } from '@element-plus/icons-vue'
-import { StatCard, QuickActionCard } from '@/components'
-import { adminApi } from '@/api'
+import { QuickActionCard } from '@/components'
+import { adminApi, storeApi } from '@/api'
 import type { AdminStats, ApprovalRequest, NoticeItem } from '@/api/admin.api'
 import { useFormatters } from '@/composables'
 
 const router = useRouter()
 const { t } = useI18n()
-const { formatDate } = useFormatters()
+const { formatDateTime } = useFormatters()
 
 // Per-section loading states
 const statsLoading = ref(true)
@@ -57,11 +57,13 @@ const noticesError = ref(false)
 
 // Data
 const stats = ref<AdminStats | null>(null)
+const pendingStoreCount = ref(0)
 const recentApprovals = ref<ApprovalRequest[]>([])
 const notices = ref<NoticeItem[]>([])
 
 const quickActions = computed(() => [
   { title: t('dashboard.mallManage'), description: t('dashboard.mallManageDescAdmin'), path: '/admin/mall' },
+  { title: t('dashboard.storeManage'), description: t('dashboard.storeManageDesc'), path: '/admin/store-manage?status=PENDING' },
   { title: t('dashboard.areaApproval'), description: t('dashboard.areaApprovalDesc'), path: '/admin/area-approval' },
   { title: t('dashboard.versionManage'), description: t('dashboard.versionManageDesc'), path: '/admin/layout-version' },
   { title: t('dashboard.userManage'), description: t('dashboard.userManageDesc'), path: '/admin/users' },
@@ -75,8 +77,9 @@ async function loadData() {
   noticesLoading.value = true
   noticesError.value = false
 
-  const [statsResult, approvalsResult, noticesResult] = await Promise.allSettled([
+  const [statsResult, pendingStoresResult, approvalsResult, noticesResult] = await Promise.allSettled([
     adminApi.getStats(),
+    storeApi.getAllStores({ status: 'PENDING' }, 1, 1),
     adminApi.getApprovalList({ status: 'PENDING' }),
     adminApi.getNotices(),
   ])
@@ -88,6 +91,13 @@ async function loadData() {
     console.error('加载统计数据失败:', statsResult.reason)
   }
   statsLoading.value = false
+
+  if (pendingStoresResult.status === 'fulfilled') {
+    pendingStoreCount.value = pendingStoresResult.value.total
+  } else {
+    pendingStoreCount.value = 0
+    console.error('加载店铺待审核数量失败:', pendingStoresResult.reason)
+  }
 
   if (approvalsResult.status === 'fulfilled') {
     recentApprovals.value = approvalsResult.value.slice(0, 5)
@@ -110,9 +120,15 @@ async function retryStats() {
   statsLoading.value = true
   statsError.value = false
   try {
-    stats.value = await adminApi.getStats()
+    const [nextStats, pendingStores] = await Promise.all([
+      adminApi.getStats(),
+      storeApi.getAllStores({ status: 'PENDING' }, 1, 1),
+    ])
+    stats.value = nextStats
+    pendingStoreCount.value = pendingStores.total
   } catch (e) {
     statsError.value = true
+    pendingStoreCount.value = 0
     console.error('加载统计数据失败:', e)
   } finally {
     statsLoading.value = false
@@ -195,9 +211,18 @@ onMounted(() => {
         </ElCol>
         <ElCol :xs="12" :sm="12" :md="6">
           <ElCard shadow="hover" class="stat-card">
-            <ElStatistic :title="t('dashboard.statPending')" :value="stats?.pendingApprovals ?? 0">
+            <ElStatistic :title="t('dashboard.statPendingArea')" :value="stats?.pendingApprovals ?? 0">
               <template #prefix>
                 <ElIcon :size="20" color="var(--el-color-warning)"><Document /></ElIcon>
+              </template>
+            </ElStatistic>
+          </ElCard>
+        </ElCol>
+        <ElCol :xs="12" :sm="12" :md="6">
+          <ElCard shadow="hover" class="stat-card">
+            <ElStatistic :title="t('dashboard.statPendingStore')" :value="pendingStoreCount">
+              <template #prefix>
+                <ElIcon :size="20" color="var(--accent-primary)"><Shop /></ElIcon>
               </template>
             </ElStatistic>
           </ElCard>
@@ -260,7 +285,7 @@ onMounted(() => {
         <ElTableColumn prop="createdAt" :label="t('dashboard.colApplyTime')" width="150">
           <template #default="{ row }">
             <ElIcon class="mr-1"><Clock /></ElIcon>
-            {{ formatDate(row.createdAt, 'datetime') }}
+            {{ formatDateTime(row.createdAt) }}
           </template>
         </ElTableColumn>
 

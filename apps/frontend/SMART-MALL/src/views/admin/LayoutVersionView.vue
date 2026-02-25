@@ -131,7 +131,7 @@ async function loadData() {
 
 // --- Preview ---
 function handlePreview(version: LayoutVersionItem) {
-  router.push({ path: '/admin/mall-builder/preview', query: { versionId: version.versionId, versionNumber: version.versionNumber } })
+  router.push({ path: '/admin/builder', query: { versionId: version.versionId, versionNumber: version.versionNumber } })
 }
 
 // --- Confirm actions ---
@@ -202,7 +202,7 @@ async function handleDelete(version: LayoutVersionItem) {
 
 function goToBuilder() {
   showRestoreSuccess.value = false
-  router.push('/admin/mall-builder')
+  router.push('/admin/builder')
 }
 
 // --- Detail modal ---

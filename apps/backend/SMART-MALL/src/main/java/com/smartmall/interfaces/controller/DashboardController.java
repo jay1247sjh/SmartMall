@@ -5,6 +5,7 @@ import com.smartmall.common.response.ApiResponse;
 import com.smartmall.interfaces.dto.dashboard.AdminStatsDTO;
 import com.smartmall.interfaces.dto.dashboard.MerchantStatsDTO;
 import com.smartmall.interfaces.dto.dashboard.NoticeDTO;
+import com.smartmall.interfaces.dto.dashboard.UserStatsDTO;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
@@ -39,6 +40,16 @@ public class DashboardController {
     public ApiResponse<MerchantStatsDTO> getMerchantStats(Authentication authentication) {
         String merchantId = authentication.getName();
         return ApiResponse.success(dashboardService.getMerchantStats(merchantId));
+    }
+
+    /**
+     * 获取普通用户统计数据
+     */
+    @GetMapping("/user/stats")
+    @PreAuthorize("hasRole('USER')")
+    public ApiResponse<UserStatsDTO> getUserStats(Authentication authentication) {
+        String userId = authentication.getName();
+        return ApiResponse.success(dashboardService.getUserStats(userId));
     }
 
     /**

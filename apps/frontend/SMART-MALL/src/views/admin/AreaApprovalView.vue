@@ -5,10 +5,10 @@
  */
 import { ref, computed, onMounted } from 'vue'
 import { 
-  DataTable, Modal, CustomSelect, FilterBar, 
-  MessageAlert, StatusBadge, ActionButton, ConfirmModal 
+  DataTable, Modal, CustomSelect, FilterBar, MessageAlert,
+  StatusBadge, ActionButton, ConfirmModal 
 } from '@/components'
-import { useMessage, useFormatters, useStatusConfig } from '@/composables'
+import { useFormatters, useMessage } from '@/composables'
 import { areaPermissionApi } from '@/api'
 import type { AreaApplyDTO } from '@/api/area-permission.api'
 
@@ -16,9 +16,8 @@ import type { AreaApplyDTO } from '@/api/area-permission.api'
 // Composables
 // ============================================================================
 
-const { message, success, error } = useMessage()
 const { formatShortDateTime } = useFormatters()
-const { getStatusText, getStatusClass } = useStatusConfig('approval')
+const { message, showMessage, clearMessage } = useMessage()
 
 // ============================================================================
 // State
@@ -71,7 +70,7 @@ async function loadData() {
   try {
     approvals.value = await areaPermissionApi.getPendingApplications()
   } catch (e: any) {
-    error(e.message || '加载数据失败')
+    showMessage('error', e.message || '加载数据失败')
   } finally {
     isLoading.value = false
   }
@@ -84,6 +83,7 @@ function viewDetail(row: AreaApplyDTO) {
 
 async function handleApprove(approval: AreaApplyDTO) {
   isProcessing.value = true
+  clearMessage()
   try {
     await areaPermissionApi.approveApplication(approval.applyId)
     
@@ -91,9 +91,9 @@ async function handleApprove(approval: AreaApplyDTO) {
     if (index !== -1) approvals.value[index].status = 'APPROVED'
     
     showDetailModal.value = false
-    success('审批通过成功')
+    showMessage('success', '审批通过成功')
   } catch (e: any) {
-    error(e.message || '操作失败')
+    showMessage('error', e.message || '操作失败')
   } finally {
     isProcessing.value = false
   }
@@ -108,6 +108,7 @@ async function handleReject(reason: string) {
   if (!selectedApproval.value) return
   
   isProcessing.value = true
+  clearMessage()
   try {
     await areaPermissionApi.rejectApplication(selectedApproval.value.applyId, reason)
     
@@ -119,9 +120,9 @@ async function handleReject(reason: string) {
     
     showRejectModal.value = false
     showDetailModal.value = false
-    success('已拒绝该申请')
+    showMessage('success', '已拒绝该申请')
   } catch (e: any) {
-    error(e.message || '操作失败')
+    showMessage('error', e.message || '操作失败')
   } finally {
     isProcessing.value = false
   }
@@ -136,8 +137,7 @@ onMounted(loadData)
 
 <template>
   <main class="approval-page">
-    <!-- 消息提示 -->
-    <MessageAlert v-if="message" :type="message.type" :text="message.text" />
+    <MessageAlert v-if="message" :type="message.type" :text="message.text" @close="clearMessage" />
 
     <!-- 筛选栏 -->
     <FilterBar :total="filteredApprovals.length">

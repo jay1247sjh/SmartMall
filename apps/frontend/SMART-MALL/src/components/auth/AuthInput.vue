@@ -146,7 +146,7 @@ const iconComponent = computed(() => {
   /* 穿透 Element Plus 输入框样式 */
   :deep(.el-input) {
     .el-input__wrapper {
-      background: rgba(var(--black-rgb), 0.3);
+      background: var(--bg-elevated);
       border: 1px solid var(--border-muted);
       border-radius: 10px;
       box-shadow: none;
@@ -154,7 +154,7 @@ const iconComponent = computed(() => {
       transition: border-color $duration-normal, box-shadow $duration-normal, background $duration-normal;
 
       &:hover {
-        border-color: rgba(var(--white-rgb), 0.2);
+        border-color: var(--border-focus);
       }
 
       &.is-focus {

@@ -19,6 +19,7 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
+import org.springframework.web.servlet.resource.NoResourceFoundException;
 import org.springframework.web.servlet.NoHandlerFoundException;
 
 import java.util.stream.Collectors;
@@ -132,6 +133,16 @@ public class GlobalExceptionHandler {
     @ResponseStatus(HttpStatus.NOT_FOUND)
     public ApiResponse<Void> handleNoHandlerFoundException(NoHandlerFoundException e, HttpServletRequest request) {
         log.warn("[资源不存在] URI={}", request.getRequestURI());
+        return ApiResponse.error(ResultCode.NOT_FOUND, "请求的资源不存在");
+    }
+
+    /**
+     * 静态资源不存在（Spring Boot 3）
+     */
+    @ExceptionHandler(NoResourceFoundException.class)
+    @ResponseStatus(HttpStatus.NOT_FOUND)
+    public ApiResponse<Void> handleNoResourceFoundException(NoResourceFoundException e, HttpServletRequest request) {
+        log.warn("[静态资源不存在] URI={}, resourcePath={}", request.getRequestURI(), e.getResourcePath());
         return ApiResponse.error(ResultCode.NOT_FOUND, "请求的资源不存在");
     }
     

@@ -3,7 +3,7 @@ services:
   postgres:
     image: postgres:15-alpine
     container_name: smartmall-postgres
-    restart: unless-stopped
+    restart: "no"
     environment:
       POSTGRES_DB: smartmall
       POSTGRES_USER: smartmall
@@ -25,7 +25,7 @@ services:
   redis:
     image: redis:7-alpine
     container_name: smartmall-redis
-    restart: unless-stopped
+    restart: "no"
     ports:
       - "6379:6379"
     volumes:
@@ -44,7 +44,7 @@ services:
   etcd:
     image: quay.io/coreos/etcd:v3.5.5
     container_name: smartmall-etcd
-    restart: unless-stopped
+    restart: "no"
     environment:
       ETCD_AUTO_COMPACTION_MODE: revision
       ETCD_AUTO_COMPACTION_RETENTION: "1000"
@@ -65,16 +65,16 @@ services:
   minio:
     image: minio/minio:RELEASE.2023-03-20T20-16-18Z
     container_name: smartmall-minio
-    restart: unless-stopped
+    restart: "no"
     environment:
       MINIO_ACCESS_KEY: minioadmin
       MINIO_SECRET_KEY: minioadmin
     ports:
-      - "9001:9001"  # MinIO Console
-      - "9000:9000"  # MinIO API
+      - "19192:19192"  # MinIO Console
+      - "19000:9000"  # MinIO API (host 19000 -> container 9000)
     volumes:
       - minio_data:/minio_data
-    command: minio server /minio_data --console-address ":9001"
+    command: minio server /minio_data --console-address ":19192"
     networks:
       - smartmall-network
     healthcheck:
@@ -87,7 +87,7 @@ services:
   milvus:
     image: milvusdb/milvus:v2.3.3
     container_name: smartmall-milvus
-    restart: unless-stopped
+    restart: "no"
     environment:
       ETCD_ENDPOINTS: etcd:2379
       MINIO_ADDRESS: minio:9000
@@ -116,7 +116,7 @@ services:
   attu:
     image: zilliz/attu:v2.4
     container_name: smartmall-attu
-    restart: unless-stopped
+    restart: "no"
     environment:
       MILVUS_URL: smartmall-milvus:19530
     ports:

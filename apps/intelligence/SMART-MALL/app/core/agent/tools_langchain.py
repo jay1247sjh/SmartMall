@@ -126,10 +126,72 @@ async def search_by_image(image_description: str, search_type: str = "product") 
 @tool
 async def get_product_detail(product_id: str) -> dict:
     """获取商品详情，包括价格、库存、规格、评价等。当用户想了解某个商品的详细信息时使用。"""
-    return {
-        "success": True,
-        "product": {"id": product_id, "name": "商品详情", "price": 399, "stock": 15, "rating": 4.8},
-    }
+    from app.core.rag.service import get_rag_service
+    rag = get_rag_service()
+
+    try:
+        products = await rag.search_products(query=product_id, top_k=8)
+        target = next((p for p in products if p.id == product_id), None)
+        if target is None and products:
+            target = products[0]
+
+        review_docs = await rag.search_reviews(
+            query=target.name if target else product_id,
+            product_id=product_id,
+            top_k=20,
+        )
+
+        ratings = []
+        highlights = []
+        for doc in review_docs[:5]:
+            rating = doc.metadata.get("rating")
+            if rating is not None:
+                try:
+                    ratings.append(float(rating))
+                except (TypeError, ValueError):
+                    pass
+
+            content = doc.metadata.get("content") or doc.page_content
+            if content:
+                highlights.append(str(content)[:80])
+
+        avg_rating = round(sum(ratings) / len(ratings), 2) if ratings else 0.0
+
+        if target is None:
+            return {
+                "success": False,
+                "message": f"未找到商品: {product_id}",
+                "product": {
+                    "id": product_id,
+                    "rating": avg_rating,
+                    "review_count": len(review_docs),
+                    "review_highlights": highlights[:3],
+                },
+            }
+
+        return {
+            "success": True,
+            "product": {
+                "id": target.id,
+                "name": target.name,
+                "brand": target.brand,
+                "category": target.category,
+                "price": target.price,
+                "store_id": target.store_id,
+                "store_name": target.store_name,
+                "score": target.score,
+                "rating": avg_rating,
+                "review_count": len(review_docs),
+                "review_highlights": highlights[:3],
+            },
+        }
+    except Exception as e:
+        logger.warning(f"RAG get_product_detail failed: {e}")
+        return {
+            "success": True,
+            "product": {"id": product_id},
+            "message": "商品详情暂时不可用",
+        }
 
 
 @tool
@@ -171,10 +233,40 @@ async def recommend_products(
             query_parts.append(category)
         if style:
             query_parts.append(style)
+        if price_range:
+            query_parts.append(price_range)
+
         results = await rag.search_products(query=" ".join(query_parts), top_k=5)
-        if results:
-            return {"success": True, "products": [r.to_dict() for r in results]}
-        return {"success": True, "products": [], "message": "暂无推荐"}
+        if not results:
+            return {"success": True, "products": [], "message": "暂无推荐"}
+
+        products = []
+        for r in results:
+            review_docs = await rag.search_reviews(query=r.name, product_id=r.id, top_k=5)
+            ratings = []
+            evidence = []
+            for doc in review_docs[:3]:
+                rating = doc.metadata.get("rating")
+                if rating is not None:
+                    try:
+                        ratings.append(float(rating))
+                    except (TypeError, ValueError):
+                        pass
+                content = doc.metadata.get("content") or doc.page_content
+                if content:
+                    evidence.append(str(content)[:80])
+
+            item = r.to_dict()
+            item["review_count"] = len(review_docs)
+            item["review_rating"] = round(sum(ratings) / len(ratings), 2) if ratings else 0.0
+            item["review_evidence"] = evidence[:2]
+            products.append(item)
+
+        return {
+            "success": True,
+            "products": products,
+            "message": "推荐结果已结合真实用户评价",
+        }
     except Exception:
         return {"success": True, "products": [], "message": "推荐服务暂时不可用"}
 

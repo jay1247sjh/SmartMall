@@ -1,0 +1,160 @@
+@use '../variables' as *;
+@use '../mixins' as *;
+
+.store-themed-select {
+  width: 100%;
+
+  .el-select__wrapper {
+    min-height: 42px;
+    border-radius: $radius-md;
+    background: var(--bg-elevated);
+    border: 1px solid rgba(var(--accent-primary-rgb), 0.24);
+    box-shadow: none !important;
+    transition:
+      border-color $duration-normal $ease-default,
+      box-shadow $duration-normal $ease-default,
+      background-color $duration-normal $ease-default;
+
+    &:hover {
+      border-color: rgba(var(--accent-primary-rgb), 0.5);
+    }
+
+    &.is-focused {
+      border-color: var(--accent-primary);
+      box-shadow: 0 0 0 3px rgba(var(--accent-primary-rgb), 0.18) !important;
+    }
+  }
+
+  .el-select__placeholder {
+    color: var(--text-muted);
+  }
+
+  .el-select__selected-item {
+    color: var(--text-primary);
+  }
+
+  .el-select__caret {
+    color: var(--accent-primary);
+  }
+}
+
+.store-themed-time.el-date-editor.el-input__wrapper,
+.store-themed-time.el-date-editor.el-range-editor.el-input__wrapper {
+  min-height: 42px;
+  border-radius: $radius-md;
+  background: var(--bg-elevated);
+  border: 1px solid rgba(var(--accent-primary-rgb), 0.24);
+  box-shadow: none !important;
+  transition:
+    border-color $duration-normal $ease-default,
+    box-shadow $duration-normal $ease-default,
+    background-color $duration-normal $ease-default;
+
+  &:hover {
+    border-color: rgba(var(--accent-primary-rgb), 0.5);
+  }
+
+  &.is-focus {
+    border-color: var(--accent-primary);
+    box-shadow: 0 0 0 3px rgba(var(--accent-primary-rgb), 0.18) !important;
+  }
+
+  .el-range-input,
+  .el-range-separator,
+  .el-input__inner {
+    color: var(--text-primary);
+    background: transparent;
+  }
+
+  .el-range-separator {
+    color: var(--text-secondary);
+  }
+}
+
+.store-themed-select-dropdown,
+.store-themed-time-dropdown {
+  padding: $space-2;
+  border-radius: $radius-md + 2;
+  border: 1px solid rgba(var(--accent-primary-rgb), 0.24);
+  background: var(--bg-elevated);
+  box-shadow:
+    0 12px 26px rgba(var(--black-rgb), 0.16),
+    0 2px 8px rgba(var(--accent-primary-rgb), 0.1);
+}
+
+.store-themed-select-dropdown .el-popper__arrow,
+.store-themed-select-dropdown .el-popper__arrow::before,
+.store-themed-time-dropdown .el-popper__arrow,
+.store-themed-time-dropdown .el-popper__arrow::before {
+  display: none;
+}
+
+.store-themed-select-dropdown .el-select-dropdown__wrap {
+  padding: 0;
+}
+
+.store-themed-select-dropdown .el-select-dropdown__item {
+  height: 38px;
+  line-height: 38px;
+  padding: 0 $space-3;
+  margin: 0;
+  border-radius: $radius-sm + 2;
+  color: var(--text-secondary);
+  font-size: $font-size-base;
+  transition: background-color $duration-normal $ease-default, color $duration-normal $ease-default;
+
+  &.is-hovering,
+  &:hover {
+    background: rgba(var(--accent-primary-rgb), 0.1);
+    color: var(--text-primary);
+  }
+
+  &.is-selected {
+    background: rgba(var(--accent-primary-rgb), 0.16);
+    color: var(--accent-primary);
+    font-weight: $font-weight-medium;
+  }
+}
+
+.store-themed-select-dropdown .el-select-dropdown__item + .el-select-dropdown__item {
+  margin-top: 2px;
+}
+
+.store-themed-time-dropdown .el-time-panel,
+.store-themed-time-dropdown .el-time-range-picker,
+.store-themed-time-dropdown .el-picker-panel {
+  background: var(--bg-elevated);
+  border-color: transparent;
+  color: var(--text-primary);
+}
+
+.store-themed-time-dropdown .el-time-spinner__item {
+  height: 32px;
+  line-height: 32px;
+  border-radius: $radius-sm + 1;
+  margin: 0 2px;
+  color: var(--text-secondary);
+  transition: background-color $duration-normal $ease-default, color $duration-normal $ease-default;
+
+  &:hover:not(.disabled):not(.active) {
+    background: rgba(var(--accent-primary-rgb), 0.12);
+    color: var(--text-primary);
+  }
+
+  &.active:not(.disabled) {
+    color: var(--accent-primary);
+    font-weight: $font-weight-medium;
+  }
+
+  &.disabled {
+    color: var(--text-disabled);
+  }
+}
+
+.store-themed-time-dropdown .el-time-panel__footer {
+  border-top: 1px solid var(--border-subtle);
+}
+
+.store-themed-time-dropdown .el-time-panel__btn.confirm {
+  color: var(--accent-primary);
+}

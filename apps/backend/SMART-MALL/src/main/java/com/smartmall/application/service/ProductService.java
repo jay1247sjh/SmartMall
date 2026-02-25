@@ -18,6 +18,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
 import java.util.List;
 
 /**
@@ -56,6 +57,8 @@ public class ProductService {
         product.setCategory(request.getCategory());
         product.setImage(request.getImage());
         product.setImages(request.getImages());
+        product.setRatingAvg(BigDecimal.ZERO);
+        product.setRatingCount(0);
         product.setSortOrder(request.getSortOrder() != null ? request.getSortOrder() : 0);
         
         // 根据库存设置初始状态
@@ -282,6 +285,8 @@ public class ProductService {
         dto.setCategory(product.getCategory());
         dto.setImage(product.getImage());
         dto.setImages(product.getImages());
+        dto.setRatingAvg(product.getRatingAvg() != null ? product.getRatingAvg() : BigDecimal.ZERO);
+        dto.setRatingCount(product.getRatingCount() != null ? product.getRatingCount() : 0);
         dto.setStatus(product.getStatus());
         dto.setSortOrder(product.getSortOrder());
         dto.setCreatedAt(product.getCreateTime());

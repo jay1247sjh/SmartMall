@@ -33,7 +33,7 @@
  */
 import { ref } from 'vue'
 import { useUserStore } from '@/stores'
-import { useRouter, useRoute } from 'vue-router'
+import { useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { cleanupOnLogout } from '@/router'
 import UserCard from '@/components/layouts/UserCard.vue'
@@ -50,11 +50,10 @@ import {
   ElButton,
   ElTooltip,
 } from 'element-plus'
-import { Box, HomeFilled, Shop, Document, Tools, ChatDotRound, Back, RefreshRight } from '@element-plus/icons-vue'
+import { Box, HomeFilled, Shop, Document, Tools, View, ChatDotRound, Back, RefreshRight } from '@element-plus/icons-vue'
 
 const userStore = useUserStore()
 const router = useRouter()
-const route = useRoute()
 const { t } = useI18n()
 
 const aiVisible = ref(false)
@@ -65,6 +64,7 @@ function toggleAi() {
 
 const menuItems = [
   { path: '/merchant/dashboard', labelKey: 'nav.workspace', icon: HomeFilled },
+  { path: '/merchant/mall-preview', labelKey: 'nav.enterMall', icon: View },
   { path: '/merchant/store-config', labelKey: 'nav.storeConfig', icon: Shop },
   { path: '/merchant/area-apply', labelKey: 'nav.areaApply', icon: Document },
   { path: '/merchant/builder', labelKey: 'nav.builderTool', icon: Tools },
@@ -159,8 +159,8 @@ function handleMenuSelect(path: string) {
     inset: 0;
     pointer-events: none;
     z-index: 0;
-    background: radial-gradient(ellipse 50% 30% at 70% 10%, rgba(236, 72, 153, 0.04) 0%, transparent 50%),
-                radial-gradient(ellipse 40% 30% at 30% 90%, rgba(249, 115, 22, 0.03) 0%, transparent 50%);
+    background: radial-gradient(ellipse 50% 30% at 70% 10%, rgba(var(--accent-primary-rgb), 0.06) 0%, transparent 50%),
+                radial-gradient(ellipse 40% 30% at 30% 90%, rgba(var(--accent-primary-rgb), 0.03) 0%, transparent 50%);
   }
 
   .layout-sidebar {
@@ -181,16 +181,16 @@ function handleMenuSelect(path: string) {
         width: 36px;
         height: 36px;
         @include flex-center;
-        background: linear-gradient(135deg, rgba(244, 114, 182, 0.15) 0%, rgba(251, 146, 60, 0.15) 100%);
+        background: linear-gradient(135deg, rgba(var(--accent-primary-rgb), 0.18) 0%, rgba(var(--accent-primary-rgb), 0.08) 100%);
         border: 1px solid var(--border-muted);
         border-radius: 10px;
-        color: #f472b6;
+        color: var(--accent-primary);
       }
 
       .header-text {
         font-size: $font-size-lg;
         font-weight: $font-weight-semibold;
-        background: linear-gradient(135deg, #f472b6 0%, #fb923c 100%);
+        background: linear-gradient(135deg, var(--accent-primary) 0%, var(--accent-hover) 100%);
         background-clip: text;
         -webkit-background-clip: text;
         -webkit-text-fill-color: transparent;
@@ -211,7 +211,7 @@ function handleMenuSelect(path: string) {
         color: var(--text-secondary);
 
         &:hover { background: rgba(var(--text-primary-rgb), 0.04); color: var(--text-primary); }
-        &.is-active { background: rgba(244, 114, 182, 0.1); color: #f472b6; }
+        &.is-active { background: rgba(var(--accent-primary-rgb), 0.1); color: var(--accent-primary); }
       }
     }
 
@@ -279,9 +279,9 @@ function handleMenuSelect(path: string) {
           }
 
           &.active {
-            background: rgba(244, 114, 182, 0.1);
-            border-color: rgba(244, 114, 182, 0.3);
-            color: #f472b6;
+            background: rgba(var(--accent-primary-rgb), 0.1);
+            border-color: rgba(var(--accent-primary-rgb), 0.3);
+            color: var(--accent-primary);
           }
         }
       }

@@ -32,6 +32,7 @@ export interface FloorPanelProps {
   collapsed: boolean
   doors: DoorDefinition[]
   hoveredDoorId: string | null
+  'readonly'?: boolean
 }
 
 export interface FloorPanelEmits {
@@ -52,6 +53,7 @@ const props = withDefaults(defineProps<FloorPanelProps>(), {
   collapsed: false,
   doors: () => [],
   hoveredDoorId: null,
+  readonly: false,
 })
 
 const emit = defineEmits<FloorPanelEmits>()
@@ -109,7 +111,12 @@ function canDeleteFloor(): boolean {
       <div class="panel-header">
         <h3>{{ t('builder.floorPanel.title') }}</h3>
         <div class="panel-actions">
-          <button class="btn-icon" :title="t('builder.floorPanel.addFloor')" @click="handleAddFloor">
+          <button
+            v-if="!readonly"
+            class="btn-icon"
+            :title="t('builder.floorPanel.addFloor')"
+            @click="handleAddFloor"
+          >
             <svg viewBox="0 0 20 20" fill="none">
               <path d="M10 4v12M4 10h12" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
             </svg>
@@ -136,6 +143,7 @@ function canDeleteFloor(): boolean {
           </div>
           <div class="floor-actions">
             <button
+              v-if="!readonly"
               class="btn-icon small"
               :disabled="!canDeleteFloor()"
               :title="t('builder.floorPanel.deleteFloor')"
@@ -168,6 +176,7 @@ function canDeleteFloor(): boolean {
             <span class="door-meta">{{ t('builder.floorPanel.wallIndex', { index: door.wallIndex }) }}</span>
           </div>
           <button
+            v-if="!readonly"
             class="btn-icon small"
             :title="t('builder.floorPanel.deleteDoor')"
             @click.stop="emit('deleteDoor', door.id)"

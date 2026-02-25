@@ -21,6 +21,7 @@
  */
 import { ref, reactive, watch, nextTick, computed } from 'vue'
 import axios from 'axios'
+import FormDialogShell from '@/components/shared/FormDialogShell.vue'
 
 // ============================================================================
 // 类型定义
@@ -195,12 +196,6 @@ function closeDialog() {
   emit('update:visible', false)
 }
 
-function handleOverlayClick(event: MouseEvent) {
-  if (event.target === event.currentTarget) {
-    closeDialog()
-  }
-}
-
 async function handleSubmit() {
   if (!validateForm()) return
 
@@ -272,116 +267,94 @@ watch(() => form.level, () => {
 </script>
 
 <template>
-  <Teleport to="body">
-    <Transition name="dialog-fade">
-      <div
-        v-if="visible"
-        class="dialog-overlay"
-        @click="handleOverlayClick"
-      >
-        <div class="dialog-box">
-          <!-- 头部 -->
-          <div class="dialog-header">
-            <h3>添加楼层</h3>
-            <button class="btn-close" @click="closeDialog">
-              <svg viewBox="0 0 20 20" fill="none">
-                <path
-                  d="M5 5l10 10M15 5L5 15"
-                  stroke="currentColor"
-                  stroke-width="1.5"
-                  stroke-linecap="round"
-                />
-              </svg>
-            </button>
-          </div>
+  <FormDialogShell
+    :visible="visible"
+    title="添加楼层"
+    width="520px"
+    teleport-to="body"
+    transition-name="dialog-fade"
+    @close="closeDialog"
+  >
+    <!-- 表单区域 -->
+    <div class="form-section">
+      <!-- 楼层名称 -->
+      <div class="form-item">
+        <label>楼层名称</label>
+        <input
+          v-model="form.name"
+          type="text"
+          class="form-input"
+          :class="{ error: errors.name }"
+          placeholder="例如：一楼、B1"
+        />
+        <span v-if="errors.name" class="form-error">{{ errors.name }}</span>
+      </div>
 
-          <!-- 内容 -->
-          <div class="dialog-body">
-            <!-- 表单区域 -->
-            <div class="form-section">
-              <!-- 楼层名称 -->
-              <div class="form-item">
-                <label>楼层名称</label>
-                <input
-                  v-model="form.name"
-                  type="text"
-                  class="form-input"
-                  :class="{ error: errors.name }"
-                  placeholder="例如：一楼、B1"
-                />
-                <span v-if="errors.name" class="form-error">{{ errors.name }}</span>
-              </div>
-
-              <!-- 楼层编号 & 高度 -->
-              <div class="form-row">
-                <div class="form-item">
-                  <label>楼层编号</label>
-                  <input
-                    v-model.number="form.level"
-                    type="number"
-                    class="form-input"
-                    :class="{ error: errors.level }"
-                  />
-                  <span v-if="errors.level" class="form-error">{{ errors.level }}</span>
-                </div>
-                <div class="form-item">
-                  <label>楼层高度 (m)</label>
-                  <input
-                    v-model.number="form.height"
-                    type="number"
-                    class="form-input"
-                    step="0.5"
-                    min="1"
-                    max="20"
-                  />
-                </div>
-              </div>
-
-              <!-- 布局描述 -->
-              <div class="form-item">
-                <label>布局描述</label>
-                <textarea
-                  v-model="form.layoutDescription"
-                  class="form-textarea"
-                  rows="3"
-                  placeholder="描述楼层的功能区域分布..."
-                />
-              </div>
-
-              <!-- API 错误提示 -->
-              <div v-if="apiError" class="api-error">
-                <svg viewBox="0 0 20 20" fill="none">
-                  <circle cx="10" cy="10" r="8" stroke="currentColor" stroke-width="1.5"/>
-                  <path d="M10 6v5M10 13.5v.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
-                </svg>
-                <span>{{ apiError }}</span>
-              </div>
-            </div>
-
-            <!-- 2D 预览区域 -->
-            <div class="preview-section">
-              <label class="preview-label">布局预览</label>
-              <div class="preview-canvas-wrapper">
-                <canvas ref="canvasRef" class="preview-canvas" />
-              </div>
-            </div>
-          </div>
-
-          <!-- 底部按钮 -->
-          <div class="dialog-footer">
-            <button class="btn-cancel" :disabled="submitting" @click="closeDialog">取消</button>
-            <button
-              class="btn-add"
-              :disabled="hasErrors || submitting"
-              @click="handleSubmit"
-            >
-              {{ submitting ? '添加中...' : '添加' }}
-            </button>
-          </div>
+      <!-- 楼层编号 & 高度 -->
+      <div class="form-row">
+        <div class="form-item">
+          <label>楼层编号</label>
+          <input
+            v-model.number="form.level"
+            type="number"
+            class="form-input"
+            :class="{ error: errors.level }"
+          />
+          <span v-if="errors.level" class="form-error">{{ errors.level }}</span>
+        </div>
+        <div class="form-item">
+          <label>楼层高度 (m)</label>
+          <input
+            v-model.number="form.height"
+            type="number"
+            class="form-input"
+            step="0.5"
+            min="1"
+            max="20"
+          />
         </div>
       </div>
-    </Transition>
-  </Teleport>
+
+      <!-- 布局描述 -->
+      <div class="form-item">
+        <label>布局描述</label>
+        <textarea
+          v-model="form.layoutDescription"
+          class="form-textarea"
+          rows="3"
+          placeholder="描述楼层的功能区域分布..."
+        />
+      </div>
+
+      <!-- API 错误提示 -->
+      <div v-if="apiError" class="api-error">
+        <svg viewBox="0 0 20 20" fill="none">
+          <circle cx="10" cy="10" r="8" stroke="currentColor" stroke-width="1.5"/>
+          <path d="M10 6v5M10 13.5v.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+        </svg>
+        <span>{{ apiError }}</span>
+      </div>
+    </div>
+
+    <!-- 2D 预览区域 -->
+    <div class="preview-section">
+      <label class="preview-label">布局预览</label>
+      <div class="preview-canvas-wrapper">
+        <canvas ref="canvasRef" class="preview-canvas" />
+      </div>
+    </div>
+
+    <template #footer>
+      <button class="btn-cancel" :disabled="submitting" @click="closeDialog">取消</button>
+      <button
+        class="btn-add"
+        :disabled="hasErrors || submitting"
+        @click="handleSubmit"
+      >
+        {{ submitting ? '添加中...' : '添加' }}
+      </button>
+    </template>
+  </FormDialogShell>
 </template>
 
 <style scoped lang="scss">
@@ -391,72 +364,22 @@ watch(() => form.level, () => {
 // ============================================================================
 // 过渡动画
 // ============================================================================
-.dialog-fade-enter-active,
-.dialog-fade-leave-active {
+:deep(.dialog-fade-enter-active),
+:deep(.dialog-fade-leave-active) {
   transition: opacity $duration-slow $ease-in-out;
 
-  .dialog-box {
+  :deep(.dialog-box) {
     transition: transform $duration-slow $ease-in-out;
   }
 }
 
-.dialog-fade-enter-from,
-.dialog-fade-leave-to {
+:deep(.dialog-fade-enter-from),
+:deep(.dialog-fade-leave-to) {
   opacity: 0;
 
-  .dialog-box {
+  :deep(.dialog-box) {
     transform: translateY(-12px);
   }
-}
-
-// ============================================================================
-// 遮罩层
-// ============================================================================
-.dialog-overlay {
-  @include dialog-overlay;
-}
-
-// ============================================================================
-// 弹窗容器
-// ============================================================================
-.dialog-box {
-  @include dialog-box(520px);
-}
-
-// ============================================================================
-// 头部
-// ============================================================================
-.dialog-header {
-  @include dialog-header;
-}
-
-.btn-close {
-  @include flex-center;
-  width: 28px;
-  height: 28px;
-  background: transparent;
-  border: none;
-  border-radius: $radius-md;
-  color: var(--text-secondary);
-  cursor: pointer;
-  transition: all $duration-normal;
-
-  svg {
-    width: 16px;
-    height: 16px;
-  }
-
-  &:hover {
-    background: rgba(255, 255, 255, 0.08);
-    color: var(--text-primary);
-  }
-}
-
-// ============================================================================
-// 内容区域
-// ============================================================================
-.dialog-body {
-  @include dialog-body;
 }
 
 // ============================================================================
@@ -538,13 +461,6 @@ watch(() => form.level, () => {
   display: block;
   width: 100%;
   height: 120px;
-}
-
-// ============================================================================
-// 底部按钮
-// ============================================================================
-.dialog-footer {
-  @include dialog-footer;
 }
 
 .btn-cancel {

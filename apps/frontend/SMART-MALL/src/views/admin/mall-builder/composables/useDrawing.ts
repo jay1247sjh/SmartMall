@@ -46,11 +46,6 @@ export function useDrawing(
   function setTool(tool: Tool) {
     if (isDrawing.value) cancelDraw()
     currentTool.value = tool
-
-    const eng = engine()
-    if (eng) {
-      eng.setOrbitControlsEnabled(tool === 'pan')
-    }
   }
 
   /**

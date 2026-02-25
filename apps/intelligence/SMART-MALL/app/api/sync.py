@@ -16,6 +16,8 @@ from pydantic import BaseModel
 
 from app.core.config import settings
 from app.core.redis_pool import RedisPoolFactory
+from app.core.sync.event_bus import EventBus
+from app.core.sync.events import SyncEvent
 
 logger = logging.getLogger(__name__)
 
@@ -47,6 +49,12 @@ class DeadLetterResponse(BaseModel):
     """死信队列响应"""
     total: int
     items: List[DeadLetterItem]
+
+
+class PublishEventResponse(BaseModel):
+    """发布同步事件响应"""
+    accepted: bool
+    message_id: str
 
 
 # ---------- Endpoints ----------
@@ -82,6 +90,22 @@ async def get_sync_status():
             "reason": str(e),
         }, ensure_ascii=False))
         raise HTTPException(status_code=503, detail="无法获取同步状态")
+
+
+@router.post("/events", response_model=PublishEventResponse, status_code=202)
+async def publish_sync_event(event: SyncEvent):
+    """接收后端增量同步事件并写入 Redis Stream。"""
+    try:
+        bus = EventBus()
+        message_id = await bus.publish(event)
+        return PublishEventResponse(accepted=True, message_id=message_id)
+    except Exception as e:
+        logger.error(json.dumps({
+            "event": "sync_event_publish_failed",
+            "event_id": event.event_id,
+            "reason": str(e),
+        }, ensure_ascii=False))
+        raise HTTPException(status_code=500, detail="同步事件发布失败")
 
 
 @router.get("/dead-letter", response_model=DeadLetterResponse)

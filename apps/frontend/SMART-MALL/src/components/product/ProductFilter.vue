@@ -14,6 +14,7 @@
 import { computed } from 'vue'
 import type { StoreDTO } from '@/api/store.api'
 import type { ProductStatus } from '@/api/product.api'
+import { CustomSelect, FilterBar } from '@/components'
 
 // ============================================================================
 // Types
@@ -43,6 +44,8 @@ interface ProductFilterProps {
   statusOptions?: SelectOption<ProductStatus | ''>[]
   /** 是否可以创建商品 */
   canCreate?: boolean
+  /** 商品总数 */
+  total?: number
 }
 
 interface ProductFilterEmits {
@@ -86,11 +89,31 @@ const selectedStatus = computed({
   },
 })
 
+const storeOptions = computed<SelectOption[]>(() => {
+  return [
+    { label: '选择店铺', value: '' },
+    ...props.stores.map(store => ({
+      label: getStoreLabel(store),
+      value: store.storeId,
+    })),
+  ]
+})
+
+const statusSelectOptions = computed<SelectOption[]>(() =>
+  props.statusOptions.map(option => ({
+    label: option.label,
+    value: option.value,
+  })),
+)
+
 // ============================================================================
 // Methods
 // ============================================================================
 
 function handleCreate() {
+  if (!props.canCreate) {
+    return
+  }
   emit('create')
 }
 
@@ -100,42 +123,29 @@ function getStoreLabel(store: StoreDTO): string {
 </script>
 
 <template>
-  <div class="toolbar">
-    <div class="toolbar-left">
-      <!-- 店铺选择 -->
-      <select v-model="selectedStoreId" class="select store-select">
-        <option value="">选择店铺</option>
-        <option 
-          v-for="store in stores" 
-          :key="store.storeId" 
-          :value="store.storeId"
-        >
-          {{ getStoreLabel(store) }}
-        </option>
-      </select>
-      
-      <!-- 状态筛选 -->
-      <select v-model="selectedStatus" class="select">
-        <option 
-          v-for="option in statusOptions" 
-          :key="option.value" 
-          :value="option.value"
-          :disabled="option.disabled"
-        >
-          {{ option.label }}
-        </option>
-      </select>
-    </div>
-    
-    <!-- 添加商品按钮 -->
-    <button 
-      v-if="canCreate"
-      class="btn btn-primary" 
-      @click="handleCreate"
-    >
-      + 添加商品
-    </button>
-  </div>
+  <FilterBar class="toolbar" :total="total" total-label="件商品">
+    <CustomSelect
+      v-model="selectedStoreId"
+      :options="storeOptions"
+      placeholder="选择店铺"
+    />
+    <CustomSelect
+      v-model="selectedStatus"
+      :options="statusSelectOptions"
+      placeholder="全部状态"
+    />
+
+    <template #actions>
+      <button
+        class="btn btn-primary"
+        :disabled="!canCreate"
+        :title="canCreate ? '添加商品' : '仅营业中的店铺可新增商品'"
+        @click="handleCreate"
+      >
+        + 添加商品
+      </button>
+    </template>
+  </FilterBar>
 </template>
 
 <style scoped lang="scss">
@@ -144,30 +154,43 @@ function getStoreLabel(store: StoreDTO): string {
 
 // 工具栏
 .toolbar {
-  @include flex-between;
-  gap: $space-4;
-
-  .toolbar-left {
-    @include flex-center-y;
-    gap: $space-3;
+  :deep(.filter-group) {
+    width: 100%;
+    gap: $space-3 + 1;
   }
 
-  .store-select {
-    min-width: 200px;
+  :deep(.filter-right) {
+    gap: $space-5;
   }
-}
 
-// 表单控件
-.select {
-  @include form-control;
+  :deep(.custom-select) {
+    min-width: 170px;
+  }
 }
 
 // 按钮
 .btn {
   @include btn-base;
+
+  min-width: 112px;
+  white-space: nowrap;
+  box-shadow: 0 6px 14px rgba(var(--accent-primary-rgb), 0.22);
+
+  &:disabled {
+    cursor: not-allowed;
+    opacity: 0.55;
+    box-shadow: none;
+  }
 }
 
 .btn-primary {
-  @include btn-primary;
+  background: $gradient-merchant;
+  color: white;
+  border: none;
+
+  &:hover:not(:disabled) {
+    transform: translateY(-1px);
+    box-shadow: 0 10px 18px rgba(var(--accent-primary-rgb), 0.3);
+  }
 }
 </style>

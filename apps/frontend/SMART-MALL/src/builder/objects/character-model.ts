@@ -634,21 +634,25 @@ export class CharacterController {
     // 角色面向移动方向
     // 基于输入意图（direction）计算朝向，避免 velocity 阻尼抖动导致突然转身
     if (isMoving) {
-      const intentDir = forward.clone().multiplyScalar(this.direction.z)
-        .add(right.clone().multiplyScalar(this.direction.x))
-      if (intentDir.length() > 0.01) {
-        const targetAngle = Math.atan2(intentDir.x, intentDir.z)
-        const currentAngle = this.character.rotation.y
-        const angleDiff = targetAngle - currentAngle
-        // 规范化到 [-π, π]
-        const normalizedDiff = Math.atan2(Math.sin(angleDiff), Math.cos(angleDiff))
-        // 平滑转向（每帧 10%）
-        this.character.rotation.y += normalizedDiff * 0.1
-        // 归一化 rotation.y 到 [-π, π]，防止累积越界导致角度跳变抖动
-        this.character.rotation.y = Math.atan2(
-          Math.sin(this.character.rotation.y),
-          Math.cos(this.character.rotation.y)
-        )
+      // 仅按 S 倒退时保持角色朝向不变，避免触发相机 yaw 约束导致视角旋转
+      const shouldRotate = this.moveForward || this.moveLeft || this.moveRight
+      if (shouldRotate) {
+        const intentDir = forward.clone().multiplyScalar(this.direction.z)
+          .add(right.clone().multiplyScalar(this.direction.x))
+        if (intentDir.length() > 0.01) {
+          const targetAngle = Math.atan2(intentDir.x, intentDir.z)
+          const currentAngle = this.character.rotation.y
+          const angleDiff = targetAngle - currentAngle
+          // 规范化到 [-π, π]
+          const normalizedDiff = Math.atan2(Math.sin(angleDiff), Math.cos(angleDiff))
+          // 平滑转向（每帧 10%）
+          this.character.rotation.y += normalizedDiff * 0.1
+          // 归一化 rotation.y 到 [-π, π]，防止累积越界导致角度跳变抖动
+          this.character.rotation.y = Math.atan2(
+            Math.sin(this.character.rotation.y),
+            Math.cos(this.character.rotation.y)
+          )
+        }
       }
     }
     

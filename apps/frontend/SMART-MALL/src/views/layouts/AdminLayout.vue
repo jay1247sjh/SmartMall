@@ -34,7 +34,7 @@
  */
 import { ref } from 'vue'
 import { useUserStore } from '@/stores'
-import { useRouter, useRoute } from 'vue-router'
+import { useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { cleanupOnLogout } from '@/router'
 import UserCard from '@/components/layouts/UserCard.vue'
@@ -55,7 +55,6 @@ import { Box, HomeFilled, Shop, Document, Clock, Tools, Back, RefreshRight, User
 
 const userStore = useUserStore()
 const router = useRouter()
-const route = useRoute()
 const { t } = useI18n()
 
 const aiVisible = ref(false)
@@ -67,6 +66,7 @@ function toggleAi() {
 const menuItems = [
   { path: '/admin/dashboard', labelKey: 'nav.dashboard', icon: HomeFilled },
   { path: '/admin/mall', labelKey: 'nav.mallManage', icon: Shop },
+  { path: '/admin/store-manage', labelKey: 'nav.storeManage', icon: Shop },
   { path: '/admin/area-approval', labelKey: 'nav.areaApproval', icon: Document },
   { path: '/admin/layout-version', labelKey: 'nav.versionManage', icon: Clock },
   { path: '/admin/users', labelKey: 'nav.userManage', icon: User },

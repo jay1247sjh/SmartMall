@@ -191,6 +191,10 @@ export { default as storeApi } from './store.api'
 export * from './product.api'
 export { default as productApi } from './product.api'
 
+/** 商品评价 API - 评论、回复、评分 */
+export * from './review.api'
+export { default as reviewApi } from './review.api'
+
 // ============================================================================
 // 智能服务 API
 // ============================================================================

@@ -42,6 +42,8 @@ public class StoreService {
      */
     @Transactional
     public StoreDTO createStore(String merchantId, CreateStoreRequest request) {
+        ValidationUtils.validateBusinessHours(request.getBusinessHours());
+
         // 检查商家是否有该区域的权限
         int permissionCount = areaPermissionMapper.countActiveByAreaAndMerchant(
             request.getAreaId(), merchantId);
@@ -109,6 +111,7 @@ public class StoreService {
             store.setCategory(request.getCategory());
         }
         if (request.getBusinessHours() != null) {
+            ValidationUtils.validateBusinessHours(request.getBusinessHours());
             store.setBusinessHours(request.getBusinessHours());
         }
         if (request.getLogo() != null) {

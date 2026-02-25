@@ -7,7 +7,7 @@
  * 与 Java 后端的 AI 接口通信，后端再转发到 Intelligence Service（Python AI 服务）。
  * 
  * 【架构说明】
- * 前端 (Vue) → Java 后端 (8081) → Python Intelligence Service (9001)
+ * 前端 (Vue) → Java 后端 (8081) → Python Intelligence Service (19191)
  * 
  * 【核心功能】
  * 1. 智能对话 - 支持纯文本和图片+文字输入
@@ -216,7 +216,7 @@ export const intelligenceApi = {
    * AI 生成商城布局
    *
    * 直接调用 Intelligence Service 的 /mall/generate 端点。
-   * 通过 Vite 代理 /intelligence-api → Python 服务 (8000)。
+   * 通过 Vite 代理 /intelligence-api → Python 服务 (19191)。
    * 注意：不能使用 http.post（baseURL 为 /api），需要直接用 axios。
    *
    * @param description - 自然语言描述

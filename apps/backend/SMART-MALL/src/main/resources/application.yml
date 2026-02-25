@@ -44,6 +44,11 @@ spring:
       write-dates-as-timestamps: false
     default-property-inclusion: non_null
 
+  servlet:
+    multipart:
+      max-file-size: 5MB
+      max-request-size: 50MB
+
 # MyBatis-Plus 配置
 mybatis-plus:
   mapper-locations: classpath*:/mapper/**/*.xml
@@ -68,8 +73,16 @@ jwt:
 # Intelligence Service 配置（Python AI 服务）
 intelligence:
   service:
-    url: ${INTELLIGENCE_SERVICE_URL:http://localhost:9001}
+    url: ${INTELLIGENCE_SERVICE_URL:http://localhost:19191}
     timeout: 60000
+
+# 本地商品图片上传配置
+smartmall:
+  upload:
+    base-path: ${SMART_MALL_UPLOAD_BASE_PATH:uploads}
+    base-url: ${SMART_MALL_UPLOAD_BASE_URL:/api/uploads}
+    max-images-per-request: ${SMART_MALL_UPLOAD_MAX_IMAGES:10}
+    max-file-size-bytes: ${SMART_MALL_UPLOAD_MAX_FILE_SIZE:5242880}
 
 # SpringDoc OpenAPI 配置
 springdoc:

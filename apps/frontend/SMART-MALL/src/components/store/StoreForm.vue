@@ -11,10 +11,19 @@
  * 
  * Requirements: 2.2
  */
-import { ref, watch, computed } from 'vue'
-import type { StoreDTO, CreateStoreRequest, UpdateStoreRequest } from '@/api/store.api'
+import { computed, ref, watch } from 'vue'
+import type { StoreDTO } from '@/api/store.api'
 import type { AreaPermissionDTO } from '@/api/area-permission.api'
 import { useI18n } from 'vue-i18n'
+import FormDialogShell from '@/components/shared/FormDialogShell.vue'
+import {
+  FULL_DAY_BUSINESS_HOURS,
+  buildBusinessHoursFromPicker,
+  isAllDayBusinessHours,
+  isValidBusinessHours,
+  toPickerRange,
+  type BusinessHoursRange,
+} from '@/utils/business-hours'
 
 const { t } = useI18n()
 
@@ -80,6 +89,11 @@ const formData = ref<StoreFormData>({
   businessHours: '',
 })
 
+const businessHoursRange = ref<BusinessHoursRange | null>(null)
+const allDayBusiness = ref(false)
+const showLegacyHint = ref(false)
+const businessHoursError = ref('')
+
 // ============================================================================
 // Computed
 // ============================================================================
@@ -120,6 +134,7 @@ watch(
           businessHours: '',
         }
       }
+      syncBusinessHoursState(formData.value.businessHours)
     }
   },
   { immediate: true }
@@ -134,6 +149,53 @@ function handleClose() {
   emit('cancel')
 }
 
+function syncBusinessHoursState(raw: string | null | undefined) {
+  businessHoursError.value = ''
+  allDayBusiness.value = isAllDayBusinessHours(raw)
+  businessHoursRange.value = toPickerRange(raw)
+  showLegacyHint.value = Boolean(raw && !allDayBusiness.value && !businessHoursRange.value)
+}
+
+function handleBusinessHoursChange(value: string[] | null) {
+  businessHoursError.value = ''
+  showLegacyHint.value = false
+
+  if (!value || value.length !== 2) {
+    businessHoursRange.value = null
+    formData.value.businessHours = ''
+    return
+  }
+
+  const [start, end] = value
+  if (!start || !end) {
+    businessHoursRange.value = null
+    formData.value.businessHours = ''
+    return
+  }
+
+  const nextRange: BusinessHoursRange = [start, end]
+  if (nextRange[0] === nextRange[1]) {
+    businessHoursError.value = t('store.businessHoursEqualHint')
+    return
+  }
+
+  businessHoursRange.value = nextRange
+  formData.value.businessHours = buildBusinessHoursFromPicker(nextRange, false)
+}
+
+function handleAllDayChange(value: boolean) {
+  allDayBusiness.value = value
+  businessHoursError.value = ''
+  showLegacyHint.value = false
+
+  if (value) {
+    businessHoursRange.value = null
+    formData.value.businessHours = FULL_DAY_BUSINESS_HOURS
+  } else if (formData.value.businessHours === FULL_DAY_BUSINESS_HOURS) {
+    formData.value.businessHours = ''
+  }
+}
+
 function handleSubmit() {
   // 基本验证
   if (props.mode === 'create' && !formData.value.areaId) {
@@ -142,134 +204,210 @@ function handleSubmit() {
   if (!formData.value.name || !formData.value.category) {
     return
   }
-  
+
+  if (allDayBusiness.value) {
+    formData.value.businessHours = FULL_DAY_BUSINESS_HOURS
+  } else if (businessHoursRange.value) {
+    if (businessHoursRange.value[0] === businessHoursRange.value[1]) {
+      businessHoursError.value = t('store.businessHoursEqualHint')
+      return
+    }
+    formData.value.businessHours = buildBusinessHoursFromPicker(businessHoursRange.value, false)
+  }
+
+  if (props.mode === 'create' && formData.value.businessHours && !isValidBusinessHours(formData.value.businessHours)) {
+    businessHoursError.value = t('store.businessHoursInvalidHint')
+    return
+  }
+
   emit('submit', { ...formData.value })
 }
 </script>
 
 <template>
-  <div v-if="visible" class="dialog-overlay" @click.self="handleClose">
-    <div class="dialog">
-      <div class="dialog-header">
-        <h3>{{ dialogTitle }}</h3>
-        <button class="dialog-close" @click="handleClose">×</button>
-      </div>
-      <div class="dialog-body">
-        <!-- 区域选择（仅创建模式） -->
-        <div v-if="mode === 'create'" class="form-item">
-          <label>{{ t('store.selectArea') }} *</label>
-          <select v-model="formData.areaId" class="select">
-            <option value="">{{ t('store.pleaseSelectArea') }}</option>
-            <option 
-              v-for="area in availableAreas" 
-              :key="area.areaId" 
-              :value="area.areaId"
-            >
-              {{ area.floorName }} - {{ area.areaName }}
-            </option>
-          </select>
-        </div>
-        
-        <!-- 店铺名称 -->
-        <div class="form-item">
-          <label>{{ t('store.storeName') }} *</label>
-          <input 
-            v-model="formData.name" 
-            type="text" 
-            class="input" 
-            :placeholder="t('store.storeNamePlaceholder')" 
-          />
-        </div>
-        
-        <!-- 店铺分类 -->
-        <div class="form-item">
-          <label>{{ t('store.storeCategory') }} *</label>
-          <select v-model="formData.category" class="select">
-            <option value="">{{ t('store.selectCategory') }}</option>
-            <option v-for="cat in categories" :key="cat.value" :value="cat.value">
-              {{ cat.label }}
-            </option>
-          </select>
-        </div>
-        
-        <!-- 营业时间 -->
-        <div class="form-item">
-          <label>{{ t('store.businessHours') }}</label>
-          <input 
-            v-model="formData.businessHours" 
-            type="text" 
-            class="input" 
-            :placeholder="t('store.businessHoursPlaceholder')" 
-          />
-        </div>
-        
-        <!-- 店铺描述 -->
-        <div class="form-item">
-          <label>{{ t('store.storeDesc') }}</label>
-          <textarea 
-            v-model="formData.description" 
-            class="textarea" 
-            rows="3" 
-            :placeholder="t('store.storeDescPlaceholder')"
-          ></textarea>
-        </div>
-      </div>
-      <div class="dialog-footer">
-        <button class="btn btn-secondary" @click="handleClose">{{ t('common.cancel') }}</button>
-        <button 
-          class="btn btn-primary" 
-          :disabled="processing" 
-          @click="handleSubmit"
-        >
-          {{ submitButtonText }}
-        </button>
-      </div>
+  <FormDialogShell
+    :visible="visible"
+    :title="dialogTitle"
+    class="store-form-shell"
+    @close="handleClose"
+  >
+    <!-- 区域选择（仅创建模式） -->
+    <div v-if="mode === 'create'" class="form-item">
+      <label>{{ t('store.selectArea') }} *</label>
+      <ElSelect
+        v-model="formData.areaId"
+        class="store-themed-select"
+        :placeholder="t('store.pleaseSelectArea')"
+        popper-class="store-themed-select-dropdown"
+        clearable
+      >
+        <ElOption 
+          v-for="area in availableAreas" 
+          :key="area.areaId" 
+          :value="area.areaId"
+          :label="`${area.floorName} - ${area.areaName}`"
+        />
+      </ElSelect>
     </div>
-  </div>
+    
+    <!-- 店铺名称 -->
+    <div class="form-item">
+      <label>{{ t('store.storeName') }} *</label>
+      <input 
+        v-model="formData.name" 
+        type="text" 
+        class="input" 
+        :placeholder="t('store.storeNamePlaceholder')" 
+      />
+    </div>
+    
+    <!-- 店铺分类 -->
+    <div class="form-item">
+      <label>{{ t('store.storeCategory') }} *</label>
+      <ElSelect
+        v-model="formData.category"
+        class="store-themed-select"
+        :placeholder="t('store.selectCategory')"
+        popper-class="store-themed-select-dropdown"
+        clearable
+      >
+        <ElOption
+          v-for="cat in categories"
+          :key="cat.value"
+          :value="cat.value"
+          :label="cat.label"
+        />
+      </ElSelect>
+    </div>
+    
+    <!-- 营业时间 -->
+    <div class="form-item">
+      <label>{{ t('store.businessHours') }}</label>
+      <ElTimePicker
+        v-model="businessHoursRange"
+        class="store-themed-time"
+        popper-class="store-themed-time-dropdown"
+        is-range
+        format="HH:mm"
+        value-format="HH:mm"
+        :disabled="allDayBusiness"
+        :clearable="!allDayBusiness"
+        :start-placeholder="t('store.businessHoursRangeStart')"
+        :end-placeholder="t('store.businessHoursRangeEnd')"
+        @change="handleBusinessHoursChange"
+      />
+      <div class="all-day-row">
+        <ElSwitch :model-value="allDayBusiness" @change="handleAllDayChange" />
+        <span class="all-day-label">{{ t('store.open24Hours') }}</span>
+      </div>
+      <p v-if="showLegacyHint" class="field-hint warning">{{ t('store.businessHoursInvalidHint') }}</p>
+      <p v-if="businessHoursError" class="field-hint error">{{ businessHoursError }}</p>
+    </div>
+    
+    <!-- 店铺描述 -->
+    <div class="form-item">
+      <label>{{ t('store.storeDesc') }}</label>
+      <textarea 
+        v-model="formData.description" 
+        class="textarea" 
+        rows="3" 
+        :placeholder="t('store.storeDescPlaceholder')"
+      ></textarea>
+    </div>
+
+    <template #footer>
+      <button class="btn btn-secondary" @click="handleClose">{{ t('common.cancel') }}</button>
+      <button 
+        class="btn btn-primary" 
+        :disabled="processing" 
+        @click="handleSubmit"
+      >
+        {{ submitButtonText }}
+      </button>
+    </template>
+  </FormDialogShell>
 </template>
 
 <style scoped lang="scss">
 @use '@/assets/styles/scss/variables' as *;
 @use '@/assets/styles/scss/mixins' as *;
 
-// 对话框
-.dialog-overlay {
-  @include dialog-overlay;
-}
-
-.dialog {
-  @include dialog-box;
-
-  &-header {
-    @include dialog-header;
+.store-form-shell {
+  :deep(.dialog-box) {
+    border: 1px solid rgba(var(--accent-primary-rgb), 0.18);
+    box-shadow:
+      0 18px 40px rgba(var(--black-rgb), 0.22),
+      0 2px 10px rgba(var(--accent-primary-rgb), 0.12);
   }
 
-  &-close {
-    @include dialog-close;
-  }
-
-  &-body {
-    @include dialog-body;
-  }
-
-  &-footer {
-    @include dialog-footer;
+  :deep(.dialog-header) {
+    background: linear-gradient(
+      180deg,
+      rgba(var(--accent-primary-rgb), 0.08) 0%,
+      rgba(var(--accent-primary-rgb), 0.02) 100%
+    );
   }
 }
 
 // 表单
 .form-item {
   @include form-item;
+
+  label {
+    font-weight: $font-weight-medium;
+    letter-spacing: 0.2px;
+  }
 }
 
 .input,
-.select,
 .textarea {
   @include form-control;
+  background: var(--bg-elevated);
+  border-color: rgba(var(--accent-primary-rgb), 0.28);
+  transition:
+    border-color $duration-normal $ease-default,
+    box-shadow $duration-normal $ease-default,
+    background-color $duration-normal $ease-default;
+
+  &:hover {
+    border-color: rgba(var(--accent-primary-rgb), 0.52);
+  }
+
+  &:focus {
+    border-color: var(--accent-primary);
+    box-shadow: 0 0 0 3px rgba(var(--accent-primary-rgb), 0.2);
+  }
 }
 
 .textarea {
   resize: vertical;
+  min-height: 96px;
+}
+
+.all-day-row {
+  display: flex;
+  align-items: center;
+  gap: $space-2;
+  margin-top: $space-2;
+}
+
+.all-day-label {
+  color: var(--text-secondary);
+  font-size: $font-size-sm + 1;
+}
+
+.field-hint {
+  margin: $space-1 0 0;
+  font-size: $font-size-sm + 1;
+  line-height: 1.4;
+
+  &.warning {
+    color: var(--warning);
+  }
+
+  &.error {
+    color: var(--error);
+  }
 }
 
 // 按钮

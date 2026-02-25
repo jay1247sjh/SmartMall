@@ -69,6 +69,28 @@ PRODUCTS_SCHEMA = CollectionSchema(
 )
 
 
+# ============ 评价集合 Schema ============
+
+REVIEWS_FIELDS = [
+    FieldSchema(name="id", dtype=DataType.VARCHAR, max_length=64, is_primary=True),
+    FieldSchema(name="product_id", dtype=DataType.VARCHAR, max_length=64),
+    FieldSchema(name="product_name", dtype=DataType.VARCHAR, max_length=256),
+    FieldSchema(name="store_id", dtype=DataType.VARCHAR, max_length=64),
+    FieldSchema(name="store_name", dtype=DataType.VARCHAR, max_length=256),
+    FieldSchema(name="rating", dtype=DataType.FLOAT),
+    FieldSchema(name="content", dtype=DataType.VARCHAR, max_length=2048),
+    FieldSchema(name="reply_content", dtype=DataType.VARCHAR, max_length=2048),
+    FieldSchema(name="embedding", dtype=DataType.FLOAT_VECTOR, dim=EMBEDDING_DIM),
+    FieldSchema(name="updated_at", dtype=DataType.INT64),
+]
+
+REVIEWS_SCHEMA = CollectionSchema(
+    fields=REVIEWS_FIELDS,
+    description="商品评价信息",
+    enable_dynamic_field=False
+)
+
+
 # ============ 位置集合 Schema ============
 
 LOCATIONS_FIELDS = [
@@ -313,6 +335,60 @@ class LocationDocument:
                 z=data.get("position_z", 0)
             ),
             description=data.get("description", ""),
+            embedding=data.get("embedding", []),
+            updated_at=data.get("updated_at", 0),
+        )
+
+
+@dataclass
+class ReviewDocument:
+    """商品评价文档"""
+    id: str
+    product_id: str = ""
+    product_name: str = ""
+    store_id: str = ""
+    store_name: str = ""
+    rating: float = 0.0
+    content: str = ""
+    reply_content: str = ""
+    embedding: List[float] = field(default_factory=list)
+    updated_at: int = field(default_factory=lambda: int(time.time()))
+
+    def to_text(self) -> str:
+        parts = [
+            f"商品：{self.product_name}" if self.product_name else "",
+            f"店铺：{self.store_name}" if self.store_name else "",
+            f"评分：{self.rating}" if self.rating else "",
+            f"评价：{self.content}" if self.content else "",
+            f"商家回复：{self.reply_content}" if self.reply_content else "",
+        ]
+        return " ".join(filter(None, parts))
+
+    def to_milvus_dict(self) -> Dict[str, Any]:
+        return {
+            "id": self.id,
+            "product_id": self.product_id,
+            "product_name": self.product_name,
+            "store_id": self.store_id,
+            "store_name": self.store_name,
+            "rating": self.rating,
+            "content": self.content,
+            "reply_content": self.reply_content,
+            "embedding": self.embedding,
+            "updated_at": self.updated_at,
+        }
+
+    @classmethod
+    def from_milvus_dict(cls, data: Dict[str, Any]) -> "ReviewDocument":
+        return cls(
+            id=data["id"],
+            product_id=data.get("product_id", ""),
+            product_name=data.get("product_name", ""),
+            store_id=data.get("store_id", ""),
+            store_name=data.get("store_name", ""),
+            rating=data.get("rating", 0.0),
+            content=data.get("content", ""),
+            reply_content=data.get("reply_content", ""),
             embedding=data.get("embedding", []),
             updated_at=data.get("updated_at", 0),
         )

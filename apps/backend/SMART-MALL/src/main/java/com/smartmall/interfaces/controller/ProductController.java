@@ -1,6 +1,7 @@
 package com.smartmall.interfaces.controller;
 
 import com.baomidou.mybatisplus.core.metadata.IPage;
+import com.smartmall.application.service.ProductImageStorageService;
 import com.smartmall.application.service.ProductService;
 import com.smartmall.common.response.ApiResponse;
 import com.smartmall.interfaces.dto.product.*;
@@ -9,6 +10,9 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
+
+import java.util.List;
 
 /**
  * 商品控制器（商家端）
@@ -19,6 +23,7 @@ import org.springframework.web.bind.annotation.*;
 public class ProductController {
     
     private final ProductService productService;
+    private final ProductImageStorageService productImageStorageService;
     
     /**
      * 创建商品
@@ -114,5 +119,18 @@ public class ProductController {
         String merchantId = authentication.getName();
         ProductDTO result = productService.updateProductStock(merchantId, productId, request.getStock());
         return ApiResponse.success(result);
+    }
+
+    /**
+     * 上传商品图片（本地存储）
+     */
+    @PostMapping("/images/upload")
+    @PreAuthorize("hasRole('MERCHANT')")
+    public ApiResponse<UploadImagesResponse> uploadImages(
+            @RequestParam("files") List<MultipartFile> files) {
+        List<String> urls = productImageStorageService.storeProductImages(files);
+        UploadImagesResponse response = new UploadImagesResponse();
+        response.setUrls(urls);
+        return ApiResponse.success(response);
     }
 }

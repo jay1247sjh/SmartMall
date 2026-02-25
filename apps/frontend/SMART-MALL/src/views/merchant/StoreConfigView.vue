@@ -13,15 +13,29 @@
  * 
  * Requirements: 2.4, 2.5
  */
-import { ref, computed, onMounted } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
+import { useRouter } from 'vue-router'
+import { MessageAlert } from '@/components'
 import { storeApi, areaPermissionApi } from '@/api'
 import type { StoreDTO, UpdateStoreRequest } from '@/api/store.api'
 import type { AreaPermissionDTO } from '@/api/area-permission.api'
 import { StoreList, StoreForm } from '@/components/store'
+import { useMessage } from '@/composables'
 import type { StoreFormData } from '@/components/store/StoreForm.vue'
+import {
+  FULL_DAY_BUSINESS_HOURS,
+  buildBusinessHoursFromPicker,
+  isAllDayBusinessHours,
+  isValidBusinessHours,
+  toDisplayBusinessHours,
+  toPickerRange,
+  type BusinessHoursRange,
+} from '@/utils/business-hours'
 
 const { t } = useI18n()
+const router = useRouter()
+const { message, showMessage, clearMessage } = useMessage()
 
 // ============================================================================
 // State
@@ -46,7 +60,11 @@ const showCreateDialog = ref(false)
 
 // 操作状态
 const isProcessing = ref(false)
-const message = ref<{ type: 'success' | 'error'; text: string } | null>(null)
+const businessHoursRange = ref<BusinessHoursRange | null>(null)
+const allDayBusiness = ref(false)
+const showLegacyHint = ref(false)
+const businessHoursTouched = ref(false)
+const businessHoursError = ref('')
 
 // ============================================================================
 // Computed
@@ -72,6 +90,25 @@ const availableAreasForCreate = computed(() => {
 // 当前选中店铺的ID
 const selectedStoreId = computed(() => selectedStore.value?.storeId ?? null)
 
+const displayBusinessHours = computed(() => {
+  if (!selectedStore.value?.businessHours) {
+    return '-'
+  }
+  return (
+    toDisplayBusinessHours(selectedStore.value.businessHours, {
+      allDayText: t('store.open24Hours'),
+      nextDayPrefix: t('store.nextDayPrefix'),
+    }) || '-'
+  )
+})
+
+const canToggleStoreStatus = computed(() => {
+  if (!selectedStore.value) {
+    return false
+  }
+  return selectedStore.value.status === 'ACTIVE' || selectedStore.value.status === 'INACTIVE'
+})
+
 // ============================================================================
 // Methods
 // ============================================================================
@@ -86,14 +123,65 @@ async function loadData() {
     stores.value = storeList
     permissions.value = permissionList
     
-    if (stores.value.length > 0 && !selectedStore.value) {
-      selectStore(stores.value[0])
+    const firstStore = stores.value[0]
+    if (firstStore && !selectedStore.value) {
+      selectStore(firstStore)
     }
   } catch (e) {
     console.error('加载数据失败:', e)
     showMessage('error', t('merchant.loadDataFailed'))
   } finally {
     isLoading.value = false
+  }
+}
+
+function syncBusinessHoursState(raw: string | null | undefined) {
+  allDayBusiness.value = isAllDayBusinessHours(raw)
+  businessHoursRange.value = toPickerRange(raw)
+  showLegacyHint.value = Boolean(raw && !allDayBusiness.value && !businessHoursRange.value)
+  businessHoursTouched.value = false
+  businessHoursError.value = ''
+}
+
+function handleBusinessHoursChange(value: string[] | null) {
+  businessHoursTouched.value = true
+  businessHoursError.value = ''
+  showLegacyHint.value = false
+
+  if (!value || value.length !== 2) {
+    businessHoursRange.value = null
+    editForm.value.businessHours = ''
+    return
+  }
+
+  const [start, end] = value
+  if (!start || !end) {
+    businessHoursRange.value = null
+    editForm.value.businessHours = ''
+    return
+  }
+
+  const nextRange: BusinessHoursRange = [start, end]
+  if (nextRange[0] === nextRange[1]) {
+    businessHoursError.value = t('store.businessHoursEqualHint')
+    return
+  }
+
+  businessHoursRange.value = nextRange
+  editForm.value.businessHours = buildBusinessHoursFromPicker(nextRange, false)
+}
+
+function handleAllDayChange(value: boolean) {
+  businessHoursTouched.value = true
+  allDayBusiness.value = value
+  businessHoursError.value = ''
+  showLegacyHint.value = false
+
+  if (value) {
+    businessHoursRange.value = null
+    editForm.value.businessHours = FULL_DAY_BUSINESS_HOURS
+  } else if (editForm.value.businessHours === FULL_DAY_BUSINESS_HOURS) {
+    editForm.value.businessHours = ''
   }
 }
 
@@ -106,6 +194,7 @@ function selectStore(store: StoreDTO) {
     category: store.category,
     businessHours: store.businessHours || '',
   }
+  syncBusinessHoursState(store.businessHours)
 }
 
 function handleStoreSelect(store: StoreDTO) {
@@ -122,9 +211,18 @@ function handleStoreDelete(store: StoreDTO) {
   console.log('Delete store:', store.storeId)
 }
 
+function goToProductManage() {
+  if (!selectedStore.value) return
+  router.push({
+    path: '/merchant/product',
+    query: { storeId: selectedStore.value.storeId },
+  })
+}
+
 function startEdit() {
   if (!selectedStore.value) return
   isEditing.value = true
+  syncBusinessHoursState(editForm.value.businessHours)
 }
 
 function cancelEdit() {
@@ -136,16 +234,42 @@ function cancelEdit() {
     category: selectedStore.value.category,
     businessHours: selectedStore.value.businessHours || '',
   }
+  syncBusinessHoursState(selectedStore.value.businessHours)
 }
 
 async function saveStore() {
   if (!selectedStore.value) return
-  
+
+  const payload: UpdateStoreRequest = {
+    ...editForm.value,
+  }
+
+  if (businessHoursTouched.value) {
+    if (allDayBusiness.value) {
+      payload.businessHours = FULL_DAY_BUSINESS_HOURS
+    } else if (businessHoursRange.value) {
+      if (businessHoursRange.value[0] === businessHoursRange.value[1]) {
+        businessHoursError.value = t('store.businessHoursEqualHint')
+        return
+      }
+      payload.businessHours = buildBusinessHoursFromPicker(businessHoursRange.value, false)
+    } else {
+      payload.businessHours = ''
+    }
+
+    if (payload.businessHours && !isValidBusinessHours(payload.businessHours)) {
+      businessHoursError.value = t('store.businessHoursInvalidHint')
+      return
+    }
+  } else {
+    delete payload.businessHours
+  }
+
   isProcessing.value = true
-  message.value = null
+  clearMessage()
 
   try {
-    const updated = await storeApi.updateStore(selectedStore.value.storeId, editForm.value)
+    const updated = await storeApi.updateStore(selectedStore.value.storeId, payload)
     
     // 更新本地状态
     const index = stores.value.findIndex(s => s.storeId === selectedStore.value!.storeId)
@@ -155,6 +279,7 @@ async function saveStore() {
     }
     
     isEditing.value = false
+    syncBusinessHoursState(updated.businessHours)
     showMessage('success', t('merchant.storeSaved'))
   } catch (e: any) {
     showMessage('error', e.message || t('merchant.saveFailed'))
@@ -178,6 +303,7 @@ async function handleCreateSubmit(formData: StoreFormData) {
   }
   
   isProcessing.value = true
+  clearMessage()
   try {
     const newStore = await storeApi.createStore({
       areaId: formData.areaId,
@@ -199,14 +325,15 @@ async function handleCreateSubmit(formData: StoreFormData) {
 
 async function toggleStoreStatus() {
   if (!selectedStore.value) return
-  
+
   const store = selectedStore.value
-  if (store.status !== 'ACTIVE' && store.status !== 'INACTIVE') {
+  if (!canToggleStoreStatus.value) {
     showMessage('error', t('merchant.statusNotSupported'))
     return
   }
-  
   isProcessing.value = true
+  clearMessage()
+
   try {
     if (store.status === 'ACTIVE') {
       await storeApi.deactivateStore(store.storeId)
@@ -222,11 +349,6 @@ async function toggleStoreStatus() {
   } finally {
     isProcessing.value = false
   }
-}
-
-function showMessage(type: 'success' | 'error', text: string) {
-  message.value = { type, text }
-  setTimeout(() => { message.value = null }, 3000)
 }
 
 function getStatusClass(status: string): string {
@@ -261,10 +383,7 @@ onMounted(() => {
 <template>
   <div class="store-config-page">
     <!-- 消息提示 -->
-    <div v-if="message" :class="['message', message.type]">
-      <span>{{ message.type === 'success' ? '✅' : '❌' }}</span>
-      {{ message.text }}
-    </div>
+    <MessageAlert v-if="message" :type="message.type" :text="message.text" closable-on-click @close="clearMessage" />
 
     <div class="content-grid">
       <!-- 左侧：店铺列表 -->
@@ -347,28 +466,49 @@ onMounted(() => {
             <div class="form-row">
               <div class="form-item">
                 <label>{{ t('merchant.storeCategory') }}</label>
-                <select
+                <ElSelect
                   v-if="isEditing"
                   v-model="editForm.category"
-                  class="select"
+                  class="store-themed-select"
+                  popper-class="store-themed-select-dropdown"
                 >
-                  <option v-for="cat in categories" :key="cat" :value="cat">
-                    {{ cat }}
-                  </option>
-                </select>
+                  <ElOption
+                    v-for="cat in categories"
+                    :key="cat"
+                    :value="cat"
+                    :label="cat"
+                  />
+                </ElSelect>
                 <span v-else class="value">{{ selectedStore.category }}</span>
               </div>
 
               <div class="form-item">
                 <label>{{ t('merchant.businessHours') }}</label>
-                <input
+                <div
                   v-if="isEditing"
-                  v-model="editForm.businessHours"
-                  type="text"
-                  class="input"
-                  :placeholder="t('merchant.businessHoursPlaceholder')"
-                />
-                <span v-else class="value">{{ selectedStore.businessHours || '-' }}</span>
+                  class="business-hours-editor"
+                >
+                  <ElTimePicker
+                    v-model="businessHoursRange"
+                    class="store-themed-time"
+                    popper-class="store-themed-time-dropdown"
+                    is-range
+                    format="HH:mm"
+                    value-format="HH:mm"
+                    :disabled="allDayBusiness"
+                    :clearable="!allDayBusiness"
+                    :start-placeholder="t('store.businessHoursRangeStart')"
+                    :end-placeholder="t('store.businessHoursRangeEnd')"
+                    @change="handleBusinessHoursChange"
+                  />
+                  <div class="all-day-row">
+                    <ElSwitch :model-value="allDayBusiness" @change="handleAllDayChange" />
+                    <span class="all-day-label">{{ t('store.open24Hours') }}</span>
+                  </div>
+                  <p v-if="showLegacyHint" class="field-hint warning">{{ t('store.businessHoursInvalidHint') }}</p>
+                  <p v-if="businessHoursError" class="field-hint error">{{ businessHoursError }}</p>
+                </div>
+                <span v-else class="value">{{ displayBusinessHours }}</span>
               </div>
             </div>
 
@@ -386,8 +526,14 @@ onMounted(() => {
                 </button>
               </template>
               <template v-else>
+                <button
+                  class="btn btn-secondary"
+                  @click="goToProductManage"
+                >
+                  {{ t('ai.quick.productManage') }}
+                </button>
                 <button 
-                  v-if="selectedStore.status === 'ACTIVE' || selectedStore.status === 'INACTIVE'"
+                  v-if="canToggleStoreStatus"
                   class="btn btn-secondary" 
                   :disabled="isProcessing"
                   @click="toggleStoreStatus"
@@ -403,6 +549,7 @@ onMounted(() => {
                 </button>
               </template>
             </div>
+
           </div>
         </template>
 
@@ -435,11 +582,6 @@ onMounted(() => {
   flex-direction: column;
   gap: $space-5;
   height: 100%;
-}
-
-// 消息提示
-.message {
-  @include message-alert;
 }
 
 // 内容网格
@@ -520,7 +662,7 @@ onMounted(() => {
   width: 64px;
   height: 64px;
   border-radius: $radius-lg + 2;
-  background: $gradient-admin;
+  background: linear-gradient(135deg, var(--accent-primary) 0%, var(--accent-hover) 100%);
   @include flex-center;
   font-size: 26px;
   font-weight: $font-weight-semibold;
@@ -588,13 +730,57 @@ onMounted(() => {
 }
 
 .input,
-.select,
 .textarea {
   @include form-control;
+  background: var(--bg-elevated);
+  border-color: rgba(var(--accent-primary-rgb), 0.24);
+  transition:
+    border-color $duration-normal $ease-default,
+    box-shadow $duration-normal $ease-default,
+    background-color $duration-normal $ease-default;
+
+  &:hover {
+    border-color: rgba(var(--accent-primary-rgb), 0.5);
+  }
+
+  &:focus {
+    border-color: var(--accent-primary);
+    box-shadow: 0 0 0 3px rgba(var(--accent-primary-rgb), 0.18);
+  }
 }
 
 .textarea {
   resize: vertical;
+}
+
+.business-hours-editor {
+  @include flex-column;
+  gap: $space-2;
+}
+
+.all-day-row {
+  display: flex;
+  align-items: center;
+  gap: $space-2;
+}
+
+.all-day-label {
+  color: var(--text-secondary);
+  font-size: $font-size-sm + 1;
+}
+
+.field-hint {
+  margin: 0;
+  font-size: $font-size-sm + 1;
+  line-height: 1.4;
+
+  &.warning {
+    color: var(--warning);
+  }
+
+  &.error {
+    color: var(--error);
+  }
 }
 
 // 表单操作

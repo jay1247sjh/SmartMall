@@ -9,12 +9,35 @@ import { ref } from 'vue'
 import * as THREE from 'three'
 import type { CharacterController } from '@/builder'
 import type { ThreeEngine } from '@/engine/ThreeEngine'
+import type { ThirdPersonCameraConfig } from '@/engine/camera'
 
 export interface RoamingConfig {
   mouseSensitivity: number
   cameraDistance: number
   cameraHeight: number
   smoothness: number
+  /**
+   * 未锁定且角色静止时，是否自动将镜头缓慢对齐到角色背后
+   * 在建模器漫游中容易造成“视角被拉回”的体感，建议按需关闭
+   */
+  autoAlignWhenUnlocked?: boolean
+  /**
+   * 自动回背延迟（毫秒）
+   * 防止 pointer lock 短暂抖动时立即触发回背
+   */
+  autoAlignDelayMs?: number
+  /**
+   * 是否启用 yaw 扇形限制
+   */
+  yawConstraintEnabled?: boolean
+  /**
+   * yaw 扇形半角（度）
+   */
+  yawConstraintHalfAngleDeg?: number
+  /**
+   * yaw 扇形中心偏移（度，相对角色朝向）
+   */
+  yawConstraintCenterOffsetDeg?: number
 }
 
 export function useRoamingMode(config: RoamingConfig = {
@@ -22,6 +45,11 @@ export function useRoamingMode(config: RoamingConfig = {
   cameraDistance: 10,
   cameraHeight: 4,
   smoothness: 1,
+  autoAlignWhenUnlocked: true,
+  autoAlignDelayMs: 200,
+  yawConstraintEnabled: false,
+  yawConstraintHalfAngleDeg: 45,
+  yawConstraintCenterOffsetDeg: 180,
 }) {
   // 漫游控制器
   let characterController: CharacterController | null = null
@@ -29,6 +57,9 @@ export function useRoamingMode(config: RoamingConfig = {
   // 引擎引用
   let engine: ThreeEngine | null = null
   let unregisterRenderCallback: (() => void) | null = null
+  let idleUnlockedSince: number | null = null
+  const shouldAutoAlignWhenUnlocked = config.autoAlignWhenUnlocked ?? true
+  const autoAlignDelayMs = config.autoAlignDelayMs ?? 200
 
   // 移动速度预设
   const walkSpeedPreset = ref<'slow' | 'normal' | 'fast'>('normal')
@@ -37,6 +68,24 @@ export function useRoamingMode(config: RoamingConfig = {
     slow: '慢速',
     normal: '正常',
     fast: '快速',
+  }
+
+  /**
+   * 统一构建 follow 相机配置，避免多处散落配置造成行为分叉。
+   */
+  function buildFollowCameraConfig(): Partial<ThirdPersonCameraConfig> {
+    return {
+      distance: config.cameraDistance,
+      lookAtHeightOffset: config.cameraHeight,
+      smoothness: config.smoothness,
+      mouseSensitivity: config.mouseSensitivity,
+      pitchLimit: { min: -0.3, max: 1.0 },
+      yawConstraint: {
+        enabled: config.yawConstraintEnabled ?? false,
+        halfAngle: THREE.MathUtils.degToRad(config.yawConstraintHalfAngleDeg ?? 45),
+        centerOffset: THREE.MathUtils.degToRad(config.yawConstraintCenterOffsetDeg ?? 180),
+      },
+    }
   }
 
   /**
@@ -54,18 +103,13 @@ export function useRoamingMode(config: RoamingConfig = {
       return
     }
     engine = eng
+    idleUnlockedSince = null
 
     // 1. 切换相机模式到 follow
     engine.setCameraMode('follow')
 
     // 2. 设置跟随目标
-    engine.setFollowTarget(target, {
-      distance: config.cameraDistance,
-      lookAtHeightOffset: config.cameraHeight,
-      smoothness: config.smoothness,
-      mouseSensitivity: config.mouseSensitivity,
-      pitchLimit: { min: -0.3, max: 1.0 },
-    })
+    engine.setFollowTarget(target, buildFollowCameraConfig())
 
     // 3. 注册角色更新回调
     unregisterRenderCallback = engine.onRender((delta: number) => {
@@ -81,7 +125,17 @@ export function useRoamingMode(config: RoamingConfig = {
         || characterController.moveBackward
         || characterController.moveLeft
         || characterController.moveRight
-      if (!engine!.isPointerLocked() && !isCharacterMoving) {
+      const pointerLocked = engine!.isPointerLocked()
+      if (shouldAutoAlignWhenUnlocked && !pointerLocked && !isCharacterMoving) {
+        const now = performance.now()
+        if (idleUnlockedSince === null) {
+          idleUnlockedSince = now
+        }
+        if (now - idleUnlockedSince < autoAlignDelayMs) {
+          engine!.requestRender()
+          return
+        }
+
         const characterYaw = characterController.getRotationY()
         // 相机需要在角色背后：目标 yaw = characterYaw + π
         const targetYaw = characterYaw + Math.PI
@@ -97,6 +151,8 @@ export function useRoamingMode(config: RoamingConfig = {
           const currentPitch = engine!.getCameraPitch()
           engine!.setCameraAngles(currentYaw + diff * 0.015, currentPitch)
         }
+      } else {
+        idleUnlockedSince = null
       }
 
       // 确保持续渲染
@@ -118,7 +174,10 @@ export function useRoamingMode(config: RoamingConfig = {
       unregisterRenderCallback = null
     }
 
-    if (!engine) return
+    if (!engine) {
+      idleUnlockedSince = null
+      return
+    }
 
     // 2. 清除跟随目标
     engine.clearFollowTarget()
@@ -128,8 +187,20 @@ export function useRoamingMode(config: RoamingConfig = {
 
     // 4. 切换相机模式回 orbit
     engine.setCameraMode('orbit')
+    idleUnlockedSince = null
 
     engine = null
+  }
+
+  /**
+   * 重绑跟随目标（例如漫游中切楼层后替换角色实例）
+   */
+  function rebindFollowTarget(target: THREE.Object3D): void {
+    if (!engine) {
+      console.warn('[useRoamingMode] rebindFollowTarget: engine is null')
+      return
+    }
+    engine.setFollowTarget(target, buildFollowCameraConfig())
   }
 
   /**
@@ -242,6 +313,7 @@ export function useRoamingMode(config: RoamingConfig = {
     // 漫游控制
     startRoaming,
     stopRoaming,
+    rebindFollowTarget,
 
     // 键盘事件
     handleRoamKeyDown,

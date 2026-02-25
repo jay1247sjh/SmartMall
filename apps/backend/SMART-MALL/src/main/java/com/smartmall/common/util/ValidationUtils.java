@@ -5,6 +5,9 @@ import com.smartmall.common.response.ResultCode;
 import com.smartmall.domain.entity.Product;
 import com.smartmall.domain.entity.Store;
 
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
 /**
  * 通用验证工具类
  * 
@@ -12,6 +15,8 @@ import com.smartmall.domain.entity.Store;
  * 减少服务层的重复代码
  */
 public final class ValidationUtils {
+
+    private static final Pattern TIME_PATTERN = Pattern.compile("^([01]\\d|2[0-3]):([0-5]\\d)$");
     
     private ValidationUtils() {
         // 工具类不允许实例化
@@ -102,5 +107,62 @@ public final class ValidationUtils {
      */
     public static Product requireProductExists(Product product) {
         return requireNonNull(product, ResultCode.PRODUCT_NOT_FOUND);
+    }
+
+    /**
+     * 校验营业时间格式
+     *
+     * 允许：
+     * - HH:mm-HH:mm（支持跨天）
+     * - 00:00-24:00（24小时营业）
+     * 空值视为未设置，不做校验。
+     */
+    public static void validateBusinessHours(String businessHours) {
+        if (businessHours == null || businessHours.isBlank()) {
+            return;
+        }
+
+        String value = businessHours.trim().replaceAll("\\s+", "");
+        String[] parts = value.split("-");
+        if (parts.length != 2) {
+            throw new BusinessException(ResultCode.PARAM_INVALID, "营业时间格式应为 HH:mm-HH:mm");
+        }
+
+        String start = parts[0];
+        String end = parts[1];
+
+        Integer startMinutes = parseTimeToMinutes(start, false);
+        Integer endMinutes = parseTimeToMinutes(end, true);
+        if (startMinutes == null || endMinutes == null) {
+            throw new BusinessException(ResultCode.PARAM_INVALID, "营业时间格式应为 HH:mm-HH:mm");
+        }
+
+        // 24小时营业仅允许 00:00-24:00
+        if (endMinutes == 24 * 60) {
+            if (startMinutes == 0) {
+                return;
+            }
+            throw new BusinessException(ResultCode.PARAM_INVALID, "24小时营业请使用 00:00-24:00");
+        }
+
+        // 非24小时营业，不允许开始与结束相同
+        if (startMinutes.equals(endMinutes)) {
+            throw new BusinessException(ResultCode.PARAM_INVALID, "开始时间和结束时间不能相同");
+        }
+    }
+
+    private static Integer parseTimeToMinutes(String time, boolean allowEndOfDay) {
+        if (allowEndOfDay && "24:00".equals(time)) {
+            return 24 * 60;
+        }
+
+        Matcher matcher = TIME_PATTERN.matcher(time);
+        if (!matcher.matches()) {
+            return null;
+        }
+
+        int hour = Integer.parseInt(matcher.group(1));
+        int minute = Integer.parseInt(matcher.group(2));
+        return hour * 60 + minute;
     }
 }

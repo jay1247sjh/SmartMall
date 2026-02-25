@@ -14,7 +14,7 @@ import org.springframework.web.client.RestTemplate;
 @Configuration
 public class IntelligenceServiceConfig {
     
-    @Value("${intelligence.service.url:http://localhost:9001}")
+    @Value("${intelligence.service.url:http://localhost:19191}")
     private String intelligenceServiceUrl;
     
     @Value("${intelligence.service.timeout:60000}")

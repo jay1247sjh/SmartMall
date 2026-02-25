@@ -12,6 +12,7 @@ import com.smartmall.domain.entity.Floor;
 import com.smartmall.domain.entity.User;
 import com.smartmall.domain.enums.ApplyStatus;
 import com.smartmall.domain.enums.AreaStatus;
+import com.smartmall.domain.enums.AreaType;
 import com.smartmall.domain.enums.PermissionStatus;
 import com.smartmall.domain.entity.MallProject;
 import com.smartmall.infrastructure.mapper.AreaApplyMapper;
@@ -76,6 +77,9 @@ public class AreaApplyService {
         }
         
         List<Area> areas = areaMapper.selectList(wrapper);
+        areas = areas.stream()
+            .filter(area -> !isCorridorArea(area))
+            .collect(Collectors.toList());
         
         // 获取楼层信息
         List<String> floorIds = areas.stream()
@@ -141,6 +145,11 @@ public class AreaApplyService {
         Area area = areaMapper.selectById(request.getAreaId());
         if (area == null || area.getIsDeleted()) {
             throw new BusinessException(ResultCode.AREA_NOT_FOUND);
+        }
+
+        // 走廊类型区域不允许商家申请
+        if (isCorridorArea(area)) {
+            throw new BusinessException(ResultCode.AREA_NOT_AVAILABLE, "走廊类型区域不可申请");
         }
         
         // 检查区域状态是否可申请
@@ -290,6 +299,14 @@ public class AreaApplyService {
         if (rows == 0) {
             throw new BusinessException(ResultCode.AREA_NOT_AVAILABLE, "该区域当前状态不允许此操作");
         }
+    }
+
+    private boolean isCorridorArea(Area area) {
+        return area != null && isCorridorType(area.getType());
+    }
+
+    private boolean isCorridorType(String areaType) {
+        return areaType != null && AreaType.CORRIDOR.getValue().equalsIgnoreCase(areaType.trim());
     }
 
     private List<AreaApplyDTO> convertToDTOList(List<AreaApply> applies) {

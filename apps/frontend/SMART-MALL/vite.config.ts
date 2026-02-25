@@ -13,10 +13,10 @@ export default defineConfig({
     port: 5173,
     // API 代理配置
     proxy: {
-      // AI 服务 API - 运行在 8000 端口
+      // AI 服务 API - 运行在 19191 端口
       // 楼层管理等 AI 服务直接接口
       '/intelligence-api': {
-        target: 'http://localhost:9001',
+        target: 'http://localhost:19191',
         changeOrigin: true,
         rewrite: (path) => path.replace(/^\/intelligence-api/, '/api'),
       },

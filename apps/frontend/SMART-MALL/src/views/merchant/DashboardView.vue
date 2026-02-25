@@ -33,7 +33,7 @@ import {
   ElAvatar,
 } from 'element-plus'
 import { ArrowRight, Shop, Goods, Document } from '@element-plus/icons-vue'
-import { StatCard, QuickActionCard } from '@/components'
+import { QuickActionCard } from '@/components'
 import { merchantApi } from '@/api'
 import { useUserStore } from '@/stores'
 import type { MerchantStats, Store, AreaApplication } from '@/api/merchant.api'
@@ -62,6 +62,7 @@ const stores = ref<Store[]>([])
 const applications = ref<AreaApplication[]>([])
 
 const quickActions = computed(() => [
+  { title: t('dashboard.enterMall'), description: t('dashboard.enterMallDesc'), path: '/merchant/mall-preview' },
   { title: t('merchant.storeConfig'), description: t('merchant.storeConfigDesc'), path: '/merchant/store-config' },
   { title: t('merchant.areaApply'), description: t('merchant.areaApplyDesc'), path: '/merchant/area-apply' },
   { title: t('merchant.storeDecoration'), description: t('merchant.storeDecorationDesc'), path: '/merchant/builder' },

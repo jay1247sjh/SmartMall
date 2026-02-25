@@ -2,6 +2,7 @@ package com.smartmall.interfaces.controller;
 
 import com.smartmall.application.service.MallBuilderService;
 import com.smartmall.common.response.ApiResponse;
+import com.smartmall.common.response.ResultCode;
 import com.smartmall.interfaces.dto.mallbuilder.ProjectResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -26,7 +27,7 @@ public class PublicMallController {
     public ApiResponse<ProjectResponse> getPublishedMall() {
         ProjectResponse response = mallBuilderService.getPublishedMall();
         if (response == null) {
-            return ApiResponse.error("A4002", "暂无已发布的商城数据");
+            return ApiResponse.error(ResultCode.PROJECT_NOT_FOUND, "暂无已发布的商城数据");
         }
         return ApiResponse.success(response);
     }

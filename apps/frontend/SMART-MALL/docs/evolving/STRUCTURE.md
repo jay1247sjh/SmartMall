@@ -502,7 +502,7 @@ components/
 
 | 路径前缀 | 目标地址 | 说明 |
 |----------|----------|------|
-| `/intelligence-api` | `http://localhost:9001` | AI 服务 API（重写为 `/api`） |
+| `/intelligence-api` | `http://localhost:19191` | AI 服务 API（重写为 `/api`） |
 | `/api` | `http://localhost:8081` | Java 后端 API（超时 120s） |
 
 ---

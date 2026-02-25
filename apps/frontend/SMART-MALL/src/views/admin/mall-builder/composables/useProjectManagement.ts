@@ -11,7 +11,6 @@ import {
   createProjectFromTemplate,
   exportProject,
   importProject,
-  generateId,
 } from '@/builder'
 
 export function useProjectManagement() {
@@ -35,9 +34,49 @@ export function useProjectManagement() {
   }[]>([])
   const isLoadingProjects = ref(false)
 
-  // 未保存更改跟踪
-  const hasUnsavedChanges = ref(false)
+  // 未保存更改跟踪（纯数据比较，无布尔标志）
   const lastSavedState = ref<string | null>(null)
+
+  function isServerProjectId(projectId?: string | null): boolean {
+    if (!projectId) return false
+    return /^[a-fA-F0-9]{32}$/.test(projectId)
+  }
+
+  function resolveServerProjectIdFromResponse(response: unknown): string | null {
+    if (!response || typeof response !== 'object') return null
+    const data = response as { projectId?: unknown; id?: unknown }
+    if (typeof data.projectId === 'string' && data.projectId) return data.projectId
+    if (typeof data.id === 'string' && data.id) return data.id
+    return null
+  }
+
+  function isDuplicateDataError(err: unknown): boolean {
+    const message = err instanceof Error ? err.message : String(err)
+    return /数据已存在|请勿重复操作|duplicate|Duplicate entry/i.test(message)
+  }
+
+  function stripNestedIdsFromUpdateRequest<T extends { floors?: Array<{ floorId?: string; areas?: Array<{ areaId?: string }> }> }>(
+    request: T
+  ): T {
+    return {
+      ...request,
+      floors: request.floors?.map(floor => ({
+        ...floor,
+        floorId: undefined,
+        areas: floor.areas?.map(area => ({
+          ...area,
+          areaId: undefined,
+        })),
+      })),
+    }
+  }
+
+  function getEffectiveServerProjectId(): string | null {
+    if (serverProjectId.value) return serverProjectId.value
+    const routeProjectId = getProjectIdFromUrl()
+    if (isServerProjectId(routeProjectId)) return routeProjectId ?? null
+    return null
+  }
 
   /**
    * 创建新项目（从模板）
@@ -47,6 +86,8 @@ export function useProjectManagement() {
     projectName: string
   ): MallProject {
     const project = createProjectFromTemplate(template, projectName)
+    serverProjectId.value = null
+    lastSavedState.value = null
     router.replace({ params: { projectId: project.id } })
     return project
   }
@@ -57,34 +98,27 @@ export function useProjectManagement() {
   function createCustomProject(projectName: string): MallProject {
     const project = createEmptyProject(projectName)
     project.floors.push(createDefaultFloor(1, '1F'))
+    serverProjectId.value = null
+    lastSavedState.value = null
     router.replace({ params: { projectId: project.id } })
     return project
   }
 
   /**
-   * 标记有未保存的更改
-   */
-  function markUnsaved() {
-    hasUnsavedChanges.value = true
-  }
-
-  /**
-   * 标记已保存
+   * 标记已保存（快照当前状态）
    */
   function markSaved(project: MallProject) {
-    hasUnsavedChanges.value = false
     lastSavedState.value = JSON.stringify(project)
   }
 
   /**
-   * 检查是否有未保存的更改
+   * 检查是否有未保存的更改（纯数据比较）
    */
   function checkUnsavedChanges(project: MallProject | null): boolean {
     if (!project) return false
-    if (!lastSavedState.value) return hasUnsavedChanges.value
+    if (!lastSavedState.value) return true
     return JSON.stringify(project) !== lastSavedState.value
   }
-
   /**
    * 保存项目到服务器
    */
@@ -98,24 +132,51 @@ export function useProjectManagement() {
       const { mallBuilderApi, toCreateRequest, toUpdateRequest, toMallProject } = 
         await import('@/api/mall-builder.api')
 
-      const isNewProject = !serverProjectId.value
+      const existingProjectId = getEffectiveServerProjectId()
+      const isNewProject = !existingProjectId
       let response
 
-      if (serverProjectId.value) {
-        response = await mallBuilderApi.updateProject(
-          serverProjectId.value,
-          toUpdateRequest(project)
-        )
-      } else {
-        response = await mallBuilderApi.createProject(toCreateRequest(project))
+      try {
+        if (existingProjectId) {
+          response = await mallBuilderApi.updateProject(
+            existingProjectId,
+            toUpdateRequest(project)
+          )
+        } else {
+          response = await mallBuilderApi.createProject(toCreateRequest(project))
+        }
+      } catch (err: unknown) {
+        if (!isDuplicateDataError(err)) {
+          throw err
+        }
+
+        const retryProjectId = existingProjectId || (isServerProjectId(project.id) ? project.id : null)
+        if (!retryProjectId) {
+          throw err
+        }
+
+        // 后端更新流程是“软删除后重建”，保留旧 floorId/areaId 会触发唯一键冲突。
+        // 出现重复错误时，移除嵌套 ID 再重试一次更新。
+        const fallbackRequest = stripNestedIdsFromUpdateRequest(toUpdateRequest(project))
+        response = await mallBuilderApi.updateProject(retryProjectId, fallbackRequest)
       }
 
       const savedProject = toMallProject(response)
-      serverProjectId.value = response.projectId
+      const resolvedProjectId =
+        resolveServerProjectIdFromResponse(response) ??
+        savedProject.id ??
+        existingProjectId
+
+      if (!resolvedProjectId) {
+        throw new Error('保存成功但未返回项目ID')
+      }
+
+      serverProjectId.value = resolvedProjectId
+      project.id = resolvedProjectId
       project.version = savedProject.version
 
       if (isNewProject) {
-        router.replace({ params: { projectId: response.projectId } })
+        router.replace({ params: { projectId: resolvedProjectId } })
       }
 
       markSaved(project)
@@ -157,9 +218,10 @@ export function useProjectManagement() {
       const { mallBuilderApi, toMallProject } = await import('@/api/mall-builder.api')
       const response = await mallBuilderApi.getProject(projectId)
       const loadedProject = toMallProject(response)
+      const resolvedProjectId = resolveServerProjectIdFromResponse(response) ?? loadedProject.id
 
-      serverProjectId.value = response.projectId
-      router.replace({ params: { projectId: response.projectId } })
+      serverProjectId.value = resolvedProjectId
+      router.replace({ params: { projectId: resolvedProjectId } })
       showProjectListModal.value = false
       markSaved(loadedProject)
 
@@ -282,23 +344,21 @@ export function useProjectManagement() {
     showProjectListModal,
     projectList,
     isLoadingProjects,
-    hasUnsavedChanges,
     lastSavedState,
 
     // 方法
     createFromTemplate,
     createCustomProject,
-    markUnsaved,
     markSaved,
     checkUnsavedChanges,
     saveToServer,
-    publishToServer,
     loadProjectList,
     loadFromServer,
     loadFromVersionSnapshot,
     deleteFromServer,
     exportData,
     importData,
+    publishToServer,
     getProjectIdFromUrl,
   }
 }

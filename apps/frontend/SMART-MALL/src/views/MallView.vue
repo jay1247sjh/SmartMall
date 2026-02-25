@@ -1,4 +1,4 @@
-﻿<script setup lang="ts">
+<script setup lang="ts">
 /**
  * ============================================================================
  * 商城主页/仪表盘 (MallView)
@@ -14,10 +14,9 @@
  * 3. 快捷入口 - 提供常用功能的快速访问
  *
  * 【角色差异化展示】
- *
  * 管理员（ADMIN）：调用真实 API 获取统计数据
  * 商家（MERCHANT）：调用真实 API 获取统计数据
- * 普通用户（USER）：展示静态默认数据
+ * 普通用户（USER）：调用真实 API 获取统计数据
  * ============================================================================
  */
 import { ref, computed, onMounted } from 'vue'
@@ -25,7 +24,7 @@ import { useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { DashboardLayout } from '@/components'
 import { useUserStore } from '@/stores'
-import { adminApi, merchantApi } from '@/api'
+import { adminApi, merchantApi, userApi } from '@/api'
 import {
   ElRow,
   ElCol,
@@ -124,17 +123,6 @@ const statsError = ref(false)
 const stats = ref<StatItem[]>([])
 
 async function loadStats() {
-  if (!userStore.isAdmin && !userStore.isMerchant) {
-    // USER role: static data
-    stats.value = [
-      { label: t('dashboard.statFavorites'), value: 8, icon: Star },
-      { label: t('dashboard.statHistory'), value: 24, icon: View },
-      { label: t('dashboard.statOrders'), value: 3, icon: ShoppingCart },
-      { label: t('dashboard.statCoupons'), value: 5, icon: Ticket },
-    ]
-    return
-  }
-
   statsLoading.value = true
   statsError.value = false
   try {
@@ -153,6 +141,16 @@ async function loadStats() {
         { label: t('dashboard.statProductCount'), value: data.productCount, icon: Shop },
         { label: t('dashboard.statPendingApps'), value: data.pendingApplications, icon: Document },
       ]
+    } else if (userStore.isUser) {
+      const data = await userApi.getDashboardStats()
+      stats.value = [
+        { label: t('dashboard.statFavorites'), value: data.favoriteStoreCount, icon: Star },
+        { label: t('dashboard.statHistory'), value: data.browseHistoryCount, icon: View },
+        { label: t('dashboard.statOrders'), value: data.orderCount, icon: ShoppingCart },
+        { label: t('dashboard.statCoupons'), value: data.availableCouponCount, icon: Ticket },
+      ]
+    } else {
+      stats.value = []
     }
   } catch (e) {
     statsError.value = true

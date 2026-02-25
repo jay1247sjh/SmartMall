@@ -67,6 +67,16 @@ public class ProductDTO {
      * 图片列表
      */
     private List<String> images;
+
+    /**
+     * 商品平均评分（5分制）
+     */
+    private BigDecimal ratingAvg;
+
+    /**
+     * 商品评分总数
+     */
+    private Integer ratingCount;
     
     /**
      * 商品状态

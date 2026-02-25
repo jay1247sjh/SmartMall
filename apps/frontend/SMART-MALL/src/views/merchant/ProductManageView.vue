@@ -14,7 +14,9 @@
  */
 import { ref, computed, onMounted, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { storeApi, productApi } from '@/api'
+import { useRoute } from 'vue-router'
+import { HttpError, storeApi, productApi } from '@/api'
+import { MessageAlert } from '@/components'
 import type { StoreDTO } from '@/api/store.api'
 import type { ProductDTO, ProductStatus } from '@/api/product.api'
 import { useMessage } from '@/composables'
@@ -28,6 +30,7 @@ import type { ProductFilterParams } from '@/components/product/ProductFilter.vue
 
 // Composables
 const { t } = useI18n()
+const route = useRoute()
 const { message, showMessage, clearMessage } = useMessage()
 
 // ============================================================================
@@ -57,6 +60,21 @@ const editingProduct = ref<ProductDTO | null>(null)
 // 操作状态
 const isProcessing = ref(false)
 
+function isCancelledError(error: unknown): boolean {
+  return error instanceof HttpError && error.code === 'CANCELLED'
+}
+
+function getRouteStoreId(): string | null {
+  const raw = route.query.storeId
+  if (typeof raw === 'string' && raw.trim()) {
+    return raw.trim()
+  }
+  if (Array.isArray(raw) && typeof raw[0] === 'string' && raw[0].trim()) {
+    return raw[0].trim()
+  }
+  return null
+}
+
 // ============================================================================
 // Computed
 // ============================================================================
@@ -69,6 +87,13 @@ const canCreateProduct = computed(() =>
   selectedStore.value?.status === 'ACTIVE'
 )
 
+const selectedStoreSummary = computed(() => {
+  if (!selectedStore.value) {
+    return '请选择店铺后管理商品'
+  }
+  return `${selectedStore.value.name} · ${selectedStore.value.floorName} · ${selectedStore.value.areaName}`
+})
+
 // ============================================================================
 // Methods
 // ============================================================================
@@ -76,14 +101,26 @@ const canCreateProduct = computed(() =>
 async function loadStores() {
   try {
     stores.value = await storeApi.getMyStores()
+    const routeStoreId = getRouteStoreId()
+    if (routeStoreId) {
+      const targetStore = stores.value.find(s => s.storeId === routeStoreId)
+      if (targetStore) {
+        filterParams.value.storeId = targetStore.storeId
+        return
+      }
+    }
     // 默认选择第一个激活的店铺
     const activeStore = stores.value.find(s => s.status === 'ACTIVE')
     if (activeStore) {
       filterParams.value.storeId = activeStore.storeId
-    } else if (stores.value.length > 0) {
-      filterParams.value.storeId = stores.value[0].storeId
+    } else {
+      const firstStore = stores.value[0]
+      if (firstStore) {
+        filterParams.value.storeId = firstStore.storeId
+      }
     }
   } catch (e) {
+    if (isCancelledError(e)) return
     console.error('加载店铺失败:', e)
     showMessage('error', t('merchant.product.loadStoresFailed'))
   }
@@ -105,6 +142,7 @@ async function loadProducts() {
     products.value = result.records
     total.value = result.total
   } catch (e) {
+    if (isCancelledError(e)) return
     console.error('加载商品失败:', e)
     showMessage('error', t('merchant.product.loadProductsFailed'))
   } finally {
@@ -150,6 +188,7 @@ async function handleFormSubmit(data: ProductFormData | StockFormData) {
         stock: formData.stock,
         category: formData.category || undefined,
         image: formData.image || undefined,
+        images: formData.images || undefined,
       })
       showMessage('success', t('merchant.product.createSuccess'))
     } else if (formMode.value === 'edit' && editingProduct.value) {
@@ -162,6 +201,7 @@ async function handleFormSubmit(data: ProductFormData | StockFormData) {
         stock: formData.stock,
         category: formData.category || undefined,
         image: formData.image || undefined,
+        images: formData.images || undefined,
         sortOrder: formData.sortOrder,
       })
       showMessage('success', t('merchant.product.updateSuccess'))
@@ -248,17 +288,31 @@ onMounted(async () => {
 
 <template>
   <div class="product-manage-page">
-    <!-- 消息提示 -->
-    <div v-if="message" :class="['message', message.type]" @click="clearMessage">
-      <span>{{ message.type === 'success' ? '✅' : '❌' }}</span>
-      {{ message.text }}
-    </div>
+    <MessageAlert
+      v-if="message"
+      :type="message.type"
+      :text="message.text"
+      closable-on-click
+      @close="clearMessage"
+    />
+
+    <section class="page-hero">
+      <div class="hero-content">
+        <h2>商品管理</h2>
+        <p>{{ selectedStoreSummary }}</p>
+      </div>
+      <div class="hero-stats">
+        <span class="stats-value">{{ total }}</span>
+        <span class="stats-label">件商品</span>
+      </div>
+    </section>
 
     <!-- 顶部工具栏 -->
     <ProductFilter
       v-model="filterParams"
       :stores="stores"
       :can-create="canCreateProduct"
+      :total="total"
       @create="openCreateDialog"
     />
 
@@ -307,18 +361,63 @@ onMounted(async () => {
   height: 100%;
 }
 
-// 消息提示
-.message {
-  @include message-alert;
-  cursor: pointer;
+.page-hero {
+  @include card-base;
+  @include flex-between;
+  gap: $space-4;
+  padding: $space-5;
+  border: none;
+  background:
+    linear-gradient(120deg, rgba(var(--accent-primary-rgb), 0.13) 0%, rgba(var(--accent-primary-rgb), 0.02) 45%, transparent 100%),
+    var(--bg-secondary);
+
+  .hero-content {
+    @include flex-column;
+    gap: $space-1;
+
+    h2 {
+      margin: 0;
+      font-size: $font-size-2xl;
+      font-weight: $font-weight-semibold;
+      color: var(--text-primary);
+    }
+
+    p {
+      margin: 0;
+      font-size: $font-size-base;
+      color: var(--text-secondary);
+    }
+  }
+
+  .hero-stats {
+    @include flex-column;
+    align-items: flex-end;
+    min-width: 112px;
+
+    .stats-value {
+      font-size: 30px;
+      line-height: 1.1;
+      font-weight: $font-weight-semibold;
+      color: var(--accent-primary);
+    }
+
+    .stats-label {
+      font-size: $font-size-sm + 1;
+      color: var(--text-secondary);
+    }
+  }
 }
 
 // 空状态
 .empty-state {
   @include table-container;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .empty {
   @include table-empty-state;
+  font-size: $font-size-base + 1;
 }
 </style>

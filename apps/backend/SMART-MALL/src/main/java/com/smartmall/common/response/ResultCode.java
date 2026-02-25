@@ -82,6 +82,14 @@ public enum ResultCode {
     PRODUCT_PRICE_INVALID("A7012", "商品价格无效"),
     PRODUCT_STOCK_INVALID("A7013", "库存数量无效"),
     PRODUCT_INVALID_STATUS_TRANSITION("A7014", "无效的状态变更"),
+    PRODUCT_REVIEW_NOT_FOUND("A7015", "商品评价不存在"),
+    PRODUCT_REVIEW_NOT_OWNER("A7016", "非评价所有者"),
+    PRODUCT_REVIEW_REPLY_NOT_FOUND("A7017", "评价回复不存在"),
+    PRODUCT_REVIEW_REPLY_NOT_OWNER("A7018", "非回复所有者"),
+    PRODUCT_REVIEW_NOT_ALLOWED("A7019", "当前商品不允许评价"),
+    PRODUCT_IMAGE_INVALID("A7020", "商品图片格式无效"),
+    PRODUCT_IMAGE_TOO_LARGE("A7021", "商品图片超过大小限制"),
+    PRODUCT_IMAGE_TOO_MANY("A7022", "商品图片数量超过限制"),
 
     // B - 系统内部错误
     SYSTEM_ERROR("B1001", "系统内部错误"),

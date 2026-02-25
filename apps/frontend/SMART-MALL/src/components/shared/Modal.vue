@@ -3,7 +3,7 @@
  * Modal - 模态框组件
  * 使用 Element Plus 组件 + HTML5 语义化标签
  */
-import { ElDialog, ElButton, ElSpace } from 'element-plus'
+import { ElDialog, ElSpace } from 'element-plus'
 
 interface Props {
   visible: boolean
@@ -35,6 +35,7 @@ function handleClose() {
     :model-value="visible"
     :title="title"
     :width="width"
+    align-center
     :close-on-click-modal="closable"
     :close-on-press-escape="closable"
     :show-close="closable"

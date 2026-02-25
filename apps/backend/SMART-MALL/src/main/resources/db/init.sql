@@ -277,6 +277,8 @@ CREATE TABLE IF NOT EXISTS product (
     category VARCHAR(50),
     image VARCHAR(500),
     images JSONB,
+    rating_avg NUMERIC(3,2) NOT NULL DEFAULT 0,
+    rating_count INTEGER NOT NULL DEFAULT 0,
     status VARCHAR(20) NOT NULL DEFAULT 'ON_SALE',
     sort_order INTEGER DEFAULT 0,
     version INTEGER DEFAULT 0,
@@ -289,6 +291,55 @@ CREATE INDEX IF NOT EXISTS idx_product_store ON product(store_id);
 CREATE INDEX IF NOT EXISTS idx_product_category ON product(category);
 CREATE INDEX IF NOT EXISTS idx_product_status ON product(status);
 CREATE INDEX IF NOT EXISTS idx_product_deleted ON product(is_deleted);
+
+ALTER TABLE product ADD COLUMN IF NOT EXISTS rating_avg NUMERIC(3,2) NOT NULL DEFAULT 0;
+ALTER TABLE product ADD COLUMN IF NOT EXISTS rating_count INTEGER NOT NULL DEFAULT 0;
+
+-- ============================================================
+-- 11.1 商品评价表
+-- ============================================================
+
+CREATE TABLE IF NOT EXISTS product_review (
+    review_id VARCHAR(32) PRIMARY KEY,
+    product_id VARCHAR(32) NOT NULL,
+    store_id VARCHAR(32) NOT NULL,
+    user_id VARCHAR(32) NOT NULL,
+    rating SMALLINT NOT NULL CHECK (rating BETWEEN 1 AND 5),
+    content TEXT NOT NULL,
+    version INTEGER DEFAULT 0,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    is_deleted BOOLEAN NOT NULL DEFAULT FALSE
+);
+
+CREATE INDEX IF NOT EXISTS idx_product_review_product ON product_review(product_id);
+CREATE INDEX IF NOT EXISTS idx_product_review_store ON product_review(store_id);
+CREATE INDEX IF NOT EXISTS idx_product_review_user ON product_review(user_id);
+CREATE INDEX IF NOT EXISTS idx_product_review_rating ON product_review(rating);
+CREATE INDEX IF NOT EXISTS idx_product_review_deleted ON product_review(is_deleted);
+CREATE UNIQUE INDEX IF NOT EXISTS uk_product_review_product_user
+    ON product_review(product_id, user_id) WHERE is_deleted = FALSE;
+
+-- ============================================================
+-- 11.2 商品评价回复表
+-- ============================================================
+
+CREATE TABLE IF NOT EXISTS product_review_reply (
+    reply_id VARCHAR(32) PRIMARY KEY,
+    review_id VARCHAR(32) NOT NULL,
+    merchant_id VARCHAR(32) NOT NULL,
+    content TEXT NOT NULL,
+    version INTEGER DEFAULT 0,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    is_deleted BOOLEAN NOT NULL DEFAULT FALSE
+);
+
+CREATE INDEX IF NOT EXISTS idx_product_review_reply_review ON product_review_reply(review_id);
+CREATE INDEX IF NOT EXISTS idx_product_review_reply_merchant ON product_review_reply(merchant_id);
+CREATE INDEX IF NOT EXISTS idx_product_review_reply_deleted ON product_review_reply(is_deleted);
+CREATE UNIQUE INDEX IF NOT EXISTS uk_product_review_reply_review
+    ON product_review_reply(review_id) WHERE is_deleted = FALSE;
 
 -- ============================================================
 -- 12. 系统公告表
@@ -311,7 +362,92 @@ CREATE INDEX IF NOT EXISTS idx_notice_active_published ON notice(is_active, publ
 CREATE INDEX IF NOT EXISTS idx_notice_deleted ON notice(is_deleted);
 
 -- ============================================================
--- 13. 用户偏好表
+-- 13. 用户收藏店铺表
+-- ============================================================
+
+CREATE TABLE IF NOT EXISTS user_favorite_store (
+    favorite_id VARCHAR(32) PRIMARY KEY,
+    user_id VARCHAR(32) NOT NULL,
+    store_id VARCHAR(32) NOT NULL,
+    version INTEGER DEFAULT 0,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    is_deleted BOOLEAN NOT NULL DEFAULT FALSE
+);
+
+CREATE INDEX IF NOT EXISTS idx_user_favorite_user ON user_favorite_store(user_id);
+CREATE INDEX IF NOT EXISTS idx_user_favorite_store ON user_favorite_store(store_id);
+CREATE INDEX IF NOT EXISTS idx_user_favorite_deleted ON user_favorite_store(is_deleted);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_user_favorite_unique_active
+    ON user_favorite_store(user_id, store_id) WHERE is_deleted = FALSE;
+
+-- ============================================================
+-- 14. 用户浏览记录表
+-- ============================================================
+
+CREATE TABLE IF NOT EXISTS user_browse_history (
+    history_id VARCHAR(32) PRIMARY KEY,
+    user_id VARCHAR(32) NOT NULL,
+    store_id VARCHAR(32) NOT NULL,
+    browse_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    version INTEGER DEFAULT 0,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    is_deleted BOOLEAN NOT NULL DEFAULT FALSE
+);
+
+CREATE INDEX IF NOT EXISTS idx_user_browse_user ON user_browse_history(user_id);
+CREATE INDEX IF NOT EXISTS idx_user_browse_store ON user_browse_history(store_id);
+CREATE INDEX IF NOT EXISTS idx_user_browse_browse_at ON user_browse_history(browse_at DESC);
+CREATE INDEX IF NOT EXISTS idx_user_browse_deleted ON user_browse_history(is_deleted);
+
+-- ============================================================
+-- 15. 用户订单表（MVP）
+-- ============================================================
+
+CREATE TABLE IF NOT EXISTS user_order (
+    order_id VARCHAR(32) PRIMARY KEY,
+    user_id VARCHAR(32) NOT NULL,
+    store_id VARCHAR(32),
+    status VARCHAR(20) NOT NULL DEFAULT 'CREATED',
+    total_amount NUMERIC(10,2) NOT NULL DEFAULT 0,
+    version INTEGER DEFAULT 0,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    is_deleted BOOLEAN NOT NULL DEFAULT FALSE
+);
+
+CREATE INDEX IF NOT EXISTS idx_user_order_user ON user_order(user_id);
+CREATE INDEX IF NOT EXISTS idx_user_order_status ON user_order(status);
+CREATE INDEX IF NOT EXISTS idx_user_order_deleted ON user_order(is_deleted);
+CREATE INDEX IF NOT EXISTS idx_user_order_created ON user_order(created_at DESC);
+
+-- ============================================================
+-- 16. 用户优惠券表（MVP）
+-- ============================================================
+
+CREATE TABLE IF NOT EXISTS user_coupon (
+    coupon_id VARCHAR(32) PRIMARY KEY,
+    user_id VARCHAR(32) NOT NULL,
+    coupon_name VARCHAR(100) NOT NULL,
+    discount_type VARCHAR(20) NOT NULL DEFAULT 'AMOUNT',
+    discount_value NUMERIC(10,2) NOT NULL DEFAULT 0,
+    status VARCHAR(20) NOT NULL DEFAULT 'UNUSED',
+    expires_at TIMESTAMP NOT NULL,
+    used_at TIMESTAMP,
+    version INTEGER DEFAULT 0,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    is_deleted BOOLEAN NOT NULL DEFAULT FALSE
+);
+
+CREATE INDEX IF NOT EXISTS idx_user_coupon_user ON user_coupon(user_id);
+CREATE INDEX IF NOT EXISTS idx_user_coupon_status ON user_coupon(status);
+CREATE INDEX IF NOT EXISTS idx_user_coupon_expires ON user_coupon(expires_at);
+CREATE INDEX IF NOT EXISTS idx_user_coupon_deleted ON user_coupon(is_deleted);
+
+-- ============================================================
+-- 17. 用户偏好表
 -- ============================================================
 
 CREATE TABLE IF NOT EXISTS user_preferences (
@@ -340,7 +476,7 @@ CREATE TRIGGER trigger_user_preferences_version
     FOR EACH ROW EXECUTE FUNCTION increment_version();
 
 -- ============================================================
--- 14. 同步事件日志表
+-- 18. 同步事件日志表
 -- ============================================================
 
 CREATE TABLE IF NOT EXISTS sync_event_log (
@@ -375,7 +511,7 @@ CREATE TRIGGER trigger_sync_event_log_version
     FOR EACH ROW EXECUTE FUNCTION increment_version();
 
 -- ============================================================
--- 15. 种子数据
+-- 19. 种子数据
 -- ============================================================
 
 -- 测试用户（密码都是 123456，BCrypt cost=10）

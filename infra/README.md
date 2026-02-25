@@ -26,7 +26,7 @@
 | PostgreSQL | postgres:15-alpine | 5433:5432 | 主数据库 |
 | Redis | redis:7-alpine | 6379:6379 | 缓存 |
 | Milvus | milvusdb/milvus:v2.3.3 | 19530:19530 | 向量数据库（RAG） |
-| MinIO | minio/minio | 9000/9001 | 对象存储（Milvus 依赖） |
+| MinIO | minio/minio | 9000/19192 | 对象存储（Milvus 依赖） |
 | Etcd | quay.io/coreos/etcd:v3.5.5 | 2379 | 元数据存储（Milvus 依赖） |
 
 ## 快速启动
@@ -112,11 +112,11 @@ Milvus 的依赖服务，用于存储向量数据。
 | 参数 | 值 |
 |------|------|
 | API 端口 | 9000 |
-| Console 端口 | 9001 |
+| Console 端口 | 19192 |
 | Access Key | minioadmin |
 | Secret Key | minioadmin |
 
-访问 MinIO Console：http://localhost:9001
+访问 MinIO Console：http://localhost:19192
 
 ## 测试账号
 

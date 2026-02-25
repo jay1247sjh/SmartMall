@@ -66,6 +66,10 @@ export interface BuilderToolbarProps {
   canRedo: boolean
   /** 是否正在保存 */
   isSaving: boolean
+  /** 保存状态文本（例如：有未保存更改、已保存于 xx:xx:xx） */
+  saveStatusText?: string
+  /** 当前是否有未保存更改 */
+  hasUnsavedChanges?: boolean
   /** 是否正在发布 */
   isPublishing?: boolean
 }
@@ -95,6 +99,8 @@ const props = withDefaults(defineProps<BuilderToolbarProps>(), {
   canUndo: false,
   canRedo: false,
   isSaving: false,
+  saveStatusText: '',
+  hasUnsavedChanges: false,
   isPublishing: false,
 })
 
@@ -210,7 +216,7 @@ function getOrbitButtonText(): string {
  * 获取保存按钮文本
  */
 function getSaveButtonText(): string {
-  return props.isSaving ? '保存中...' : '保存'
+  return '保存'
 }
 
 /**
@@ -363,12 +369,22 @@ function isToolActive(tool: string | undefined): boolean {
       </label>
       
       <!-- 保存 -->
+      <span
+        v-if="saveStatusText"
+        :class="['save-status-text', { unsaved: hasUnsavedChanges }]"
+      >
+        {{ saveStatusText }}
+      </span>
       <button 
-        class="btn-save" 
+        class="btn-save"
         :disabled="isSaving"
         @click="handleSave"
       >
-        <svg viewBox="0 0 20 20" fill="none">
+        <svg v-if="isSaving" class="save-spinner" viewBox="0 0 20 20" fill="none">
+          <circle cx="10" cy="10" r="7" stroke="currentColor" stroke-width="2" opacity="0.3" />
+          <path d="M17 10a7 7 0 00-7-7" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+        </svg>
+        <svg v-else viewBox="0 0 20 20" fill="none">
           <path d="M15 17H5a2 2 0 01-2-2V5a2 2 0 012-2h7l5 5v9a2 2 0 01-2 2z" stroke="currentColor" stroke-width="1.5"/>
           <path d="M12 3v5h5M7 13h6M7 16h4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
         </svg>
@@ -404,9 +420,8 @@ function isToolActive(tool: string | undefined): boolean {
   left: 0;
   right: 0;
   height: 56px;
-  background: linear-gradient(to bottom, rgba(var(--bg-primary-rgb), 0.95), rgba(var(--bg-primary-rgb), 0.85));
-  backdrop-filter: blur(8px);
-  border-bottom: 1px solid var(--border-subtle);
+  background: rgb(var(--bg-primary-rgb));
+  border-bottom: none;
   @include flex-between;
   padding: 0 $space-4;
   z-index: 100;
@@ -608,6 +623,37 @@ function isToolActive(tool: string | undefined): boolean {
   &:disabled {
     opacity: 0.6;
     cursor: not-allowed;
+  }
+}
+
+.save-spinner {
+  animation: spin 0.8s linear infinite;
+}
+
+.save-status-text {
+  font-size: $font-size-xs;
+  color: var(--text-muted);
+  white-space: nowrap;
+  min-width: 120px;
+  text-align: right;
+
+  &.unsaved {
+    color: var(--warning);
+  }
+}
+
+@media (max-width: 1280px) {
+  .save-status-text {
+    display: none;
+  }
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
   }
 }
 

@@ -1,9 +1,11 @@
 package com.smartmall.interfaces.controller;
 
 import com.baomidou.mybatisplus.core.metadata.IPage;
+import com.smartmall.application.service.ProductReviewService;
 import com.smartmall.application.service.ProductService;
 import com.smartmall.common.response.ApiResponse;
 import com.smartmall.interfaces.dto.product.ProductDTO;
+import com.smartmall.interfaces.dto.product.ProductReviewPageResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
@@ -16,6 +18,7 @@ import org.springframework.web.bind.annotation.*;
 public class PublicProductController {
     
     private final ProductService productService;
+    private final ProductReviewService productReviewService;
     
     /**
      * 获取店铺公开商品列表
@@ -35,6 +38,18 @@ public class PublicProductController {
     @GetMapping("/product/{productId}")
     public ApiResponse<ProductDTO> getProduct(@PathVariable String productId) {
         ProductDTO result = productService.getPublicProduct(productId);
+        return ApiResponse.success(result);
+    }
+
+    /**
+     * 获取商品评价列表
+     */
+    @GetMapping("/product/{productId}/reviews")
+    public ApiResponse<ProductReviewPageResponse> getProductReviews(
+            @PathVariable String productId,
+            @RequestParam(defaultValue = "1") int page,
+            @RequestParam(defaultValue = "10") int size) {
+        ProductReviewPageResponse result = productReviewService.getProductReviews(productId, page, size);
         return ApiResponse.success(result);
     }
 }

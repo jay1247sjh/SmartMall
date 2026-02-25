@@ -4,6 +4,7 @@ import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
 import com.smartmall.infrastructure.config.PostgresJsonbTypeHandler;
+import com.smartmall.infrastructure.config.PostgresJsonbObjectTypeHandler;
 import com.smartmall.domain.enums.AreaStatus;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
@@ -44,7 +45,7 @@ public class Area extends BaseEntity {
     
     private Boolean locked;
     
-    @TableField(typeHandler = com.baomidou.mybatisplus.extension.handlers.JacksonTypeHandler.class)
+    @TableField(typeHandler = PostgresJsonbObjectTypeHandler.class)
     private Object doors;
     
     /**

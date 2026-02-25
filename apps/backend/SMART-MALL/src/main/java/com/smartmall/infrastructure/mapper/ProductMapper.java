@@ -6,9 +6,11 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.smartmall.domain.entity.Product;
 import com.smartmall.domain.enums.ProductStatus;
 import org.apache.ibatis.annotations.Mapper;
+import org.apache.ibatis.annotations.Update;
 import org.apache.ibatis.annotations.Param;
 import org.apache.ibatis.annotations.Select;
 
+import java.math.BigDecimal;
 import java.util.List;
 
 /**
@@ -66,5 +68,13 @@ public interface ProductMapper extends BaseMapper<Product> {
      */
     @Select("SELECT COUNT(*) FROM product p JOIN store s ON p.store_id = s.store_id WHERE s.merchant_id = #{merchantId} AND p.is_deleted = false AND s.is_deleted = false")
     long countByMerchantId(@Param("merchantId") String merchantId);
+
+    /**
+     * 更新商品评分聚合数据
+     */
+    @Update("UPDATE product SET rating_avg = #{ratingAvg}, rating_count = #{ratingCount}, updated_at = CURRENT_TIMESTAMP WHERE product_id = #{productId} AND is_deleted = false")
+    int updateRatingSummary(@Param("productId") String productId,
+                            @Param("ratingAvg") BigDecimal ratingAvg,
+                            @Param("ratingCount") Integer ratingCount);
 
 }

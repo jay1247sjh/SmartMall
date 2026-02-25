@@ -24,6 +24,7 @@
  */
 import { computed } from 'vue'
 import type { AreaDefinition, AreaType } from '@/builder'
+import NativeSelectField from '@/components/shared/NativeSelectField.vue'
 
 // ============================================================================
 // 类型定义
@@ -138,14 +139,6 @@ function handleNameChange(event: Event) {
   areaName.value = target.value
 }
 
-/**
- * 更新区域类型
- * @param event 选择事件
- */
-function handleTypeChange(event: Event) {
-  const target = event.target as HTMLSelectElement
-  areaType.value = target.value as AreaType
-}
 </script>
 
 <template>
@@ -186,11 +179,7 @@ function handleTypeChange(event: Event) {
       <!-- 类型 -->
       <div class="property-group">
         <label>类型</label>
-        <select 
-          :value="areaType" 
-          class="select"
-          @change="handleTypeChange"
-        >
+        <NativeSelectField v-model="areaType" class="property-select">
           <option 
             v-for="type in areaTypes" 
             :key="type.value" 
@@ -198,7 +187,7 @@ function handleTypeChange(event: Event) {
           >
             {{ type.label }}
           </option>
-        </select>
+        </NativeSelectField>
       </div>
       
       <!-- 尺寸信息 -->
@@ -358,38 +347,24 @@ function handleTypeChange(event: Event) {
   }
 }
 
-// ============================================================================
-// 下拉选择
-// ============================================================================
-.select {
-  width: 100%;
-  padding: $space-2 $space-3;
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid var(--border-subtle);
-  border-radius: $radius-md;
-  font-size: $font-size-sm;
-  color: var(--text-primary);
-  cursor: pointer;
-  transition: all $duration-normal;
-  appearance: none;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12' fill='none'%3E%3Cpath d='M3 4.5L6 7.5L9 4.5' stroke='%239ca3af' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
-  background-repeat: no-repeat;
-  background-position: right $space-3 center;
-  padding-right: $space-8;
+.property-select {
+  :deep(.native-select) {
+    width: 100%;
+    padding: $space-2 $space-3;
+    padding-right: $space-8;
+    background-color: rgba(255, 255, 255, 0.05);
+    border-color: var(--border-subtle);
+    border-radius: $radius-md;
+    font-size: $font-size-sm;
 
-  &:hover {
-    border-color: var(--border-muted);
-  }
+    &:hover {
+      border-color: var(--border-muted);
+    }
 
-  &:focus {
-    outline: none;
-    border-color: var(--accent-primary);
-    background-color: rgba(255, 255, 255, 0.08);
-  }
-
-  option {
-    background: var(--bg-primary);
-    color: var(--text-primary);
+    &:focus {
+      background-color: rgba(255, 255, 255, 0.08);
+      border-color: var(--accent-primary);
+    }
   }
 }
 

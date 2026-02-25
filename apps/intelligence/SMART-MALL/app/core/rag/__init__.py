@@ -13,9 +13,11 @@ from app.core.rag.schemas import (
     StoreDocument,
     ProductDocument,
     LocationDocument,
+    ReviewDocument,
     STORES_SCHEMA,
     PRODUCTS_SCHEMA,
     LOCATIONS_SCHEMA,
+    REVIEWS_SCHEMA,
 )
 
 __all__ = [
@@ -25,9 +27,11 @@ __all__ = [
     "StoreDocument",
     "ProductDocument",
     "LocationDocument",
+    "ReviewDocument",
     "STORES_SCHEMA",
     "PRODUCTS_SCHEMA",
     "LOCATIONS_SCHEMA",
+    "REVIEWS_SCHEMA",
 ]
 
 

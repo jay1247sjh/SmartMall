@@ -2,33 +2,15 @@
  * ============================================================================
  * 用户 API 模块 (user.api.ts)
  * ============================================================================
- * 
- * 【文件职责】
- * 提供用户资料管理相关的 API 接口，包括获取和更新用户信息。
- * 
- * 【业务背景】
- * 用户资料是系统的基础数据，用于：
- * - 个人中心展示用户信息
- * - 权限系统判断用户角色
- * - 业务流程中获取用户上下文
- * 
- * 【当前状态】
- * ⚠️ 后端 UserController 尚未实现，当前使用 localStorage 中的登录信息作为临时方案。
- * 待后端实现后，取消注释真实 API 调用即可。
- * 
- * 【与其他模块的关系】
- * - stores/user.store.ts：调用此 API 获取用户信息
- * - views/user/：用户中心页面使用此 API
- * - auth.api.ts：登录成功后会保存用户信息到 localStorage
- * 
- * 【安全考虑】
- * - 用户只能获取和修改自己的资料
- * - 敏感信息（如密码）不会通过此 API 返回
- * - 头像上传需要单独的文件上传接口
- * 
+ *
+ * 用户端资料与互动能力：
+ * - 用户资料查询/更新
+ * - 用户仪表盘统计
+ * - 收藏/浏览/订单/优惠券互动
  * ============================================================================
  */
-// import http from './http'  // 后端实现后启用
+import http from './http'
+import type { UserStatus, UserType } from '@/stores'
 
 // ============================================================================
 // 类型定义
@@ -83,6 +65,71 @@ export interface UpdateProfileRequest {
   avatar?: string
 }
 
+/**
+ * 用户仪表盘统计
+ */
+export interface UserDashboardStats {
+  favoriteStoreCount: number
+  browseHistoryCount: number
+  orderCount: number
+  availableCouponCount: number
+}
+
+/**
+ * 用户端可互动店铺简要信息
+ */
+export interface UserStoreBrief {
+  storeId: string
+  name: string
+  category: string
+}
+
+/**
+ * 用户订单（MVP）
+ */
+export interface UserOrder {
+  orderId: string
+  storeId?: string
+  status: 'CREATED' | 'PAID' | 'CANCELLED' | 'COMPLETED'
+  totalAmount: number
+  createdAt: string
+}
+
+/**
+ * 用户优惠券（MVP）
+ */
+export interface UserCoupon {
+  couponId: string
+  couponName: string
+  discountType: 'AMOUNT' | 'RATE'
+  discountValue: number
+  status: 'UNUSED' | 'USED' | 'EXPIRED'
+  expiresAt: string
+  usedAt?: string
+}
+
+interface BackendUserProfileDTO {
+  userId: string
+  username: string
+  userType: UserType
+  status: UserStatus
+  email?: string
+  phone?: string
+}
+
+function toUserProfile(dto: BackendUserProfileDTO): UserProfile {
+  return {
+    id: dto.userId,
+    username: dto.username,
+    email: dto.email ?? '',
+    phone: dto.phone,
+    avatar: undefined,
+    userType: dto.userType,
+    status: dto.status,
+    createdAt: new Date().toISOString(),
+  }
+}
+
 // ============================================================================
 // API 方法
 // ============================================================================
@@ -102,30 +149,8 @@ export interface UpdateProfileRequest {
  * @throws Error 用户未登录时抛出
  */
 export async function getProfile(): Promise<UserProfile> {
-  // 后端实现后启用：
-  // return http.get<UserProfile>('/user/profile')
-  
-  // 临时：从 localStorage 获取登录时保存的用户信息
-  const userStr = localStorage.getItem('sm_userInfo')
-  if (userStr) {
-    try {
-      const user = JSON.parse(userStr)
-      return {
-        id: user.userId,
-        username: user.username,
-        email: user.email || '',
-        phone: user.phone,
-        avatar: undefined,
-        userType: user.userType,
-        status: user.status,
-        createdAt: user.lastLoginTime || new Date().toISOString(),
-      }
-    } catch {
-      // 解析失败，返回默认值
-    }
-  }
-  
-  throw new Error('用户未登录')
+  const data = await http.get<BackendUserProfileDTO>('/user/profile')
+  return toUserProfile(data)
 }
 
 /**
@@ -143,17 +168,85 @@ export async function getProfile(): Promise<UserProfile> {
  * @returns 更新后的用户资料
  */
 export async function updateProfile(data: UpdateProfileRequest): Promise<UserProfile> {
-  // 后端实现后启用：
-  // return http.put<UserProfile>('/user/profile', data)
-  
-  // 临时：模拟更新成功
-  const current = await getProfile()
-  return {
-    ...current,
-    email: data.email || current.email,
-    phone: data.phone || current.phone,
-    avatar: data.avatar || current.avatar,
-  }
+  const updated = await http.put<BackendUserProfileDTO>('/user/profile', data)
+  return toUserProfile(updated)
+}
+
+/**
+ * 获取用户仪表盘统计
+ */
+export async function getDashboardStats(): Promise<UserDashboardStats> {
+  return http.get<UserDashboardStats>('/dashboard/user/stats')
+}
+
+/**
+ * 获取可互动店铺列表
+ */
+export async function getActiveStores(limit = 12): Promise<UserStoreBrief[]> {
+  return http.get<UserStoreBrief[]>('/user/stores/active', { params: { limit } })
+}
+
+/**
+ * 获取收藏店铺 ID 列表
+ */
+export async function getFavoriteStoreIds(): Promise<string[]> {
+  return http.get<string[]>('/user/favorites')
+}
+
+/**
+ * 收藏店铺
+ */
+export async function addFavorite(storeId: string): Promise<void> {
+  return http.post<void>(`/user/favorites/${storeId}`)
+}
+
+/**
+ * 取消收藏
+ */
+export async function removeFavorite(storeId: string): Promise<void> {
+  return http.delete<void>(`/user/favorites/${storeId}`)
+}
+
+/**
+ * 记录浏览
+ */
+export async function recordBrowse(storeId: string): Promise<void> {
+  return http.post<void>(`/user/history/store/${storeId}`)
+}
+
+/**
+ * 创建订单（MVP）
+ */
+export async function createOrder(payload: { storeId?: string; totalAmount?: number }): Promise<UserOrder> {
+  return http.post<UserOrder>('/user/orders', payload)
+}
+
+/**
+ * 获取订单列表
+ */
+export async function getOrders(limit = 20): Promise<UserOrder[]> {
+  return http.get<UserOrder[]>('/user/orders', { params: { limit } })
+}
+
+/**
+ * 领取优惠券（MVP）
+ */
+export async function claimCoupon(): Promise<UserCoupon> {
+  return http.post<UserCoupon>('/user/coupons/claim')
+}
+
+/**
+ * 使用优惠券
+ */
+export async function useCoupon(couponId: string): Promise<UserCoupon> {
+  return http.post<UserCoupon>(`/user/coupons/${couponId}/use`)
+}
+
+/**
+ * 获取优惠券列表
+ */
+export async function getCoupons(limit = 20): Promise<UserCoupon[]> {
+  return http.get<UserCoupon[]>('/user/coupons', { params: { limit } })
 }
 
 // ============================================================================
@@ -179,6 +272,17 @@ export async function updateProfile(data: UpdateProfileRequest): Promise<UserPro
 export const userApi = {
   getProfile,
   updateProfile,
+  getDashboardStats,
+  getActiveStores,
+  getFavoriteStoreIds,
+  addFavorite,
+  removeFavorite,
+  recordBrowse,
+  createOrder,
+  getOrders,
+  claimCoupon,
+  useCoupon,
+  getCoupons,
 }
 
 export default userApi

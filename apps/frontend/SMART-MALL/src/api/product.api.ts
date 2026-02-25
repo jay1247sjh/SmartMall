@@ -53,6 +53,8 @@ export interface ProductDTO {
   category: string | null
   image: string | null
   images: string[] | null
+  ratingAvg: number
+  ratingCount: number
   status: ProductStatus
   sortOrder: number
   createdAt: string
@@ -115,6 +117,13 @@ export interface UpdateStockRequest {
   stock: number
 }
 
+/**
+ * 商品图片上传响应
+ */
+export interface UploadImagesResponse {
+  urls: string[]
+}
+
 // ============================================================================
 // 商家端 API
 // ============================================================================
@@ -160,6 +169,17 @@ export async function updateProductStock(productId: string, stock: number): Prom
   return http.post<ProductDTO>(`/product/${productId}/stock`, { stock })
 }
 
+/** 上传商品图片 */
+export async function uploadProductImages(files: File[]): Promise<UploadImagesResponse> {
+  const formData = new FormData()
+  files.forEach(file => formData.append('files', file))
+  return http.post<UploadImagesResponse>('/product/images/upload', formData, {
+    headers: {
+      'Content-Type': 'multipart/form-data',
+    },
+  })
+}
+
 // ============================================================================
 // 公开端 API
 // ============================================================================
@@ -193,6 +213,7 @@ export const productApi = {
   getStoreProducts,
   updateProductStatus,
   updateProductStock,
+  uploadProductImages,
   // 公开端
   getPublicStoreProducts,
   getPublicProduct,

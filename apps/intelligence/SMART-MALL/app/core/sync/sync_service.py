@@ -10,9 +10,11 @@ Requirements: 8.1, 8.2, 8.3, 8.4, 8.5, 8.6, 9.1, 9.2
 import asyncio
 import json
 import logging
+import time
 from typing import Optional
 
 from app.core.embedding_provider import get_embeddings, EmbeddingProvider
+from app.core.rag.milvus_client import get_milvus_client
 from app.core.redis_pool import RedisPoolFactory
 from app.core.sync.event_bus import EventBus
 from app.core.sync.events import SyncEvent
@@ -222,10 +224,114 @@ class SyncService:
         self, collection: str, entity_id: str, vector: list, metadata: dict
     ) -> None:
         """Upsert 到 Milvus（create 和 update 均使用 upsert）。"""
-        # 实际实现将调用 pymilvus upsert
-        pass
+        client = get_milvus_client()
+        if not client.is_connected():
+            client.connect()
+
+        col = client.get_collection(collection)
+        if col is None:
+            raise RuntimeError(f"Milvus collection not found: {collection}")
+
+        entity = self._build_entity_for_collection(collection, entity_id, vector, metadata)
+
+        try:
+            col.delete(expr=f"id in ['{entity_id}']")
+        except Exception:
+            # 允许旧数据不存在
+            pass
+
+        field_names = [field.name for field in col.schema.fields]
+        insert_data = [[entity[field]] for field in field_names]
+        col.insert(insert_data)
+        col.flush()
 
     async def _milvus_delete(self, collection: str, entity_id: str) -> None:
         """从 Milvus 删除记录。"""
-        # 实际实现将调用 pymilvus delete
-        pass
+        client = get_milvus_client()
+        if not client.is_connected():
+            client.connect()
+
+        col = client.get_collection(collection)
+        if col is None:
+            return
+        col.delete(expr=f"id in ['{entity_id}']")
+        col.flush()
+
+    def _build_entity_for_collection(
+        self, collection: str, entity_id: str, vector: list, metadata: dict
+    ) -> dict:
+        now = int(time.time())
+
+        if collection == "products":
+            return {
+                "id": entity_id,
+                "name": str(metadata.get("name", "")),
+                "description": str(metadata.get("description", "")),
+                "category": str(metadata.get("category", "")),
+                "brand": str(metadata.get("brand", "")),
+                "price": float(metadata.get("price", 0.0) or 0.0),
+                "store_id": str(metadata.get("store_id", "")),
+                "store_name": str(metadata.get("store_name", "")),
+                "image_url": str(metadata.get("image_url", "")),
+                "rating": float(metadata.get("rating", 0.0) or 0.0),
+                "stock": int(metadata.get("stock", 0) or 0),
+                "tags": metadata.get("tags", "[]") if isinstance(metadata.get("tags", "[]"), str) else json.dumps(metadata.get("tags", []), ensure_ascii=False),
+                "embedding": vector,
+                "updated_at": int(metadata.get("updated_at", now) or now),
+            }
+
+        if collection == "stores":
+            return {
+                "id": entity_id,
+                "name": str(metadata.get("name", "")),
+                "description": str(metadata.get("description", "")),
+                "category": str(metadata.get("category", "")),
+                "floor": int(metadata.get("floor", 1) or 1),
+                "area": str(metadata.get("area", "")),
+                "position_x": float(metadata.get("position_x", 0.0) or 0.0),
+                "position_y": float(metadata.get("position_y", 0.0) or 0.0),
+                "position_z": float(metadata.get("position_z", 0.0) or 0.0),
+                "business_hours": str(metadata.get("business_hours", "09:00-22:00")),
+                "rating": float(metadata.get("rating", 0.0) or 0.0),
+                "tags": metadata.get("tags", "[]") if isinstance(metadata.get("tags", "[]"), str) else json.dumps(metadata.get("tags", []), ensure_ascii=False),
+                "embedding": vector,
+                "updated_at": int(metadata.get("updated_at", now) or now),
+            }
+
+        if collection == "locations":
+            return {
+                "id": entity_id,
+                "name": str(metadata.get("name", "")),
+                "type": str(metadata.get("type", "area")),
+                "floor": int(metadata.get("floor", 1) or 1),
+                "position_x": float(metadata.get("position_x", 0.0) or 0.0),
+                "position_y": float(metadata.get("position_y", 0.0) or 0.0),
+                "position_z": float(metadata.get("position_z", 0.0) or 0.0),
+                "description": str(metadata.get("description", "")),
+                "embedding": vector,
+                "updated_at": int(metadata.get("updated_at", now) or now),
+            }
+
+        if collection == "reviews":
+            return {
+                "id": entity_id,
+                "product_id": str(metadata.get("product_id", "")),
+                "product_name": str(metadata.get("product_name", "")),
+                "store_id": str(metadata.get("store_id", "")),
+                "store_name": str(metadata.get("store_name", "")),
+                "rating": float(metadata.get("rating", 0.0) or 0.0),
+                "content": str(metadata.get("content", "")),
+                "reply_content": str(metadata.get("reply_content", "")),
+                "embedding": vector,
+                "updated_at": int(metadata.get("updated_at", now) or now),
+            }
+
+        if collection == "rules":
+            return {
+                "id": entity_id,
+                "content": str(metadata.get("content", "")),
+                "embedding": vector,
+                "updated_at": int(metadata.get("updated_at", now) or now),
+            }
+
+        raise RuntimeError(f"Unsupported collection: {collection}")

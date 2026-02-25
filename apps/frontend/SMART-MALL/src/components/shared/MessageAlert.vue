@@ -5,9 +5,15 @@
  */
 import type { MessageType } from '@/composables/useMessage'
 
-defineProps<{
+const props = withDefaults(defineProps<{
   type: MessageType
   text: string
+  closableOnClick?: boolean
+}>(), {
+  closableOnClick: false,
+})
+const emit = defineEmits<{
+  (e: 'close'): void
 }>()
 
 const icons: Record<MessageType, string> = {
@@ -16,12 +22,24 @@ const icons: Record<MessageType, string> = {
   warning: '⚠️',
   info: 'ℹ️',
 }
+
+function handleClose() {
+  emit('close')
+}
+
+function handleAlertClick() {
+  if (!props.closableOnClick) {
+    return
+  }
+  emit('close')
+}
 </script>
 
 <template>
-  <aside :class="['message-alert', type]" role="alert">
+  <aside :class="['message-alert', type, { clickable: closableOnClick }]" role="alert" @click="handleAlertClick">
     <span class="icon" aria-hidden="true">{{ icons[type] }}</span>
     <span class="text">{{ text }}</span>
+    <button class="close-btn" type="button" @click.stop="handleClose">×</button>
   </aside>
 </template>
 
@@ -48,8 +66,28 @@ const icons: Record<MessageType, string> = {
     flex-shrink: 0;
   }
 
+  &.clickable {
+    cursor: pointer;
+  }
+
   .text {
     flex: 1;
+  }
+
+  .close-btn {
+    margin-left: auto;
+    border: none;
+    background: transparent;
+    color: currentColor;
+    font-size: $font-size-lg;
+    line-height: 1;
+    cursor: pointer;
+    opacity: 0.7;
+    padding: 0;
+
+    &:hover {
+      opacity: 1;
+    }
   }
 }
 </style>

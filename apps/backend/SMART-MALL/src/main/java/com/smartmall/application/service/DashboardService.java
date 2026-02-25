@@ -13,10 +13,15 @@ import com.smartmall.infrastructure.mapper.AreaApplyMapper;
 import com.smartmall.infrastructure.mapper.NoticeMapper;
 import com.smartmall.infrastructure.mapper.ProductMapper;
 import com.smartmall.infrastructure.mapper.StoreMapper;
+import com.smartmall.infrastructure.mapper.UserBrowseHistoryMapper;
+import com.smartmall.infrastructure.mapper.UserCouponMapper;
+import com.smartmall.infrastructure.mapper.UserFavoriteStoreMapper;
 import com.smartmall.infrastructure.mapper.UserMapper;
+import com.smartmall.infrastructure.mapper.UserOrderMapper;
 import com.smartmall.interfaces.dto.dashboard.AdminStatsDTO;
 import com.smartmall.interfaces.dto.dashboard.MerchantStatsDTO;
 import com.smartmall.interfaces.dto.dashboard.NoticeDTO;
+import com.smartmall.interfaces.dto.dashboard.UserStatsDTO;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.redis.core.StringRedisTemplate;
@@ -37,6 +42,7 @@ public class DashboardService {
 
     private static final String ADMIN_STATS_CACHE_KEY = "dashboard:admin:stats";
     private static final String MERCHANT_STATS_CACHE_KEY_PREFIX = "dashboard:merchant:stats:";
+    private static final String USER_STATS_CACHE_KEY_PREFIX = "dashboard:user:stats:";
     private static final long CACHE_TTL_MINUTES = 5;
 
     private final UserMapper userMapper;
@@ -44,6 +50,10 @@ public class DashboardService {
     private final AreaApplyMapper areaApplyMapper;
     private final ProductMapper productMapper;
     private final NoticeMapper noticeMapper;
+    private final UserFavoriteStoreMapper userFavoriteStoreMapper;
+    private final UserBrowseHistoryMapper userBrowseHistoryMapper;
+    private final UserOrderMapper userOrderMapper;
+    private final UserCouponMapper userCouponMapper;
     private final StringRedisTemplate redisTemplate;
     private final ObjectMapper objectMapper;
 
@@ -106,6 +116,33 @@ public class DashboardService {
     }
 
     /**
+     * 获取普通用户统计数据（带 Redis 缓存降级）
+     */
+    public UserStatsDTO getUserStats(String userId) {
+        String cacheKey = USER_STATS_CACHE_KEY_PREFIX + userId;
+
+        try {
+            String cached = redisTemplate.opsForValue().get(cacheKey);
+            if (cached != null) {
+                return objectMapper.readValue(cached, UserStatsDTO.class);
+            }
+        } catch (Exception e) {
+            log.warn("Redis 读取用户统计缓存失败，降级为数据库查询, userId={}", userId, e);
+        }
+
+        UserStatsDTO stats = queryUserStatsFromDB(userId);
+
+        try {
+            String json = objectMapper.writeValueAsString(stats);
+            redisTemplate.opsForValue().set(cacheKey, json, CACHE_TTL_MINUTES, TimeUnit.MINUTES);
+        } catch (JsonProcessingException e) {
+            log.warn("Redis 写入用户统计缓存失败, userId={}", userId, e);
+        }
+
+        return stats;
+    }
+
+    /**
      * 获取系统公告列表
      */
     public List<NoticeDTO> getNotices(int limit) {
@@ -140,6 +177,17 @@ public class DashboardService {
             redisTemplate.delete(MERCHANT_STATS_CACHE_KEY_PREFIX + merchantId);
         } catch (Exception e) {
             log.warn("Redis 清除商家统计缓存失败, merchantId={}", merchantId, e);
+        }
+    }
+
+    /**
+     * 清除用户统计缓存
+     */
+    public void evictUserStatsCache(String userId) {
+        try {
+            redisTemplate.delete(USER_STATS_CACHE_KEY_PREFIX + userId);
+        } catch (Exception e) {
+            log.warn("Redis 清除用户统计缓存失败, userId={}", userId, e);
         }
     }
 
@@ -193,6 +241,15 @@ public class DashboardService {
                 .eq(AreaApply::getIsDeleted, false);
         stats.setPendingApplications(areaApplyMapper.selectCount(applyWrapper));
 
+        return stats;
+    }
+
+    private UserStatsDTO queryUserStatsFromDB(String userId) {
+        UserStatsDTO stats = new UserStatsDTO();
+        stats.setFavoriteStoreCount(userFavoriteStoreMapper.countByUserId(userId));
+        stats.setBrowseHistoryCount(userBrowseHistoryMapper.countByUserId(userId));
+        stats.setOrderCount(userOrderMapper.countByUserId(userId));
+        stats.setAvailableCouponCount(userCouponMapper.countAvailableByUserId(userId));
         return stats;
     }
 

@@ -15,7 +15,7 @@ export function useHistory() {
   /**
    * 保存历史记录
    */
-  function saveHistory(project: MallProject | null, onUnsaved?: () => void) {
+  function saveHistory(project: MallProject | null) {
     if (!project) return
 
     const state = JSON.stringify(project)
@@ -33,9 +33,6 @@ export function useHistory() {
       history.value.shift()
       historyIndex.value--
     }
-
-    // 标记有未保存的更改
-    onUnsaved?.()
   }
 
   /**

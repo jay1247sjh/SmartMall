@@ -50,7 +50,7 @@ from app.core.rag.embedding import EmbeddingService, get_embedding_service
 # 检索器和过滤表达式构建器
 from app.core.rag.retriever import build_filter_expr, RAGRetrieverFactory
 # 数据库集合的 Schema 定义
-from app.core.rag.schemas import STORES_SCHEMA, PRODUCTS_SCHEMA, LOCATIONS_SCHEMA
+from app.core.rag.schemas import STORES_SCHEMA, PRODUCTS_SCHEMA, LOCATIONS_SCHEMA, REVIEWS_SCHEMA
 # 应用配置
 from app.core.config import settings
 
@@ -462,7 +462,8 @@ class RAGService:
         collections = [
             ("stores", STORES_SCHEMA),      # 店铺集合
             ("products", PRODUCTS_SCHEMA),  # 商品集合
-            ("locations", LOCATIONS_SCHEMA) # 位置集合
+            ("locations", LOCATIONS_SCHEMA), # 位置集合
+            ("reviews", REVIEWS_SCHEMA), # 评价集合
         ]
         
         # 遍历并创建集合
@@ -805,6 +806,24 @@ class RAGService:
             "store": store.to_dict(),
             "message": f"{store.name} 位于 {store.floor} 楼 {store.area}"
         }
+
+    async def search_reviews(
+        self,
+        query: str,
+        product_id: Optional[str] = None,
+        top_k: int = None,
+    ) -> List[Document]:
+        """检索商品评价"""
+        top_k = top_k or settings.RAG_TOP_K
+        search_kwargs: Dict[str, Any] = {"k": top_k}
+        if product_id:
+            search_kwargs["expr"] = f'product_id == "{product_id}"'
+
+        retriever = RAGRetrieverFactory.create_retriever(
+            collection_name="reviews",
+            search_kwargs=search_kwargs,
+        )
+        return await retriever.ainvoke(query)
     
     # ================================================================
     # RAG 数据隔离方法（world_facts / reviews / rules）
@@ -921,7 +940,7 @@ class RAGService:
             status["milvus"] = health.get("healthy", False)
             
             # 检查集合（同步方法）
-            for collection in ["stores", "products", "locations"]:
+            for collection in ["stores", "products", "locations", "reviews"]:
                 exists = self.milvus_client.has_collection(collection)
                 status["collections"][collection] = exists
             

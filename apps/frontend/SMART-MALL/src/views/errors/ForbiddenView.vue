@@ -22,7 +22,7 @@
  * - 路由守卫检测到权限不足
  */
 import { useRouter } from 'vue-router'
-import { ElResult, ElButton, ElIcon, ElSpace } from 'element-plus'
+import { ElResult, ElButton } from 'element-plus'
 import { Back, HomeFilled } from '@element-plus/icons-vue'
 
 const router = useRouter()
@@ -46,16 +46,14 @@ function goHome() {
         class="error-result"
       >
         <template #extra>
-          <ElSpace>
-            <ElButton @click="goBack">
-              <ElIcon class="btn-icon"><Back /></ElIcon>
+          <div class="error-actions">
+            <ElButton :icon="Back" @click="goBack">
               返回上页
             </ElButton>
-            <ElButton type="primary" @click="goHome">
-              <ElIcon class="btn-icon"><HomeFilled /></ElIcon>
+            <ElButton type="primary" :icon="HomeFilled" @click="goHome">
               返回首页
             </ElButton>
-          </ElSpace>
+          </div>
         </template>
       </ElResult>
     </article>
@@ -75,12 +73,15 @@ function goHome() {
     text-align: center;
 
     .error-result {
-      :deep(.el-result__icon) {
-        svg {
-          width: 120px;
-          height: 120px;
-          color: var(--el-color-danger);
-        }
+      :deep(.el-result__icon > .el-icon) {
+        font-size: 120px;
+        line-height: 1;
+        color: var(--el-color-danger);
+      }
+
+      :deep(.el-result__icon > .el-icon svg) {
+        width: 1em;
+        height: 1em;
       }
 
       :deep(.el-result__title) {
@@ -95,6 +96,33 @@ function goHome() {
         color: var(--el-text-color-placeholder);
       }
 
+      :deep(.el-result__extra) {
+        display: flex;
+        justify-content: center;
+        width: 100%;
+      }
+
+      :deep(.el-result__extra .el-button .el-icon) {
+        width: 1em;
+        height: 1em;
+        flex-shrink: 0;
+        transform: none;
+      }
+
+      :deep(.el-result__extra .el-button .el-icon svg) {
+        width: 1em;
+        height: 1em;
+        transform: none;
+      }
+
+      .error-actions {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: $space-4;
+      }
+
       :deep(.el-button--primary) {
         background: $gradient-primary;
         border: none;
@@ -104,10 +132,6 @@ function goHome() {
       :deep(.el-button) {
         border-radius: 10px;
         padding: $space-3 $space-6;
-
-        .btn-icon {
-          margin-right: $space-2;
-        }
       }
     }
   }

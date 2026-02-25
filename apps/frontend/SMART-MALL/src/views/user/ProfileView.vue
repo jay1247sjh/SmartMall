@@ -17,7 +17,7 @@
  * - 密码修改使用模态框
  *
  * 数据流：
- * - 页面加载时从 userStore 获取用户信息
+ * - 页面加载时从后端 API 获取用户信息
  * - 编辑后通过 API 保存到后端
  * - 密码修改需要验证当前密码
  *
@@ -86,8 +86,8 @@ const roleDisplayName = computed(() => {
 const statusDisplayName = computed(() => {
   const statusMap: Record<string, string> = {
     ACTIVE: t('profile.statusActive'),
-    INACTIVE: t('profile.statusInactive'),
-    BANNED: t('profile.statusBanned'),
+    FROZEN: t('profile.statusFrozen'),
+    DELETED: t('profile.statusDeleted'),
   }
   return statusMap[profile.value?.status || ''] || t('profile.statusUnknown')
 })
@@ -95,6 +95,15 @@ const statusDisplayName = computed(() => {
 const avatarLetter = computed(() => 
   profile.value?.username?.charAt(0).toUpperCase() || 'U'
 )
+
+const statusTagType = computed(() => {
+  const statusMap: Record<string, 'success' | 'warning' | 'danger' | 'info'> = {
+    ACTIVE: 'success',
+    FROZEN: 'warning',
+    DELETED: 'danger',
+  }
+  return statusMap[profile.value?.status || ''] || 'info'
+})
 
 const isPasswordFormValid = computed(() =>
   passwordForm.value.currentPassword.length >= 6 &&
@@ -107,26 +116,37 @@ async function loadProfile() {
   error.value = null
   
   try {
-    profile.value = {
-      id: userStore.currentUser?.userId || '',
-      username: userStore.currentUser?.username || '',
-      email: userStore.currentUser?.email || '',
-      phone: userStore.currentUser?.phone || '',
-      avatar: undefined,
-      userType: userStore.role || 'USER',
-      status: userStore.currentUser?.status || 'ACTIVE',
-      createdAt: new Date().toISOString(),
-    }
+    const data = await userApi.getProfile()
+    profile.value = data
     
     editForm.value = {
-      email: profile.value.email,
-      phone: profile.value.phone,
+      email: data.email,
+      phone: data.phone,
     }
+
+    syncUserStoreProfile(data)
   } catch (e: unknown) {
     error.value = (e as Error).message || t('profile.loadFailed')
   } finally {
     isLoading.value = false
   }
+}
+
+function syncUserStoreProfile(data: UserProfile) {
+  if (!userStore.currentUser) return
+
+  const nextUser = {
+    ...userStore.currentUser,
+    userId: data.id,
+    username: data.username,
+    userType: data.userType,
+    status: data.status,
+    email: data.email,
+    phone: data.phone,
+  }
+
+  userStore.currentUser = nextUser
+  localStorage.setItem('sm_userInfo', JSON.stringify(nextUser))
 }
 
 function startEditing() {
@@ -154,6 +174,7 @@ async function saveProfile() {
   try {
     const updated = await userApi.updateProfile(editForm.value)
     profile.value = updated
+    syncUserStoreProfile(updated)
     isEditing.value = false
     successMessage.value = t('profile.saveSuccess')
     setTimeout(() => { successMessage.value = null }, 3000)
@@ -177,10 +198,10 @@ async function changePassword() {
   passwordError.value = null
   
   try {
-    await passwordApi.changePassword(
-      passwordForm.value.currentPassword,
-      passwordForm.value.newPassword
-    )
+    await passwordApi.changePassword({
+      oldPassword: passwordForm.value.currentPassword,
+      newPassword: passwordForm.value.newPassword,
+    })
     showPasswordModal.value = false
     successMessage.value = t('profile.passwordChanged')
     setTimeout(() => { successMessage.value = null }, 3000)
@@ -259,7 +280,7 @@ onMounted(() => {
             {{ roleDisplayName }}
           </ElDescriptionsItem>
           <ElDescriptionsItem :label="t('profile.status')">
-            <ElTag :type="profile.status === 'ACTIVE' ? 'success' : 'info'" size="small">
+            <ElTag :type="statusTagType" size="small">
               {{ statusDisplayName }}
             </ElTag>
           </ElDescriptionsItem>

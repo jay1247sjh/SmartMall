@@ -14,7 +14,9 @@
  */
 import { computed } from 'vue'
 import type { ProductDTO, ProductStatus } from '@/api/product.api'
+import { ActionButton } from '@/components'
 import { useFormatters } from '@/composables'
+import InlinePagination from '@/components/shared/InlinePagination.vue'
 
 // ============================================================================
 // Types
@@ -95,12 +97,8 @@ function handleUpdateStock(product: ProductDTO) {
   emit('updateStock', product)
 }
 
-function handlePageChange(direction: 'prev' | 'next') {
-  if (direction === 'prev' && props.currentPage > 1) {
-    emit('pageChange', props.currentPage - 1)
-  } else if (direction === 'next' && props.currentPage < Math.ceil(props.total / props.pageSize)) {
-    emit('pageChange', props.currentPage + 1)
-  }
+function handlePageChange(page: number) {
+  emit('pageChange', page)
 }
 
 // ============================================================================
@@ -108,19 +106,24 @@ function handlePageChange(direction: 'prev' | 'next') {
 // ============================================================================
 
 const totalPages = computed(() => Math.ceil(props.total / props.pageSize))
-const hasPrev = computed(() => props.currentPage > 1)
-const hasNext = computed(() => props.currentPage < totalPages.value)
 </script>
 
 <template>
   <div class="product-table-wrapper">
-    <!-- 表格容器 -->
     <div class="product-table-container">
+      <header v-if="!loading && products.length > 0" class="table-header">
+        <h3>商品列表</h3>
+        <span class="table-stats">共 {{ total }} 件商品</span>
+      </header>
+
       <!-- 加载状态 -->
       <div v-if="loading" class="loading">加载中...</div>
       
       <!-- 空状态 -->
-      <div v-else-if="products.length === 0" class="empty">暂无商品</div>
+      <div v-else-if="products.length === 0" class="empty">
+        <p class="empty-title">暂无商品</p>
+        <p class="empty-desc">点击右上角“添加商品”，创建你的第一件商品</p>
+      </div>
       
       <!-- 商品表格 - 使用 v-memo 优化渲染 -->
       <table v-else class="product-table">
@@ -172,15 +175,15 @@ const hasNext = computed(() => props.currentPage < totalPages.value)
             </td>
             <td>
               <div class="actions">
-                <button 
+                <ActionButton
                   v-if="product.status !== 'SOLD_OUT'"
-                  class="btn-action"
+                  :variant="product.status === 'ON_SALE' ? 'rollback' : 'publish'"
                   @click="handleToggleStatus(product)"
                 >
                   {{ product.status === 'ON_SALE' ? '下架' : '上架' }}
-                </button>
-                <button class="btn-action" @click="handleEdit(product)">编辑</button>
-                <button class="btn-action btn-danger" @click="handleDelete(product)">删除</button>
+                </ActionButton>
+                <ActionButton variant="edit" @click="handleEdit(product)">编辑</ActionButton>
+                <ActionButton variant="delete" @click="handleDelete(product)">删除</ActionButton>
               </div>
             </td>
           </tr>
@@ -189,19 +192,12 @@ const hasNext = computed(() => props.currentPage < totalPages.value)
     </div>
 
     <!-- 分页 -->
-    <div v-if="total > pageSize" class="pagination">
-      <button 
-        class="btn-page" 
-        :disabled="!hasPrev"
-        @click="handlePageChange('prev')"
-      >上一页</button>
-      <span class="page-info">{{ currentPage }} / {{ totalPages }}</span>
-      <button 
-        class="btn-page" 
-        :disabled="!hasNext"
-        @click="handlePageChange('next')"
-      >下一页</button>
-    </div>
+    <InlinePagination
+      v-if="total > pageSize"
+      :current-page="currentPage"
+      :total-pages="totalPages"
+      @change="handlePageChange"
+    />
   </div>
 </template>
 
@@ -212,21 +208,59 @@ const hasNext = computed(() => props.currentPage < totalPages.value)
 .product-table-wrapper {
   display: flex;
   flex-direction: column;
-  gap: $space-4;
+  gap: $space-4 + 2;
 }
 
 // 表格
 .product-table-container {
   @include table-container;
+
+  display: flex;
+  flex-direction: column;
+}
+
+.table-header {
+  @include card-header;
+
+  h3 {
+    margin: 0;
+  }
+
+  .table-stats {
+    font-size: $font-size-sm + 1;
+    color: var(--text-secondary);
+  }
 }
 
 .loading,
 .empty {
   @include table-empty-state;
+
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: $space-1 + 2;
+}
+
+.empty-title {
+  margin: 0;
+  font-size: $font-size-lg;
+  color: var(--text-primary);
+  font-weight: $font-weight-medium;
+}
+
+.empty-desc {
+  margin: 0;
+  font-size: $font-size-sm + 1;
+  color: var(--text-muted);
 }
 
 .product-table {
   @include table-base;
+
+  tbody tr {
+    transition: background-color $duration-normal $ease-default;
+  }
 }
 
 // 商品信息
@@ -238,7 +272,7 @@ const hasNext = computed(() => props.currentPage < totalPages.value)
     width: 40px;
     height: 40px;
     border-radius: $radius-md;
-    background: $gradient-admin;
+    background: $gradient-merchant;
     @include flex-center;
     font-size: $font-size-xl - 2;
     font-weight: $font-weight-semibold;
@@ -280,10 +314,16 @@ const hasNext = computed(() => props.currentPage < totalPages.value)
 
 // 库存
 .stock-value {
-  padding: $space-1 $space-2;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 40px;
+  padding: $space-1 $space-2 + 2;
   border-radius: $radius-sm;
   @include clickable;
   @include hover-highlight;
+  background: rgba(var(--accent-primary-rgb), 0.1);
+  color: var(--text-primary);
 
   &.stock-low {
     color: var(--warning);
@@ -310,29 +350,7 @@ const hasNext = computed(() => props.currentPage < totalPages.value)
 // 操作按钮
 .actions {
   @include action-btns;
+  flex-wrap: wrap;
 }
 
-.btn-action {
-  @include btn-action;
-
-  &.btn-danger {
-    &:hover {
-      background: rgba(var(--error-rgb), 0.2);
-      color: var(--error);
-    }
-  }
-}
-
-// 分页
-.pagination {
-  @include pagination;
-
-  .btn-page {
-    @include pagination-btn;
-  }
-
-  .page-info {
-    @include pagination-info;
-  }
-}
 </style>

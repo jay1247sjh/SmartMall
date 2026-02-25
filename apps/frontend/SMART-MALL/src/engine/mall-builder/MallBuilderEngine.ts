@@ -41,7 +41,7 @@
 
 import * as THREE from 'three'
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js'
-import { ThreeEngine, type EngineOptions, type ThreePointLightConfig } from '@/engine/ThreeEngine'
+import { ThreeEngine, type CameraMode, type EngineOptions, type ThreePointLightConfig } from '@/engine/ThreeEngine'
 import { MaterialManager } from '@/engine/materials/MaterialManager'
 import { EnvironmentManager } from '@/engine/environment/EnvironmentManager'
 import { type SceneTheme, type SceneThemePreset, getSceneThemePreset } from './theme-presets'
@@ -409,9 +409,9 @@ export class MallBuilderEngine extends ThreeEngine {
       this.groundMesh.position.z = cz
     }
 
-    // 更新轨道控制器目标点（旋转中心），但不移动相机位置
-    // 这样旋转中心始终跟随商城 BoundingBox 中心，而相机位置保持用户手动调整的状态
-    if (this.builderOrbitControls) {
+    // 仅在 orbit 模式下更新建模器 OrbitControls，避免与 follow 相机并发写入同一个 camera
+    const isOrbitMode = this.getCameraMode() === 'orbit'
+    if (this.builderOrbitControls && isOrbitMode) {
       // 使用固定的楼层高度作为 Y 轴目标，而非 BoundingBox 垂直中心（那会在建筑半高处）
       const targetY = 6
       this.builderOrbitControls.target.set(cx, targetY, cz)
@@ -490,7 +490,18 @@ export class MallBuilderEngine extends ThreeEngine {
    */
   public setOrbitControlsEnabled(enabled: boolean): void {
     if (this.builderOrbitControls) {
-      this.builderOrbitControls.enabled = enabled
+      this.builderOrbitControls.enabled = enabled && this.getCameraMode() === 'orbit'
+    }
+  }
+
+  /**
+   * 切换相机模式时同步建模器 OrbitControls 的可用性，避免与 follow 相机并发控制同一 camera。
+   */
+  public override setCameraMode(mode: CameraMode): void {
+    super.setCameraMode(mode)
+
+    if (mode !== 'orbit' && this.builderOrbitControls) {
+      this.builderOrbitControls.enabled = false
     }
   }
 

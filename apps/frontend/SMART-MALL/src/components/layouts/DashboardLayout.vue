@@ -49,7 +49,7 @@ const sidebarCollapsed = ref(false)
 const aiVisible = ref(false)
 
 // 一级页面不显示返回键
-const TOP_LEVEL_PATHS = ['/mall', '/']
+const TOP_LEVEL_PATHS = ['/mall', '/mall/stores', '/']
 const isTopLevel = computed(() => TOP_LEVEL_PATHS.includes(route.path))
 
 function toggleAi() {
@@ -64,7 +64,8 @@ interface MenuItem {
 }
 
 const menuConfig: MenuItem[] = [
-  { titleKey: 'nav.enterMall', path: '/mall', icon: House },
+  { titleKey: 'nav.mallHome', path: '/mall', icon: House },
+  { titleKey: 'nav.storeProducts', path: '/mall/stores', icon: Goods, roles: ['USER'] },
   { titleKey: 'nav.adminCenter', path: '/admin/dashboard', icon: Setting, roles: ['ADMIN'] },
   { titleKey: 'nav.workspace', path: '/merchant/dashboard', icon: Goods, roles: ['MERCHANT'] },
   { titleKey: 'nav.profile', path: '/user/profile', icon: User },

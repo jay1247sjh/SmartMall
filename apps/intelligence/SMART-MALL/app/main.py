@@ -36,6 +36,7 @@ from app.api.sync import router as sync_router, metrics_router
 from app.core.config import settings
 from app.core.redis_pool import RedisPoolFactory
 from app.core.sync.event_bus import EventBus
+from app.core.sync.sync_service import SyncService
 from app.core.rag.service import init_rag_service
 from app.core.memory.session_scanner import SessionScanner
 
@@ -55,7 +56,9 @@ async def lifespan(app: FastAPI):
     logger.info("LLM Provider: %s", settings.LLM_PROVIDER)
 
     scanner_task = None
+    sync_consumer_task = None
     degraded_services: List[str] = []
+    sync_service = None
 
     # 1. 初始化 Redis 连接池
     try:
@@ -92,6 +95,15 @@ async def lifespan(app: FastAPI):
         logger.warning("Session Scanner start failed (non-critical): %s", e)
         degraded_services.append("session_scanner")
 
+    # 5. 启动增量同步消费者
+    try:
+        sync_service = SyncService()
+        sync_consumer_task = asyncio.create_task(sync_service.run_consumer("worker-main"))
+        logger.info("Sync consumer started")
+    except Exception as e:
+        logger.warning("Sync consumer start failed (non-critical): %s", e)
+        degraded_services.append("sync_consumer")
+
     # 聚合报告降级服务
     if degraded_services:
         logger.warning(
@@ -113,6 +125,17 @@ async def lifespan(app: FastAPI):
         except asyncio.CancelledError:
             pass
         logger.info("Session Scanner stopped")
+
+    # 停止同步消费者
+    if sync_service is not None:
+        await sync_service.shutdown()
+    if sync_consumer_task is not None:
+        sync_consumer_task.cancel()
+        try:
+            await sync_consumer_task
+        except asyncio.CancelledError:
+            pass
+        logger.info("Sync consumer stopped")
 
     # 关闭 Redis 连接池（同时释放 EventBus 依赖的连接）
     try:

@@ -32,7 +32,7 @@ public class IntelligenceServiceClient {
     private final RestTemplate intelligenceRestTemplate;
     private final ObjectMapper objectMapper;
 
-    @Value("${intelligence.service.url:http://localhost:9001}")
+    @Value("${intelligence.service.url:http://localhost:19191}")
     private String baseUrl;
 
     /**

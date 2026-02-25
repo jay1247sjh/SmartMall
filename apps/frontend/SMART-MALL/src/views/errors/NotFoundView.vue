@@ -21,7 +21,7 @@
  * - 路由配置中未匹配到任何路由
  */
 import { useRouter } from 'vue-router'
-import { ElResult, ElButton, ElIcon } from 'element-plus'
+import { ElResult, ElButton } from 'element-plus'
 import { HomeFilled } from '@element-plus/icons-vue'
 
 const router = useRouter()
@@ -41,8 +41,7 @@ function goHome() {
         class="error-result"
       >
         <template #extra>
-          <ElButton type="primary" @click="goHome">
-            <ElIcon class="btn-icon"><HomeFilled /></ElIcon>
+          <ElButton type="primary" :icon="HomeFilled" @click="goHome">
             返回首页
           </ElButton>
         </template>
@@ -89,10 +88,6 @@ function goHome() {
         border: none;
         border-radius: 10px;
         padding: $space-3 $space-6;
-
-        .btn-icon {
-          margin-right: $space-2;
-        }
       }
     }
   }

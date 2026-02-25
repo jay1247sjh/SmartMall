@@ -70,13 +70,23 @@ public class RouteService {
                     .build())
                 .build(),
             RouteDTO.builder()
+                .path("/mall/product/:productId")
+                .name("UserProductDetail")
+                .component("UserProductDetail")
+                .meta(RouteMeta.builder()
+                    .title("商品详情")
+                    .icon("goods")
+                    .roles(List.of("ADMIN", "MERCHANT", "USER"))
+                    .build())
+                .build(),
+            RouteDTO.builder()
                 .path("/builder/:projectId?")
                 .name("Builder")
                 .component("BuilderView")
                 .meta(RouteMeta.builder()
                     .title("建模器")
                     .icon("tool")
-                    .roles(List.of("ADMIN", "MERCHANT"))
+                    .roles(List.of("ADMIN"))
                     .mode("CONFIG")
                     .build())
                 .build()
@@ -214,6 +224,16 @@ public class RouteService {
                         .meta(RouteMeta.builder().title("建模工具").icon("tool").mode("CONFIG").build())
                         .build()
                 ))
+                .build(),
+            RouteDTO.builder()
+                .path("/merchant/mall-preview")
+                .name("MerchantMallPreview")
+                .component("MerchantMallPreview")
+                .meta(RouteMeta.builder()
+                    .title("商城预览")
+                    .icon("view")
+                    .roles(List.of("MERCHANT"))
+                    .build())
                 .build()
         );
     }
@@ -223,6 +243,16 @@ public class RouteService {
      */
     private List<RouteDTO> getUserRoutes() {
         return List.of(
+            RouteDTO.builder()
+                .path("/mall/stores")
+                .name("UserStoreProducts")
+                .component("UserStoreProducts")
+                .meta(RouteMeta.builder()
+                    .title("商家商品")
+                    .icon("goods")
+                    .roles(List.of("USER"))
+                    .build())
+                .build(),
             RouteDTO.builder()
                 .path("/user")
                 .name("User")

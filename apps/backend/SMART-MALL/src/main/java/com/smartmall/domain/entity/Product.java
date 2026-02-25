@@ -70,6 +70,16 @@ public class Product extends BaseEntity {
      */
     @TableField(typeHandler = PostgresJsonbListTypeHandler.class)
     private List<String> images;
+
+    /**
+     * 商品平均评分（5分制）
+     */
+    private BigDecimal ratingAvg;
+
+    /**
+     * 商品评分总数
+     */
+    private Integer ratingCount;
     
     /**
      * 商品状态

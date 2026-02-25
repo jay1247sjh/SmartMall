@@ -5,8 +5,9 @@
  * 商城建模器项目创建向导，支持模板选择、自定义绘制和 AI 生成。
  */
 
-import { ref } from 'vue'
+import { ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
+import { ConfirmModal } from '@/components'
 import type { MallTemplate, MallProject } from '@/builder'
 import { convertMallLayoutToProject } from '@/builder/converters/layout-converter'
 import { intelligenceApi } from '@/api/intelligence.api'
@@ -69,6 +70,10 @@ const { t } = useI18n()
 
 const savedProjects = ref<SavedProject[]>([])
 const isLoadingProjects = ref(false)
+const deletingProjectId = ref<string | null>(null)
+const showDeleteConfirmModal = ref(false)
+const pendingDeleteProject = ref<SavedProject | null>(null)
+const deleteProjectError = ref('')
 
 async function loadSavedProjects() {
   isLoadingProjects.value = true
@@ -86,17 +91,55 @@ function handleLoadProject(projectId: string) {
   emit('loadProject', projectId)
 }
 
+function handleDeleteProject(project: SavedProject, event: MouseEvent) {
+  event.stopPropagation()
+  if (deletingProjectId.value) return
+
+  pendingDeleteProject.value = project
+  deleteProjectError.value = ''
+  showDeleteConfirmModal.value = true
+}
+
+function handleCancelDeleteProject() {
+  showDeleteConfirmModal.value = false
+  pendingDeleteProject.value = null
+}
+
+async function handleConfirmDeleteProject() {
+  const project = pendingDeleteProject.value
+  if (!project || deletingProjectId.value) return
+
+  showDeleteConfirmModal.value = false
+  deletingProjectId.value = project.projectId
+  try {
+    const { mallBuilderApi } = await import('@/api/mall-builder.api')
+    await mallBuilderApi.deleteProject(project.projectId)
+    await loadSavedProjects()
+    pendingDeleteProject.value = null
+  } catch (err) {
+    console.error('删除项目失败:', err)
+    deleteProjectError.value = t('builder.wizard.deleteProjectFailed')
+  } finally {
+    deletingProjectId.value = null
+  }
+}
+
 function formatDate(dateStr: string): string {
   const d = new Date(dateStr)
   const pad = (n: number) => String(n).padStart(2, '0')
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`
 }
 
-// 组件挂载时加载已保存项目
-import { onMounted } from 'vue'
-onMounted(() => {
-  loadSavedProjects()
-})
+// 仅在向导可见时加载已保存项目，避免非管理员场景误触发管理接口
+watch(
+  () => props.visible,
+  (visible) => {
+    if (visible) {
+      loadSavedProjects()
+    }
+  },
+  { immediate: true },
+)
 
 // ============================================================================
 // 方法
@@ -205,13 +248,24 @@ function getCreateButtonText(): string {
                   {{ t('builder.wizard.floorCount', { count: proj.floorCount }) }} · {{ t('builder.wizard.areaCount', { count: proj.areaCount }) }} · {{ formatDate(proj.updatedAt) }}
                 </span>
               </div>
-              <div class="project-arrow">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
-                  <path d="M9 18l6-6-6-6"/>
-                </svg>
+              <div class="project-actions">
+                <button
+                  type="button"
+                  class="btn-delete-project"
+                  :disabled="deletingProjectId === proj.projectId"
+                  @click="handleDeleteProject(proj, $event)"
+                >
+                  {{ deletingProjectId === proj.projectId ? t('common.loading') : t('admin.delete') }}
+                </button>
+                <div class="project-arrow">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
+                    <path d="M9 18l6-6-6-6"/>
+                  </svg>
+                </div>
               </div>
             </div>
           </div>
+          <p v-if="deleteProjectError" class="delete-project-error">{{ deleteProjectError }}</p>
         </div>
 
         <!-- 分隔线 -->
@@ -369,6 +423,20 @@ function getCreateButtonText(): string {
       </div>
     </div>
   </div>
+
+  <ConfirmModal
+    v-model:visible="showDeleteConfirmModal"
+    :title="t('admin.delete')"
+    :confirm-text="t('admin.delete')"
+    confirm-variant="danger"
+    :processing="Boolean(deletingProjectId)"
+    @confirm="handleConfirmDeleteProject"
+    @cancel="handleCancelDeleteProject"
+  >
+    <p v-if="pendingDeleteProject" class="confirm-message">
+      {{ t('builder.wizard.confirmDeleteProject', { name: pendingDeleteProject.name }) }}
+    </p>
+  </ConfirmModal>
 </template>
 
 <style scoped lang="scss">
@@ -448,10 +516,51 @@ function getCreateButtonText(): string {
     transition: transform $duration-normal;
   }
 
+  .project-actions {
+    display: inline-flex;
+    align-items: center;
+    gap: $space-3;
+  }
+
+  .btn-delete-project {
+    height: 28px;
+    padding: 0 $space-3;
+    border: 1px solid rgba(239, 68, 68, 0.35);
+    border-radius: $radius-sm;
+    background: rgba(239, 68, 68, 0.08);
+    color: #ef4444;
+    font-size: $font-size-xs;
+    cursor: pointer;
+    transition: all $duration-normal;
+
+    &:hover:not(:disabled) {
+      background: rgba(239, 68, 68, 0.16);
+      border-color: rgba(239, 68, 68, 0.5);
+    }
+
+    &:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+  }
+
   &:hover .project-arrow {
     transform: translateX(2px);
     color: var(--accent-primary);
   }
+}
+
+.delete-project-error {
+  margin: $space-3 0 0;
+  font-size: $font-size-sm;
+  color: var(--error);
+}
+
+.confirm-message {
+  margin: 0;
+  font-size: $font-size-base;
+  color: var(--text-primary);
+  line-height: 1.6;
 }
 
 .section-divider {

@@ -244,9 +244,11 @@ public class MallBuilderService {
         // 软删除楼层和区域
         deleteFloorsAndAreas(projectId);
         
-        // 软删除项目
-        project.setIsDeleted(true);
-        projectMapper.updateById(project);
+        // 软删除项目（必须校验影响行数，避免出现“子数据已删但项目未删”的半成功状态）
+        int affected = projectMapper.deleteById(projectId);
+        if (affected <= 0) {
+            throw new BusinessException(ResultCode.CONFLICT, "项目删除失败，请重试");
+        }
     }
     
     // ==================== 私有方法 ====================

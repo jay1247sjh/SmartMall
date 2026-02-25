@@ -22,7 +22,7 @@
  */
 
 import * as THREE from 'three'
-import { createPerspectiveCamera, type CameraConfig } from './cameraFactory'
+import { createPerspectiveCamera } from './cameraFactory'
 
 // ============================================================================
 // 类型定义
@@ -79,6 +79,18 @@ export interface ThirdPersonCameraConfig {
    * - 默认 1 米
    */
   minHeight: number
+
+  /**
+   * 水平视角约束（Yaw 扇形）
+   * - enabled: 是否启用约束
+   * - halfAngle: 扇形半角（弧度）
+   * - centerOffset: 相对跟随目标朝向的中心偏移（弧度）
+   */
+  yawConstraint: {
+    enabled: boolean
+    halfAngle: number
+    centerOffset: number
+  }
 }
 
 /**
@@ -189,7 +201,12 @@ export class CameraController {
     smoothness: 0.1, // 平滑跟随（10% 插值）
     mouseSensitivity: 0.002, // 鼠标灵敏度
     pitchLimit: { min: -Math.PI / 3, max: Math.PI / 3 }, // 垂直角度限制 ±60°
-    minHeight: 1 // 相机最低高度 1 米
+    minHeight: 1, // 相机最低高度 1 米
+    yawConstraint: {
+      enabled: false,
+      halfAngle: Math.PI,
+      centerOffset: 0,
+    },
   }
 
   // ==========================================================================
@@ -346,8 +363,8 @@ export class CameraController {
    */
   private handlePointerLockChange = (): void => {
     // 更新锁定状态
-    // document.pointerLockElement 不为 null 表示指针被锁定
-    this.isPointerLocked = document.pointerLockElement !== null
+    // 仅当当前控制器容器本身被锁定时，才认为可接管鼠标视角
+    this.isPointerLocked = document.pointerLockElement === this.container
   }
 
   /**
@@ -370,8 +387,9 @@ export class CameraController {
     // 水平旋转（Yaw）
     // movementX: 鼠标水平移动量（像素）
     // 负号：鼠标向右移动，相机向右转（yaw 减小）
-    // yaw 允许自由累积，sin/cos 是周期函数不受影响
+    // yaw 理论上可自由累积，这里做归一化保证数值稳定
     this.yaw -= event.movementX * mouseSensitivity
+    this.yaw = this.clampYawToConstraint(this.yaw)
 
     // 垂直旋转（Pitch）
     // movementY: 鼠标垂直移动量（像素）
@@ -416,6 +434,64 @@ export class CameraController {
    */
   private notifyChange(): void {
     this.onChangeCallback?.()
+  }
+
+  /**
+   * 归一化角度到 [-π, π]
+   */
+  private normalizeAngle(angle: number): number {
+    return Math.atan2(Math.sin(angle), Math.cos(angle))
+  }
+
+  /**
+   * 获取 yaw 扇形中心角度
+   *
+   * 当有 followTarget 时，以目标朝向 + centerOffset 作为中心；
+   * 没有 followTarget 时，中心退化为 world 前向 + centerOffset。
+   */
+  private getYawConstraintCenter(): number {
+    const targetYaw = this.followTarget ? this.followTarget.rotation.y : 0
+    return this.normalizeAngle(targetYaw + this.config.yawConstraint.centerOffset)
+  }
+
+  /**
+   * 将 yaw 限制在配置的扇形范围内
+   */
+  private clampYawToConstraint(yaw: number): number {
+    const normalizedYaw = this.normalizeAngle(yaw)
+    const { yawConstraint } = this.config
+    if (!yawConstraint.enabled) return normalizedYaw
+
+    const halfAngle = Math.max(0, Math.min(Math.PI, yawConstraint.halfAngle))
+    const center = this.getYawConstraintCenter()
+    const diff = this.normalizeAngle(normalizedYaw - center)
+    const clampedDiff = Math.max(-halfAngle, Math.min(halfAngle, diff))
+    return this.normalizeAngle(center + clampedDiff)
+  }
+
+  /**
+   * 合并并规范化配置
+   */
+  private mergeConfig(config: Partial<ThirdPersonCameraConfig>): void {
+    const mergedYawConstraint = config.yawConstraint
+      ? { ...this.config.yawConstraint, ...config.yawConstraint }
+      : { ...this.config.yawConstraint }
+
+    this.config = {
+      ...this.config,
+      ...config,
+      yawConstraint: {
+        enabled: mergedYawConstraint.enabled,
+        halfAngle: Math.max(0, Math.min(Math.PI, mergedYawConstraint.halfAngle)),
+        centerOffset: this.normalizeAngle(mergedYawConstraint.centerOffset),
+      },
+    }
+
+    const clampedYaw = this.clampYawToConstraint(this.yaw)
+    if (clampedYaw !== this.yaw) {
+      this.yaw = clampedYaw
+      this.notifyChange()
+    }
   }
 
   // ==========================================================================
@@ -475,6 +551,9 @@ export class CameraController {
   private updateFollowCamera(): void {
     // 安全检查：如果没有跟随目标，直接返回
     if (!this.followTarget) return
+
+    // 跟随目标转向时，约束中心会变化；每帧收敛确保 yaw 始终在扇形内
+    this.yaw = this.clampYawToConstraint(this.yaw)
 
     // 获取配置参数
     const { distance, lookAtHeightOffset, smoothness, minHeight } = this.config
@@ -592,7 +671,14 @@ export class CameraController {
   ): void {
     this.followTarget = target
     if (config) {
-      this.config = { ...this.config, ...config }
+      this.mergeConfig(config)
+      return
+    }
+
+    const clampedYaw = this.clampYawToConstraint(this.yaw)
+    if (clampedYaw !== this.yaw) {
+      this.yaw = clampedYaw
+      this.notifyChange()
     }
   }
 
@@ -607,7 +693,7 @@ export class CameraController {
    * 更新配置
    */
   public updateConfig(config: Partial<ThirdPersonCameraConfig>): void {
-    this.config = { ...this.config, ...config }
+    this.mergeConfig(config)
   }
 
   // ==========================================================================
@@ -675,7 +761,7 @@ export class CameraController {
    * 设置视角角度
    */
   public setAngles(yaw: number, pitch: number): void {
-    this.yaw = yaw
+    this.yaw = this.clampYawToConstraint(yaw)
     this.pitch = Math.max(
       this.config.pitchLimit.min,
       Math.min(this.config.pitchLimit.max, pitch)
@@ -733,7 +819,11 @@ export class CameraController {
 
   /** 获取当前配置 */
   public getConfig(): ThirdPersonCameraConfig {
-    return { ...this.config }
+    return {
+      ...this.config,
+      pitchLimit: { ...this.config.pitchLimit },
+      yawConstraint: { ...this.config.yawConstraint },
+    }
   }
 
   // ==========================================================================
