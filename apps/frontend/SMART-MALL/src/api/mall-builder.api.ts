@@ -161,6 +161,8 @@ export interface CreateProjectRequest {
   settings?: SettingsDTO
   /** 楼层列表 */
   floors?: FloorDTO[]
+  /** 项目元数据（如导航扩展信息） */
+  metadata?: Record<string, unknown>
 }
 
 /**
@@ -217,6 +219,7 @@ export interface ProjectResponse {
   description?: string
   outline: OutlineDTO
   settings?: SettingsDTO
+  metadata?: Record<string, unknown>
   floors?: FloorResponse[]
   version: number
   createdAt: string
@@ -255,6 +258,7 @@ export function toCreateRequest(project: MallProject): CreateProjectRequest {
     outline: toOutlineDTO(project.outline),
     settings: toSettingsDTO(project.settings),
     floors: project.floors.map(toFloorDTO),
+    metadata: project.metadata,
   }
 }
 
@@ -288,6 +292,7 @@ export function toMallProject(response: ProjectResponse): MallProject {
     outline: toPolygon(response.outline),
     settings: toProjectSettings(response.settings),
     floors: response.floors?.map(toFloorDefinition) ?? [],
+    metadata: response.metadata ?? {},
   }
 }
 

@@ -6,6 +6,7 @@ import jakarta.validation.constraints.NotNull;
 import lombok.Data;
 
 import java.util.List;
+import java.util.Map;
 
 /**
  * 更新项目请求
@@ -27,6 +28,13 @@ public class UpdateProjectRequest {
     
     @Valid
     private List<FloorDTO> floors;
+
+    /**
+     * 项目元数据（扩展字段）
+     * 可用于存储导航等附加信息，如:
+     * metadata.navigation.verticalConnections
+     */
+    private Map<String, Object> metadata;
     
     /**
      * 当前版本号（用于乐观锁）

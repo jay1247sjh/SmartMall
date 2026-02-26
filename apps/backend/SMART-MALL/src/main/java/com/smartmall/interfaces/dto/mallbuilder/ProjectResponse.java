@@ -4,6 +4,7 @@ import lombok.Data;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
 
 /**
  * 项目详情响应
@@ -20,6 +21,11 @@ public class ProjectResponse {
     private OutlineDTO outline;
     
     private SettingsDTO settings;
+
+    /**
+     * 项目元数据（扩展字段）
+     */
+    private Map<String, Object> metadata;
     
     private List<FloorResponse> floors;
     

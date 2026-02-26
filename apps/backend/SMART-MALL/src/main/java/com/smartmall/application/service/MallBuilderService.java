@@ -51,6 +51,7 @@ public class MallBuilderService {
         project.setDescription(request.getDescription());
         project.setOutline(convertToMap(request.getOutline()));
         project.setSettings(convertToMap(request.getSettings()));
+        project.setMetadata(convertToMap(request.getMetadata()));
         project.setCreatorId(creatorId);
         project.setVersion(1);
         
@@ -210,6 +211,7 @@ public class MallBuilderService {
         project.setDescription(request.getDescription());
         project.setOutline(convertToMap(request.getOutline()));
         project.setSettings(convertToMap(request.getSettings()));
+        project.setMetadata(convertToMap(request.getMetadata()));
         project.setVersion(project.getVersion() + 1);
         
         projectMapper.updateById(project);
@@ -419,6 +421,7 @@ public class MallBuilderService {
         response.setDescription(project.getDescription());
         response.setOutline(convertToOutlineDTO(project.getOutline()));
         response.setSettings(objectMapper.convertValue(project.getSettings(), SettingsDTO.class));
+        response.setMetadata(convertToMap(project.getMetadata()));
         response.setVersion(project.getVersion());
         response.setCreatedAt(project.getCreateTime());
         response.setUpdatedAt(project.getUpdateTime());

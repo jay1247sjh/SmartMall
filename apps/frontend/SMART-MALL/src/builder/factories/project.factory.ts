@@ -93,6 +93,7 @@ export function createEmptyProject(name: string): MallProject {
     },
     floors: [],
     settings: createDefaultSettings(),
+    metadata: {},
   }
 }
 
