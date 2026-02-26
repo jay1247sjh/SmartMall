@@ -50,6 +50,10 @@ export interface NavigationOptions {
   maxHeight?: number
   /** 每帧渲染回调（用于触发引擎渲染） */
   onUpdate?: () => void
+  /**
+   * 相机看向目标点（可选）
+   */
+  lookAt?: THREE.Vector3
 }
 
 /** 导航结果 */
@@ -174,6 +178,38 @@ export class NavigationBehavior {
       ...options,
     }
     return this.navigateToObject(semanticId, floorOptions)
+  }
+
+  /**
+   * 导航到指定坐标位置
+   *
+   * @param position - 目标相机位置
+   * @param options - 导航配置选项
+   */
+  public navigateToPosition(
+    position: THREE.Vector3,
+    options?: NavigationOptions
+  ): NavigationResult {
+    if (!position || !Number.isFinite(position.x) || !Number.isFinite(position.y) || !Number.isFinite(position.z)) {
+      return {
+        success: false,
+        message: '无效的导航坐标',
+      }
+    }
+
+    const config = {
+      ...NavigationBehavior.DEFAULT_OPTIONS,
+      ...options,
+    }
+
+    const camera = this.cameraController.getCamera()
+    const currentLookAt = new THREE.Vector3(0, 0, 0)
+    camera.getWorldDirection(currentLookAt)
+    currentLookAt.multiplyScalar(8).add(camera.position)
+
+    const lookAt = config.lookAt ?? currentLookAt
+    this.animateCameraTo(position, lookAt, config.duration, config.onUpdate)
+    return { success: true }
   }
 
   // ===========================================================================

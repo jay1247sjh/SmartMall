@@ -22,6 +22,7 @@ import { useRoute } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { intelligenceApi } from '@/api/intelligence.api'
 import { useAiStore } from '@/stores'
+import { useBuilderNavigationStore } from '@/stores/builder-navigation.store'
 
 /** Agent 处理步骤 */
 export interface AgentStep {
@@ -40,6 +41,7 @@ export function useBuilderAiChat() {
   const { t } = useI18n()
   const route = useRoute()
   const aiStore = useAiStore()
+  const builderNavigationStore = useBuilderNavigationStore()
 
   const abortController = ref<AbortController | null>(null)
   const agentSteps = ref<AgentStep[]>([])
@@ -157,10 +159,16 @@ export function useBuilderAiChat() {
     startProcessing()
 
     try {
+      const contextFloor = builderNavigationStore.currentFloorId || route.path
+      const contextPosition = builderNavigationStore.currentPosition || undefined
+
       const response = await intelligenceApi.chat(
         trimmed,
         imageUrl || undefined,
-        { current_floor: route.path },
+        {
+          current_floor: contextFloor,
+          current_position: contextPosition,
+        },
         abortController.value.signal,
       )
 

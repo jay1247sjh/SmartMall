@@ -24,6 +24,7 @@ import type { NavigationBehavior, NavigationResult } from '../../domain/behavior
 import type { Action } from '../../protocol/action.protocol'
 import type { ActionResult, ActionHandler } from '../types'
 import { ActionType } from '../types'
+import * as THREE from 'three'
 
 /**
  * 将 NavigationResult 适配为 ActionResult
@@ -97,31 +98,23 @@ export function createNavigateToAreaHandler(
 /**
  * 创建"导航到坐标位置"Handler
  *
- * 注意：NavigationBehavior 当前不支持 navigateToPosition 方法，
- * 此 Handler 返回成功结果作为占位实现，待后续扩展。
- *
- * TODO: 当 NavigationBehavior 支持 navigateToPosition 后，替换为实际调用
- *
- * @param _navigationBehavior - NavigationBehavior 实例（当前未使用）
+ * @param navigationBehavior - NavigationBehavior 实例
  * @returns ActionHandler
  */
 export function createNavigateToPositionHandler(
-  _navigationBehavior: NavigationBehavior
+  navigationBehavior: NavigationBehavior
 ): ActionHandler<ActionType.NAVIGATE_TO_POSITION> {
   return {
     handle(action: Action<ActionType.NAVIGATE_TO_POSITION>): ActionResult {
-      // TODO: NavigationBehavior 尚未实现 navigateToPosition，暂返回成功
-      return {
-        success: true,
-        data: { navigated: true, position: action.payload.position },
-        meta: {
-          actionId: action.actionId ?? '',
-          actionType: action.type,
-          source: action.source,
-          timestamp: action.timestamp,
-          duration: 0,
+      const { position, target, duration } = action.payload
+      const navResult = navigationBehavior.navigateToPosition(
+        new THREE.Vector3(position.x, position.y, position.z),
+        {
+          duration,
+          lookAt: target ? new THREE.Vector3(target.x, target.y, target.z) : undefined,
         },
-      }
+      )
+      return adaptNavigationResult(navResult, action)
     },
   }
 }

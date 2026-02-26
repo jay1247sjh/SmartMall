@@ -18,8 +18,15 @@ import { useI18n } from 'vue-i18n'
 import * as THREE from 'three'
 import { MallBuilderEngine } from '@/engine/mall-builder/MallBuilderEngine'
 import { useSettingsStore } from '@/stores/settings.store'
-import { getPublishedMallData } from '@/api/mall-manage.api'
+import {
+  getPublishedMallData,
+  planPublishedMallNavigation,
+  type NavigationPlanRequest,
+  type NavigationRouteData,
+  type NavigationRoutePoint,
+} from '@/api/mall-manage.api'
 import { toMallProject } from '@/api/mall-builder.api'
+import { useBuilderNavigationStore, type BuilderNavigationIntent } from '@/stores/builder-navigation.store'
 
 // 导入 builder 模块
 import {
@@ -85,6 +92,7 @@ const router = useRouter()
 const route = useRoute()
 const { t } = useI18n()
 const settingsStore = useSettingsStore()
+const builderNavigationStore = useBuilderNavigationStore()
 const isMerchantPreviewRoute = route.name === 'MerchantMallPreview' || route.path === '/merchant/mall-preview'
 const isUserPreviewRoute = route.name === 'Mall3D' || route.path === '/mall/3d'
 const isPublishedPreviewRoute = isMerchantPreviewRoute || isUserPreviewRoute
@@ -204,6 +212,8 @@ const showHelpPanel = ref(false)
 const showLeaveConfirm = ref(false)
 const showProjectListModal = ref(false)
 const pendingNavigation = ref<(() => void) | null>(null)
+const pendingRoamingSpawnPosition = ref<THREE.Vector3 | null>(null)
+const pendingRoamingSpawnRotation = ref<number | null>(null)
 
 // 保存反馈状态
 const saveToastVisible = ref(false)
@@ -211,6 +221,12 @@ const saveToastType = ref<'success' | 'error'>('success')
 const saveToastMessage = ref('')
 const lastSavedAt = ref<Date | null>(null)
 let saveToastTimer: ReturnType<typeof setTimeout> | null = null
+let loadingOverlayTimer: ReturnType<typeof setTimeout> | null = null
+let autoNavigateRafId: number | null = null
+let autoNavigateLastTs = 0
+let autoNavigatePointIndex = 0
+let autoNavigatePoints: NavigationRoutePoint[] = []
+let unregisterNavigationContextRender: (() => void) | null = null
 
 // 模板列表
 const templates = computed(() => getAllTemplates())
@@ -270,6 +286,20 @@ function clearSaveToastTimer() {
     clearTimeout(saveToastTimer)
     saveToastTimer = null
   }
+}
+
+function clearLoadingOverlayTimer() {
+  if (!loadingOverlayTimer) return
+  clearTimeout(loadingOverlayTimer)
+  loadingOverlayTimer = null
+}
+
+function hideLoadingOverlay(delayMs = 300) {
+  clearLoadingOverlayTimer()
+  loadingOverlayTimer = setTimeout(() => {
+    isLoading.value = false
+    loadingOverlayTimer = null
+  }, delayMs)
 }
 
 function showSaveToast(type: 'success' | 'error', message: string, durationMs: number) {
@@ -333,8 +363,9 @@ async function initEngine() {
     // 根据当前上下文统一同步 OrbitControls 状态
     syncBuilderOrbitControlsState()
 
-    setTimeout(() => { isLoading.value = false }, 300)
+    hideLoadingOverlay()
   } catch (error) {
+    clearLoadingOverlayTimer()
     console.error('[initEngine] 初始化失败:', error)
     isLoading.value = false
   }
@@ -461,6 +492,7 @@ function createNewProject() {
   if (!selectedTemplate.value) return
 
   project.value = projectMgmt.createFromTemplate(selectedTemplate.value, newProjectName.value)
+  connections.verticalConnections.value = []
   lastSavedAt.value = null
   floorMgmt.initFloor(project.value)
   router.replace({ params: { projectId: project.value.id } })
@@ -473,6 +505,7 @@ function createNewProject() {
 function createCustomProject() {
   if (isPreviewMode.value) return
   project.value = projectMgmt.createCustomProject(newProjectName.value)
+  connections.verticalConnections.value = []
   lastSavedAt.value = null
   floorMgmt.initFloor(project.value)
   router.replace({ params: { projectId: project.value.id } })
@@ -480,6 +513,57 @@ function createCustomProject() {
   showWizard.value = false
   renderProject()  // 渲染空项目（显示网格和基础场景）
   saveHistory()
+}
+
+function syncNavigationMetadataToProject() {
+  if (!project.value) return
+  const metadata = (project.value.metadata && typeof project.value.metadata === 'object')
+    ? { ...project.value.metadata as Record<string, unknown> }
+    : {}
+  const navigation = (metadata.navigation && typeof metadata.navigation === 'object')
+    ? { ...(metadata.navigation as Record<string, unknown>) }
+    : {}
+
+  navigation.verticalConnections = connections.verticalConnections.value.map(conn => ({
+    id: conn.id,
+    areaId: conn.areaId,
+    type: conn.type,
+    connectedFloors: [...conn.connectedFloors],
+    createdAt: conn.createdAt,
+  }))
+
+  metadata.navigation = navigation
+  project.value.metadata = metadata
+}
+
+function restoreNavigationMetadataFromProject() {
+  if (!project.value) return
+  const metadata = project.value.metadata as Record<string, unknown> | undefined
+  const navigation = metadata?.navigation as Record<string, unknown> | undefined
+  const rawConnections = Array.isArray(navigation?.verticalConnections)
+    ? navigation?.verticalConnections
+    : []
+
+  const restored: VerticalConnection[] = rawConnections
+    .map((item): VerticalConnection | null => {
+      if (!item || typeof item !== 'object') return null
+      const data = item as Record<string, unknown>
+      if (typeof data.areaId !== 'string' || typeof data.type !== 'string') return null
+      if (!Array.isArray(data.connectedFloors)) return null
+      const connectedFloors = data.connectedFloors
+        .filter((f): f is string => typeof f === 'string' && !!f)
+      if (connectedFloors.length === 0) return null
+      return {
+        id: typeof data.id === 'string' && data.id ? data.id : crypto.randomUUID(),
+        areaId: data.areaId,
+        type: data.type as VerticalConnection['type'],
+        connectedFloors,
+        createdAt: typeof data.createdAt === 'number' ? data.createdAt : Date.now(),
+      }
+    })
+    .filter((v): v is VerticalConnection => !!v)
+
+  connections.verticalConnections.value = restored
 }
 
 function renderProject(renderAllFloors: boolean = false) {
@@ -522,6 +606,8 @@ function renderProject(renderAllFloors: boolean = false) {
   if (viewMode.value === 'edit') {
     renderConnectionIndicators()
   }
+
+  renderNavigationRouteOverlay()
 }
 
 function renderConnectionIndicators() {
@@ -535,6 +621,85 @@ function renderConnectionIndicators() {
       scene.value!.add(indicator)
     }
   })
+}
+
+function disposeRouteObject(obj: THREE.Object3D) {
+  if (obj instanceof THREE.Line) {
+    obj.geometry.dispose()
+    const material = obj.material as THREE.Material | THREE.Material[]
+    if (Array.isArray(material)) material.forEach(m => m.dispose())
+    else material.dispose()
+  }
+  if (obj instanceof THREE.Mesh) {
+    obj.geometry.dispose()
+    const material = obj.material as THREE.Material | THREE.Material[]
+    if (Array.isArray(material)) material.forEach(m => m.dispose())
+    else material.dispose()
+  }
+  obj.children.forEach(child => disposeRouteObject(child))
+}
+
+function clearNavigationRouteOverlay() {
+  if (!scene.value) return
+  const toRemove: THREE.Object3D[] = []
+  scene.value.traverse(obj => {
+    if (obj.userData?.isBuilderNavigationRoute) {
+      toRemove.push(obj)
+    }
+  })
+  toRemove.forEach(obj => {
+    scene.value?.remove(obj)
+    disposeRouteObject(obj)
+  })
+}
+
+function renderNavigationRouteOverlay() {
+  if (!scene.value) return
+  clearNavigationRouteOverlay()
+
+  const route = builderNavigationStore.activeRoute
+  const target = builderNavigationStore.activeTarget
+  if (!route || !target) return
+
+  route.segments.forEach((segment, index) => {
+    if (!segment.points || segment.points.length < 2) return
+    const geometry = new THREE.BufferGeometry().setFromPoints(
+      segment.points.map(p => new THREE.Vector3(p.x, p.y + 0.18, p.z))
+    )
+    const material = new THREE.LineBasicMaterial({
+      color: index % 2 === 0 ? 0x22c55e : 0x0ea5e9,
+      transparent: true,
+      opacity: 0.92,
+    })
+    const line = new THREE.Line(geometry, material)
+    line.name = `builder-navigation-route-${index}`
+    line.userData.isBuilderNavigationRoute = true
+    scene.value?.add(line)
+  })
+
+  route.transitions.forEach((transition, index) => {
+    const marker = new THREE.Mesh(
+      new THREE.SphereGeometry(0.35, 16, 16),
+      new THREE.MeshBasicMaterial({ color: 0xf59e0b })
+    )
+    marker.position.set(
+      transition.position.x,
+      transition.position.y + 0.3,
+      transition.position.z,
+    )
+    marker.name = `builder-navigation-transition-${index}`
+    marker.userData.isBuilderNavigationRoute = true
+    scene.value?.add(marker)
+  })
+
+  const targetMarker = new THREE.Mesh(
+    new THREE.ConeGeometry(0.45, 1.2, 12),
+    new THREE.MeshBasicMaterial({ color: 0xef4444 })
+  )
+  targetMarker.position.set(target.position.x, target.position.y + 0.8, target.position.z)
+  targetMarker.name = 'builder-navigation-target'
+  targetMarker.userData.isBuilderNavigationRoute = true
+  scene.value?.add(targetMarker)
 }
 
 // ============================================================================
@@ -711,6 +876,229 @@ async function handleImport(event: Event) {
 // 导航
 // ============================================================================
 
+function flattenRoutePoints(route: NavigationRouteData): NavigationRoutePoint[] {
+  const points: NavigationRoutePoint[] = []
+  route.segments.forEach(segment => {
+    segment.points.forEach(point => {
+      const prev = points[points.length - 1]
+      if (
+        prev &&
+        prev.floorId === point.floorId &&
+        Math.abs(prev.x - point.x) < 0.001 &&
+        Math.abs(prev.y - point.y) < 0.001 &&
+        Math.abs(prev.z - point.z) < 0.001
+      ) {
+        return
+      }
+      points.push(point)
+    })
+  })
+  return points
+}
+
+function getCurrentNavigationSource(): Pick<NavigationPlanRequest, 'sourceFloorId' | 'sourcePosition'> {
+  const sourceFloorId = floorMgmt.currentFloorId.value || builderNavigationStore.currentFloorId || undefined
+
+  const controller = roaming.getCharacterController()
+  if (viewMode.value === 'orbit' && controller) {
+    const pos = controller.getPosition()
+    return {
+      sourceFloorId,
+      sourcePosition: { x: pos.x, y: pos.y, z: pos.z },
+    }
+  }
+
+  if (camera.value) {
+    return {
+      sourceFloorId,
+      sourcePosition: {
+        x: camera.value.position.x,
+        y: camera.value.position.y,
+        z: camera.value.position.z,
+      },
+    }
+  }
+
+  return { sourceFloorId }
+}
+
+async function handleBuilderNavigationIntent(intent: BuilderNavigationIntent) {
+  if (!project.value) {
+    builderNavigationStore.setError('INVALID_STATE', '当前建模页尚未加载项目，无法执行导航')
+    return
+  }
+
+  stopAutoNavigation()
+  const source = getCurrentNavigationSource()
+
+  try {
+    const response = await planPublishedMallNavigation({
+      targetType: intent.targetType,
+      targetKeyword: intent.targetKeyword,
+      sourceFloorId: source.sourceFloorId,
+      sourcePosition: source.sourcePosition,
+    })
+
+    if (!response.success || !response.route || !response.target) {
+      builderNavigationStore.setError(response.code, response.message || '路径规划失败')
+      showSaveToast('error', response.message || '路径规划失败', 3500)
+      return
+    }
+
+    builderNavigationStore.setActivePlan(response.route, response.target, response.warnings)
+    builderNavigationStore.setExecutionMode('none')
+    renderProject()
+    showSaveToast('success', `已规划到 ${response.target.targetName}`, 2000)
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : '连接失败，请检查网络后重试'
+    builderNavigationStore.setError('NETWORK_ERROR', message)
+    showSaveToast('error', message, 3500)
+  }
+}
+
+function stopAutoNavigation() {
+  if (autoNavigateRafId !== null) {
+    cancelAnimationFrame(autoNavigateRafId)
+    autoNavigateRafId = null
+  }
+  autoNavigatePoints = []
+  autoNavigatePointIndex = 0
+  autoNavigateLastTs = 0
+  builderNavigationStore.setAutoNavigating(false)
+  if (builderNavigationStore.executionMode === 'auto') {
+    builderNavigationStore.setExecutionMode('none')
+  }
+}
+
+function startAutoNavigation() {
+  if (!builderNavigationStore.activeRoute) return
+
+  autoNavigatePoints = flattenRoutePoints(builderNavigationStore.activeRoute)
+  if (autoNavigatePoints.length < 2) {
+    showSaveToast('error', '当前路径点不足，无法自动导航', 3000)
+    return
+  }
+
+  stopAutoNavigation()
+
+  if (viewMode.value !== 'orbit') {
+    enterRoamMode()
+  }
+
+  builderNavigationStore.setExecutionMode('auto')
+  builderNavigationStore.setAutoNavigating(true)
+  autoNavigatePointIndex = 0
+
+  const tick = (timestamp: number) => {
+    if (!builderNavigationStore.isAutoNavigating) return
+
+    const controller = roaming.getCharacterController()
+    if (!controller || !engine.value) {
+      stopAutoNavigation()
+      showSaveToast('error', '自动导航被中断，请重试', 3000)
+      return
+    }
+
+    if (autoNavigateLastTs === 0) {
+      autoNavigateLastTs = timestamp
+    }
+    const delta = Math.min(0.05, (timestamp - autoNavigateLastTs) / 1000)
+    autoNavigateLastTs = timestamp
+
+    const targetPoint = autoNavigatePoints[Math.min(autoNavigatePointIndex + 1, autoNavigatePoints.length - 1)]
+    if (!targetPoint) {
+      stopAutoNavigation()
+      return
+    }
+
+    if (floorMgmt.currentFloorId.value !== targetPoint.floorId) {
+      const currentPos = controller.getPosition()
+      pendingRoamingSpawnPosition.value = new THREE.Vector3(currentPos.x, targetPoint.y, currentPos.z)
+      pendingRoamingSpawnRotation.value = controller.getRotationY()
+      floorMgmt.selectFloor(targetPoint.floorId)
+      autoNavigateRafId = requestAnimationFrame(tick)
+      return
+    }
+
+    const current = controller.getPosition()
+    const target = new THREE.Vector3(targetPoint.x, targetPoint.y, targetPoint.z)
+    const direction = target.clone().sub(current)
+    const distance = direction.length()
+
+    if (distance <= 0.15) {
+      controller.setPosition(target.x, target.y, target.z)
+      autoNavigatePointIndex += 1
+      if (autoNavigatePointIndex >= autoNavigatePoints.length - 1) {
+        stopAutoNavigation()
+        showSaveToast('success', '自动导航已到达目标', 2200)
+        return
+      }
+      autoNavigateRafId = requestAnimationFrame(tick)
+      return
+    }
+
+    direction.normalize()
+    const speed = controller.moveSpeed > 0 ? controller.moveSpeed : 2.5
+    const step = Math.min(speed * delta, distance)
+    const next = current.clone().add(direction.multiplyScalar(step))
+
+    controller.setPosition(next.x, targetPoint.y, next.z)
+    controller.setRotation(Math.atan2(targetPoint.x - current.x, targetPoint.z - current.z))
+    engine.value.requestRender()
+    autoNavigateRafId = requestAnimationFrame(tick)
+  }
+
+  autoNavigateRafId = requestAnimationFrame(tick)
+}
+
+function flyCameraToNavigationTarget() {
+  const target = builderNavigationStore.activeTarget
+  if (!target || !camera.value || !engine.value) return
+
+  stopAutoNavigation()
+
+  if (viewMode.value === 'orbit') {
+    exitRoamMode()
+  }
+
+  builderNavigationStore.setExecutionMode('camera')
+  const destination = new THREE.Vector3(target.position.x + 6, target.position.y + 8, target.position.z + 6)
+  const lookAt = new THREE.Vector3(target.position.x, target.position.y, target.position.z)
+  const startPos = camera.value.position.clone()
+  const startTarget = controls.value?.target.clone() || new THREE.Vector3(0, 0, 0)
+  const duration = 1000
+  const startTime = performance.now()
+
+  const animate = (now: number) => {
+    const progress = Math.min((now - startTime) / duration, 1)
+    const eased = 1 - Math.pow(1 - progress, 3)
+
+    camera.value!.position.lerpVectors(startPos, destination, eased)
+    if (controls.value) {
+      controls.value.target.lerpVectors(startTarget, lookAt, eased)
+      controls.value.update()
+    } else {
+      camera.value!.lookAt(lookAt)
+    }
+
+    engine.value?.requestRender()
+    if (progress < 1) {
+      requestAnimationFrame(animate)
+    } else {
+      builderNavigationStore.setExecutionMode('none')
+    }
+  }
+
+  requestAnimationFrame(animate)
+}
+
+function clearNavigationPlan() {
+  stopAutoNavigation()
+  builderNavigationStore.clearActivePlan()
+  builderNavigationStore.clearError()
+  renderProject()
+}
+
 function goBack() {
   if (!isPreviewMode.value && projectMgmt.checkUnsavedChanges(project.value)) {
     showLeaveConfirm.value = true
@@ -790,6 +1178,9 @@ let roamCanvasClickHandler: (() => void) | null = null
 
 function enterRoamMode() {
   if (!engine.value || !camera.value || !controls.value || !scene.value || !project.value) return
+
+  pendingRoamingSpawnPosition.value = null
+  pendingRoamingSpawnRotation.value = null
   
   // 保存当前相机状态
   savedCameraState.value = {
@@ -843,6 +1234,8 @@ function enterRoamMode() {
 
 function exitRoamMode() {
   if (!camera.value || !controls.value) return
+
+  stopAutoNavigation()
   
   viewMode.value = 'edit'
   
@@ -909,10 +1302,23 @@ function handleRoamingFloorSwitch() {
   if (ground) ground.visible = false
 
   // 重新创建角色
-  const startPos = getAreaCenter(project.value.outline.vertices)
   const floorY = getCurrentFloorYPosition()
   const controller = new CharacterController(settingsStore.characterModel)
-  controller.setPosition(startPos.x, floorY, startPos.z)
+  if (pendingRoamingSpawnPosition.value) {
+    controller.setPosition(
+      pendingRoamingSpawnPosition.value.x,
+      pendingRoamingSpawnPosition.value.y,
+      pendingRoamingSpawnPosition.value.z,
+    )
+    pendingRoamingSpawnPosition.value = null
+  } else {
+    const startPos = getAreaCenter(project.value.outline.vertices)
+    controller.setPosition(startPos.x, floorY, startPos.z)
+  }
+  if (pendingRoamingSpawnRotation.value !== null) {
+    controller.setRotation(pendingRoamingSpawnRotation.value)
+    pendingRoamingSpawnRotation.value = null
+  }
   scene.value.add(controller.character)
   roaming.setCharacterController(controller)
 
@@ -937,6 +1343,14 @@ function handleRoamingFloorSwitch() {
 // ============================================================================
 
 function handleKeydown(e: KeyboardEvent) {
+  if (
+    builderNavigationStore.isAutoNavigating &&
+    ['Escape', 'KeyW', 'KeyA', 'KeyS', 'KeyD', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.code)
+  ) {
+    stopAutoNavigation()
+    showSaveToast('error', '已手动中断自动导航', 1800)
+  }
+
   if (viewMode.value === 'orbit') {
     roaming.handleRoamKeyDown(e)
     if (e.key === 'Escape') {
@@ -1020,6 +1434,7 @@ async function handleSave() {
   if (!project.value || projectMgmt.isSaving.value) return
   
   try {
+    syncNavigationMetadataToProject()
     const saved = await projectMgmt.saveToServer(project.value)
     if (saved) {
       lastSavedAt.value = new Date()
@@ -1039,6 +1454,7 @@ async function handlePublish() {
   if (!project.value || !projectMgmt.serverProjectId.value) {
     // 未保存过的项目需要先保存
     if (project.value) {
+      syncNavigationMetadataToProject()
       const saved = await projectMgmt.saveToServer(project.value)
       if (!saved) {
         showSaveToast('error', projectMgmt.saveMessage.value || '保存失败，无法发布', 4000)
@@ -1077,6 +1493,7 @@ async function loadMerchantPublishedPreview(): Promise<boolean> {
 
     const loaded = toMallProject(published)
     project.value = loaded
+    restoreNavigationMetadataFromProject()
     floorMgmt.initFloor(loaded)
     renderProject()
     return true
@@ -1096,6 +1513,29 @@ async function loadMerchantPublishedPreview(): Promise<boolean> {
 
 onMounted(async () => {
   await initEngine()
+
+  if (engine.value) {
+    unregisterNavigationContextRender = engine.value.onRender(() => {
+      const controller = roaming.getCharacterController()
+      if (viewMode.value === 'orbit' && controller) {
+        const pos = controller.getPosition()
+        builderNavigationStore.updateContext({
+          floorId: floorMgmt.currentFloorId.value ?? null,
+          position: { x: pos.x, y: pos.y, z: pos.z },
+        })
+      } else if (camera.value) {
+        builderNavigationStore.updateContext({
+          floorId: floorMgmt.currentFloorId.value ?? null,
+          position: {
+            x: camera.value.position.x,
+            y: camera.value.position.y,
+            z: camera.value.position.z,
+          },
+        })
+      }
+    })
+  }
+
   window.addEventListener('keydown', handleKeydown)
   window.addEventListener('keyup', handleKeyup)
 
@@ -1116,6 +1556,7 @@ onMounted(async () => {
     const loaded = await projectMgmt.loadFromVersionSnapshot(versionId)
     if (loaded) {
       project.value = loaded
+      restoreNavigationMetadataFromProject()
       floorMgmt.initFloor(loaded)
       isPreviewMode.value = true
       previewVersionNumber.value = versionNumber || null
@@ -1135,6 +1576,7 @@ onMounted(async () => {
     const loaded = await projectMgmt.loadFromServer(projectIdFromUrl)
     if (loaded) {
       project.value = loaded
+      restoreNavigationMetadataFromProject()
       setLastSavedAtFromProject(loaded)
       floorMgmt.initFloor(loaded)
       showWizard.value = false
@@ -1152,8 +1594,15 @@ onMounted(async () => {
 
 onUnmounted(() => {
   clearSaveToastTimer()
+  clearLoadingOverlayTimer()
+  stopAutoNavigation()
+  clearNavigationRouteOverlay()
   window.removeEventListener('keydown', handleKeydown)
   window.removeEventListener('keyup', handleKeyup)
+  if (unregisterNavigationContextRender) {
+    unregisterNavigationContextRender()
+    unregisterNavigationContextRender = null
+  }
   roaming.dispose()
   
   if (engine.value) {
@@ -1165,6 +1614,7 @@ onUnmounted(() => {
 })
 
 watch(() => floorMgmt.currentFloorId.value, () => {
+  builderNavigationStore.updateContext({ floorId: floorMgmt.currentFloorId.value ?? null })
   if (viewMode.value === 'orbit') {
     // 漫游模式下切换楼层：需要重建角色和漫游环境
     handleRoamingFloorSwitch()
@@ -1172,6 +1622,25 @@ watch(() => floorMgmt.currentFloorId.value, () => {
     renderProject()
   }
 })
+
+watch(
+  () => connections.verticalConnections.value,
+  () => {
+    syncNavigationMetadataToProject()
+    renderProject()
+  },
+  { deep: true }
+)
+
+watch(
+  () => builderNavigationStore.pendingIntent,
+  async intent => {
+    if (!intent) return
+    await handleBuilderNavigationIntent(intent)
+    builderNavigationStore.clearPendingIntent()
+  },
+  { deep: false }
+)
 
 watch(
   [() => viewMode.value, () => drawing.currentTool.value],
@@ -1234,6 +1703,7 @@ function handleSelectTool(tool: 'select' | 'pan' | 'draw-rect' | 'draw-poly' | '
 function handleCreateFromAI(aiProject: MallProject) {
   if (isPreviewMode.value) return
   project.value = aiProject
+  connections.verticalConnections.value = []
   lastSavedAt.value = null
   floorMgmt.initFloor(aiProject)
   router.replace({ params: { projectId: aiProject.id } })
@@ -1251,6 +1721,7 @@ async function handleLoadSavedProject(projectId: string) {
   const loaded = await projectMgmt.loadFromServer(projectId)
   if (loaded) {
     project.value = loaded
+    restoreNavigationMetadataFromProject()
     setLastSavedAtFromProject(loaded)
     floorMgmt.initFloor(loaded)
     showWizard.value = false
@@ -1396,6 +1867,54 @@ function handleDeleteDoor(doorId: string) {
           {{ saveToastMessage }}
         </div>
       </Transition>
+
+      <div
+        v-if="builderNavigationStore.activeRoute && builderNavigationStore.activeTarget && !isPreviewMode"
+        class="builder-navigation-panel"
+      >
+        <div class="nav-panel-header">
+          <span class="nav-title">路径规划</span>
+          <button class="nav-close-btn" @click="clearNavigationPlan">关闭</button>
+        </div>
+        <p class="nav-target">
+          目标：{{ builderNavigationStore.activeTarget.targetName }}
+          <span v-if="builderNavigationStore.activeTarget.floorName">
+            （{{ builderNavigationStore.activeTarget.floorName }}）
+          </span>
+        </p>
+        <p class="nav-meta">
+          距离 {{ builderNavigationStore.activeRoute.distance }}m · 预计 {{ builderNavigationStore.activeRoute.eta }} 分钟
+        </p>
+        <ul class="nav-steps">
+          <li
+            v-for="(step, index) in builderNavigationStore.activeRoute.steps"
+            :key="`nav-step-${index}`"
+          >
+            {{ step }}
+          </li>
+        </ul>
+        <div class="nav-actions">
+          <button
+            class="btn-primary"
+            :disabled="builderNavigationStore.isAutoNavigating"
+            @click="startAutoNavigation"
+          >
+            {{ builderNavigationStore.isAutoNavigating ? '自动导航中...' : '开始自动导航' }}
+          </button>
+          <button class="btn-secondary" @click="flyCameraToNavigationTarget">
+            相机飞到目标
+          </button>
+          <button class="btn-secondary danger" @click="clearNavigationPlan">
+            取消
+          </button>
+        </div>
+        <p
+          v-if="builderNavigationStore.errorState"
+          class="nav-error"
+        >
+          {{ builderNavigationStore.errorState.message }}
+        </p>
+      </div>
 
       <!-- 左侧楼层面板 (使用子组件) -->
       <FloorPanel
@@ -1656,6 +2175,89 @@ function handleDeleteDoor(doorId: string) {
 .save-toast-fade-leave-to {
   opacity: 0;
   transform: translateY(-6px);
+}
+
+.builder-navigation-panel {
+  position: absolute;
+  top: 68px;
+  left: 14px;
+  z-index: 130;
+  width: 360px;
+  max-width: calc(100vw - 32px);
+  padding: 12px;
+  border-radius: 10px;
+  border: 1px solid var(--border-subtle);
+  background: rgba(var(--bg-secondary-rgb), 0.94);
+  backdrop-filter: blur(12px);
+}
+
+.nav-panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+
+.nav-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.nav-close-btn {
+  border: 1px solid var(--border-subtle);
+  background: transparent;
+  color: var(--text-secondary);
+  border-radius: 6px;
+  padding: 2px 8px;
+  cursor: pointer;
+}
+
+.nav-target,
+.nav-meta,
+.nav-error {
+  margin: 0 0 8px;
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
+.nav-steps {
+  margin: 0 0 10px;
+  padding-left: 16px;
+  max-height: 160px;
+  overflow: auto;
+  color: var(--text-secondary);
+  font-size: 12px;
+}
+
+.nav-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.nav-actions .btn-primary,
+.nav-actions .btn-secondary {
+  border-radius: 6px;
+  padding: 6px 10px;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.nav-actions .btn-primary {
+  border: none;
+  color: #fff;
+  background: #16a34a;
+}
+
+.nav-actions .btn-secondary {
+  border: 1px solid var(--border-subtle);
+  color: var(--text-secondary);
+  background: transparent;
+}
+
+.nav-actions .btn-secondary.danger {
+  color: #ef4444;
 }
 
 @media (max-width: 1200px) {

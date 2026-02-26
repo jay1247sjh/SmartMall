@@ -18,6 +18,7 @@ export * from './ai.store'
 
 // 建模器状态
 export * from './builder.store'
+export * from './builder-navigation.store'
 
 // 设置状态
 export * from './settings.store'

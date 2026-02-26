@@ -41,6 +41,68 @@ export interface LayoutVersionItem {
   updatedAt: string
 }
 
+export type NavigationTargetType = 'store' | 'area' | 'facility'
+
+export interface NavigationPlanRequest {
+  targetType: NavigationTargetType
+  targetKeyword: string
+  sourceFloorId?: string
+  sourcePosition?: {
+    x: number
+    y: number
+    z: number
+  }
+}
+
+export interface NavigationRoutePoint {
+  floorId: string
+  x: number
+  y: number
+  z: number
+}
+
+export interface NavigationRouteSegment {
+  floorId: string
+  floorName?: string
+  points: NavigationRoutePoint[]
+}
+
+export interface NavigationRouteTransition {
+  fromFloorId: string
+  fromFloorName?: string
+  toFloorId: string
+  toFloorName?: string
+  type: string
+  position: NavigationRoutePoint
+}
+
+export interface NavigationRouteData {
+  segments: NavigationRouteSegment[]
+  transitions: NavigationRouteTransition[]
+  steps: string[]
+  distance: number
+  eta: number
+}
+
+export interface NavigationTargetData {
+  targetType: NavigationTargetType
+  targetId: string
+  targetName: string
+  floorId: string
+  floorName?: string
+  position: NavigationRoutePoint
+  areaId?: string
+}
+
+export interface NavigationPlanResponse {
+  success: boolean
+  code: 'OK' | 'PUBLISHED_NOT_FOUND' | 'TARGET_NOT_FOUND' | 'ROUTE_NOT_FOUND' | 'INVALID_REQUEST'
+  message: string
+  route?: NavigationRouteData
+  target?: NavigationTargetData
+  warnings?: string[]
+}
+
 // ============================================================================
 // 商城数据 API
 // ============================================================================
@@ -55,6 +117,12 @@ export interface LayoutVersionItem {
  */
 export async function getPublishedMallData(): Promise<ProjectResponse | null> {
   return http.get<ProjectResponse | null>('/public/mall/published')
+}
+
+export async function planPublishedMallNavigation(
+  request: NavigationPlanRequest
+): Promise<NavigationPlanResponse> {
+  return http.post<NavigationPlanResponse>('/public/mall/navigation/plan', request)
 }
 
 // ============================================================================
@@ -109,6 +177,7 @@ export async function deleteVersion(versionId: string): Promise<void> {
 
 export const mallManageApi = {
   getPublishedMallData,
+  planPublishedMallNavigation,
   getVersions,
   getVersionSnapshot,
   updateVersionDescription,
