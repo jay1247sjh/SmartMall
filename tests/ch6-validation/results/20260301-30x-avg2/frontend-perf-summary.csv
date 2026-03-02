@@ -1,0 +1,4 @@
+case_id,case_name,mode,samples,success,failed,success_rate,error_rate,dcl_avg_ms,dcl_p95_ms,load_avg_ms,load_p95_ms,fcp_avg_ms,fcp_p95_ms,lcp_avg_ms,lcp_p95_ms,fps_avg,fps_min,fps_p50,fps_p95,frame_time_p95_ms,heap_avg_mb
+FE01,mall_cold_load,cold_load,30,30,0,100,0,639.75,660.1,641.1,661.9,402,804,402,804,60.2,60,60,60.39,16.8,19.55
+FE02,mall_warm_reload,warm_reload,30,30,0,100,0,137.95,157.2,138.65,157.9,338,356,338,356,60.07,59.96,59.96,60.18,16.8,23.37
+FE03,mall_interaction,interaction,30,30,0,100,0,787.6,806.3,789.6,808.7,1204,1212,1204,1212,60.47,60.24,60.24,60.7,16.7,19.55

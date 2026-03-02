@@ -1,0 +1,457 @@
+{
+  "generated_at": "2026-03-01T16:14:04.744000",
+  "run_dir": "E:\\JavaProgram\\Smart-mall\\tests\\ch6-validation\\results\\20260301-160221",
+  "environment": {
+    "collected_at": "2026-03-01T16:02:24.5788381+08:00",
+    "os": {
+      "caption": "Microsoft Windows 11 家庭中文版",
+      "version": "10.0.26100",
+      "build": "26100"
+    },
+    "cpu": {
+      "name": "12th Gen Intel(R) Core(TM) i5-12500H",
+      "cores": 12,
+      "logical_processors": 16
+    },
+    "memory_gb": 31.63,
+    "versions": {
+      "node": "v22.20.0",
+      "pnpm": "9.0.4",
+      "java": "java version \"21\" 2023-09-19 LTS",
+      "maven": "Apache Maven 3.6.3 (cecedd343002696d0abb50b32b541b8a6ba2883f)",
+      "python": "Python 3.12.4"
+    },
+    "ports": {
+      "frontend": 5173,
+      "backend": 8081,
+      "intelligence": 19191
+    },
+    "services": [
+      {
+        "url": "http://localhost:5173",
+        "up": true,
+        "http_code": 200,
+        "error": "",
+        "timestamp": "2026-03-01T16:02:22.4330522+08:00"
+      },
+      {
+        "url": "http://localhost:8081/api/health",
+        "up": true,
+        "http_code": 401,
+        "error": "",
+        "timestamp": "2026-03-01T16:02:22.4386704+08:00"
+      },
+      {
+        "url": "http://localhost:19191/health",
+        "up": true,
+        "http_code": 200,
+        "error": "",
+        "timestamp": "2026-03-01T16:02:22.4472841+08:00"
+      },
+      {
+        "url": "http://localhost:8081/api/ai/health",
+        "up": true,
+        "http_code": 200,
+        "error": "",
+        "timestamp": "2026-03-01T16:02:22.9170982+08:00"
+      }
+    ],
+    "browser": {
+      "version": "145.0.7632.6",
+      "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/145.0.7632.6 Safari/537.36"
+    }
+  },
+  "health": {
+    "collected_at": "2026-03-01T16:02:22.9325452+08:00",
+    "endpoints": [
+      {
+        "url": "http://localhost:5173",
+        "up": true,
+        "http_code": 200,
+        "error": "",
+        "timestamp": "2026-03-01T16:02:22.4330522+08:00"
+      },
+      {
+        "url": "http://localhost:8081/api/health",
+        "up": true,
+        "http_code": 401,
+        "error": "",
+        "timestamp": "2026-03-01T16:02:22.4386704+08:00"
+      },
+      {
+        "url": "http://localhost:19191/health",
+        "up": true,
+        "http_code": 200,
+        "error": "",
+        "timestamp": "2026-03-01T16:02:22.4472841+08:00"
+      },
+      {
+        "url": "http://localhost:8081/api/ai/health",
+        "up": true,
+        "http_code": 200,
+        "error": "",
+        "timestamp": "2026-03-01T16:02:22.9170982+08:00"
+      }
+    ]
+  },
+  "functional": {
+    "total_samples": 24,
+    "passed": 18,
+    "failed": 6,
+    "pass_rate": 75.0,
+    "cases": [
+      {
+        "case_id": "F01",
+        "case_name": "admin_login",
+        "samples": 2,
+        "passed": 2,
+        "failed": 0,
+        "pass_rate": 100.0,
+        "avg_latency_ms": 106.34,
+        "min_latency_ms": 105.1,
+        "max_latency_ms": 107.58
+      },
+      {
+        "case_id": "F02",
+        "case_name": "merchant_login",
+        "samples": 2,
+        "passed": 2,
+        "failed": 0,
+        "pass_rate": 100.0,
+        "avg_latency_ms": 124.1,
+        "min_latency_ms": 121.72,
+        "max_latency_ms": 126.47
+      },
+      {
+        "case_id": "F03",
+        "case_name": "user_login",
+        "samples": 2,
+        "passed": 2,
+        "failed": 0,
+        "pass_rate": 100.0,
+        "avg_latency_ms": 111.13,
+        "min_latency_ms": 110.37,
+        "max_latency_ms": 111.89
+      },
+      {
+        "case_id": "F04",
+        "case_name": "role_routes",
+        "samples": 6,
+        "passed": 6,
+        "failed": 0,
+        "pass_rate": 100.0,
+        "avg_latency_ms": 8.16,
+        "min_latency_ms": 6.47,
+        "max_latency_ms": 9.99
+      },
+      {
+        "case_id": "F05",
+        "case_name": "merchant_forbidden_admin_users",
+        "samples": 2,
+        "passed": 0,
+        "failed": 2,
+        "pass_rate": 0.0,
+        "avg_latency_ms": 11.16,
+        "min_latency_ms": 9.35,
+        "max_latency_ms": 12.98
+      },
+      {
+        "case_id": "F06",
+        "case_name": "user_forbidden_admin_users",
+        "samples": 2,
+        "passed": 0,
+        "failed": 2,
+        "pass_rate": 0.0,
+        "avg_latency_ms": 8.34,
+        "min_latency_ms": 7.95,
+        "max_latency_ms": 8.72
+      },
+      {
+        "case_id": "F07",
+        "case_name": "admin_access_admin_users",
+        "samples": 2,
+        "passed": 2,
+        "failed": 0,
+        "pass_rate": 100.0,
+        "avg_latency_ms": 27.6,
+        "min_latency_ms": 23.27,
+        "max_latency_ms": 31.93
+      },
+      {
+        "case_id": "F08",
+        "case_name": "ai_health",
+        "samples": 2,
+        "passed": 2,
+        "failed": 0,
+        "pass_rate": 100.0,
+        "avg_latency_ms": 9.99,
+        "min_latency_ms": 9.85,
+        "max_latency_ms": 10.13
+      },
+      {
+        "case_id": "F09",
+        "case_name": "ai_chat_basic",
+        "samples": 2,
+        "passed": 2,
+        "failed": 0,
+        "pass_rate": 100.0,
+        "avg_latency_ms": 60031.86,
+        "min_latency_ms": 60026.79,
+        "max_latency_ms": 60036.93
+      },
+      {
+        "case_id": "F10",
+        "case_name": "ai_confirmation_cancel",
+        "samples": 2,
+        "passed": 0,
+        "failed": 2,
+        "pass_rate": 0.0,
+        "avg_latency_ms": 20133.9,
+        "min_latency_ms": 8180.24,
+        "max_latency_ms": 32087.57
+      }
+    ]
+  },
+  "api": {
+    "p95_ms": 209.54,
+    "sequential": {
+      "success_rate": 100.0,
+      "cases": [
+        {
+          "case_id": "API01",
+          "case_name": "auth_login",
+          "samples": 2,
+          "success": 2,
+          "failed": 0,
+          "success_rate": 100.0,
+          "error_rate": 0.0,
+          "avg_ms": 179.48,
+          "p50_ms": 149.43,
+          "p95_ms": 209.54,
+          "min_ms": 149.43,
+          "max_ms": 209.54,
+          "throughput_req_s": 5.1
+        },
+        {
+          "case_id": "API02",
+          "case_name": "dashboard_admin_stats",
+          "samples": 2,
+          "success": 2,
+          "failed": 0,
+          "success_rate": 100.0,
+          "error_rate": 0.0,
+          "avg_ms": 37.32,
+          "p50_ms": 13.82,
+          "p95_ms": 60.82,
+          "min_ms": 13.82,
+          "max_ms": 60.82,
+          "throughput_req_s": 26.0
+        },
+        {
+          "case_id": "API03",
+          "case_name": "dashboard_merchant_stats",
+          "samples": 2,
+          "success": 2,
+          "failed": 0,
+          "success_rate": 100.0,
+          "error_rate": 0.0,
+          "avg_ms": 18.68,
+          "p50_ms": 11.07,
+          "p95_ms": 26.29,
+          "min_ms": 11.07,
+          "max_ms": 26.29,
+          "throughput_req_s": 50.07
+        },
+        {
+          "case_id": "API04",
+          "case_name": "public_mall_published",
+          "samples": 2,
+          "success": 2,
+          "failed": 0,
+          "success_rate": 100.0,
+          "error_rate": 0.0,
+          "avg_ms": 51.37,
+          "p50_ms": 35.17,
+          "p95_ms": 67.57,
+          "min_ms": 35.17,
+          "max_ms": 67.57,
+          "throughput_req_s": 18.11
+        }
+      ]
+    },
+    "concurrency": {
+      "case_id": "API_CONC_01",
+      "case_name": "dashboard_admin_stats_concurrency",
+      "concurrency": 20,
+      "total_requests": 100,
+      "success": 100,
+      "failed": 0,
+      "success_rate": 100.0,
+      "error_rate": 0.0,
+      "avg_ms": 192.86,
+      "p50_ms": 186.88,
+      "p95_ms": 230.94,
+      "min_ms": 172.54,
+      "max_ms": 276.56,
+      "throughput_req_s": 3.6
+    }
+  },
+  "ai": {
+    "p95_ms": 60097.35,
+    "success_rate": 33.33,
+    "cases": [
+      {
+        "case_id": "AI01",
+        "case_name": "simple_text_qa",
+        "samples": 2,
+        "success": 2,
+        "failed": 0,
+        "success_rate": 100.0,
+        "error_rate": 0.0,
+        "avg_ms": 15841.72,
+        "p50_ms": 15391.82,
+        "p95_ms": 16291.63,
+        "min_ms": 15391.82,
+        "max_ms": 16291.63,
+        "type_text": 2,
+        "type_confirmation_required": 0,
+        "type_error": 0
+      },
+      {
+        "case_id": "AI02",
+        "case_name": "search_with_constraints",
+        "samples": 2,
+        "success": 0,
+        "failed": 2,
+        "success_rate": 0.0,
+        "error_rate": 100.0,
+        "avg_ms": 60067.37,
+        "p50_ms": 60037.39,
+        "p95_ms": 60097.35,
+        "min_ms": 60037.39,
+        "max_ms": 60097.35,
+        "type_text": 0,
+        "type_confirmation_required": 0,
+        "type_error": 2
+      },
+      {
+        "case_id": "AI03",
+        "case_name": "confirmation_required_intent",
+        "samples": 2,
+        "success": 0,
+        "failed": 2,
+        "success_rate": 0.0,
+        "error_rate": 100.0,
+        "avg_ms": 39394.98,
+        "p50_ms": 18754.11,
+        "p95_ms": 60035.85,
+        "min_ms": 18754.11,
+        "max_ms": 60035.85,
+        "type_text": 1,
+        "type_confirmation_required": 0,
+        "type_error": 1
+      }
+    ]
+  },
+  "frontend": {
+    "fps_avg": 60.25,
+    "frame_time_p95_ms": 16.8,
+    "cold_load_avg_ms": 641.1,
+    "cases": [
+      {
+        "case_id": "FE01",
+        "case_name": "mall_cold_load",
+        "mode": "cold_load",
+        "samples": 2,
+        "success_rate": 100.0,
+        "error_rate": 0.0,
+        "dcl_avg_ms": 639.75,
+        "dcl_p95_ms": 660.1,
+        "load_avg_ms": 641.1,
+        "load_p95_ms": 661.9,
+        "fcp_avg_ms": 402.0,
+        "fcp_p95_ms": 804.0,
+        "lcp_avg_ms": 402.0,
+        "lcp_p95_ms": 804.0,
+        "fps_avg": 60.2,
+        "fps_p95": 60.39,
+        "frame_time_p95_ms": 16.8,
+        "heap_avg_mb": 19.55
+      },
+      {
+        "case_id": "FE02",
+        "case_name": "mall_warm_reload",
+        "mode": "warm_reload",
+        "samples": 2,
+        "success_rate": 100.0,
+        "error_rate": 0.0,
+        "dcl_avg_ms": 137.95,
+        "dcl_p95_ms": 157.2,
+        "load_avg_ms": 138.65,
+        "load_p95_ms": 157.9,
+        "fcp_avg_ms": 338.0,
+        "fcp_p95_ms": 356.0,
+        "lcp_avg_ms": 338.0,
+        "lcp_p95_ms": 356.0,
+        "fps_avg": 60.07,
+        "fps_p95": 60.18,
+        "frame_time_p95_ms": 16.8,
+        "heap_avg_mb": 23.37
+      },
+      {
+        "case_id": "FE03",
+        "case_name": "mall_interaction",
+        "mode": "interaction",
+        "samples": 2,
+        "success_rate": 100.0,
+        "error_rate": 0.0,
+        "dcl_avg_ms": 787.6,
+        "dcl_p95_ms": 806.3,
+        "load_avg_ms": 789.6,
+        "load_p95_ms": 808.7,
+        "fcp_avg_ms": 1204.0,
+        "fcp_p95_ms": 1212.0,
+        "lcp_avg_ms": 1204.0,
+        "lcp_p95_ms": 1212.0,
+        "fps_avg": 60.47,
+        "fps_p95": 60.7,
+        "frame_time_p95_ms": 16.7,
+        "heap_avg_mb": 19.55
+      }
+    ]
+  },
+  "nfr_alignment": {
+    "NFR-001": {
+      "name": "渲染流畅度",
+      "target": "FPS >= 30",
+      "actual": {
+        "fps_avg": 60.25,
+        "frame_time_p95_ms": 16.8
+      },
+      "met": true
+    },
+    "NFR-002": {
+      "name": "初始化时间",
+      "target": "初始化 <= 3000ms",
+      "actual": {
+        "cold_load_avg_ms": 641.1
+      },
+      "met": true
+    },
+    "NFR-003": {
+      "name": "API 延迟",
+      "target": "API P95 <= 500ms",
+      "actual": {
+        "api_p95_ms": 209.54
+      },
+      "met": true
+    }
+  },
+  "sources": {
+    "functional_summary": "functional-summary.json",
+    "api_latency_summary": "api-latency-summary.csv",
+    "api_concurrency_summary": "api-concurrency-summary.csv",
+    "ai_latency_summary": "ai-latency-summary.csv",
+    "frontend_perf_summary": "frontend-perf-summary.csv"
+  }
+}

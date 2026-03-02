@@ -1,0 +1,9 @@
+{
+  "generated_at": "2026-03-01T16:28:54.6175460+08:00",
+  "out_dir": "tests/ch6-validation/results/20260301-30x",
+  "params": {
+    "samples": 30,
+    "functional_repetitions": 30,
+    "concurrency": 20
+  }
+}

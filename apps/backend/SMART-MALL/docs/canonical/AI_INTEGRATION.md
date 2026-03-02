@@ -145,6 +145,33 @@
 }
 ```
 
+#### 2.2.4 语音会话接口（新增）
+
+`POST /api/ai/voice/session`
+
+请求：
+```json
+{
+  "scene": "ai-assistant",
+  "language": "zh-CN"
+}
+```
+
+响应：
+```json
+{
+  "sessionId": "vsn_xxx",
+  "wsUrl": "ws://localhost:19191/api/voice/ws?session_id=...&user_id=...&exp=...&sig=...",
+  "expiresAt": "2026-03-01T10:00:00Z"
+}
+```
+
+#### 2.2.5 语音 WebSocket 协议（新增）
+
+- 地址：`WS /api/voice/ws`
+- 客户端事件：`start`、`audio_chunk`、`interrupt`、`stop`、`ping`
+- 服务端事件：`asr_partial`、`asr_final`、`assistant_text_delta`、`assistant_text_final`、`tts_chunk`、`confirmation_required`、`error`、`done`、`pong`
+
 ### 2.3 字段分类
 
 | 字段类型 | 说明 | 示例 |
@@ -673,6 +700,10 @@ services:
 | AI_INTENT_UNCLEAR | 意图不明确 | 200 |
 | AI_ACTION_INVALID | Action 不合法 | 400 |
 | AI_PERMISSION_DENIED | 权限不足 | 403 |
+| AI_VOICE_DISABLED | 语音功能未开启 | 403 |
+| AI_VOICE_SESSION_EXPIRED | 语音会话过期 | 401 |
+| AI_VOICE_TOKEN_INVALID | 语音会话签名无效 | 401 |
+| AI_ASR_PROVIDER_UNAVAILABLE | 语音识别服务不可用 | 503 |
 
 ---
 
@@ -680,5 +711,6 @@ services:
 
 | 版本 | 日期 | 变更说明 |
 |------|------|----------|
+| 1.1.0 | 2026-03-01 | 新增语音会话签发与语音 WebSocket 协议（仅语音+图片） |
 | 1.0.0 | 2026-01-10 | 初始版本 |
 

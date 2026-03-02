@@ -1,0 +1,13 @@
+{
+  "name": "ch6-validation",
+  "private": true,
+  "type": "module",
+  "version": "1.0.0",
+  "description": "Chapter 6 reproducible validation toolkit",
+  "devDependencies": {
+    "playwright": "^1.54.2"
+  },
+  "dependencies": {
+    "smart-mall-monorepo": "file:../.."
+  }
+}

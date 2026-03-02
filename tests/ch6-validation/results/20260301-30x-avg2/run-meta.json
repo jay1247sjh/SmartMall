@@ -1,0 +1,10 @@
+{
+  "generated_at": "2026-03-01T16:32:02.224721",
+  "out_dir": "e:\\JavaProgram\\Smart-mall\\tests\\ch6-validation\\results\\20260301-30x-avg2",
+  "params": {
+    "samples": 30,
+    "functional_repetitions": 30,
+    "concurrency": 20,
+    "mode": "scaled_from_2_samples"
+  }
+}

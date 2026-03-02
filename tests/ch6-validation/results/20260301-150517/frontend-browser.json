@@ -1,0 +1,11 @@
+{
+  "collected_at": "2026-03-01T07:22:19.276Z",
+  "browser": "chromium",
+  "version": "145.0.7632.6",
+  "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/145.0.7632.6 Safari/537.36",
+  "host": {
+    "platform": "win32",
+    "release": "10.0.26100",
+    "arch": "x64"
+  }
+}

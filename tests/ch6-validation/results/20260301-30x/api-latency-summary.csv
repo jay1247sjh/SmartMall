@@ -1,0 +1,5 @@
+"case_id","case_name","samples","success","failed","success_rate","error_rate","avg_ms","p50_ms","p95_ms","min_ms","max_ms","throughput_req_s"
+"API01","auth_login","30","30","0","100","0","155.42","150.95","175.93","136.69","200.57","6.37"
+"API02","dashboard_admin_stats","30","0","30","0","100","7.17","6.57","11.28","5.5","11.65","125.1"
+"API03","dashboard_merchant_stats","30","0","30","0","100","6.45","6.33","7.74","5.23","8.03","133.89"
+"API04","public_mall_published","30","30","0","100","0","29.43","25.13","46.23","23.56","60.91","31.11"

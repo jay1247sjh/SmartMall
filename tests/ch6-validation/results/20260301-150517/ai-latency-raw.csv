@@ -1,0 +1,4 @@
+"case_id","timestamp","latency_ms","status","http_code","error","response_type","case_name"
+"AI01","2026-03-01T15:46:55.9779655+08:00","60570.93","fail","200","","error","simple_text_qa"
+"AI02","2026-03-01T15:47:56.0249797+08:00","60025.26","fail","200","","error","search_with_constraints"
+"AI03","2026-03-01T15:48:56.0573117+08:00","60029.81","fail","200","","error","confirmation_required_intent"

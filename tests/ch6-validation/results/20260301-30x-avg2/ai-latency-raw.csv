@@ -1,0 +1,7 @@
+"case_id","timestamp","latency_ms","status","http_code","error","response_type","case_name"
+"AI01","2026-03-01T16:09:51.9518105+08:00","15391.82","pass","200","","text","simple_text_qa"
+"AI01","2026-03-01T16:10:08.2463044+08:00","16291.63","pass","200","","text","simple_text_qa"
+"AI02","2026-03-01T16:11:08.3447508+08:00","60097.35","fail","200","","error","search_with_constraints"
+"AI02","2026-03-01T16:12:08.3837170+08:00","60037.39","fail","200","","error","search_with_constraints"
+"AI03","2026-03-01T16:12:27.1411503+08:00","18754.11","fail","200","","text","confirmation_required_intent"
+"AI03","2026-03-01T16:13:27.1776624+08:00","60035.85","fail","200","","error","confirmation_required_intent"

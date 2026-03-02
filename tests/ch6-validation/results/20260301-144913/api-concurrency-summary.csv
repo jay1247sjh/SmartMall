@@ -1,0 +1,2 @@
+"case_id","case_name","concurrency","total_requests","success","failed","success_rate","error_rate","avg_ms","p50_ms","p95_ms","min_ms","max_ms","throughput_req_s"
+"API_CONC_01","dashboard_admin_stats_concurrency","20","100","100","0","100","0","325.47","260.54","527.54","175.63","606.58","1.92"

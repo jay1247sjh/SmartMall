@@ -1,0 +1,20 @@
+{
+  "timestamp": "2026-03-01T15:05:17.8280353+08:00",
+  "repo_root": "E:\\JavaProgram\\Smart-mall",
+  "out_dir": "E:\\JavaProgram\\Smart-mall\\tests\\ch6-validation\\results\\20260301-150517",
+  "frontend": {
+    "port": 5173,
+    "pid": null,
+    "started_by_script": false
+  },
+  "backend": {
+    "port": 8081,
+    "pid": null,
+    "started_by_script": false
+  },
+  "intelligence": {
+    "port": 19191,
+    "pid": null,
+    "started_by_script": false
+  }
+}

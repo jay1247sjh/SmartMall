@@ -1,0 +1,66 @@
+{
+  "api_sequential": [
+    {
+      "case_id": "API01",
+      "name": "auth_login",
+      "method": "POST",
+      "path": "/api/auth/login",
+      "auth": "none",
+      "body": {
+        "username": "admin",
+        "password": "123456"
+      }
+    },
+    {
+      "case_id": "API02",
+      "name": "dashboard_admin_stats",
+      "method": "GET",
+      "path": "/api/dashboard/admin/stats",
+      "auth": "admin"
+    },
+    {
+      "case_id": "API03",
+      "name": "dashboard_merchant_stats",
+      "method": "GET",
+      "path": "/api/dashboard/merchant/stats",
+      "auth": "merchant"
+    },
+    {
+      "case_id": "API04",
+      "name": "public_mall_published",
+      "method": "GET",
+      "path": "/api/public/mall/published",
+      "auth": "none"
+    }
+  ],
+  "api_concurrency": {
+    "case_id": "API_CONC_01",
+    "name": "dashboard_admin_stats_concurrency",
+    "method": "GET",
+    "path": "/api/dashboard/admin/stats",
+    "auth": "admin",
+    "concurrency": 20,
+    "total_requests": 100
+  },
+  "frontend": [
+    {
+      "case_id": "FE01",
+      "name": "mall_cold_load",
+      "url": "http://localhost:5173/mall",
+      "mode": "cold_load"
+    },
+    {
+      "case_id": "FE02",
+      "name": "mall_warm_reload",
+      "url": "http://localhost:5173/mall",
+      "mode": "warm_reload"
+    },
+    {
+      "case_id": "FE03",
+      "name": "mall_interaction",
+      "url": "http://localhost:5173/mall",
+      "mode": "interaction"
+    }
+  ]
+}
+

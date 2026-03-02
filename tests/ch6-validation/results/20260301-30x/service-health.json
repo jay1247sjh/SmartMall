@@ -1,0 +1,33 @@
+{
+  "collected_at": "2026-03-01T16:28:56.4695863+08:00",
+  "endpoints": [
+    {
+      "url": "http://localhost:5173",
+      "up": true,
+      "http_code": 200,
+      "error": "",
+      "timestamp": "2026-03-01T16:28:56.0371612+08:00"
+    },
+    {
+      "url": "http://localhost:8081/api/health",
+      "up": true,
+      "http_code": 401,
+      "error": "",
+      "timestamp": "2026-03-01T16:28:56.0459046+08:00"
+    },
+    {
+      "url": "http://localhost:19191/health",
+      "up": true,
+      "http_code": 200,
+      "error": "",
+      "timestamp": "2026-03-01T16:28:56.0574971+08:00"
+    },
+    {
+      "url": "http://localhost:8081/api/ai/health",
+      "up": true,
+      "http_code": 200,
+      "error": "",
+      "timestamp": "2026-03-01T16:28:56.4672658+08:00"
+    }
+  ]
+}

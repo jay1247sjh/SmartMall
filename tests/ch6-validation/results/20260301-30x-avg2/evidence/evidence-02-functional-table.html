@@ -1,0 +1,139 @@
+<!doctype html><html><head><meta charset='utf-8'><title>Chapter 6 Evidence 02 - Functional Summary</title><style>
+body{font-family:Consolas,"Microsoft YaHei",monospace;background:#f5f7fb;color:#111;margin:0;padding:24px;}
+.wrap{max-width:1800px;margin:0 auto;}
+.card{background:#fff;border:1px solid #dbe2ef;border-radius:10px;padding:18px 20px;margin-bottom:18px;box-shadow:0 2px 8px rgba(0,0,0,.04);}
+h1{font-size:28px;margin:0 0 10px 0;}h2{font-size:20px;margin:0 0 10px 0;}
+.meta{font-size:15px;color:#333;line-height:1.6;margin-bottom:10px;}
+pre{white-space:pre-wrap;word-break:break-word;line-height:1.45;font-size:14px;margin:0;}
+code{font-family:Consolas,"Microsoft YaHei",monospace;}
+</style></head><body><div class='wrap'><div class='card'><h1>Chapter 6 Evidence 02 - Functional Summary</h1><div class='meta'>Source: tests/ch6-validation/results/20260301-30x-avg2</div></div><div class='card'><h2>functional-summary.csv</h2><pre>case_id,case_name,samples,passed,failed,pass_rate,avg_latency_ms,min_latency_ms,max_latency_ms
+F01,admin_login,30,30,0,100,106.34,105.1,107.58
+F02,merchant_login,30,30,0,100,124.1,121.72,126.47
+F03,user_login,30,30,0,100,111.13,110.37,111.89
+F04,role_routes,90,90,0,100,8.16,6.47,9.99
+F05,merchant_forbidden_admin_users,30,0,30,0,11.16,9.35,12.98
+F06,user_forbidden_admin_users,30,0,30,0,8.34,7.95,8.72
+F07,admin_access_admin_users,30,30,0,100,27.6,23.27,31.93
+F08,ai_health,30,30,0,100,9.99,9.85,10.13
+F09,ai_chat_basic,30,30,0,100,60031.86,60026.79,60036.93
+F10,ai_confirmation_cancel,30,0,30,0,20133.9,8180.24,32087.57
+</pre></div>
+<div class='card'><h2>functional-summary.json</h2><pre>{
+  &quot;generated_at&quot;: &quot;2026-03-01T16:32:02.239464&quot;,
+  &quot;total_samples&quot;: 360,
+  &quot;passed&quot;: 270,
+  &quot;failed&quot;: 90,
+  &quot;pass_rate&quot;: 75.0,
+  &quot;cases&quot;: [
+    {
+      &quot;case_id&quot;: &quot;F01&quot;,
+      &quot;case_name&quot;: &quot;admin_login&quot;,
+      &quot;samples&quot;: 30,
+      &quot;passed&quot;: 30,
+      &quot;failed&quot;: 0,
+      &quot;pass_rate&quot;: 100.0,
+      &quot;avg_latency_ms&quot;: 106.34,
+      &quot;min_latency_ms&quot;: 105.1,
+      &quot;max_latency_ms&quot;: 107.58
+    },
+    {
+      &quot;case_id&quot;: &quot;F02&quot;,
+      &quot;case_name&quot;: &quot;merchant_login&quot;,
+      &quot;samples&quot;: 30,
+      &quot;passed&quot;: 30,
+      &quot;failed&quot;: 0,
+      &quot;pass_rate&quot;: 100.0,
+      &quot;avg_latency_ms&quot;: 124.1,
+      &quot;min_latency_ms&quot;: 121.72,
+      &quot;max_latency_ms&quot;: 126.47
+    },
+    {
+      &quot;case_id&quot;: &quot;F03&quot;,
+      &quot;case_name&quot;: &quot;user_login&quot;,
+      &quot;samples&quot;: 30,
+      &quot;passed&quot;: 30,
+      &quot;failed&quot;: 0,
+      &quot;pass_rate&quot;: 100.0,
+      &quot;avg_latency_ms&quot;: 111.13,
+      &quot;min_latency_ms&quot;: 110.37,
+      &quot;max_latency_ms&quot;: 111.89
+    },
+    {
+      &quot;case_id&quot;: &quot;F04&quot;,
+      &quot;case_name&quot;: &quot;role_routes&quot;,
+      &quot;samples&quot;: 90,
+      &quot;passed&quot;: 90,
+      &quot;failed&quot;: 0,
+      &quot;pass_rate&quot;: 100.0,
+      &quot;avg_latency_ms&quot;: 8.16,
+      &quot;min_latency_ms&quot;: 6.47,
+      &quot;max_latency_ms&quot;: 9.99
+    },
+    {
+      &quot;case_id&quot;: &quot;F05&quot;,
+      &quot;case_name&quot;: &quot;merchant_forbidden_admin_users&quot;,
+      &quot;samples&quot;: 30,
+      &quot;passed&quot;: 0,
+      &quot;failed&quot;: 30,
+      &quot;pass_rate&quot;: 0.0,
+      &quot;avg_latency_ms&quot;: 11.16,
+      &quot;min_latency_ms&quot;: 9.35,
+      &quot;max_latency_ms&quot;: 12.98
+    },
+    {
+      &quot;case_id&quot;: &quot;F06&quot;,
+      &quot;case_name&quot;: &quot;user_forbidden_admin_users&quot;,
+      &quot;samples&quot;: 30,
+      &quot;passed&quot;: 0,
+      &quot;failed&quot;: 30,
+      &quot;pass_rate&quot;: 0.0,
+      &quot;avg_latency_ms&quot;: 8.34,
+      &quot;min_latency_ms&quot;: 7.95,
+      &quot;max_latency_ms&quot;: 8.72
+    },
+    {
+      &quot;case_id&quot;: &quot;F07&quot;,
+      &quot;case_name&quot;: &quot;admin_access_admin_users&quot;,
+      &quot;samples&quot;: 30,
+      &quot;passed&quot;: 30,
+      &quot;failed&quot;: 0,
+      &quot;pass_rate&quot;: 100.0,
+      &quot;avg_latency_ms&quot;: 27.6,
+      &quot;min_latency_ms&quot;: 23.27,
+      &quot;max_latency_ms&quot;: 31.93
+    },
+    {
+      &quot;case_id&quot;: &quot;F08&quot;,
+      &quot;case_name&quot;: &quot;ai_health&quot;,
+      &quot;samples&quot;: 30,
+      &quot;passed&quot;: 30,
+      &quot;failed&quot;: 0,
+      &quot;pass_rate&quot;: 100.0,
+      &quot;avg_latency_ms&quot;: 9.99,
+      &quot;min_latency_ms&quot;: 9.85,
+      &quot;max_latency_ms&quot;: 10.13
+    },
+    {
+      &quot;case_id&quot;: &quot;F09&quot;,
+      &quot;case_name&quot;: &quot;ai_chat_basic&quot;,
+      &quot;samples&quot;: 30,
+      &quot;passed&quot;: 30,
+      &quot;failed&quot;: 0,
+      &quot;pass_rate&quot;: 100.0,
+      &quot;avg_latency_ms&quot;: 60031.86,
+      &quot;min_latency_ms&quot;: 60026.79,
+      &quot;max_latency_ms&quot;: 60036.93
+    },
+    {
+      &quot;case_id&quot;: &quot;F10&quot;,
+      &quot;case_name&quot;: &quot;ai_confirmation_cancel&quot;,
+      &quot;samples&quot;: 30,
+      &quot;passed&quot;: 0,
+      &quot;failed&quot;: 30,
+      &quot;pass_rate&quot;: 0.0,
+      &quot;avg_latency_ms&quot;: 20133.9,
+      &quot;min_latency_ms&quot;: 8180.24,
+      &quot;max_latency_ms&quot;: 32087.57
+    }
+  ]
+}</pre></div></div></body></html>

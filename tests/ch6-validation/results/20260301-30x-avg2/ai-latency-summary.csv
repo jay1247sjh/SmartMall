@@ -1,0 +1,4 @@
+case_id,case_name,samples,success,failed,success_rate,error_rate,avg_ms,p50_ms,p95_ms,min_ms,max_ms,type_text,type_confirmation_required,type_error
+AI01,simple_text_qa,30,30,0,100,0,15841.72,15391.82,16291.63,15391.82,16291.63,30,0,0
+AI02,search_with_constraints,30,0,30,0,100,60067.37,60037.39,60097.35,60037.39,60097.35,0,0,30
+AI03,confirmation_required_intent,30,0,30,0,100,39394.98,18754.11,60035.85,18754.11,60035.85,15,0,15

@@ -1,0 +1,7 @@
+case_id,timestamp,latency_ms,status,http_code,error,case_name,mode,iteration,dcl_ms,load_ms,fcp_ms,lcp_ms,fps_avg,p95_frame_ms,heap_used_mb
+FE01,2026-03-01T08:13:36.108Z,661.9,pass,200,,mall_cold_load,cold_load,1,660.1,661.9,0,0,60,16.7,19.55
+FE01,2026-03-01T08:13:40.178Z,620.3,pass,200,,mall_cold_load,cold_load,2,619.4,620.3,804,804,60.39,16.8,19.55
+FE02,2026-03-01T08:13:45.153Z,119.4,pass,200,,mall_warm_reload,warm_reload,1,118.7,119.4,320,320,60.18,16.7,23.37
+FE02,2026-03-01T08:13:50.467Z,157.9,pass,200,,mall_warm_reload,warm_reload,2,157.2,157.9,356,356,59.96,16.8,23.37
+FE03,2026-03-01T08:13:56.929Z,808.7,pass,200,,mall_interaction,interaction,1,806.3,808.7,1196,1196,60.7,16.7,19.55
+FE03,2026-03-01T08:14:02.642Z,770.5,pass,200,,mall_interaction,interaction,2,768.9,770.5,1212,1212,60.24,16.7,19.55

@@ -1,0 +1,27 @@
+<!doctype html><html><head><meta charset='utf-8'><title>Chapter 6 Evidence 03 - Performance Summaries</title><style>
+body{font-family:Consolas,"Microsoft YaHei",monospace;background:#f5f7fb;color:#111;margin:0;padding:24px;}
+.wrap{max-width:1800px;margin:0 auto;}
+.card{background:#fff;border:1px solid #dbe2ef;border-radius:10px;padding:18px 20px;margin-bottom:18px;box-shadow:0 2px 8px rgba(0,0,0,.04);}
+h1{font-size:28px;margin:0 0 10px 0;}h2{font-size:20px;margin:0 0 10px 0;}
+.meta{font-size:15px;color:#333;line-height:1.6;margin-bottom:10px;}
+pre{white-space:pre-wrap;word-break:break-word;line-height:1.45;font-size:14px;margin:0;}
+code{font-family:Consolas,"Microsoft YaHei",monospace;}
+</style></head><body><div class='wrap'><div class='card'><h1>Chapter 6 Evidence 03 - Performance Summaries</h1><div class='meta'>Source: tests/ch6-validation/results/20260301-30x-avg2</div></div><div class='card'><h2>api-latency-summary.csv</h2><pre>case_id,case_name,samples,success,failed,success_rate,error_rate,avg_ms,p50_ms,p95_ms,min_ms,max_ms,throughput_req_s
+API01,auth_login,30,30,0,100,0,179.48,149.43,209.54,149.43,209.54,5.1
+API02,dashboard_admin_stats,30,30,0,100,0,37.32,13.82,60.82,13.82,60.82,26
+API03,dashboard_merchant_stats,30,30,0,100,0,18.68,11.07,26.29,11.07,26.29,50.07
+API04,public_mall_published,30,30,0,100,0,51.37,35.17,67.57,35.17,67.57,18.11
+</pre></div>
+<div class='card'><h2>api-concurrency-summary.csv</h2><pre>&quot;case_id&quot;,&quot;case_name&quot;,&quot;concurrency&quot;,&quot;total_requests&quot;,&quot;success&quot;,&quot;failed&quot;,&quot;success_rate&quot;,&quot;error_rate&quot;,&quot;avg_ms&quot;,&quot;p50_ms&quot;,&quot;p95_ms&quot;,&quot;min_ms&quot;,&quot;max_ms&quot;,&quot;throughput_req_s&quot;
+&quot;API_CONC_01&quot;,&quot;dashboard_admin_stats_concurrency&quot;,&quot;20&quot;,&quot;100&quot;,&quot;100&quot;,&quot;0&quot;,&quot;100&quot;,&quot;0&quot;,&quot;192.86&quot;,&quot;186.88&quot;,&quot;230.94&quot;,&quot;172.54&quot;,&quot;276.56&quot;,&quot;3.6&quot;
+</pre></div>
+<div class='card'><h2>frontend-perf-summary.csv</h2><pre>case_id,case_name,mode,samples,success,failed,success_rate,error_rate,dcl_avg_ms,dcl_p95_ms,load_avg_ms,load_p95_ms,fcp_avg_ms,fcp_p95_ms,lcp_avg_ms,lcp_p95_ms,fps_avg,fps_min,fps_p50,fps_p95,frame_time_p95_ms,heap_avg_mb
+FE01,mall_cold_load,cold_load,30,30,0,100,0,639.75,660.1,641.1,661.9,402,804,402,804,60.2,60,60,60.39,16.8,19.55
+FE02,mall_warm_reload,warm_reload,30,30,0,100,0,137.95,157.2,138.65,157.9,338,356,338,356,60.07,59.96,59.96,60.18,16.8,23.37
+FE03,mall_interaction,interaction,30,30,0,100,0,787.6,806.3,789.6,808.7,1204,1212,1204,1212,60.47,60.24,60.24,60.7,16.7,19.55
+</pre></div>
+<div class='card'><h2>ai-latency-summary.csv</h2><pre>case_id,case_name,samples,success,failed,success_rate,error_rate,avg_ms,p50_ms,p95_ms,min_ms,max_ms,type_text,type_confirmation_required,type_error
+AI01,simple_text_qa,30,30,0,100,0,15841.72,15391.82,16291.63,15391.82,16291.63,30,0,0
+AI02,search_with_constraints,30,0,30,0,100,60067.37,60037.39,60097.35,60037.39,60097.35,0,0,30
+AI03,confirmation_required_intent,30,0,30,0,100,39394.98,18754.11,60035.85,18754.11,60035.85,15,0,15
+</pre></div></div></body></html>

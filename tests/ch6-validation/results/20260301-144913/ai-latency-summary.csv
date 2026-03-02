@@ -1,0 +1,4 @@
+"case_id","case_name","samples","success","failed","success_rate","error_rate","avg_ms","p50_ms","p95_ms","min_ms","max_ms","type_text","type_confirmation_required","type_error"
+"AI01","simple_text_qa","30","3","27","10","90","6010.07","6.08","60043.35","4.34","60059.92","0","0","30"
+"AI02","search_with_constraints","30","0","30","0","100","6.13","6.02","7.76","4.28","8.06","0","0","30"
+"AI03","confirmation_required_intent","30","0","30","0","100","8.26","6.36","21.25","4","25.49","0","0","30"

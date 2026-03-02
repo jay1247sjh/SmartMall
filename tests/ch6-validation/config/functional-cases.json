@@ -1,0 +1,81 @@
+[
+  {
+    "case_id": "F01",
+    "name": "admin_login",
+    "type": "auth_login",
+    "role": "ADMIN",
+    "username": "admin"
+  },
+  {
+    "case_id": "F02",
+    "name": "merchant_login",
+    "type": "auth_login",
+    "role": "MERCHANT",
+    "username": "merchant"
+  },
+  {
+    "case_id": "F03",
+    "name": "user_login",
+    "type": "auth_login",
+    "role": "USER",
+    "username": "user"
+  },
+  {
+    "case_id": "F04",
+    "name": "role_routes",
+    "type": "user_routes_by_role",
+    "roles": ["ADMIN", "MERCHANT", "USER"]
+  },
+  {
+    "case_id": "F05",
+    "name": "merchant_forbidden_admin_users",
+    "type": "role_forbidden",
+    "role": "MERCHANT",
+    "method": "GET",
+    "path": "/api/admin/users",
+    "expected_status": 403
+  },
+  {
+    "case_id": "F06",
+    "name": "user_forbidden_admin_users",
+    "type": "role_forbidden",
+    "role": "USER",
+    "method": "GET",
+    "path": "/api/admin/users",
+    "expected_status": 403
+  },
+  {
+    "case_id": "F07",
+    "name": "admin_access_admin_users",
+    "type": "role_allowed",
+    "role": "ADMIN",
+    "method": "GET",
+    "path": "/api/admin/users",
+    "expected_status": 200
+  },
+  {
+    "case_id": "F08",
+    "name": "ai_health",
+    "type": "ai_health",
+    "role": "ADMIN",
+    "method": "GET",
+    "path": "/api/ai/health",
+    "expected_status": 200
+  },
+  {
+    "case_id": "F09",
+    "name": "ai_chat_basic",
+    "type": "ai_chat",
+    "role": "USER",
+    "message": "Please recommend one restaurant in the mall.",
+    "expected_status": 200
+  },
+  {
+    "case_id": "F10",
+    "name": "ai_confirmation_cancel",
+    "type": "ai_confirm_chain",
+    "role": "USER",
+    "trigger_messages": ["Please place an order for me.", "Buy this item for me now.", "Add this product to my cart directly."],
+    "expected_status": 200
+  }
+]

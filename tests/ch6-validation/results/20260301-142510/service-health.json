@@ -1,0 +1,33 @@
+﻿{
+    "collected_at":  "2026-03-01T14:33:15.4970992+08:00",
+    "endpoints":  [
+                      {
+                          "url":  "http://localhost:5173",
+                          "up":  false,
+                          "http_code":  0,
+                          "error":  "A parameter cannot be found that matches parameter name \u0027SkipHttpErrorCheck\u0027.",
+                          "timestamp":  "2026-03-01T14:33:15.3868122+08:00"
+                      },
+                      {
+                          "url":  "http://localhost:8081/api/health",
+                          "up":  false,
+                          "http_code":  0,
+                          "error":  "A parameter cannot be found that matches parameter name \u0027SkipHttpErrorCheck\u0027.",
+                          "timestamp":  "2026-03-01T14:33:15.3976523+08:00"
+                      },
+                      {
+                          "url":  "http://localhost:8081/api/ai/health",
+                          "up":  false,
+                          "http_code":  0,
+                          "error":  "A parameter cannot be found that matches parameter name \u0027SkipHttpErrorCheck\u0027.",
+                          "timestamp":  "2026-03-01T14:33:15.4022263+08:00"
+                      },
+                      {
+                          "url":  "http://localhost:19191/health",
+                          "up":  false,
+                          "http_code":  0,
+                          "error":  "A parameter cannot be found that matches parameter name \u0027SkipHttpErrorCheck\u0027.",
+                          "timestamp":  "2026-03-01T14:33:15.4046693+08:00"
+                      }
+                  ]
+}

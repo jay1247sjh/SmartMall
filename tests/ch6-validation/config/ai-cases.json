@@ -1,0 +1,18 @@
+[
+  {
+    "case_id": "AI01",
+    "name": "simple_text_qa",
+    "message": "What time does the mall close today?"
+  },
+  {
+    "case_id": "AI02",
+    "name": "search_with_constraints",
+    "message": "Find sports shoes under 500 CNY."
+  },
+  {
+    "case_id": "AI03",
+    "name": "confirmation_required_intent",
+    "message": "Place the order for me immediately.",
+    "expected_type": "confirmation_required"
+  }
+]

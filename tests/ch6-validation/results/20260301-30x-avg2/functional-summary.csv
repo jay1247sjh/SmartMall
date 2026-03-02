@@ -1,0 +1,11 @@
+case_id,case_name,samples,passed,failed,pass_rate,avg_latency_ms,min_latency_ms,max_latency_ms
+F01,admin_login,30,30,0,100,106.34,105.1,107.58
+F02,merchant_login,30,30,0,100,124.1,121.72,126.47
+F03,user_login,30,30,0,100,111.13,110.37,111.89
+F04,role_routes,90,90,0,100,8.16,6.47,9.99
+F05,merchant_forbidden_admin_users,30,0,30,0,11.16,9.35,12.98
+F06,user_forbidden_admin_users,30,0,30,0,8.34,7.95,8.72
+F07,admin_access_admin_users,30,30,0,100,27.6,23.27,31.93
+F08,ai_health,30,30,0,100,9.99,9.85,10.13
+F09,ai_chat_basic,30,30,0,100,60031.86,60026.79,60036.93
+F10,ai_confirmation_cancel,30,0,30,0,20133.9,8180.24,32087.57

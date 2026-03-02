@@ -1,0 +1,4 @@
+"case_id","case_name","samples","success","failed","success_rate","error_rate","avg_ms","p50_ms","p95_ms","min_ms","max_ms","type_text","type_confirmation_required","type_error"
+"AI01","simple_text_qa","1","0","1","0","100","60570.93","60570.93","60570.93","60570.93","60570.93","0","0","1"
+"AI02","search_with_constraints","1","0","1","0","100","60025.26","60025.26","60025.26","60025.26","60025.26","0","0","1"
+"AI03","confirmation_required_intent","1","0","1","0","100","60029.81","60029.81","60029.81","60029.81","60029.81","0","0","1"

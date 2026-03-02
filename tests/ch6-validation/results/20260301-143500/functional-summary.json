@@ -1,0 +1,119 @@
+﻿{
+    "generated_at":  "2026-03-01T14:43:10.6039069+08:00",
+    "total_samples":  36,
+    "passed":  0,
+    "failed":  36,
+    "pass_rate":  0,
+    "cases":  [
+                  {
+                      "case_id":  "F01",
+                      "case_name":  "admin_login",
+                      "samples":  3,
+                      "passed":  0,
+                      "failed":  3,
+                      "pass_rate":  0,
+                      "avg_latency_ms":  10.27,
+                      "min_latency_ms":  1.02,
+                      "max_latency_ms":  28.62
+                  },
+                  {
+                      "case_id":  "F02",
+                      "case_name":  "merchant_login",
+                      "samples":  3,
+                      "passed":  0,
+                      "failed":  3,
+                      "pass_rate":  0,
+                      "avg_latency_ms":  1.11,
+                      "min_latency_ms":  1.05,
+                      "max_latency_ms":  1.22
+                  },
+                  {
+                      "case_id":  "F03",
+                      "case_name":  "user_login",
+                      "samples":  3,
+                      "passed":  0,
+                      "failed":  3,
+                      "pass_rate":  0,
+                      "avg_latency_ms":  1.36,
+                      "min_latency_ms":  1.32,
+                      "max_latency_ms":  1.4
+                  },
+                  {
+                      "case_id":  "F04",
+                      "case_name":  "role_routes",
+                      "samples":  9,
+                      "passed":  0,
+                      "failed":  9,
+                      "pass_rate":  0,
+                      "avg_latency_ms":  0.99,
+                      "min_latency_ms":  0.68,
+                      "max_latency_ms":  1.72
+                  },
+                  {
+                      "case_id":  "F05",
+                      "case_name":  "merchant_forbidden_admin_users",
+                      "samples":  3,
+                      "passed":  0,
+                      "failed":  3,
+                      "pass_rate":  0,
+                      "avg_latency_ms":  1.55,
+                      "min_latency_ms":  0.79,
+                      "max_latency_ms":  3.04
+                  },
+                  {
+                      "case_id":  "F06",
+                      "case_name":  "user_forbidden_admin_users",
+                      "samples":  3,
+                      "passed":  0,
+                      "failed":  3,
+                      "pass_rate":  0,
+                      "avg_latency_ms":  0.75,
+                      "min_latency_ms":  0.72,
+                      "max_latency_ms":  0.78
+                  },
+                  {
+                      "case_id":  "F07",
+                      "case_name":  "admin_access_admin_users",
+                      "samples":  3,
+                      "passed":  0,
+                      "failed":  3,
+                      "pass_rate":  0,
+                      "avg_latency_ms":  1.03,
+                      "min_latency_ms":  0.82,
+                      "max_latency_ms":  1.43
+                  },
+                  {
+                      "case_id":  "F08",
+                      "case_name":  "ai_health",
+                      "samples":  3,
+                      "passed":  0,
+                      "failed":  3,
+                      "pass_rate":  0,
+                      "avg_latency_ms":  1.67,
+                      "min_latency_ms":  0.84,
+                      "max_latency_ms":  3.02
+                  },
+                  {
+                      "case_id":  "F09",
+                      "case_name":  "ai_chat_basic",
+                      "samples":  3,
+                      "passed":  0,
+                      "failed":  3,
+                      "pass_rate":  0,
+                      "avg_latency_ms":  1.06,
+                      "min_latency_ms":  0.84,
+                      "max_latency_ms":  1.19
+                  },
+                  {
+                      "case_id":  "F10",
+                      "case_name":  "ai_confirmation_cancel",
+                      "samples":  3,
+                      "passed":  0,
+                      "failed":  3,
+                      "pass_rate":  0,
+                      "avg_latency_ms":  2.63,
+                      "min_latency_ms":  0.87,
+                      "max_latency_ms":  5.81
+                  }
+              ]
+}

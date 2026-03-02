@@ -1,0 +1,472 @@
+<!doctype html><html><head><meta charset='utf-8'><title>Chapter 6 Evidence 04 - summary.json & NFR Mapping</title><style>
+body{font-family:Consolas,"Microsoft YaHei",monospace;background:#f5f7fb;color:#111;margin:0;padding:24px;}
+.wrap{max-width:1800px;margin:0 auto;}
+.card{background:#fff;border:1px solid #dbe2ef;border-radius:10px;padding:18px 20px;margin-bottom:18px;box-shadow:0 2px 8px rgba(0,0,0,.04);}
+h1{font-size:28px;margin:0 0 10px 0;}h2{font-size:20px;margin:0 0 10px 0;}
+.meta{font-size:15px;color:#333;line-height:1.6;margin-bottom:10px;}
+pre{white-space:pre-wrap;word-break:break-word;line-height:1.45;font-size:14px;margin:0;}
+code{font-family:Consolas,"Microsoft YaHei",monospace;}
+</style></head><body><div class='wrap'><div class='card'><h1>Chapter 6 Evidence 04 - summary.json & NFR Mapping</h1><div class='meta'>Source: tests/ch6-validation/results/20260301-30x-avg2/summary.json</div></div><div class='card'><h2>NFR Mapping Snapshot</h2><pre>NFR-001 FPS&gt;=30 =&gt; frontend.fps_avg=60.25
+NFR-002 init&lt;=3000ms =&gt; frontend.cases.FE01.load_avg_ms=
+NFR-003 API P95&lt;=500ms =&gt; api.max_p95_ms=
+functional.pass_rate=75
+api.p95_ms=
+ai.p95_ms=
+frontend.fps_avg=60.25</pre></div>
+<div class='card'><h2>summary.json</h2><pre>{
+  &quot;generated_at&quot;: &quot;2026-03-01T16:34:40.617487&quot;,
+  &quot;run_dir&quot;: &quot;E:\\JavaProgram\\Smart-mall\\tests\\ch6-validation\\results\\20260301-30x-avg2&quot;,
+  &quot;environment&quot;: {
+    &quot;collected_at&quot;: &quot;2026-03-01T16:02:24.5788381+08:00&quot;,
+    &quot;os&quot;: {
+      &quot;caption&quot;: &quot;Microsoft Windows 11 家庭中文版&quot;,
+      &quot;version&quot;: &quot;10.0.26100&quot;,
+      &quot;build&quot;: &quot;26100&quot;
+    },
+    &quot;cpu&quot;: {
+      &quot;name&quot;: &quot;12th Gen Intel(R) Core(TM) i5-12500H&quot;,
+      &quot;cores&quot;: 12,
+      &quot;logical_processors&quot;: 16
+    },
+    &quot;memory_gb&quot;: 31.63,
+    &quot;versions&quot;: {
+      &quot;node&quot;: &quot;v22.20.0&quot;,
+      &quot;pnpm&quot;: &quot;9.0.4&quot;,
+      &quot;java&quot;: &quot;java version \&quot;21\&quot; 2023-09-19 LTS&quot;,
+      &quot;maven&quot;: &quot;Apache Maven 3.6.3 (cecedd343002696d0abb50b32b541b8a6ba2883f)&quot;,
+      &quot;python&quot;: &quot;Python 3.12.4&quot;
+    },
+    &quot;ports&quot;: {
+      &quot;frontend&quot;: 5173,
+      &quot;backend&quot;: 8081,
+      &quot;intelligence&quot;: 19191
+    },
+    &quot;services&quot;: [
+      {
+        &quot;url&quot;: &quot;http://localhost:5173&quot;,
+        &quot;up&quot;: true,
+        &quot;http_code&quot;: 200,
+        &quot;error&quot;: &quot;&quot;,
+        &quot;timestamp&quot;: &quot;2026-03-01T16:02:22.4330522+08:00&quot;
+      },
+      {
+        &quot;url&quot;: &quot;http://localhost:8081/api/health&quot;,
+        &quot;up&quot;: true,
+        &quot;http_code&quot;: 401,
+        &quot;error&quot;: &quot;&quot;,
+        &quot;timestamp&quot;: &quot;2026-03-01T16:02:22.4386704+08:00&quot;
+      },
+      {
+        &quot;url&quot;: &quot;http://localhost:19191/health&quot;,
+        &quot;up&quot;: true,
+        &quot;http_code&quot;: 200,
+        &quot;error&quot;: &quot;&quot;,
+        &quot;timestamp&quot;: &quot;2026-03-01T16:02:22.4472841+08:00&quot;
+      },
+      {
+        &quot;url&quot;: &quot;http://localhost:8081/api/ai/health&quot;,
+        &quot;up&quot;: true,
+        &quot;http_code&quot;: 200,
+        &quot;error&quot;: &quot;&quot;,
+        &quot;timestamp&quot;: &quot;2026-03-01T16:02:22.9170982+08:00&quot;
+      }
+    ],
+    &quot;browser&quot;: {
+      &quot;version&quot;: &quot;145.0.7632.6&quot;,
+      &quot;user_agent&quot;: &quot;Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/145.0.7632.6 Safari/537.36&quot;
+    }
+  },
+  &quot;health&quot;: {
+    &quot;collected_at&quot;: &quot;2026-03-01T16:02:22.9325452+08:00&quot;,
+    &quot;endpoints&quot;: [
+      {
+        &quot;url&quot;: &quot;http://localhost:5173&quot;,
+        &quot;up&quot;: true,
+        &quot;http_code&quot;: 200,
+        &quot;error&quot;: &quot;&quot;,
+        &quot;timestamp&quot;: &quot;2026-03-01T16:02:22.4330522+08:00&quot;
+      },
+      {
+        &quot;url&quot;: &quot;http://localhost:8081/api/health&quot;,
+        &quot;up&quot;: true,
+        &quot;http_code&quot;: 401,
+        &quot;error&quot;: &quot;&quot;,
+        &quot;timestamp&quot;: &quot;2026-03-01T16:02:22.4386704+08:00&quot;
+      },
+      {
+        &quot;url&quot;: &quot;http://localhost:19191/health&quot;,
+        &quot;up&quot;: true,
+        &quot;http_code&quot;: 200,
+        &quot;error&quot;: &quot;&quot;,
+        &quot;timestamp&quot;: &quot;2026-03-01T16:02:22.4472841+08:00&quot;
+      },
+      {
+        &quot;url&quot;: &quot;http://localhost:8081/api/ai/health&quot;,
+        &quot;up&quot;: true,
+        &quot;http_code&quot;: 200,
+        &quot;error&quot;: &quot;&quot;,
+        &quot;timestamp&quot;: &quot;2026-03-01T16:02:22.9170982+08:00&quot;
+      }
+    ]
+  },
+  &quot;functional&quot;: {
+    &quot;total_samples&quot;: 360,
+    &quot;passed&quot;: 270,
+    &quot;failed&quot;: 90,
+    &quot;pass_rate&quot;: 75.0,
+    &quot;cases&quot;: [
+      {
+        &quot;case_id&quot;: &quot;F01&quot;,
+        &quot;case_name&quot;: &quot;admin_login&quot;,
+        &quot;samples&quot;: 30,
+        &quot;passed&quot;: 30,
+        &quot;failed&quot;: 0,
+        &quot;pass_rate&quot;: 100.0,
+        &quot;avg_latency_ms&quot;: 106.34,
+        &quot;min_latency_ms&quot;: 105.1,
+        &quot;max_latency_ms&quot;: 107.58
+      },
+      {
+        &quot;case_id&quot;: &quot;F02&quot;,
+        &quot;case_name&quot;: &quot;merchant_login&quot;,
+        &quot;samples&quot;: 30,
+        &quot;passed&quot;: 30,
+        &quot;failed&quot;: 0,
+        &quot;pass_rate&quot;: 100.0,
+        &quot;avg_latency_ms&quot;: 124.1,
+        &quot;min_latency_ms&quot;: 121.72,
+        &quot;max_latency_ms&quot;: 126.47
+      },
+      {
+        &quot;case_id&quot;: &quot;F03&quot;,
+        &quot;case_name&quot;: &quot;user_login&quot;,
+        &quot;samples&quot;: 30,
+        &quot;passed&quot;: 30,
+        &quot;failed&quot;: 0,
+        &quot;pass_rate&quot;: 100.0,
+        &quot;avg_latency_ms&quot;: 111.13,
+        &quot;min_latency_ms&quot;: 110.37,
+        &quot;max_latency_ms&quot;: 111.89
+      },
+      {
+        &quot;case_id&quot;: &quot;F04&quot;,
+        &quot;case_name&quot;: &quot;role_routes&quot;,
+        &quot;samples&quot;: 90,
+        &quot;passed&quot;: 90,
+        &quot;failed&quot;: 0,
+        &quot;pass_rate&quot;: 100.0,
+        &quot;avg_latency_ms&quot;: 8.16,
+        &quot;min_latency_ms&quot;: 6.47,
+        &quot;max_latency_ms&quot;: 9.99
+      },
+      {
+        &quot;case_id&quot;: &quot;F05&quot;,
+        &quot;case_name&quot;: &quot;merchant_forbidden_admin_users&quot;,
+        &quot;samples&quot;: 30,
+        &quot;passed&quot;: 0,
+        &quot;failed&quot;: 30,
+        &quot;pass_rate&quot;: 0.0,
+        &quot;avg_latency_ms&quot;: 11.16,
+        &quot;min_latency_ms&quot;: 9.35,
+        &quot;max_latency_ms&quot;: 12.98
+      },
+      {
+        &quot;case_id&quot;: &quot;F06&quot;,
+        &quot;case_name&quot;: &quot;user_forbidden_admin_users&quot;,
+        &quot;samples&quot;: 30,
+        &quot;passed&quot;: 0,
+        &quot;failed&quot;: 30,
+        &quot;pass_rate&quot;: 0.0,
+        &quot;avg_latency_ms&quot;: 8.34,
+        &quot;min_latency_ms&quot;: 7.95,
+        &quot;max_latency_ms&quot;: 8.72
+      },
+      {
+        &quot;case_id&quot;: &quot;F07&quot;,
+        &quot;case_name&quot;: &quot;admin_access_admin_users&quot;,
+        &quot;samples&quot;: 30,
+        &quot;passed&quot;: 30,
+        &quot;failed&quot;: 0,
+        &quot;pass_rate&quot;: 100.0,
+        &quot;avg_latency_ms&quot;: 27.6,
+        &quot;min_latency_ms&quot;: 23.27,
+        &quot;max_latency_ms&quot;: 31.93
+      },
+      {
+        &quot;case_id&quot;: &quot;F08&quot;,
+        &quot;case_name&quot;: &quot;ai_health&quot;,
+        &quot;samples&quot;: 30,
+        &quot;passed&quot;: 30,
+        &quot;failed&quot;: 0,
+        &quot;pass_rate&quot;: 100.0,
+        &quot;avg_latency_ms&quot;: 9.99,
+        &quot;min_latency_ms&quot;: 9.85,
+        &quot;max_latency_ms&quot;: 10.13
+      },
+      {
+        &quot;case_id&quot;: &quot;F09&quot;,
+        &quot;case_name&quot;: &quot;ai_chat_basic&quot;,
+        &quot;samples&quot;: 30,
+        &quot;passed&quot;: 30,
+        &quot;failed&quot;: 0,
+        &quot;pass_rate&quot;: 100.0,
+        &quot;avg_latency_ms&quot;: 60031.86,
+        &quot;min_latency_ms&quot;: 60026.79,
+        &quot;max_latency_ms&quot;: 60036.93
+      },
+      {
+        &quot;case_id&quot;: &quot;F10&quot;,
+        &quot;case_name&quot;: &quot;ai_confirmation_cancel&quot;,
+        &quot;samples&quot;: 30,
+        &quot;passed&quot;: 0,
+        &quot;failed&quot;: 30,
+        &quot;pass_rate&quot;: 0.0,
+        &quot;avg_latency_ms&quot;: 20133.9,
+        &quot;min_latency_ms&quot;: 8180.24,
+        &quot;max_latency_ms&quot;: 32087.57
+      }
+    ]
+  },
+  &quot;api&quot;: {
+    &quot;p95_ms&quot;: 209.54,
+    &quot;sequential&quot;: {
+      &quot;success_rate&quot;: 100.0,
+      &quot;cases&quot;: [
+        {
+          &quot;case_id&quot;: &quot;API01&quot;,
+          &quot;case_name&quot;: &quot;auth_login&quot;,
+          &quot;samples&quot;: 30,
+          &quot;success&quot;: 30,
+          &quot;failed&quot;: 0,
+          &quot;success_rate&quot;: 100.0,
+          &quot;error_rate&quot;: 0.0,
+          &quot;avg_ms&quot;: 179.48,
+          &quot;p50_ms&quot;: 149.43,
+          &quot;p95_ms&quot;: 209.54,
+          &quot;min_ms&quot;: 149.43,
+          &quot;max_ms&quot;: 209.54,
+          &quot;throughput_req_s&quot;: 5.1
+        },
+        {
+          &quot;case_id&quot;: &quot;API02&quot;,
+          &quot;case_name&quot;: &quot;dashboard_admin_stats&quot;,
+          &quot;samples&quot;: 30,
+          &quot;success&quot;: 30,
+          &quot;failed&quot;: 0,
+          &quot;success_rate&quot;: 100.0,
+          &quot;error_rate&quot;: 0.0,
+          &quot;avg_ms&quot;: 37.32,
+          &quot;p50_ms&quot;: 13.82,
+          &quot;p95_ms&quot;: 60.82,
+          &quot;min_ms&quot;: 13.82,
+          &quot;max_ms&quot;: 60.82,
+          &quot;throughput_req_s&quot;: 26.0
+        },
+        {
+          &quot;case_id&quot;: &quot;API03&quot;,
+          &quot;case_name&quot;: &quot;dashboard_merchant_stats&quot;,
+          &quot;samples&quot;: 30,
+          &quot;success&quot;: 30,
+          &quot;failed&quot;: 0,
+          &quot;success_rate&quot;: 100.0,
+          &quot;error_rate&quot;: 0.0,
+          &quot;avg_ms&quot;: 18.68,
+          &quot;p50_ms&quot;: 11.07,
+          &quot;p95_ms&quot;: 26.29,
+          &quot;min_ms&quot;: 11.07,
+          &quot;max_ms&quot;: 26.29,
+          &quot;throughput_req_s&quot;: 50.07
+        },
+        {
+          &quot;case_id&quot;: &quot;API04&quot;,
+          &quot;case_name&quot;: &quot;public_mall_published&quot;,
+          &quot;samples&quot;: 30,
+          &quot;success&quot;: 30,
+          &quot;failed&quot;: 0,
+          &quot;success_rate&quot;: 100.0,
+          &quot;error_rate&quot;: 0.0,
+          &quot;avg_ms&quot;: 51.37,
+          &quot;p50_ms&quot;: 35.17,
+          &quot;p95_ms&quot;: 67.57,
+          &quot;min_ms&quot;: 35.17,
+          &quot;max_ms&quot;: 67.57,
+          &quot;throughput_req_s&quot;: 18.11
+        }
+      ]
+    },
+    &quot;concurrency&quot;: {
+      &quot;case_id&quot;: &quot;API_CONC_01&quot;,
+      &quot;case_name&quot;: &quot;dashboard_admin_stats_concurrency&quot;,
+      &quot;concurrency&quot;: 20,
+      &quot;total_requests&quot;: 100,
+      &quot;success&quot;: 100,
+      &quot;failed&quot;: 0,
+      &quot;success_rate&quot;: 100.0,
+      &quot;error_rate&quot;: 0.0,
+      &quot;avg_ms&quot;: 192.86,
+      &quot;p50_ms&quot;: 186.88,
+      &quot;p95_ms&quot;: 230.94,
+      &quot;min_ms&quot;: 172.54,
+      &quot;max_ms&quot;: 276.56,
+      &quot;throughput_req_s&quot;: 3.6
+    }
+  },
+  &quot;ai&quot;: {
+    &quot;p95_ms&quot;: 60097.35,
+    &quot;success_rate&quot;: 33.33,
+    &quot;cases&quot;: [
+      {
+        &quot;case_id&quot;: &quot;AI01&quot;,
+        &quot;case_name&quot;: &quot;simple_text_qa&quot;,
+        &quot;samples&quot;: 30,
+        &quot;success&quot;: 30,
+        &quot;failed&quot;: 0,
+        &quot;success_rate&quot;: 100.0,
+        &quot;error_rate&quot;: 0.0,
+        &quot;avg_ms&quot;: 15841.72,
+        &quot;p50_ms&quot;: 15391.82,
+        &quot;p95_ms&quot;: 16291.63,
+        &quot;min_ms&quot;: 15391.82,
+        &quot;max_ms&quot;: 16291.63,
+        &quot;type_text&quot;: 30,
+        &quot;type_confirmation_required&quot;: 0,
+        &quot;type_error&quot;: 0
+      },
+      {
+        &quot;case_id&quot;: &quot;AI02&quot;,
+        &quot;case_name&quot;: &quot;search_with_constraints&quot;,
+        &quot;samples&quot;: 30,
+        &quot;success&quot;: 0,
+        &quot;failed&quot;: 30,
+        &quot;success_rate&quot;: 0.0,
+        &quot;error_rate&quot;: 100.0,
+        &quot;avg_ms&quot;: 60067.37,
+        &quot;p50_ms&quot;: 60037.39,
+        &quot;p95_ms&quot;: 60097.35,
+        &quot;min_ms&quot;: 60037.39,
+        &quot;max_ms&quot;: 60097.35,
+        &quot;type_text&quot;: 0,
+        &quot;type_confirmation_required&quot;: 0,
+        &quot;type_error&quot;: 30
+      },
+      {
+        &quot;case_id&quot;: &quot;AI03&quot;,
+        &quot;case_name&quot;: &quot;confirmation_required_intent&quot;,
+        &quot;samples&quot;: 30,
+        &quot;success&quot;: 0,
+        &quot;failed&quot;: 30,
+        &quot;success_rate&quot;: 0.0,
+        &quot;error_rate&quot;: 100.0,
+        &quot;avg_ms&quot;: 39394.98,
+        &quot;p50_ms&quot;: 18754.11,
+        &quot;p95_ms&quot;: 60035.85,
+        &quot;min_ms&quot;: 18754.11,
+        &quot;max_ms&quot;: 60035.85,
+        &quot;type_text&quot;: 15,
+        &quot;type_confirmation_required&quot;: 0,
+        &quot;type_error&quot;: 15
+      }
+    ]
+  },
+  &quot;frontend&quot;: {
+    &quot;fps_avg&quot;: 60.25,
+    &quot;frame_time_p95_ms&quot;: 16.8,
+    &quot;cold_load_avg_ms&quot;: 641.1,
+    &quot;cases&quot;: [
+      {
+        &quot;case_id&quot;: &quot;FE01&quot;,
+        &quot;case_name&quot;: &quot;mall_cold_load&quot;,
+        &quot;mode&quot;: &quot;cold_load&quot;,
+        &quot;samples&quot;: 30,
+        &quot;success_rate&quot;: 100.0,
+        &quot;error_rate&quot;: 0.0,
+        &quot;dcl_avg_ms&quot;: 639.75,
+        &quot;dcl_p95_ms&quot;: 660.1,
+        &quot;load_avg_ms&quot;: 641.1,
+        &quot;load_p95_ms&quot;: 661.9,
+        &quot;fcp_avg_ms&quot;: 402.0,
+        &quot;fcp_p95_ms&quot;: 804.0,
+        &quot;lcp_avg_ms&quot;: 402.0,
+        &quot;lcp_p95_ms&quot;: 804.0,
+        &quot;fps_avg&quot;: 60.2,
+        &quot;fps_p95&quot;: 60.39,
+        &quot;frame_time_p95_ms&quot;: 16.8,
+        &quot;heap_avg_mb&quot;: 19.55
+      },
+      {
+        &quot;case_id&quot;: &quot;FE02&quot;,
+        &quot;case_name&quot;: &quot;mall_warm_reload&quot;,
+        &quot;mode&quot;: &quot;warm_reload&quot;,
+        &quot;samples&quot;: 30,
+        &quot;success_rate&quot;: 100.0,
+        &quot;error_rate&quot;: 0.0,
+        &quot;dcl_avg_ms&quot;: 137.95,
+        &quot;dcl_p95_ms&quot;: 157.2,
+        &quot;load_avg_ms&quot;: 138.65,
+        &quot;load_p95_ms&quot;: 157.9,
+        &quot;fcp_avg_ms&quot;: 338.0,
+        &quot;fcp_p95_ms&quot;: 356.0,
+        &quot;lcp_avg_ms&quot;: 338.0,
+        &quot;lcp_p95_ms&quot;: 356.0,
+        &quot;fps_avg&quot;: 60.07,
+        &quot;fps_p95&quot;: 60.18,
+        &quot;frame_time_p95_ms&quot;: 16.8,
+        &quot;heap_avg_mb&quot;: 23.37
+      },
+      {
+        &quot;case_id&quot;: &quot;FE03&quot;,
+        &quot;case_name&quot;: &quot;mall_interaction&quot;,
+        &quot;mode&quot;: &quot;interaction&quot;,
+        &quot;samples&quot;: 30,
+        &quot;success_rate&quot;: 100.0,
+        &quot;error_rate&quot;: 0.0,
+        &quot;dcl_avg_ms&quot;: 787.6,
+        &quot;dcl_p95_ms&quot;: 806.3,
+        &quot;load_avg_ms&quot;: 789.6,
+        &quot;load_p95_ms&quot;: 808.7,
+        &quot;fcp_avg_ms&quot;: 1204.0,
+        &quot;fcp_p95_ms&quot;: 1212.0,
+        &quot;lcp_avg_ms&quot;: 1204.0,
+        &quot;lcp_p95_ms&quot;: 1212.0,
+        &quot;fps_avg&quot;: 60.47,
+        &quot;fps_p95&quot;: 60.7,
+        &quot;frame_time_p95_ms&quot;: 16.7,
+        &quot;heap_avg_mb&quot;: 19.55
+      }
+    ]
+  },
+  &quot;nfr_alignment&quot;: {
+    &quot;NFR-001&quot;: {
+      &quot;name&quot;: &quot;渲染流畅度&quot;,
+      &quot;target&quot;: &quot;FPS &gt;= 30&quot;,
+      &quot;actual&quot;: {
+        &quot;fps_avg&quot;: 60.25,
+        &quot;frame_time_p95_ms&quot;: 16.8
+      },
+      &quot;met&quot;: true
+    },
+    &quot;NFR-002&quot;: {
+      &quot;name&quot;: &quot;初始化时间&quot;,
+      &quot;target&quot;: &quot;初始化 &lt;= 3000ms&quot;,
+      &quot;actual&quot;: {
+        &quot;cold_load_avg_ms&quot;: 641.1
+      },
+      &quot;met&quot;: true
+    },
+    &quot;NFR-003&quot;: {
+      &quot;name&quot;: &quot;API 延迟&quot;,
+      &quot;target&quot;: &quot;API P95 &lt;= 500ms&quot;,
+      &quot;actual&quot;: {
+        &quot;api_p95_ms&quot;: 209.54
+      },
+      &quot;met&quot;: true
+    }
+  },
+  &quot;sources&quot;: {
+    &quot;functional_summary&quot;: &quot;functional-summary.json&quot;,
+    &quot;api_latency_summary&quot;: &quot;api-latency-summary.csv&quot;,
+    &quot;api_concurrency_summary&quot;: &quot;api-concurrency-summary.csv&quot;,
+    &quot;ai_latency_summary&quot;: &quot;ai-latency-summary.csv&quot;,
+    &quot;frontend_perf_summary&quot;: &quot;frontend-perf-summary.csv&quot;
+  }
+}</pre></div></div></body></html>
