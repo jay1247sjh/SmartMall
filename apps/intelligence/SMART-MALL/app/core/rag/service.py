@@ -376,6 +376,28 @@ class RAGService:
         if self._embedding_service is None:
             self._embedding_service = get_embedding_service()
         return self._embedding_service
+
+    @staticmethod
+    def _resolve_similarity_score(meta: Dict[str, Any], query: str, text: str) -> float:
+        """解析相似度得分。若底层 retriever 未返回 score，使用轻量 lexical 回退。"""
+        raw = meta.get("score")
+        if isinstance(raw, (int, float)):
+            return float(raw)
+        lowered = text.lower()
+        terms = [t for t in query.lower().split() if t]
+        if not terms:
+            return 0.5
+        hits = sum(1 for t in terms if t in lowered)
+        return min(1.0, 0.45 + 0.12 * hits)
+
+    @staticmethod
+    def _lexical_bonus(query: str, text: str) -> float:
+        terms = [t for t in query.lower().split() if t]
+        if not terms:
+            return 0.0
+        lowered = text.lower()
+        hits = sum(1 for t in terms if t in lowered)
+        return min(0.08, 0.02 * hits)
     
     async def initialize(self) -> bool:
         """
@@ -576,6 +598,8 @@ class RAGService:
         results = []
         for doc in documents:
             meta = doc.metadata  # 提取元数据
+            text_for_score = f"{meta.get('name', '')} {meta.get('description', '')}"
+            score = self._resolve_similarity_score(meta, query, text_for_score)
             result = StoreSearchResult(
                 id=meta.get("id", ""),
                 name=meta.get("name", ""),
@@ -586,11 +610,17 @@ class RAGService:
                 position_x=meta.get("position_x", 0.0),
                 position_y=meta.get("position_y", 0.0),
                 position_z=meta.get("position_z", 0.0),
-                score=meta.get("score", 0.0)
+                score=score
             )
-            results.append(result)
-        
-        return results
+            if result.score >= score_threshold:
+                results.append(result)
+
+        if settings.RAG_RERANK_ENABLED and results:
+            results.sort(
+                key=lambda x: x.score + self._lexical_bonus(query, f"{x.name} {x.description}"),
+                reverse=True,
+            )
+        return results[:top_k]
     
     async def search_products(
         self,
@@ -637,6 +667,8 @@ class RAGService:
         results = []
         for doc in documents:
             meta = doc.metadata
+            text_for_score = f"{meta.get('name', '')} {meta.get('description', '')}"
+            score = self._resolve_similarity_score(meta, query, text_for_score)
             result = ProductSearchResult(
                 id=meta.get("id", ""),
                 name=meta.get("name", ""),
@@ -646,11 +678,17 @@ class RAGService:
                 price=meta.get("price", 0.0),
                 store_id=meta.get("store_id", ""),
                 store_name=meta.get("store_name", ""),
-                score=meta.get("score", 0.0)
+                score=score,
             )
-            results.append(result)
-        
-        return results
+            if result.score >= score_threshold:
+                results.append(result)
+
+        if settings.RAG_RERANK_ENABLED and results:
+            results.sort(
+                key=lambda x: x.score + self._lexical_bonus(query, f"{x.name} {x.description}"),
+                reverse=True,
+            )
+        return results[:top_k]
     
     async def get_context_for_query(
         self,

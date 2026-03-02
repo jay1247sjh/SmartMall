@@ -13,7 +13,7 @@ tool_results, model, tokens_used, timestamp）。
 Requirements: 18.5
 """
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter
 from pydantic import BaseModel
 from typing import Optional, List, Dict, Any
 from datetime import datetime, timezone
@@ -27,6 +27,8 @@ from app.core.agent.agent import (
     SAFE_RESPONSE,
 )
 from app.core.memory.manager import MemoryManager
+from app.core.rag.orchestrator import RAGOrchestrator
+from app.core.agent.runtime_context import set_agent_context, reset_agent_context
 from app.core.errors import parse_llm_error
 from app.core.config import get_settings
 from app.core.prompt_loader import PromptLoader
@@ -53,6 +55,15 @@ class ToolResult(BaseModel):
     result: Dict[str, Any]
 
 
+class EvidenceItem(BaseModel):
+    """RAG 证据项"""
+    id: str
+    source_type: str
+    source_collection: str
+    score: float
+    snippet: str
+
+
 class ChatResponse(BaseModel):
     """对话响应"""
     request_id: str
@@ -62,6 +73,9 @@ class ChatResponse(BaseModel):
     args: Optional[Dict[str, Any]] = None
     message: Optional[str] = None
     tool_results: Optional[List[ToolResult]] = None
+    rag_used: Optional[bool] = None
+    retrieval_strategy: Optional[str] = None
+    evidence: Optional[List[EvidenceItem]] = None
     model: Optional[str] = None
     tokens_used: Optional[int] = None
     timestamp: str
@@ -132,7 +146,12 @@ async def chat(request: ChatRequest) -> ChatResponse:
 
         # 构建记忆上下文
         memory = MemoryManager(user_id=request.user_id)
-        prompt_context = await memory.build_prompt_context(request.message)
+        rag_data = await RAGOrchestrator.augment(request.message, request.context)
+        prompt_context = await memory.build_prompt_context(
+            request.message,
+            rag_context=rag_data.get("rag_context") or None,
+        )
+        short_count = len(await memory.get_short_term_messages())
 
         # 提取 chat_history（system prompt 之后、当前输入之前的消息）
         chat_history = []
@@ -145,19 +164,39 @@ async def chat(request: ChatRequest) -> ChatResponse:
         # 调用 AgentExecutor
         settings = get_settings()
         agent = SmartMallAgentFactory.create(streaming=False)
-        result = await agent.ainvoke({
-            "input": request.message,
-            "system_message": system_message,
-            "chat_history": chat_history,
-        })
+        tokens = set_agent_context(
+            user_id=request.user_id,
+            user_role=(request.context or {}).get("user_role", "USER"),
+        )
+        try:
+            result = await agent.ainvoke({
+                "input": request.message,
+                "system_message": system_message,
+                "chat_history": chat_history,
+            })
+        finally:
+            reset_agent_context(tokens)
 
         output = result.get("output", "")
         steps = result.get("intermediate_steps", [])
         tool_results = _extract_tool_results(steps)
+        evidence_items = (
+            [EvidenceItem(**item) for item in rag_data.get("evidence", [])]
+            if settings.AGENT_ENABLE_CITATIONS
+            else []
+        )
 
         # 检测确认请求
         confirmation = _detect_confirmation(tool_results)
         if confirmation:
+            logger.info(json.dumps({
+                "event": "chat_confirmation_required",
+                "request_id": request.request_id,
+                "user_id": request.user_id,
+                "rag_used": bool(rag_data.get("rag_used")),
+                "retrieval_strategy": rag_data.get("retrieval_strategy", "none"),
+                "memory_short_count": short_count,
+            }, ensure_ascii=False))
             return ChatResponse(
                 request_id=request.request_id,
                 type="confirmation_required",
@@ -165,6 +204,9 @@ async def chat(request: ChatRequest) -> ChatResponse:
                 args=confirmation.result.get("args", {}),
                 message=confirmation.result.get("message", "此操作需要确认"),
                 tool_results=tool_results,
+                rag_used=bool(rag_data.get("rag_used")),
+                retrieval_strategy=rag_data.get("retrieval_strategy", "none"),
+                evidence=evidence_items,
                 model=settings.OPENROUTER_MODEL,
                 timestamp=_now_iso(),
             )
@@ -172,11 +214,23 @@ async def chat(request: ChatRequest) -> ChatResponse:
         # 保存对话到记忆
         await memory.save_turn(request.message, output)
 
+        logger.info(json.dumps({
+            "event": "chat_completed",
+            "request_id": request.request_id,
+            "user_id": request.user_id,
+            "rag_used": bool(rag_data.get("rag_used")),
+            "retrieval_strategy": rag_data.get("retrieval_strategy", "none"),
+            "memory_short_count": short_count,
+        }, ensure_ascii=False))
+
         return ChatResponse(
             request_id=request.request_id,
             type="text",
             content=output,
             tool_results=tool_results,
+            rag_used=bool(rag_data.get("rag_used")),
+            retrieval_strategy=rag_data.get("retrieval_strategy", "none"),
+            evidence=evidence_items,
             model=settings.OPENROUTER_MODEL,
             timestamp=_now_iso(),
         )
@@ -189,6 +243,8 @@ async def chat(request: ChatRequest) -> ChatResponse:
             type="error",
             content=user_message,
             message=error_type,
+            rag_used=False,
+            retrieval_strategy="error",
             timestamp=_now_iso(),
         )
 
@@ -221,6 +277,8 @@ async def confirm_action(request: ConfirmRequest) -> ChatResponse:
                 request_id=request.request_id,
                 type="text",
                 content=cancelled_msg,
+                rag_used=False,
+                retrieval_strategy="confirm_cancel",
                 timestamp=_now_iso(),
             )
 
@@ -236,10 +294,19 @@ async def confirm_action(request: ConfirmRequest) -> ChatResponse:
                 request_id=request.request_id,
                 type="error",
                 content=unknown_msg,
+                rag_used=False,
+                retrieval_strategy="confirm_unknown_action",
                 timestamp=_now_iso(),
             )
 
-        result = await target_tool.ainvoke(request.args)
+        tokens = set_agent_context(
+            user_id=request.user_id,
+            user_role="USER",
+        )
+        try:
+            result = await target_tool.ainvoke(request.args)
+        finally:
+            reset_agent_context(tokens)
         result_dict = result if isinstance(result, dict) else {"result": str(result)}
 
         # 从 YAML 加载 action 成功消息
@@ -265,6 +332,8 @@ async def confirm_action(request: ConfirmRequest) -> ChatResponse:
                 args=request.args,
                 result=result_dict,
             )],
+            rag_used=False,
+            retrieval_strategy="confirm_execute",
             timestamp=_now_iso(),
         )
 
@@ -276,5 +345,8 @@ async def confirm_action(request: ConfirmRequest) -> ChatResponse:
             type="error",
             content=user_message,
             message=error_type,
+            rag_used=False,
+            retrieval_strategy="confirm_error",
             timestamp=_now_iso(),
         )
+

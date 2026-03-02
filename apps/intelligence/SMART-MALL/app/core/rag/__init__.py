@@ -1,24 +1,9 @@
 """
-RAG (Retrieval-Augmented Generation) 模块
+RAG (Retrieval-Augmented Generation) 模块。
 
-提供基于 Milvus 向量数据库和 LangChain 的语义检索能力。
-
-Embedding: 使用 app.core.embedding_provider.get_embeddings()（LangChain 接口）
-Retriever: 使用 RAGRetrieverFactory（基于 langchain-milvus）
+说明：这里采用惰性导出，避免仅导入 `app.core.rag.*` 时立刻触发
+Milvus/Pandas/PyArrow 等重量依赖初始化，提升测试与启动弹性。
 """
-
-from app.core.rag.milvus_client import MilvusClient
-from app.core.rag.embedding import EmbeddingService, get_embedding_service
-from app.core.rag.schemas import (
-    StoreDocument,
-    ProductDocument,
-    LocationDocument,
-    ReviewDocument,
-    STORES_SCHEMA,
-    PRODUCTS_SCHEMA,
-    LOCATIONS_SCHEMA,
-    REVIEWS_SCHEMA,
-)
 
 __all__ = [
     "MilvusClient",
@@ -32,11 +17,36 @@ __all__ = [
     "PRODUCTS_SCHEMA",
     "LOCATIONS_SCHEMA",
     "REVIEWS_SCHEMA",
+    "RAGService",
 ]
 
 
 def __getattr__(name):
+    if name == "MilvusClient":
+        from app.core.rag.milvus_client import MilvusClient
+
+        return MilvusClient
+    if name in {"EmbeddingService", "get_embedding_service"}:
+        from app.core.rag.embedding import EmbeddingService, get_embedding_service
+
+        return {"EmbeddingService": EmbeddingService, "get_embedding_service": get_embedding_service}[
+            name
+        ]
+    if name in {
+        "StoreDocument",
+        "ProductDocument",
+        "LocationDocument",
+        "ReviewDocument",
+        "STORES_SCHEMA",
+        "PRODUCTS_SCHEMA",
+        "LOCATIONS_SCHEMA",
+        "REVIEWS_SCHEMA",
+    }:
+        from app.core.rag import schemas as _schemas
+
+        return getattr(_schemas, name)
     if name == "RAGService":
         from app.core.rag.service import RAGService
+
         return RAGService
     raise AttributeError(f"module {__name__!r} has no attribute {name!r}")

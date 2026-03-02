@@ -5,13 +5,19 @@
 from __future__ import annotations
 
 import asyncio
+import json
+import logging
 from typing import Any, AsyncIterator, Dict, List, Optional
 
 from app.core.agent.agent import SAFE_RESPONSE, SmartMallAgentFactory, is_unsafe_input
 from app.core.config import get_settings
 from app.core.errors import parse_llm_error
 from app.core.memory.manager import MemoryManager
+from app.core.rag.orchestrator import RAGOrchestrator
+from app.core.agent.runtime_context import set_agent_context, reset_agent_context
 from app.core.speech import get_speech_provider
+
+logger = logging.getLogger(__name__)
 
 
 class RealtimeVoiceService:
@@ -63,28 +69,49 @@ class RealtimeVoiceService:
 
         try:
             memory = MemoryManager(user_id=user_id)
-            prompt_context = await memory.build_prompt_context(transcript)
+            rag_data = await RAGOrchestrator.augment(transcript, context=None)
+            prompt_context = await memory.build_prompt_context(
+                transcript,
+                rag_context=rag_data.get("rag_context") or None,
+            )
             chat_history = [
                 msg
                 for msg in prompt_context[1:-1]
                 if msg.get("role") != "system"
             ]
             system_message = prompt_context[0]["content"] if prompt_context else ""
+            short_count = len(await memory.get_short_term_messages())
 
             agent = SmartMallAgentFactory.create(streaming=False)
-            result = await agent.ainvoke(
-                {
-                    "input": transcript,
-                    "system_message": system_message,
-                    "chat_history": chat_history,
-                }
-            )
+            tokens = set_agent_context(user_id=user_id, user_role="USER")
+            try:
+                result = await agent.ainvoke(
+                    {
+                        "input": transcript,
+                        "system_message": system_message,
+                        "chat_history": chat_history,
+                    }
+                )
+            finally:
+                reset_agent_context(tokens)
 
             output = str(result.get("output", "")).strip()
             tool_results = self._extract_tool_results(result.get("intermediate_steps", []))
             confirmation = self._detect_confirmation(tool_results)
 
             if confirmation:
+                logger.info(
+                    json.dumps(
+                        {
+                            "event": "voice_confirmation_required",
+                            "user_id": user_id,
+                            "rag_used": bool(rag_data.get("rag_used")),
+                            "retrieval_strategy": rag_data.get("retrieval_strategy", "none"),
+                            "memory_short_count": short_count,
+                        },
+                        ensure_ascii=False,
+                    )
+                )
                 yield {
                     "type": "confirmation_required",
                     "action": confirmation.get("function"),
@@ -94,6 +121,18 @@ class RealtimeVoiceService:
                 return
 
             await memory.save_turn(transcript, output)
+            logger.info(
+                json.dumps(
+                    {
+                        "event": "voice_chat_completed",
+                        "user_id": user_id,
+                        "rag_used": bool(rag_data.get("rag_used")),
+                        "retrieval_strategy": rag_data.get("retrieval_strategy", "none"),
+                        "memory_short_count": short_count,
+                    },
+                    ensure_ascii=False,
+                )
+            )
             async for event in self._stream_answer_with_tts(output, interrupted):
                 yield event
 
@@ -163,3 +202,4 @@ class RealtimeVoiceService:
         import base64
 
         return base64.b64encode(data).decode("utf-8")
+

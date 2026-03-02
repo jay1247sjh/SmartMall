@@ -212,13 +212,82 @@ class SyncService:
 
     async def _check_event_in_db(self, event_id: str) -> bool:
         """检查事件是否已在数据库中记录（sync_event_log 表）。"""
-        # 实际实现将查询 PostgreSQL sync_event_log 表
-        return False
+        try:
+            import asyncpg
+            from app.core.config import get_settings
+
+            conn = await asyncpg.connect(get_settings().pg_dsn)
+            try:
+                row = await conn.fetchrow(
+                    """
+                    SELECT status FROM sync_event_log
+                    WHERE event_id = $1 AND is_deleted = FALSE
+                    LIMIT 1
+                    """,
+                    event_id,
+                )
+                if not row:
+                    return False
+                return row["status"] in {"processed", "dead_letter", "retry_pending"}
+            finally:
+                await conn.close()
+        except Exception as e:
+            logger.warning(
+                json.dumps(
+                    {
+                        "event": "sync_event_db_check_failed",
+                        "event_id": event_id,
+                        "reason": str(e),
+                    },
+                    ensure_ascii=False,
+                )
+            )
+            return False
 
     async def _log_event(self, event: SyncEvent, status: str) -> None:
         """将事件处理记录写入数据库（sync_event_log 表）。"""
-        # 实际实现将 INSERT INTO sync_event_log
-        pass
+        try:
+            import asyncpg
+            from app.core.config import get_settings
+
+            conn = await asyncpg.connect(get_settings().pg_dsn)
+            try:
+                await conn.execute(
+                    """
+                    INSERT INTO sync_event_log
+                        (event_id, entity_type, operation, entity_id, status, error_message, retry_count, processed_at)
+                    VALUES
+                        ($1, $2, $3, $4, $5, $6, $7, CURRENT_TIMESTAMP)
+                    ON CONFLICT (event_id)
+                    DO UPDATE SET
+                        status = EXCLUDED.status,
+                        error_message = EXCLUDED.error_message,
+                        retry_count = EXCLUDED.retry_count,
+                        processed_at = EXCLUDED.processed_at,
+                        update_time = CURRENT_TIMESTAMP
+                    """,
+                    event.event_id,
+                    event.entity_type,
+                    event.operation,
+                    event.entity_id,
+                    status,
+                    None,
+                    0,
+                )
+            finally:
+                await conn.close()
+        except Exception as e:
+            logger.warning(
+                json.dumps(
+                    {
+                        "event": "sync_event_log_write_failed",
+                        "event_id": event.event_id,
+                        "status": status,
+                        "reason": str(e),
+                    },
+                    ensure_ascii=False,
+                )
+            )
 
     async def _milvus_upsert(
         self, collection: str, entity_id: str, vector: list, metadata: dict

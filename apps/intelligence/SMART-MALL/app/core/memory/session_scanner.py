@@ -79,7 +79,7 @@ class SessionScanner:
         from app.core.memory.manager import MemoryManager
 
         memory = MemoryManager(user_id=user_id)
-        messages = memory.short_term.get_messages()
+        messages = await memory.get_short_term_messages()
 
         if messages:
             # 强制摘要（跳过防抖）

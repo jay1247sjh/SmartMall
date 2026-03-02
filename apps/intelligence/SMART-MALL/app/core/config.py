@@ -6,7 +6,7 @@
 
 from pydantic_settings import BaseSettings
 from pydantic import field_validator, model_validator, ValidationInfo
-from typing import List, Optional
+from typing import Any, List, Optional
 from functools import lru_cache
 import logging
 
@@ -128,6 +128,12 @@ class Settings(BaseSettings):
     # ============ Agent 配置 ============
     AGENT_MAX_ITERATIONS: int = 10
     VISION_LLM_TEMPERATURE: float = 0.2
+    AGENT_RAG_MODE: str = "hybrid"  # tool_only / hybrid / always
+    AGENT_RAG_TOP_K: int = 5
+    AGENT_RAG_MIN_SCORE: float = 0.62
+    AGENT_RAG_MAX_CONTEXT_CHARS: int = 1200
+    AGENT_ENABLE_CITATIONS: bool = True
+    AGENT_MEMORY_PERSISTENT_ENABLED: bool = True
     
     # ============ Voice 配置 ============
     AI_VOICE_ENABLED: bool = True
@@ -151,6 +157,18 @@ class Settings(BaseSettings):
     CONFIG_LOADED_FROM: str = ""  # 记录配置来源
     
     # ============ 字段验证器 ============
+
+    @field_validator("DEBUG", mode="before")
+    @classmethod
+    def normalize_debug_value(cls, v: Any) -> Any:
+        """兼容 DEBUG=release/debug 等字符串配置。"""
+        if isinstance(v, str):
+            lowered = v.strip().lower()
+            if lowered in {"release", "prod", "production", "false", "0", "off", "no"}:
+                return False
+            if lowered in {"debug", "dev", "development", "true", "1", "on", "yes"}:
+                return True
+        return v
     
     @field_validator("MILVUS_PORT", "PG_PORT")
     @classmethod
@@ -202,6 +220,15 @@ class Settings(BaseSettings):
         if v.lower() not in valid_providers:
             raise ValueError(f"SPEECH_PROVIDER must be one of {valid_providers}, got {v}")
         return v.lower()
+
+    @field_validator("AGENT_RAG_MODE")
+    @classmethod
+    def validate_agent_rag_mode(cls, v: str) -> str:
+        valid_modes = ["tool_only", "hybrid", "always"]
+        lowered = v.lower()
+        if lowered not in valid_modes:
+            raise ValueError(f"AGENT_RAG_MODE must be one of {valid_modes}, got {v}")
+        return lowered
     
     # ============ 模型验证器 ============
     
@@ -280,6 +307,9 @@ class Settings(BaseSettings):
         logger.info(f"RAG Top-K: {self.RAG_TOP_K}")
         logger.info(f"RAG Score Threshold: {self.RAG_SCORE_THRESHOLD}")
         logger.info(f"RAG Cache Enabled: {self.RAG_CACHE_ENABLED}")
+        logger.info(f"Agent RAG Mode: {self.AGENT_RAG_MODE}")
+        logger.info(f"Agent RAG Top-K: {self.AGENT_RAG_TOP_K}")
+        logger.info(f"Agent Citations: {self.AGENT_ENABLE_CITATIONS}")
         logger.info("=" * 60)
     
     def _get_llm_model(self) -> str:
@@ -355,6 +385,14 @@ def get_hot_reloadable_config() -> dict:
             "rerank_enabled": settings.RAG_RERANK_ENABLED,
             "cache_enabled": settings.RAG_CACHE_ENABLED,
             "cache_ttl": settings.RAG_CACHE_TTL,
+        },
+        "agent": {
+            "rag_mode": settings.AGENT_RAG_MODE,
+            "rag_top_k": settings.AGENT_RAG_TOP_K,
+            "rag_min_score": settings.AGENT_RAG_MIN_SCORE,
+            "rag_max_context_chars": settings.AGENT_RAG_MAX_CONTEXT_CHARS,
+            "enable_citations": settings.AGENT_ENABLE_CITATIONS,
+            "memory_persistent_enabled": settings.AGENT_MEMORY_PERSISTENT_ENABLED,
         },
         "sync": {
             "batch_size": settings.SYNC_BATCH_SIZE,

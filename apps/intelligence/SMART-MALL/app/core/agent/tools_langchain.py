@@ -13,8 +13,10 @@ import logging
 from typing import Any, Dict, List, Optional
 
 from langchain_core.tools import BaseTool, tool
+from app.core.agent.backend_client import BackendClient
 
 logger = logging.getLogger(__name__)
+backend_client = BackendClient()
 
 
 # ============ 安全级别映射（从旧 OPERATION_LEVELS 迁移） ============
@@ -197,25 +199,41 @@ async def get_product_detail(product_id: str) -> dict:
 @tool
 async def get_store_info(store_id: str, info_type: str = "basic") -> dict:
     """获取店铺信息，包括营业时间、联系方式、优惠活动等。"""
-    return {"success": True, "store": {"id": store_id, "info_type": info_type}}
+    try:
+        return await backend_client.get_store_info(store_id=store_id, info_type=info_type)
+    except Exception as e:
+        logger.warning(f"backend get_store_info failed: {e}")
+        return {"success": False, "store": {"id": store_id, "info_type": info_type}, "message": "店铺信息暂时不可用"}
 
 
 @tool
 async def add_to_cart(product_id: str, quantity: int = 1, sku_id: Optional[str] = None) -> dict:
     """添加商品到购物车。当用户明确表示要购买某商品时使用。"""
-    return {"success": True, "cart_id": "cart_001", "message": "已添加到购物车", "cart_total": 399}
+    try:
+        return await backend_client.add_to_cart(product_id=product_id, quantity=quantity, sku_id=sku_id)
+    except Exception as e:
+        logger.warning(f"backend add_to_cart failed: {e}")
+        return {"success": False, "message": "加购失败，请稍后重试"}
 
 
 @tool
 async def get_cart() -> dict:
     """获取购物车内容。当用户询问购物车有什么时使用。"""
-    return {"success": True, "items": [], "total": 0}
+    try:
+        return await backend_client.get_cart()
+    except Exception as e:
+        logger.warning(f"backend get_cart failed: {e}")
+        return {"success": True, "items": [], "total": 0, "message": "购物车暂时不可用"}
 
 
 @tool
 async def create_order(cart_id: str, address_id: Optional[str] = None) -> dict:
     """创建订单。此操作需要用户确认支付。当用户明确表示要下单、结算时使用。"""
-    return {"success": True, "order_id": "order_001", "message": "订单创建成功"}
+    try:
+        return await backend_client.create_order(cart_id=cart_id, address_id=address_id)
+    except Exception as e:
+        logger.warning(f"backend create_order failed: {e}")
+        return {"success": False, "message": "下单失败，请稍后再试"}
 
 
 @tool
