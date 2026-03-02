@@ -15,6 +15,12 @@ import org.springframework.web.client.ResourceAccessException;
 import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
 
+import java.io.BufferedInputStream;
+import java.io.IOException;
+import java.io.OutputStream;
+import java.net.HttpURLConnection;
+import java.net.URL;
+import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.util.*;
 
@@ -47,20 +53,9 @@ public class IntelligenceServiceClient {
 
         try {
             // 1. 构建 Python ChatRequest（snake_case 字段）
-            Map<String, Object> request = new HashMap<>();
-            request.put("request_id", requestId);
-            request.put("user_id", userId);
-            request.put("message", message);
-            request.put("image_url", imageUrl);
-
-            // context：user_role, current_floor, position
-            Map<String, Object> context = new HashMap<>();
-            context.put("user_role", userRole);
-            context.put("current_floor", currentFloor);
-            if (posX != null && posY != null && posZ != null) {
-                context.put("position", Map.of("x", posX, "y", posY, "z", posZ));
-            }
-            request.put("context", context);
+            Map<String, Object> request = buildChatRequest(
+                requestId, userId, userRole, message, imageUrl, currentFloor, posX, posY, posZ
+            );
 
             // 2. 转发到 /api/chat
             HttpHeaders headers = new HttpHeaders();
@@ -123,6 +118,69 @@ public class IntelligenceServiceClient {
     }
 
     /**
+     * 代理 SSE 聊天流到输出流。
+     */
+    public void streamChat(
+            String userId,
+            String userRole,
+            String message,
+            String imageUrl,
+            String currentPage,
+            String currentFloor,
+            Double posX,
+            Double posY,
+            Double posZ,
+            OutputStream outputStream
+    ) throws IOException {
+        String requestId = generateRequestId();
+        Map<String, Object> request = buildChatRequest(
+            requestId, userId, userRole, message, imageUrl, currentFloor, posX, posY, posZ
+        );
+
+        HttpURLConnection connection = null;
+        try {
+            URL url = new URL(baseUrl + "/api/chat/stream");
+            connection = (HttpURLConnection) url.openConnection();
+            connection.setRequestMethod("POST");
+            connection.setDoOutput(true);
+            connection.setConnectTimeout(10_000);
+            connection.setReadTimeout(0); // SSE 长连接
+            connection.setRequestProperty("Content-Type", "application/json");
+            connection.setRequestProperty("Accept", "text/event-stream");
+
+            byte[] body = objectMapper.writeValueAsBytes(request);
+            connection.getOutputStream().write(body);
+            connection.getOutputStream().flush();
+
+            int code = connection.getResponseCode();
+            if (code >= 400) {
+                String err = "data: {\"error\":\"AI 服务流式接口不可用\"}\n\n";
+                outputStream.write(err.getBytes(StandardCharsets.UTF_8));
+                outputStream.flush();
+                return;
+            }
+
+            try (BufferedInputStream in = new BufferedInputStream(connection.getInputStream())) {
+                byte[] buffer = new byte[1024];
+                int len;
+                while ((len = in.read(buffer)) != -1) {
+                    outputStream.write(buffer, 0, len);
+                    outputStream.flush();
+                }
+            }
+        } catch (Exception e) {
+            String err = "data: {\"error\":\"AI 服务暂时不可用，请稍后再试\"}\n\n";
+            outputStream.write(err.getBytes(StandardCharsets.UTF_8));
+            outputStream.flush();
+            log.error("[{}] stream chat failed: {}", requestId, e.getMessage());
+        } finally {
+            if (connection != null) {
+                connection.disconnect();
+            }
+        }
+    }
+
+    /**
      * 健康检查
      */
     public boolean healthCheck() {
@@ -158,6 +216,10 @@ public class IntelligenceServiceClient {
         response.setMessage(json.path("message").asText(null));
         response.setAction(json.path("action").asText(null));
         response.setTimestamp(json.path("timestamp").asText(Instant.now().toString()));
+        if (!json.path("rag_used").isMissingNode()) {
+            response.setRagUsed(json.path("rag_used").asBoolean(false));
+        }
+        response.setRetrievalStrategy(json.path("retrieval_strategy").asText(null));
 
         // 映射 args（Map<String, Object>）
         JsonNode argsNode = json.path("args");
@@ -188,6 +250,23 @@ public class IntelligenceServiceClient {
             response.setToolResults(toolResults);
         }
 
+        JsonNode evidenceNode = json.path("evidence");
+        if (evidenceNode.isArray()) {
+            List<AiChatResponse.EvidenceItem> evidences = new ArrayList<>();
+            for (JsonNode evNode : evidenceNode) {
+                AiChatResponse.EvidenceItem ev = new AiChatResponse.EvidenceItem();
+                ev.setId(evNode.path("id").asText(null));
+                ev.setSourceType(evNode.path("source_type").asText(null));
+                ev.setSourceCollection(evNode.path("source_collection").asText(null));
+                if (!evNode.path("score").isMissingNode() && evNode.path("score").isNumber()) {
+                    ev.setScore(evNode.path("score").asDouble());
+                }
+                ev.setSnippet(evNode.path("snippet").asText(null));
+                evidences.add(ev);
+            }
+            response.setEvidence(evidences);
+        }
+
         return response;
     }
 
@@ -199,6 +278,8 @@ public class IntelligenceServiceClient {
         response.setRequestId(requestId);
         response.setType("error");
         response.setContent(message);
+        response.setRagUsed(false);
+        response.setRetrievalStrategy("error");
         response.setTimestamp(Instant.now().toString());
         return response;
     }

@@ -3,6 +3,7 @@ package com.smartmall.application.service;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.smartmall.common.util.IdGenerator;
 import com.smartmall.domain.entity.AreaApply;
 import com.smartmall.domain.entity.Notice;
 import com.smartmall.domain.entity.Store;
@@ -21,6 +22,7 @@ import com.smartmall.infrastructure.mapper.UserOrderMapper;
 import com.smartmall.interfaces.dto.dashboard.AdminStatsDTO;
 import com.smartmall.interfaces.dto.dashboard.MerchantStatsDTO;
 import com.smartmall.interfaces.dto.dashboard.NoticeDTO;
+import com.smartmall.interfaces.dto.dashboard.PublishNoticeRequest;
 import com.smartmall.interfaces.dto.dashboard.UserDailyCountDTO;
 import com.smartmall.interfaces.dto.dashboard.UserStatsDTO;
 import com.smartmall.interfaces.dto.dashboard.UserTrendPointDTO;
@@ -192,6 +194,23 @@ public class DashboardService {
         return notices.stream()
                 .map(this::convertToNoticeDTO)
                 .collect(Collectors.toList());
+    }
+
+    /**
+     * 发布系统公告
+     */
+    public NoticeDTO publishNotice(PublishNoticeRequest request, String operatorId) {
+        Notice notice = new Notice();
+        notice.setNoticeId(IdGenerator.nextId());
+        notice.setTitle(request.getTitle().trim());
+        notice.setContent(request.getContent().trim());
+        notice.setPublishedAt(LocalDateTime.now());
+        notice.setIsActive(true);
+
+        noticeMapper.insert(notice);
+        log.info("系统公告已发布: noticeId={}, operatorId={}", notice.getNoticeId(), operatorId);
+
+        return convertToNoticeDTO(notice);
     }
 
     /**

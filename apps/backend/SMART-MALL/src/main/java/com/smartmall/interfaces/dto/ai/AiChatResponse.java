@@ -32,6 +32,15 @@ public class AiChatResponse {
     
     @Schema(description = "工具调用结果")
     private List<ToolResult> toolResults;
+
+    @Schema(description = "是否使用 RAG")
+    private Boolean ragUsed;
+
+    @Schema(description = "检索策略", example = "navigation")
+    private String retrievalStrategy;
+
+    @Schema(description = "检索证据")
+    private List<EvidenceItem> evidence;
     
     @Schema(description = "时间戳")
     private String timestamp;
@@ -44,5 +53,14 @@ public class AiChatResponse {
         private String function;
         private Map<String, Object> args;
         private Map<String, Object> result;
+    }
+
+    @Data
+    public static class EvidenceItem {
+        private String id;
+        private String sourceType;
+        private String sourceCollection;
+        private Double score;
+        private String snippet;
     }
 }

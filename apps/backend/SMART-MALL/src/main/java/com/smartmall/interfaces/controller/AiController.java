@@ -10,10 +10,16 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBody;
 
+import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -31,6 +37,9 @@ import java.util.Map;
 public class AiController {
     
     private final IntelligenceServiceClient intelligenceServiceClient;
+
+    @Value("${intelligence.service.chat-stream-proxy-enabled:true}")
+    private boolean chatStreamProxyEnabled;
     
     @Operation(summary = "发送聊天消息")
     @PostMapping("/chat")
@@ -52,6 +61,46 @@ public class AiController {
         );
         
         return ApiResponse.success(response);
+    }
+
+    @Operation(summary = "流式聊天消息")
+    @PostMapping(value = "/chat/stream", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
+    public ResponseEntity<StreamingResponseBody> chatStream(@Valid @RequestBody AiChatRequest request) {
+        if (!chatStreamProxyEnabled) {
+            StreamingResponseBody disabledBody = outputStream -> {
+                outputStream.write("data: {\"error\":\"CHAT_STREAM_PROXY_DISABLED\"}\n\n".getBytes(StandardCharsets.UTF_8));
+                outputStream.flush();
+            };
+
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(MediaType.TEXT_EVENT_STREAM);
+            headers.setCacheControl("no-cache");
+            headers.add("X-Accel-Buffering", "no");
+            return ResponseEntity.status(503).headers(headers).body(disabledBody);
+        }
+
+        String userId = getCurrentUserId();
+        String userRole = getCurrentUserRole();
+        log.info("AI stream chat request from user {} (role: {}): {}", userId, userRole, request.getMessage());
+
+        StreamingResponseBody body = outputStream -> intelligenceServiceClient.streamChat(
+            userId,
+            userRole,
+            request.getMessage(),
+            request.getImageUrl(),
+            request.getCurrentPage(),
+            request.getCurrentFloor(),
+            request.getPositionX(),
+            request.getPositionY(),
+            request.getPositionZ(),
+            outputStream
+        );
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.TEXT_EVENT_STREAM);
+        headers.setCacheControl("no-cache");
+        headers.add("X-Accel-Buffering", "no");
+        return ResponseEntity.ok().headers(headers).body(body);
     }
     
     @Operation(summary = "确认操作")

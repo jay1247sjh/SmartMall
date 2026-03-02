@@ -75,6 +75,7 @@ intelligence:
   service:
     url: ${INTELLIGENCE_SERVICE_URL:http://localhost:19191}
     timeout: 60000
+    chat-stream-proxy-enabled: ${CHAT_STREAM_PROXY_ENABLED:true}
     voice:
       enabled: ${AI_VOICE_ENABLED:true}
       session-ttl-sec: ${VOICE_SESSION_TTL_SEC:180}

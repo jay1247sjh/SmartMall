@@ -5,8 +5,10 @@ import com.smartmall.common.response.ApiResponse;
 import com.smartmall.interfaces.dto.dashboard.AdminStatsDTO;
 import com.smartmall.interfaces.dto.dashboard.MerchantStatsDTO;
 import com.smartmall.interfaces.dto.dashboard.NoticeDTO;
+import com.smartmall.interfaces.dto.dashboard.PublishNoticeRequest;
 import com.smartmall.interfaces.dto.dashboard.UserStatsDTO;
 import com.smartmall.interfaces.dto.dashboard.UserTrendStatsDTO;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
@@ -71,5 +73,17 @@ public class DashboardController {
     @GetMapping("/notices")
     public ApiResponse<List<NoticeDTO>> getNotices(@RequestParam(value = "limit", defaultValue = "5") int limit) {
         return ApiResponse.success(dashboardService.getNotices(limit));
+    }
+
+    /**
+     * 发布系统公告（管理员）
+     */
+    @PostMapping("/notices")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ApiResponse<NoticeDTO> publishNotice(
+            @Valid @RequestBody PublishNoticeRequest request,
+            Authentication authentication) {
+        String operatorId = authentication.getName();
+        return ApiResponse.success(dashboardService.publishNotice(request, operatorId));
     }
 }
