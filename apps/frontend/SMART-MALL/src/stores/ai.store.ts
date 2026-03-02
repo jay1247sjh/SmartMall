@@ -152,20 +152,29 @@ export const useAiStore = defineStore('ai', () => {
         content: response.message || t('ai.confirmAction'),
         type: response.type,
         action: response.action,
-        args: response.args
+        args: response.args,
+        rag_used: response.ragUsed,
+        retrieval_strategy: response.retrievalStrategy,
+        evidence: response.evidence
       })
     } else if (response.type === 'error') {
       addMessage({
         role: 'assistant',
         content: resolveAssistantContent(response),
-        type: 'error'
+        type: 'error',
+        rag_used: response.ragUsed,
+        retrieval_strategy: response.retrievalStrategy,
+        evidence: response.evidence
       })
     } else {
       // text 类型 — 统一处理
       addMessage({
         role: 'assistant',
         content: resolveAssistantContent(response),
-        tool_results: response.toolResults
+        tool_results: response.toolResults,
+        rag_used: response.ragUsed,
+        retrieval_strategy: response.retrievalStrategy,
+        evidence: response.evidence
       })
     }
 

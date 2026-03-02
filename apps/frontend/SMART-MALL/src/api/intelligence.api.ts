@@ -72,6 +72,14 @@ export interface ToolResult {
   result: Record<string, unknown>
 }
 
+export interface EvidenceItem {
+  id: string
+  source_type: string
+  source_collection: string
+  score: number
+  snippet: string
+}
+
 /** 对话请求 */
 export interface ChatRequest {
   message: string
@@ -92,6 +100,9 @@ export interface ChatResponse {
   action?: string
   args?: Record<string, unknown>
   toolResults?: ToolResult[]
+  ragUsed?: boolean
+  retrievalStrategy?: string
+  evidence?: EvidenceItem[]
   timestamp: string
 }
 
@@ -148,6 +159,24 @@ export interface ChatMessage {
   action?: string
   args?: Record<string, unknown>
   tool_results?: ToolResult[]
+  rag_used?: boolean
+  retrieval_strategy?: string
+  evidence?: EvidenceItem[]
+}
+
+export interface ChatStreamConfirmation {
+  action: string
+  args: Record<string, unknown>
+  message?: string
+}
+
+export interface ChatStreamHandlers {
+  onToken?: (token: string) => void
+  onMeta?: (meta: { rag_used?: boolean; retrieval_strategy?: string; evidence?: EvidenceItem[] }) => void
+  onToolResults?: (toolResults: ToolResult[]) => void
+  onConfirmationRequired?: (confirmation: ChatStreamConfirmation) => void
+  onDone?: () => void
+  onError?: (error: string) => void
 }
 
 // ============================================================================
@@ -219,6 +248,99 @@ export const intelligenceApi = {
     return http.post<ChatResponse>('/ai/confirm', request, {
       timeout: 60000  // 60 秒超时
     })
+  },
+
+  /**
+   * 流式聊天（SSE over fetch）
+   */
+  async chatStream(
+    message: string,
+    imageUrl?: string,
+    context?: {
+      current_floor?: string
+      current_position?: { x: number; y: number; z: number }
+    },
+    handlers?: ChatStreamHandlers,
+    signal?: AbortSignal
+  ): Promise<void> {
+    const request: ChatRequest = {
+      message,
+      imageUrl,
+      currentFloor: context?.current_floor,
+      positionX: context?.current_position?.x,
+      positionY: context?.current_position?.y,
+      positionZ: context?.current_position?.z,
+    }
+
+    const token = localStorage.getItem('sm_accessToken')
+    const response = await fetch('/api/ai/chat/stream', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
+      body: JSON.stringify(request),
+      signal,
+    })
+
+    if (!response.ok || !response.body) {
+      throw new Error(`Stream request failed: ${response.status}`)
+    }
+
+    const reader = response.body.getReader()
+    const decoder = new TextDecoder('utf-8')
+    let buffer = ''
+
+    while (true) {
+      const { done, value } = await reader.read()
+      if (done) break
+      buffer += decoder.decode(value, { stream: true })
+      const events = buffer.split('\n\n')
+      buffer = events.pop() || ''
+
+      for (const evt of events) {
+        const line = evt
+          .split('\n')
+          .find((l) => l.startsWith('data:'))
+        if (!line) continue
+        const payloadText = line.replace(/^data:\s*/, '')
+        if (!payloadText) continue
+
+        let payload: Record<string, unknown>
+        try {
+          payload = JSON.parse(payloadText)
+        } catch {
+          continue
+        }
+
+        if (typeof payload.token === 'string') {
+          handlers?.onToken?.(payload.token)
+        }
+        if (typeof payload.error === 'string') {
+          handlers?.onError?.(payload.error)
+        }
+        if (payload.meta && typeof payload.meta === 'object') {
+          handlers?.onMeta?.(
+            payload.meta as {
+              rag_used?: boolean
+              retrieval_strategy?: string
+              evidence?: EvidenceItem[]
+            }
+          )
+        }
+        if (Array.isArray(payload.tool_results)) {
+          handlers?.onToolResults?.(payload.tool_results as ToolResult[])
+        }
+        if (payload.confirmation_required && typeof payload.confirmation_required === 'object') {
+          handlers?.onConfirmationRequired?.(
+            payload.confirmation_required as ChatStreamConfirmation
+          )
+        }
+        if (payload.done === true) {
+          handlers?.onDone?.()
+        }
+      }
+    }
   },
 
   /**

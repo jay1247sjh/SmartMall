@@ -37,6 +37,11 @@ interface CharacterModelResult {
 }
 
 export type GroundResolver = (x: number, z: number) => number | null | undefined
+export interface WallCollisionSegment {
+  start: Point2D
+  end: Point2D
+  collisionRadius?: number
+}
 
 /**
  * 加载角色模型
@@ -167,13 +172,13 @@ export class CharacterController {
   
   // 边界碰撞检测
   private boundary: Polygon | null = null
-  private collisionRadius: number = 0.5
+  private collisionRadius: number = 0.35
   
   // 区域碰撞检测（商城内的实体）
   private obstacles: Polygon[] = []
   
   // 墙壁线段障碍物（用于精确的墙壁碰撞检测）
-  private wallSegments: Array<{ start: Point2D; end: Point2D }> = []
+  private wallSegments: WallCollisionSegment[] = []
   
   private modelName: string = 'character-male-a'
   
@@ -321,9 +326,16 @@ export class CharacterController {
    * 设置墙壁线段障碍物（用于精确的墙壁碰撞检测）
    * @param segments 墙壁线段数组
    */
-  setWallSegments(segments: Array<{ start: Point2D; end: Point2D }>): void {
+  setWallSegments(segments: WallCollisionSegment[]): void {
     this.wallSegments = segments
     devLog('[CharacterController] 墙壁线段已设置，数量:', this.wallSegments.length)
+  }
+
+  private getSegmentCollisionRadius(segment: WallCollisionSegment): number {
+    const radius = segment.collisionRadius
+    if (radius === undefined || radius === null) return this.collisionRadius
+    if (!Number.isFinite(radius)) return this.collisionRadius
+    return Math.max(0.08, radius)
   }
   
   /**
@@ -383,10 +395,11 @@ export class CharacterController {
     
     // 找到最近的墙壁线段
     let minDist = Infinity
-    let nearestSeg: { start: Point2D; end: Point2D } | null = null
+    let nearestSeg: WallCollisionSegment | null = null
     
     for (const seg of this.wallSegments) {
-      const dist = this.pointToSegmentDistance(target2D, seg.start, seg.end)
+      const segmentRadius = this.getSegmentCollisionRadius(seg)
+      const dist = this.pointToSegmentDistance(target2D, seg.start, seg.end) - segmentRadius
       if (dist < minDist) {
         minDist = dist
         nearestSeg = seg
@@ -407,7 +420,7 @@ export class CharacterController {
       }
     }
     
-    if (!nearestSeg || minDist > this.collisionRadius * 3) return null
+    if (!nearestSeg || minDist > this.collisionRadius * 2.2) return null
     
     // 计算墙壁切线方向
     const wallDx = nearestSeg.end.x - nearestSeg.start.x
@@ -442,8 +455,9 @@ export class CharacterController {
     
     // 检查是否与任何墙壁线段碰撞
     for (const segment of this.wallSegments) {
+      const radius = this.getSegmentCollisionRadius(segment)
       const distance = this.pointToSegmentDistance(point2D, segment.start, segment.end)
-      if (distance < this.collisionRadius) {
+      if (distance < radius) {
         return true
       }
     }

@@ -29,8 +29,10 @@ import { useI18n } from 'vue-i18n'
 import { ElInput, ElButton, ElIcon, ElUpload, ElMessage } from 'element-plus'
 import { Promotion, Picture, Close, Microphone } from '@element-plus/icons-vue'
 import { intelligenceApi } from '@/api/intelligence.api'
+import type { ChatMessage } from '@/api/intelligence.api'
 import AiFloatingTrigger from '@/components/ai/AiFloatingTrigger.vue'
 import { useAiStore } from '@/stores'
+import { toolHandlerRegistry } from '@/agent/tool-handler-registry'
 import { devLog } from '@/utils/dev-log'
 import { useVoiceSession } from '@/composables/ai/useVoiceSession'
 
@@ -238,6 +240,11 @@ function parseErrorMessage(error: unknown): string {
   return t('ai.sidebar.errorGeneral')
 }
 
+function formatEvidenceScore(score?: number): string {
+  if (typeof score !== 'number' || Number.isNaN(score)) return '-'
+  return score.toFixed(2)
+}
+
 /** 发送消息 */
 async function sendMessage() {
   const text = inputText.value.trim()
@@ -262,21 +269,80 @@ async function sendMessage() {
   // 调用 AI 服务（后端会处理意图识别）
   aiStore.setSending(true)
   startProcessing()
+  let assistantMessageId: string | null = null
+
+  const ensureAssistantMessage = () => {
+    if (assistantMessageId) return
+    aiStore.addMessage({
+      role: 'assistant',
+      content: '',
+      type: 'text'
+    })
+    const last = aiStore.messages[aiStore.messages.length - 1]
+    assistantMessageId = last?.id || null
+  }
+
+  const updateAssistantMessage = (
+    updater: (message: ChatMessage) => void
+  ) => {
+    ensureAssistantMessage()
+    const target = aiStore.messages.find(msg => msg.id === assistantMessageId)
+    if (target) updater(target)
+  }
 
   try {
-    const response = await intelligenceApi.chat(
+    await intelligenceApi.chatStream(
       text,
       imageUrl || undefined,
       { current_floor: route.path },
+      {
+        onToken: token => {
+          updateAssistantMessage(msg => {
+            msg.content += token
+          })
+          scrollToBottom()
+        },
+        onMeta: meta => {
+          updateAssistantMessage(msg => {
+            msg.rag_used = meta.rag_used
+            msg.retrieval_strategy = meta.retrieval_strategy
+            msg.evidence = meta.evidence
+          })
+        },
+        onToolResults: toolResults => {
+          updateAssistantMessage(msg => {
+            msg.tool_results = toolResults
+          })
+          toolHandlerRegistry.handleToolResults(toolResults)
+        },
+        onConfirmationRequired: confirmation => {
+          aiStore.setPendingConfirmation({
+            action: confirmation.action,
+            args: confirmation.args,
+            message: confirmation.message || t('ai.confirmAction')
+          })
+          updateAssistantMessage(msg => {
+            msg.type = 'confirmation_required'
+            msg.action = confirmation.action
+            msg.args = confirmation.args
+            if (!msg.content.trim()) {
+              msg.content = confirmation.message || t('ai.confirmAction')
+            }
+          })
+        },
+        onError: message => {
+          throw new Error(message || t('ai.sidebar.errorGeneral'))
+        },
+      },
       abortController.value.signal
     )
 
     stopProcessing()
-
-    devLog('[AI] Response received:', response)
-
-    // 处理响应 — 统一由 ai.store 的 handleResponse + ToolHandlerRegistry 处理
-    aiStore.handleResponse(response)
+    updateAssistantMessage(msg => {
+      if (!msg.content.trim()) {
+        msg.content = t('ai.errorDefault')
+      }
+    })
     scrollToBottom()
   } catch (error: unknown) {
     stopProcessing()
@@ -290,10 +356,9 @@ async function sendMessage() {
     // 显示错误消息
     console.error('Chat error:', error)
     const errorMessage = parseErrorMessage(error)
-    aiStore.addMessage({
-      role: 'assistant',
-      content: errorMessage,
-      type: 'error'
+    updateAssistantMessage(msg => {
+      msg.type = 'error'
+      msg.content = errorMessage
     })
   } finally {
     abortController.value = null
@@ -457,6 +522,17 @@ onUnmounted(() => {
             <template v-else>
               <div class="message-content assistant-message">
                 <p class="message-text">{{ msg.content }}</p>
+
+                <div v-if="msg.evidence?.length" class="evidence-block">
+                  <div class="evidence-title">Evidence</div>
+                  <div v-for="item in msg.evidence" :key="`${msg.id}-${item.id}`" class="evidence-item">
+                    <div class="evidence-meta">
+                      <span>{{ item.source_type }}/{{ item.source_collection }}</span>
+                      <span>score {{ formatEvidenceScore(item.score) }}</span>
+                    </div>
+                    <p class="evidence-snippet">{{ item.snippet }}</p>
+                  </div>
+                </div>
 
                 <!-- 确认按钮 -->
                 <div
@@ -797,6 +873,38 @@ onUnmounted(() => {
 
 .message-text {
   white-space: pre-wrap;
+}
+
+.evidence-block {
+  margin-top: $space-3;
+  padding-top: $space-2;
+  border-top: 1px dashed var(--border-subtle);
+}
+
+.evidence-title {
+  font-size: $font-size-xs;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  margin-bottom: $space-2;
+}
+
+.evidence-item {
+  margin-bottom: $space-2;
+}
+
+.evidence-meta {
+  display: flex;
+  justify-content: space-between;
+  gap: $space-2;
+  font-size: $font-size-xs;
+  color: var(--text-muted);
+}
+
+.evidence-snippet {
+  margin-top: $space-1;
+  font-size: $font-size-sm;
+  color: var(--text-secondary);
 }
 
 /* 确认按钮 */

@@ -7,6 +7,8 @@ import { normalizeVerticalPassageProfile } from './vertical'
 
 const DEFAULT_SWITCH_PROGRESS_THRESHOLD = 0.96
 const DEFAULT_LANDING_PROGRESS = 0.06
+const STAIRS_GROUND_CLEARANCE = 0.06
+const ESCALATOR_GROUND_CLEARANCE = 0.04
 const EPSILON = 1e-6
 
 export type VerticalMovementIntent = 'up' | 'down' | 'none'
@@ -16,6 +18,8 @@ export interface VerticalGroundResolution {
   progress: number
   fromFloorId: string
   targetFloorId: string
+  targetFloorY: number
+  targetLanding2D: Point2D
   connectionId: string
   areaId: string
   shouldSwitchFloor: boolean
@@ -25,6 +29,7 @@ export interface ResolveVerticalGroundHeightParams {
   currentFloorId: string
   position2D: Point2D
   movementIntent?: VerticalMovementIntent
+  movementVector2D?: Point2D | null
   switchProgressThreshold?: number
   connections: VerticalConnection[]
   areasById: Map<string, AreaDefinition>
@@ -41,6 +46,15 @@ function normalizeAngleDeg(value: number): number {
 
 function clamp01(value: number): number {
   return Math.max(0, Math.min(1, value))
+}
+
+function normalizeVector2D(vector: Point2D): Point2D | null {
+  const len = Math.hypot(vector.x, vector.y)
+  if (len <= EPSILON) return null
+  return {
+    x: vector.x / len,
+    y: vector.y / len,
+  }
 }
 
 function projectProgressOnSegment(start: Point2D, end: Point2D, point: Point2D): number {
@@ -98,10 +112,10 @@ function resolveTargetFloorId(params: {
     return null
 
   if (movementIntent === 'up') {
-    return sorted[currentIndex + 1]?.floorId ?? null
+    return sorted[currentIndex + 1]?.floorId ?? sorted[currentIndex - 1]?.floorId ?? null
   }
   if (movementIntent === 'down') {
-    return sorted[currentIndex - 1]?.floorId ?? null
+    return sorted[currentIndex - 1]?.floorId ?? sorted[currentIndex + 1]?.floorId ?? null
   }
 
   return sorted[currentIndex + 1]?.floorId ?? sorted[currentIndex - 1]?.floorId ?? null
@@ -128,6 +142,7 @@ export function resolveVerticalGroundHeight(
     currentFloorId,
     position2D,
     movementIntent = 'none',
+    movementVector2D,
     switchProgressThreshold = DEFAULT_SWITCH_PROGRESS_THRESHOLD,
     connections,
     areasById,
@@ -159,11 +174,34 @@ export function resolveVerticalGroundHeight(
   if (!isInside)
     return null
 
+  const profile = normalizeVerticalPassageProfile(
+    matched.connection.passageProfile,
+    estimateAreaAscendAngleDeg(matched.area),
+  )
+  const anchors = resolvePassageAnchors(matched.area.shape, profile.ascendAngleDeg)
+  if (!anchors)
+    return null
+
+  const paddedEntry = applyLanePadding(anchors.entry2D, anchors.center2D, profile.lanePadding)
+  const paddedExit = applyLanePadding(anchors.exit2D, anchors.center2D, profile.lanePadding)
+  const axis = normalizeVector2D({
+    x: paddedExit.x - paddedEntry.x,
+    y: paddedExit.y - paddedEntry.y,
+  })
+  let effectiveMovementIntent: VerticalMovementIntent = movementIntent
+  const motion = movementVector2D ? normalizeVector2D(movementVector2D) : null
+  if (axis && motion) {
+    const dot = motion.x * axis.x + motion.y * axis.y
+    if (Math.abs(dot) > 0.05) {
+      effectiveMovementIntent = dot >= 0 ? 'up' : 'down'
+    }
+  }
+
   const targetFloorId = resolveTargetFloorId({
     connection: matched.connection,
     currentFloorId,
     floorLevelById,
-    movementIntent,
+    movementIntent: effectiveMovementIntent,
   })
   if (!targetFloorId)
     return null
@@ -177,16 +215,6 @@ export function resolveVerticalGroundHeight(
   const fromY = fromFloorY
   const toY = toFloorY
 
-  const profile = normalizeVerticalPassageProfile(
-    matched.connection.passageProfile,
-    estimateAreaAscendAngleDeg(matched.area),
-  )
-  const anchors = resolvePassageAnchors(matched.area.shape, profile.ascendAngleDeg)
-  if (!anchors)
-    return null
-
-  const paddedEntry = applyLanePadding(anchors.entry2D, anchors.center2D, profile.lanePadding)
-  const paddedExit = applyLanePadding(anchors.exit2D, anchors.center2D, profile.lanePadding)
   const fromLevel = floorLevelById.get(currentFloorId) ?? 0
   const toLevel = floorLevelById.get(targetFloorId) ?? 0
   const ascending = toLevel >= fromLevel
@@ -195,13 +223,19 @@ export function resolveVerticalGroundHeight(
 
   const progress = projectProgressOnSegment(start, end, position2D)
   const easedProgress = clamp01((progress - DEFAULT_LANDING_PROGRESS) / (1 - DEFAULT_LANDING_PROGRESS * 2))
-  const y = fromY + (toY - fromY) * easedProgress
+  const baseY = fromY + (toY - fromY) * easedProgress
+  const groundClearance = matched.connection.type === 'stairs'
+    ? STAIRS_GROUND_CLEARANCE
+    : ESCALATOR_GROUND_CLEARANCE
+  const y = baseY + groundClearance
 
   return {
     y,
     progress,
     fromFloorId: currentFloorId,
     targetFloorId,
+    targetFloorY: toY,
+    targetLanding2D: end,
     connectionId: matched.connection.id,
     areaId: matched.area.id,
     shouldSwitchFloor: progress >= clamp01(switchProgressThreshold),

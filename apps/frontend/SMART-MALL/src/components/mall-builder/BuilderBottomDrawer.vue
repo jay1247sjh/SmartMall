@@ -134,6 +134,11 @@ function collapse() {
   emit('update:visible', false)
 }
 
+function formatEvidenceScore(score?: number): string {
+  if (typeof score !== 'number' || Number.isNaN(score)) return '-'
+  return score.toFixed(2)
+}
+
 // ============================================================================
 // Watchers & Lifecycle
 // ============================================================================
@@ -222,6 +227,16 @@ onBeforeUnmount(() => {
           <template v-else>
             <div class="message-content assistant-message">
               <p class="message-text">{{ msg.content }}</p>
+              <div v-if="msg.evidence?.length" class="evidence-block">
+                <div class="evidence-title">Evidence</div>
+                <div v-for="item in msg.evidence" :key="`${msg.id}-${item.id}`" class="evidence-item">
+                  <div class="evidence-meta">
+                    <span>{{ item.source_type }}/{{ item.source_collection }}</span>
+                    <span>score {{ formatEvidenceScore(item.score) }}</span>
+                  </div>
+                  <p class="evidence-snippet">{{ item.snippet }}</p>
+                </div>
+              </div>
             </div>
           </template>
         </div>
@@ -474,6 +489,38 @@ onBeforeUnmount(() => {
 
 .message-text {
   white-space: pre-wrap;
+}
+
+.evidence-block {
+  margin-top: $space-2;
+  padding-top: $space-2;
+  border-top: 1px dashed var(--border-subtle);
+}
+
+.evidence-title {
+  font-size: $font-size-xs;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  margin-bottom: $space-1;
+}
+
+.evidence-item {
+  margin-bottom: $space-1;
+}
+
+.evidence-meta {
+  display: flex;
+  justify-content: space-between;
+  gap: $space-2;
+  font-size: $font-size-xs;
+  color: var(--text-muted);
+}
+
+.evidence-snippet {
+  margin-top: 2px;
+  font-size: $font-size-sm;
+  color: var(--text-secondary);
 }
 
 @keyframes pulse-dot {

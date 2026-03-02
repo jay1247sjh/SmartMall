@@ -96,6 +96,34 @@ describe('vertical-ground', () => {
     expect(result).toBeNull()
   })
 
+  it('falls back to available floor when intent is blocked by boundary floor', () => {
+    const area = createArea('stairs-a', [
+      { x: -1.5, y: -4 },
+      { x: 1.5, y: -4 },
+      { x: 1.5, y: 4 },
+      { x: -1.5, y: 4 },
+    ])
+    const result = resolveVerticalGroundHeight({
+      currentFloorId: 'f2',
+      position2D: { x: 0, y: 3 },
+      movementIntent: 'up',
+      connections: [createConnection(area.id)],
+      areasById: new Map([[area.id, area]]),
+      floorLevelById: new Map([
+        ['f1', 1],
+        ['f2', 2],
+      ]),
+      floorYById: new Map([
+        ['f1', 0],
+        ['f2', 4],
+      ]),
+    })
+
+    expect(result).not.toBeNull()
+    expect(result!.targetFloorId).toBe('f1')
+    expect(result!.y).toBeLessThanOrEqual(4)
+  })
+
   it('builds inset opening polygon inside source polygon', () => {
     const polygon = {
       vertices: [
@@ -113,4 +141,3 @@ describe('vertical-ground', () => {
     expect(Math.abs(inset!.vertices[0]!.x)).toBeLessThan(3)
   })
 })
-

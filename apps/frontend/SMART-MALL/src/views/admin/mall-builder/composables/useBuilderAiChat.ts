@@ -21,8 +21,10 @@ import { computed, onUnmounted, ref } from 'vue'
 import { useRoute } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { intelligenceApi } from '@/api/intelligence.api'
+import type { ChatMessage } from '@/api/intelligence.api'
 import { useAiStore } from '@/stores'
 import { useBuilderNavigationStore } from '@/stores/builder-navigation.store'
+import { toolHandlerRegistry } from '@/agent/tool-handler-registry'
 
 const THINKING_STAGES = ['Thinking...']
 
@@ -130,23 +132,85 @@ export function useBuilderAiChat() {
     abortController.value = new AbortController()
     aiStore.setSending(true)
     startProcessing()
+    let assistantMessageId: string | null = null
+
+    const ensureAssistantMessage = () => {
+      if (assistantMessageId) return
+      aiStore.addMessage({
+        role: 'assistant',
+        content: '',
+        type: 'text'
+      })
+      const last = aiStore.messages[aiStore.messages.length - 1]
+      assistantMessageId = last?.id || null
+    }
+
+    const updateAssistantMessage = (
+      updater: (message: ChatMessage) => void
+    ) => {
+      ensureAssistantMessage()
+      const target = aiStore.messages.find(msg => msg.id === assistantMessageId)
+      if (target) updater(target)
+    }
 
     try {
       const contextFloor = builderNavigationStore.currentFloorId || route.path
       const contextPosition = builderNavigationStore.currentPosition || undefined
 
-      const response = await intelligenceApi.chat(
+      await intelligenceApi.chatStream(
         trimmed,
         imageUrl || undefined,
         {
           current_floor: contextFloor,
           current_position: contextPosition
         },
+        {
+          onToken: token => {
+            updateAssistantMessage(msg => {
+              msg.content += token
+            })
+          },
+          onMeta: meta => {
+            updateAssistantMessage(msg => {
+              msg.rag_used = meta.rag_used
+              msg.retrieval_strategy = meta.retrieval_strategy
+              msg.evidence = meta.evidence
+            })
+          },
+          onToolResults: toolResults => {
+            updateAssistantMessage(msg => {
+              msg.tool_results = toolResults
+            })
+            toolHandlerRegistry.handleToolResults(toolResults)
+          },
+          onConfirmationRequired: confirmation => {
+            aiStore.setPendingConfirmation({
+              action: confirmation.action,
+              args: confirmation.args,
+              message: confirmation.message || t('ai.confirmAction')
+            })
+            updateAssistantMessage(msg => {
+              msg.type = 'confirmation_required'
+              msg.action = confirmation.action
+              msg.args = confirmation.args
+              if (!msg.content.trim()) {
+                msg.content = confirmation.message || t('ai.confirmAction')
+              }
+            })
+          },
+          onError: message => {
+            throw new Error(message || t('ai.sidebar.errorGeneral'))
+          },
+        },
         abortController.value.signal
       )
 
       stopProcessing()
-      aiStore.handleResponse(response)
+      updateAssistantMessage(msg => {
+        if (!msg.content.trim()) {
+          msg.content = t('ai.errorDefault')
+        }
+      })
     } catch (error: unknown) {
       stopProcessing()
       // AbortError can be either Error or DOMException depending on environment
@@ -156,10 +220,9 @@ export function useBuilderAiChat() {
       )
         return
       console.error('Chat error:', error)
-      aiStore.addMessage({
-        role: 'assistant',
-        content: parseErrorMessage(error),
-        type: 'error'
+      updateAssistantMessage(msg => {
+        msg.type = 'error'
+        msg.content = parseErrorMessage(error)
       })
     } finally {
       abortController.value = null

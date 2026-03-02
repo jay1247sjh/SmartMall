@@ -71,6 +71,14 @@ export interface NoticeItem {
 }
 
 /**
+ * 发布系统公告请求
+ */
+export interface PublishNoticeRequest {
+  title: string
+  content: string
+}
+
+/**
  * 审批请求记录
  * 商家提交的区域入驻申请
  */
@@ -192,6 +200,16 @@ export async function getStats(): Promise<AdminStats> {
  */
 export async function getNotices(limit = 5): Promise<NoticeItem[]> {
   return http.get('/dashboard/notices', { params: { limit } })
+}
+
+/**
+ * 发布系统公告（管理员）
+ *
+ * @param data - 公告标题与内容
+ * @returns 新发布的公告
+ */
+export async function publishNotice(data: PublishNoticeRequest): Promise<NoticeItem> {
+  return http.post('/dashboard/notices', data)
 }
 
 /**
@@ -330,6 +348,7 @@ export async function activateUser(userId: string): Promise<void> {
 export const adminApi = {
   getStats,
   getNotices,
+  publishNotice,
   getApprovalList,
   approveRequest,
   rejectRequest,

@@ -37,6 +37,7 @@ import {
   getMaterialPresetByAreaType,
   createInsetOpeningPolygon,
   normalizeVerticalPassageProfile,
+  resolvePassageAnchors,
 } from '@/builder'
 import { AreaType, AREA_TYPE_COLORS } from '@smart-mall/shared-types'
 
@@ -178,6 +179,17 @@ function estimateAreaAscendAngleDeg(area: AreaDefinition): number {
   return normalized < 0 ? normalized + 360 : normalized
 }
 
+function applyLanePadding(
+  anchor: { x: number; y: number },
+  center: { x: number; y: number },
+  lanePadding: number,
+) {
+  return {
+    x: anchor.x + (center.x - anchor.x) * lanePadding,
+    y: anchor.y + (center.y - anchor.y) * lanePadding,
+  }
+}
+
 function getConnectedFloorsByLevel(
   connection: VerticalConnection,
   floorById: Map<string, FloorDefinition>,
@@ -195,10 +207,12 @@ function buildRoamingOpeningsForFloor(params: {
   areaById: Map<string, AreaDefinition>
 }): {
   floorOpenings: AreaDefinition['shape'][]
+  floorOpeningAccessPoints: Array<{ x: number; y: number }>
   ceilingOpenings: AreaDefinition['shape'][]
 } {
   const { floorId, floorById, verticalConnections, areaById } = params
   const floorOpenings: AreaDefinition['shape'][] = []
+  const floorOpeningAccessPoints: Array<{ x: number; y: number }> = []
   const ceilingOpenings: AreaDefinition['shape'][] = []
   const currentFloor = floorById.get(floorId)
   const currentLevel = currentFloor?.level ?? 0
@@ -224,10 +238,21 @@ function buildRoamingOpeningsForFloor(params: {
       }
       if (hasLower) {
         floorOpenings.push(opening)
+        const anchors = resolvePassageAnchors(area.shape, profile.ascendAngleDeg)
+        if (anchors) {
+          floorOpeningAccessPoints.push(
+            applyLanePadding(anchors.entry2D, anchors.center2D, profile.lanePadding),
+          )
+          floorOpeningAccessPoints.push(
+            applyLanePadding(anchors.exit2D, anchors.center2D, profile.lanePadding),
+          )
+        } else {
+          floorOpeningAccessPoints.push(opening.vertices[0] ?? { x: 0, y: 0 })
+        }
       }
     })
 
-  return { floorOpenings, ceilingOpenings }
+  return { floorOpenings, floorOpeningAccessPoints, ceilingOpenings }
 }
 
 function distancePointToSegment2D(
@@ -740,6 +765,7 @@ export function useRendering() {
     const floorSurfaceY = floorYById.get(floorId) ?? (yPosition - 0.1)
     let modelBaseY = floorSurfaceY
     let spanHeight = fullHeight ? 4 : 1.2
+    let runLength = depth
     let rotationY = 0
 
     if (connection && (connection.type === 'stairs' || connection.type === 'escalator')) {
@@ -769,6 +795,12 @@ export function useRendering() {
         connection.passageProfile,
         estimateAreaAscendAngleDeg(area),
       )
+      const anchors = resolvePassageAnchors(area.shape, profile.ascendAngleDeg)
+      if (anchors) {
+        const paddedEntry = applyLanePadding(anchors.entry2D, anchors.center2D, profile.lanePadding)
+        const paddedExit = applyLanePadding(anchors.exit2D, anchors.center2D, profile.lanePadding)
+        runLength = Math.max(1.2, Math.hypot(paddedExit.x - paddedEntry.x, paddedExit.y - paddedEntry.y))
+      }
       if (connection.type === 'stairs') {
         // 楼梯模型局部 +Z 为上行方向
         rotationY = THREE.MathUtils.degToRad(profile.ascendAngleDeg + 90)
@@ -787,9 +819,9 @@ export function useRendering() {
     if (area.type === 'elevator') {
       createElevatorModel(group, size, color, isSelected, heightScale)
     } else if (area.type === 'escalator') {
-      createEscalatorModel(group, width, depth, spanHeight, color, isSelected, heightScale)
+      createEscalatorModel(group, width, runLength, spanHeight, color, isSelected, heightScale)
     } else if (area.type === 'stairs') {
-      createStairsModel(group, width, depth, spanHeight, color, isSelected, heightScale)
+      createStairsModel(group, width, runLength, spanHeight, color, isSelected, heightScale)
     }
 
     group.position.set(center.x, modelBaseY, center.z)
@@ -941,7 +973,7 @@ export function useRendering() {
 
     // 漫游模式：创建封闭的室内空间
     if (isRoamingMode && currentFloorId) {
-      const { floorOpenings, ceilingOpenings } = buildRoamingOpeningsForFloor({
+      const { floorOpenings, floorOpeningAccessPoints, ceilingOpenings } = buildRoamingOpeningsForFloor({
         floorId: currentFloorId,
         floorById,
         verticalConnections,
@@ -955,6 +987,7 @@ export function useRendering() {
         ceilingColor: 0xfafafa,
         wallThickness: 0.3,
         floorOpenings,
+        floorOpeningAccessPoints,
         ceilingOpenings,
       })
       scene.add(roamingEnv)

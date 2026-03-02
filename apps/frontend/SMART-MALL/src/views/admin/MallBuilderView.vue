@@ -64,6 +64,7 @@ import {
   resolvePassageAnchors,
   buildTraversalPath3D,
   findBestVerticalConnectionAtPosition,
+  createInsetOpeningPolygon,
   exportProject,
   importProject
 } from '@/builder'
@@ -276,7 +277,7 @@ const activeVerticalTraversal = ref<{
 const ROAMING_SECONDARY_MASK_RADIUS = 12
 const portalPreviewState = ref<{
   activeConnectionId: string
-  targetFloorId: string
+  targetFloorIds: string[]
   center2D: { x: number; y: number }
   radius: number
 } | null>(null)
@@ -457,9 +458,147 @@ function resolvePortalPreviewTargetFloorId(
 
   const currentIndex = sorted.findIndex(item => item.floorId === currentFloorId)
   if (currentIndex < 0) return null
-  if (movementIntent === 'up') return sorted[currentIndex + 1]?.floorId ?? null
-  if (movementIntent === 'down') return sorted[currentIndex - 1]?.floorId ?? null
+  if (movementIntent === 'up')
+    return sorted[currentIndex + 1]?.floorId ?? sorted[currentIndex - 1]?.floorId ?? null
+  if (movementIntent === 'down')
+    return sorted[currentIndex - 1]?.floorId ?? sorted[currentIndex + 1]?.floorId ?? null
   return sorted[currentIndex + 1]?.floorId ?? sorted[currentIndex - 1]?.floorId ?? null
+}
+
+function getPortalPreviewMaskRadius(): number {
+  if (settingsStore.renderQuality === 'high') return 22
+  if (settingsStore.renderQuality === 'medium') return 16
+  return ROAMING_SECONDARY_MASK_RADIUS
+}
+
+function resolvePortalPreviewTargetFloorIds(
+  connection: VerticalConnection,
+  currentFloorId: string,
+  movementIntent: 'up' | 'down' | 'none',
+  floorLevelById: Map<string, number>
+): string[] {
+  const sorted = connection.connectedFloors
+    .map(floorId => ({ floorId, level: floorLevelById.get(floorId) ?? 0 }))
+    .sort((a, b) => a.level - b.level)
+
+  const currentIndex = sorted.findIndex(item => item.floorId === currentFloorId)
+  if (currentIndex < 0) return []
+
+  // 低画质：按需渲染单层，维持当前性能策略。
+  if (settingsStore.renderQuality === 'low') {
+    const targetFloorId = resolvePortalPreviewTargetFloorId(
+      connection,
+      currentFloorId,
+      movementIntent,
+      floorLevelById
+    )
+    return targetFloorId ? [targetFloorId] : []
+  }
+
+  // 中/高画质：在楼梯口同时显示上下相邻层（存在才显示）。
+  const lowerFloorId = sorted[currentIndex - 1]?.floorId
+  const upperFloorId = sorted[currentIndex + 1]?.floorId
+  const floorIds = [lowerFloorId, upperFloorId].filter(
+    (floorId): floorId is string => !!floorId && floorId !== currentFloorId
+  )
+  return Array.from(new Set(floorIds))
+}
+
+function resolveNearestEdgeIndexByPoint(
+  polygon: { vertices: Array<{ x: number; y: number }> },
+  point: { x: number; y: number }
+): number {
+  const vertices = polygon.vertices
+  if (!vertices || vertices.length < 2) return -1
+  let best = Number.POSITIVE_INFINITY
+  let bestIndex = -1
+  for (let i = 0; i < vertices.length; i += 1) {
+    const start = vertices[i]!
+    const end = vertices[(i + 1) % vertices.length]!
+    const d = distancePointToSegment2D(point, start, end)
+    if (d < best) {
+      best = d
+      bestIndex = i
+    }
+  }
+  return bestIndex
+}
+
+function buildOpeningGuardrailCollisionSegments(
+  currentFloorId: string
+): Array<{ start: { x: number; y: number }; end: { x: number; y: number }; collisionRadius: number }> {
+  if (!project.value) return []
+  const currentFloor = project.value.floors.find(floor => floor.id === currentFloorId)
+  if (!currentFloor) return []
+
+  const floorById = new Map(project.value.floors.map(floor => [floor.id, floor]))
+  const areaById = buildAreaByIdMap()
+  const segments: Array<{ start: { x: number; y: number }; end: { x: number; y: number }; collisionRadius: number }> = []
+  const guardrailCollisionRadius = 0.2
+  const guardrailEndGap = 0.2
+
+  connections.verticalConnections.value
+    .filter(
+      connection =>
+        (connection.type === 'stairs' || connection.type === 'escalator') &&
+        connection.connectedFloors.includes(currentFloorId)
+    )
+    .forEach((connection) => {
+      const area = areaById.get(connection.areaId)
+      if (!area) return
+
+      const profile = normalizeVerticalPassageProfile(
+        connection.passageProfile,
+        estimateAreaAscendAngleDeg(area)
+      )
+      const opening = createInsetOpeningPolygon(area.shape, profile.lanePadding)
+      if (!opening || opening.vertices.length < 2) return
+
+      const connectedFloors = connection.connectedFloors
+        .map(floorId => floorById.get(floorId))
+        .filter((floor): floor is NonNullable<typeof floor> => !!floor)
+        .sort((a, b) => a.level - b.level)
+      const hasLower = connectedFloors.some(floor => floor.level < currentFloor.level)
+      if (!hasLower) return
+
+      const anchors = resolvePassageAnchors(area.shape, profile.ascendAngleDeg)
+      const accessPoints = anchors
+        ? [
+            applyLanePadding(anchors.entry2D, anchors.center2D, profile.lanePadding),
+            applyLanePadding(anchors.exit2D, anchors.center2D, profile.lanePadding)
+          ]
+        : [opening.vertices[0]]
+      const skippedEdgeIndices = new Set<number>()
+      accessPoints.forEach((accessPoint) => {
+        if (!accessPoint) return
+        const skippedEdgeIndex = resolveNearestEdgeIndexByPoint(opening, accessPoint)
+        if (skippedEdgeIndex >= 0) skippedEdgeIndices.add(skippedEdgeIndex)
+      })
+
+      for (let i = 0; i < opening.vertices.length; i += 1) {
+        if (skippedEdgeIndices.has(i)) continue
+        const edgeStart = opening.vertices[i]!
+        const edgeEnd = opening.vertices[(i + 1) % opening.vertices.length]!
+        const edgeDx = edgeEnd.x - edgeStart.x
+        const edgeDy = edgeEnd.y - edgeStart.y
+        const edgeLength = Math.hypot(edgeDx, edgeDy)
+        if (edgeLength <= 0.08 + guardrailEndGap * 2) continue
+        const nx = edgeDx / edgeLength
+        const ny = edgeDy / edgeLength
+        const start = {
+          x: edgeStart.x + nx * guardrailEndGap,
+          y: edgeStart.y + ny * guardrailEndGap
+        }
+        const end = {
+          x: edgeEnd.x - nx * guardrailEndGap,
+          y: edgeEnd.y - ny * guardrailEndGap
+        }
+        if (Math.hypot(end.x - start.x, end.y - start.y) <= 0.08) continue
+        segments.push({ start, end, collisionRadius: guardrailCollisionRadius })
+      }
+    })
+
+  return segments
 }
 
 function resolvePortalPreviewByProximity(params: {
@@ -470,7 +609,7 @@ function resolvePortalPreviewByProximity(params: {
   floorLevelById: Map<string, number>
 }): {
   activeConnectionId: string
-  targetFloorId: string
+  targetFloorIds: string[]
   center2D: { x: number; y: number }
   radius: number
 } | null {
@@ -493,20 +632,20 @@ function resolvePortalPreviewByProximity(params: {
   const distanceToArea = distancePointToPolygon2D(position2D, matched.area.shape)
   if (distanceToArea > PORTAL_PREVIEW_TRIGGER_DISTANCE) return null
 
-  const targetFloorId = resolvePortalPreviewTargetFloorId(
+  const targetFloorIds = resolvePortalPreviewTargetFloorIds(
     matched.connection,
     currentFloorId,
     movementIntent,
     floorLevelById
   )
-  if (!targetFloorId || targetFloorId === currentFloorId) return null
+  if (targetFloorIds.length === 0) return null
 
   const center = getAreaCenter(matched.area.shape.vertices)
   return {
     activeConnectionId: matched.connection.id,
-    targetFloorId,
+    targetFloorIds,
     center2D: { x: center.x, y: -center.z },
-    radius: ROAMING_SECONDARY_MASK_RADIUS
+    radius: getPortalPreviewMaskRadius()
   }
 }
 
@@ -571,20 +710,34 @@ function registerRoamingGroundResolver(controller: CharacterController | null) {
   const areasById = buildAreaByIdMap()
   const floorLevelById = getFloorLevelMap()
   const floorYById = getFloorYMap()
+  let lastSample2D: { x: number; y: number } | null = null
   controller.setGroundResolver((x, z) => {
     if (!project.value || viewMode.value !== 'orbit') {
+      lastSample2D = { x, y: -z }
       return controller.currentFloorY
     }
     const currentFloorId = floorMgmt.currentFloorId.value
     if (!currentFloorId) {
+      lastSample2D = { x, y: -z }
       return controller.currentFloorY
     }
+
+    const position2D = { x, y: -z }
+    const movementVector2D =
+      lastSample2D === null
+        ? null
+        : {
+            x: position2D.x - lastSample2D.x,
+            y: position2D.y - lastSample2D.y
+          }
+    lastSample2D = position2D
 
     const movementIntent = getControllerMovementIntent(controller)
     const result = resolveVerticalGroundHeight({
       currentFloorId,
-      position2D: { x, y: -z },
+      position2D,
       movementIntent,
+      movementVector2D,
       connections: connections.verticalConnections.value,
       areasById,
       floorLevelById,
@@ -594,7 +747,7 @@ function registerRoamingGroundResolver(controller: CharacterController | null) {
     if (!result) {
       portalPreviewState.value = resolvePortalPreviewByProximity({
         currentFloorId,
-        position2D: { x, y: -z },
+        position2D,
         movementIntent,
         areasById,
         floorLevelById
@@ -605,11 +758,22 @@ function registerRoamingGroundResolver(controller: CharacterController | null) {
     const connectionArea = areasById.get(result.areaId)
     if (connectionArea) {
       const center = getAreaCenter(connectionArea.shape.vertices)
+      const matchedConnection = connections.verticalConnections.value.find(
+        item => item.id === result.connectionId
+      )
+      const targetFloorIds = matchedConnection
+        ? resolvePortalPreviewTargetFloorIds(
+            matchedConnection,
+            currentFloorId,
+            movementIntent,
+            floorLevelById
+          )
+        : [result.targetFloorId]
       portalPreviewState.value = {
         activeConnectionId: result.connectionId,
-        targetFloorId: result.targetFloorId,
+        targetFloorIds: targetFloorIds.length > 0 ? targetFloorIds : [result.targetFloorId],
         center2D: { x: center.x, y: -center.z },
-        radius: ROAMING_SECONDARY_MASK_RADIUS
+        radius: getPortalPreviewMaskRadius()
       }
     }
 
@@ -620,7 +784,11 @@ function registerRoamingGroundResolver(controller: CharacterController | null) {
       performance.now() >= roamingFloorTransitionCooldownUntil &&
       floorMgmt.currentFloorId.value === result.fromFloorId
     ) {
-      pendingRoamingSpawnPosition.value = new THREE.Vector3(x, result.y, z)
+      pendingRoamingSpawnPosition.value = new THREE.Vector3(
+        result.targetLanding2D.x,
+        result.targetFloorY,
+        -result.targetLanding2D.y
+      )
       pendingRoamingSpawnRotation.value = controller.getRotationY()
       roamingFloorTransitionCooldownUntil = performance.now() + ROAMING_FLOOR_TRANSITION_COOLDOWN_MS
       floorMgmt.selectFloor(result.targetFloorId)
@@ -1077,13 +1245,11 @@ function renderProject(renderAllFloors: boolean = false) {
     : []
   const roamingSecondaryFloorMask =
     isRoamingMode && portalPreviewState.value
-      ? [
-          {
-            floorId: portalPreviewState.value.targetFloorId,
-            center2D: portalPreviewState.value.center2D,
-            radius: portalPreviewState.value.radius
-          }
-        ]
+      ? portalPreviewState.value.targetFloorIds.map(floorId => ({
+          floorId,
+          center2D: portalPreviewState.value!.center2D,
+          radius: portalPreviewState.value!.radius
+        }))
       : []
 
   // 计算商城轮廓中心（作为备用值）
@@ -1694,7 +1860,11 @@ async function requestNavigationReplan(
 
     if (!response.success || !response.route || !response.target) {
       navigationReplanFailureCount += 1
-      showSaveToast('error', '实时改道失败，已继续当前路线', 2200)
+      if (navigationReplanFailureCount >= 3) {
+        showSaveToast('error', '实时改道连续失败，已暂停自动重试，请手动刷新', 2800)
+      } else {
+        showSaveToast('error', '实时改道失败，已继续当前路线', 2200)
+      }
       return
     }
 
@@ -1721,7 +1891,11 @@ async function requestNavigationReplan(
     }
   } catch (err: unknown) {
     navigationReplanFailureCount += 1
-    showSaveToast('error', '实时改道失败，已继续当前路线', 2200)
+    if (navigationReplanFailureCount >= 3) {
+      showSaveToast('error', '实时改道连续失败，已暂停自动重试，请手动刷新', 2800)
+    } else {
+      showSaveToast('error', '实时改道失败，已继续当前路线', 2200)
+    }
   } finally {
     navigationReplanInFlight = false
   }
@@ -2471,7 +2645,8 @@ function enterRoamMode() {
   const currentFloor = project.value.floors.find(f => f.id === floorMgmt.currentFloorId.value)
   if (currentFloor) {
     const wallSegments = extractWallSegments(currentFloor)
-    controller.setWallSegments(wallSegments)
+    const openingGuardrailSegments = buildOpeningGuardrailCollisionSegments(currentFloor.id)
+    controller.setWallSegments([...wallSegments, ...openingGuardrailSegments])
   }
 
   // 通过 composable 启动漫游（内部调用引擎接口）
@@ -2596,7 +2771,8 @@ function handleRoamingFloorSwitch() {
   const currentFloor = project.value.floors.find(f => f.id === floorMgmt.currentFloorId.value)
   if (currentFloor) {
     const wallSegments = extractWallSegments(currentFloor)
-    controller.setWallSegments(wallSegments)
+    const openingGuardrailSegments = buildOpeningGuardrailCollisionSegments(currentFloor.id)
+    controller.setWallSegments([...wallSegments, ...openingGuardrailSegments])
   }
 
   // 更新跟随目标到新角色（复用 roaming 统一相机配置，避免配置分叉）

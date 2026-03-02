@@ -19,7 +19,7 @@
  * 用户角色：
  * - 仅管理员（ADMIN）可访问
  */
-import { ref, computed, onMounted } from 'vue'
+import { ref, reactive, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import {
@@ -34,11 +34,17 @@ import {
   ElEmpty,
   ElSkeleton,
   ElTag,
+  ElDialog,
+  ElForm,
+  ElFormItem,
+  ElInput,
+  ElMessage,
 } from 'element-plus'
+import type { FormInstance, FormRules } from 'element-plus'
 import { ArrowRight, Shop, User, Document, Clock } from '@element-plus/icons-vue'
 import { QuickActionCard } from '@/components'
 import { adminApi, storeApi } from '@/api'
-import type { AdminStats, ApprovalRequest, NoticeItem } from '@/api/admin.api'
+import type { AdminStats, ApprovalRequest, NoticeItem, PublishNoticeRequest } from '@/api/admin.api'
 import { useFormatters } from '@/composables'
 
 const router = useRouter()
@@ -60,6 +66,24 @@ const stats = ref<AdminStats | null>(null)
 const pendingStoreCount = ref(0)
 const recentApprovals = ref<ApprovalRequest[]>([])
 const notices = ref<NoticeItem[]>([])
+const publishDialogVisible = ref(false)
+const publishSubmitting = ref(false)
+const publishFormRef = ref<FormInstance>()
+const publishForm = reactive<PublishNoticeRequest>({
+  title: '',
+  content: '',
+})
+
+const publishRules = reactive<FormRules<PublishNoticeRequest>>({
+  title: [
+    { required: true, message: t('dashboard.noticeTitleRequired'), trigger: 'blur' },
+    { max: 200, message: t('dashboard.noticeTitleMax'), trigger: 'blur' },
+  ],
+  content: [
+    { required: true, message: t('dashboard.noticeContentRequired'), trigger: 'blur' },
+    { max: 5000, message: t('dashboard.noticeContentMax'), trigger: 'blur' },
+  ],
+})
 
 const quickActions = computed(() => [
   { title: t('dashboard.mallManage'), description: t('dashboard.mallManageDescAdmin'), path: '/admin/mall' },
@@ -159,6 +183,43 @@ async function retryNotices() {
     console.error('加载公告失败:', e)
   } finally {
     noticesLoading.value = false
+  }
+}
+
+function openPublishDialog() {
+  publishDialogVisible.value = true
+}
+
+function resetPublishForm() {
+  publishForm.title = ''
+  publishForm.content = ''
+  publishFormRef.value?.clearValidate()
+}
+
+async function submitPublishNotice() {
+  if (!publishFormRef.value) {
+    return
+  }
+
+  try {
+    await publishFormRef.value.validate()
+    publishSubmitting.value = true
+
+    await adminApi.publishNotice({
+      title: publishForm.title.trim(),
+      content: publishForm.content.trim(),
+    })
+
+    ElMessage.success(t('dashboard.publishNoticeSuccess'))
+    publishDialogVisible.value = false
+    resetPublishForm()
+    await retryNotices()
+  } catch (e) {
+    if (e instanceof Error && e.message) {
+      ElMessage.error(`${t('dashboard.publishNoticeFailed')}: ${e.message}`)
+    }
+  } finally {
+    publishSubmitting.value = false
   }
 }
 
@@ -297,7 +358,12 @@ onMounted(() => {
 
     <!-- 系统公告 -->
     <section class="notice-section" :aria-label="t('dashboard.systemNotices')">
-      <h3 class="section-title">{{ t('dashboard.systemNotices') }}</h3>
+      <header class="section-header">
+        <h3 class="section-title">{{ t('dashboard.systemNotices') }}</h3>
+        <ElButton type="primary" size="small" @click="openPublishDialog">
+          {{ t('dashboard.publishNotice') }}
+        </ElButton>
+      </header>
       <ElSkeleton v-if="noticesLoading" :rows="3" animated />
       <ElCard v-else-if="noticesError" shadow="never" class="notice-card">
         <ElEmpty :description="t('dashboard.loadNoticesFailed')">
@@ -317,6 +383,40 @@ onMounted(() => {
         </article>
       </ElCard>
     </section>
+
+    <ElDialog
+      v-model="publishDialogVisible"
+      :title="t('dashboard.publishNotice')"
+      width="560px"
+      @closed="resetPublishForm"
+    >
+      <ElForm ref="publishFormRef" :model="publishForm" :rules="publishRules" label-position="top">
+        <ElFormItem :label="t('dashboard.noticeTitle')" prop="title">
+          <ElInput
+            v-model="publishForm.title"
+            :placeholder="t('dashboard.noticeTitlePlaceholder')"
+            maxlength="200"
+            show-word-limit
+          />
+        </ElFormItem>
+        <ElFormItem :label="t('dashboard.noticeContent')" prop="content">
+          <ElInput
+            v-model="publishForm.content"
+            type="textarea"
+            :rows="6"
+            :placeholder="t('dashboard.noticeContentPlaceholder')"
+            maxlength="5000"
+            show-word-limit
+          />
+        </ElFormItem>
+      </ElForm>
+      <template #footer>
+        <ElButton @click="publishDialogVisible = false">{{ t('common.cancel') }}</ElButton>
+        <ElButton type="primary" :loading="publishSubmitting" @click="submitPublishNotice">
+          {{ t('common.confirm') }}
+        </ElButton>
+      </template>
+    </ElDialog>
   </article>
 </template>
 
@@ -383,43 +483,56 @@ onMounted(() => {
     }
   }
 
-  .notice-section .notice-card {
-    @include card-base;
-    border-radius: $radius-lg;
-    background: rgba(var(--bg-secondary-rgb), 0.8);
-
-    .notice-item {
+  .notice-section {
+    .section-header {
       display: flex;
-      align-items: flex-start;
+      align-items: center;
       justify-content: space-between;
-      gap: $space-4;
-      padding: $space-4 0;
-      border-bottom: 1px solid var(--border-subtle);
+      margin-bottom: $space-4;
 
-      &:last-child {
-        border-bottom: none;
-        padding-bottom: 0;
+      .section-title {
+        margin: 0;
       }
+    }
 
-      &:first-child {
-        padding-top: 0;
-      }
+    .notice-card {
+      @include card-base;
+      border-radius: $radius-lg;
+      background: rgba(var(--bg-secondary-rgb), 0.8);
 
-      .notice-content {
-        flex: 1;
-        min-width: 0;
+      .notice-item {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: $space-4;
+        padding: $space-4 0;
+        border-bottom: 1px solid var(--border-subtle);
 
-        .notice-title {
-          font-size: $font-size-base;
-          font-weight: $font-weight-medium;
-          color: var(--text-primary);
-          margin: 0 0 $space-1 + 2 0;
+        &:last-child {
+          border-bottom: none;
+          padding-bottom: 0;
         }
 
-        .notice-desc {
-          font-size: $font-size-sm + 1;
-          color: var(--text-secondary);
-          margin: 0;
+        &:first-child {
+          padding-top: 0;
+        }
+
+        .notice-content {
+          flex: 1;
+          min-width: 0;
+
+          .notice-title {
+            font-size: $font-size-base;
+            font-weight: $font-weight-medium;
+            color: var(--text-primary);
+            margin: 0 0 $space-1 + 2 0;
+          }
+
+          .notice-desc {
+            font-size: $font-size-sm + 1;
+            color: var(--text-secondary);
+            margin: 0;
+          }
         }
       }
     }

@@ -33,6 +33,8 @@ export interface RoamingRenderOptions {
   wallThickness?: number
   /** 地板开洞 */
   floorOpenings?: Polygon[]
+  /** 开洞扶梯/楼梯通行侧（不加护栏） */
+  floorOpeningAccessPoints?: Point2D[]
   /** 天花板开洞 */
   ceilingOpenings?: Polygon[]
 }
@@ -481,6 +483,127 @@ export function createCeiling(
   return ceiling
 }
 
+/**
+ * 为楼板开口创建护栏，避免视觉上“无遮挡”的风险感。
+ */
+function createOpeningGuardrails(
+  openings: Polygon[],
+  yPosition: number,
+  accessPoints: Point2D[] = [],
+): THREE.Group {
+  const group = new THREE.Group()
+  group.name = 'opening-guardrails'
+  if (!openings.length) {
+    return group
+  }
+
+  const railHeight = 1.05
+  const railThickness = 0.06
+  const postSize = 0.07
+  const postSpacing = 1.6
+
+  const railMaterial = new THREE.MeshStandardMaterial({
+    color: 0x111111,
+    roughness: 0.35,
+    metalness: 0.6,
+  })
+  const postGeometry = new THREE.BoxGeometry(postSize, railHeight, postSize)
+  let edgeIndex = 0
+
+  const distancePointToSegment = (point: Point2D, start: Point2D, end: Point2D): number => {
+    const dx = end.x - start.x
+    const dy = end.y - start.y
+    const lenSq = dx * dx + dy * dy
+    if (lenSq <= 1e-6) {
+      return Math.hypot(point.x - start.x, point.y - start.y)
+    }
+    const t = Math.max(0, Math.min(1, ((point.x - start.x) * dx + (point.y - start.y) * dy) / lenSq))
+    const projX = start.x + dx * t
+    const projY = start.y + dy * t
+    return Math.hypot(point.x - projX, point.y - projY)
+  }
+
+  const distancePointToPolygon = (point: Point2D, polygon: Polygon): number => {
+    const vertices = polygon.vertices
+    if (!vertices || vertices.length < 2) return Number.POSITIVE_INFINITY
+    let best = Number.POSITIVE_INFINITY
+    for (let i = 0; i < vertices.length; i += 1) {
+      const start = vertices[i]!
+      const end = vertices[(i + 1) % vertices.length]!
+      const d = distancePointToSegment(point, start, end)
+      if (d < best) best = d
+    }
+    return best
+  }
+
+  openings.forEach((opening) => {
+    const vertices = opening.vertices
+    if (!vertices || vertices.length < 2) {
+      return
+    }
+    const openingAccessPoints = accessPoints.filter(
+      accessPoint => distancePointToPolygon(accessPoint, opening) <= 2.2,
+    )
+    const skippedEdgeIndices = new Set<number>()
+    openingAccessPoints.forEach((accessPoint) => {
+      let best = Number.POSITIVE_INFINITY
+      let bestIndex = -1
+      for (let i = 0; i < vertices.length; i += 1) {
+        const start = vertices[i]!
+        const end = vertices[(i + 1) % vertices.length]!
+        const d = distancePointToSegment(accessPoint, start, end)
+        if (d < best) {
+          best = d
+          bestIndex = i
+        }
+      }
+      if (bestIndex >= 0) skippedEdgeIndices.add(bestIndex)
+    })
+
+    for (let i = 0; i < vertices.length; i += 1) {
+      if (skippedEdgeIndices.has(i)) {
+        continue
+      }
+      const start = vertices[i]!
+      const end = vertices[(i + 1) % vertices.length]!
+      const dx = end.x - start.x
+      const dy = end.y - start.y
+      const length = Math.hypot(dx, dy)
+      if (length <= 0.12) {
+        continue
+      }
+
+      const angle = Math.atan2(dy, dx)
+      const centerX = (start.x + end.x) / 2
+      const centerY = (start.y + end.y) / 2
+      const topRailGeometry = new THREE.BoxGeometry(length, railThickness, railThickness)
+      const topRail = new THREE.Mesh(topRailGeometry, railMaterial)
+      topRail.position.set(centerX, yPosition + railHeight, -centerY)
+      topRail.rotation.y = -angle
+      topRail.castShadow = true
+      topRail.receiveShadow = true
+      topRail.name = `opening-guardrail-top-${edgeIndex}`
+      group.add(topRail)
+
+      const postCount = Math.max(2, Math.floor(length / postSpacing) + 1)
+      for (let postIndex = 0; postIndex <= postCount; postIndex += 1) {
+        const t = postCount === 0 ? 0 : postIndex / postCount
+        const postX = start.x + dx * t
+        const postY = start.y + dy * t
+        const post = new THREE.Mesh(postGeometry, railMaterial)
+        post.position.set(postX, yPosition + railHeight / 2, -postY)
+        post.castShadow = true
+        post.receiveShadow = true
+        post.name = `opening-guardrail-post-${edgeIndex}-${postIndex}`
+        group.add(post)
+      }
+      edgeIndex += 1
+    }
+  })
+
+  return group
+}
+
 // ============================================================================
 // 漫游场景渲染
 // ============================================================================
@@ -514,6 +637,14 @@ export function createRoamingEnvironment(
     holes: options.floorOpenings ?? [],
   })
   group.add(floor)
+  if (options.floorOpenings && options.floorOpenings.length > 0) {
+    const guardrails = createOpeningGuardrails(
+      options.floorOpenings,
+      yPos,
+      options.floorOpeningAccessPoints ?? [],
+    )
+    group.add(guardrails)
+  }
   
   // 创建墙壁（使用精致的墙面材质）
   const walls = createWalls(outline, wallHeight, yPos, {
