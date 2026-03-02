@@ -128,6 +128,14 @@ class Settings(BaseSettings):
     # ============ Agent 配置 ============
     AGENT_MAX_ITERATIONS: int = 10
     VISION_LLM_TEMPERATURE: float = 0.2
+    
+    # ============ Voice 配置 ============
+    AI_VOICE_ENABLED: bool = True
+    VOICE_SESSION_TTL_SEC: int = 180
+    VOICE_SIGNING_SECRET: str = "smart-mall-voice-secret"
+    SPEECH_PROVIDER: str = "dashscope"
+    SPEECH_LANGUAGE: str = "zh-CN"
+    SPEECH_SAMPLE_RATE: int = 16000
 
     # ============ 商城描述对话配置 ============
     MALL_DESCRIBE_MAX_ROUNDS: int = 50
@@ -184,6 +192,15 @@ class Settings(BaseSettings):
         valid_providers = ["qwen", "openai", "local"]
         if v.lower() not in valid_providers:
             raise ValueError(f"EMBEDDING_PROVIDER must be one of {valid_providers}, got {v}")
+        return v.lower()
+
+    @field_validator("SPEECH_PROVIDER")
+    @classmethod
+    def validate_speech_provider(cls, v: str) -> str:
+        """验证语音提供商"""
+        valid_providers = ["dashscope", "mock"]
+        if v.lower() not in valid_providers:
+            raise ValueError(f"SPEECH_PROVIDER must be one of {valid_providers}, got {v}")
         return v.lower()
     
     # ============ 模型验证器 ============
@@ -249,6 +266,8 @@ class Settings(BaseSettings):
         logger.info(f"LLM Model: {self._get_llm_model()}")
         logger.info(f"LLM Temperature: {self.LLM_TEMPERATURE}")
         logger.info(f"LLM Max Tokens: {self.LLM_MAX_TOKENS}")
+        logger.info(f"Speech Provider: {self.SPEECH_PROVIDER}")
+        logger.info(f"Voice Enabled: {self.AI_VOICE_ENABLED}")
         logger.info("-" * 60)
         logger.info(f"Embedding Provider: {self.EMBEDDING_PROVIDER}")
         logger.info(f"Embedding Model: {self._get_embedding_model()}")

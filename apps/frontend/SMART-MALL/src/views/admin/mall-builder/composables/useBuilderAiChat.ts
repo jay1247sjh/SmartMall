@@ -7,35 +7,24 @@
  * 抽取 AiSidebar 中的公共聊天逻辑，供 BuilderInlineInput 和
  * BuilderBottomDrawer 共用，包括：
  * - 消息发送（intelligenceApi.chat）
- * - Agent 处理步骤动画
+ * - Thinking 动态动画
  * - 请求取消 / 停止响应
  *
  * 【使用方式】
- * const { aiStore, agentSteps, sendMessage, stopResponse } = useBuilderAiChat()
+ * const { aiStore, currentThinkingText, sendMessage, stopResponse } = useBuilderAiChat()
  *
  * Requirements: 3.1
  * ============================================================================
  */
 
-import { ref, onUnmounted } from 'vue'
+import { computed, onUnmounted, ref } from 'vue'
 import { useRoute } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { intelligenceApi } from '@/api/intelligence.api'
 import { useAiStore } from '@/stores'
 import { useBuilderNavigationStore } from '@/stores/builder-navigation.store'
 
-/** Agent 处理步骤 */
-export interface AgentStep {
-  text: string
-  status: 'pending' | 'active' | 'done'
-}
-
-const AGENT_STEPS = [
-  { text: 'ai.steps.analyze', delay: 400 },
-  { text: 'ai.steps.retrieve', delay: 500 },
-  { text: 'ai.steps.execute', delay: 600 },
-  { text: 'ai.steps.generate', delay: 400 },
-]
+const THINKING_STAGES = ['Thinking...']
 
 export function useBuilderAiChat() {
   const { t } = useI18n()
@@ -44,42 +33,27 @@ export function useBuilderAiChat() {
   const builderNavigationStore = useBuilderNavigationStore()
 
   const abortController = ref<AbortController | null>(null)
-  const agentSteps = ref<AgentStep[]>([])
-  const currentStepIndex = ref(0)
+  const currentThinkingIndex = ref(0)
   let processingTimer: ReturnType<typeof setInterval> | null = null
+  const currentThinkingText = computed(
+    () => THINKING_STAGES[currentThinkingIndex.value] || 'Thinking...'
+  )
 
   // ==========================================================================
-  // Processing steps animation
+  // Thinking animation
   // ==========================================================================
 
   function startProcessing(): void {
-    agentSteps.value = AGENT_STEPS.map((step, index) => ({
-      text: step.text,
-      status: index === 0 ? 'active' : ('pending' as const),
-    }))
-    currentStepIndex.value = 0
+    currentThinkingIndex.value = 0
+    if (processingTimer) {
+      clearInterval(processingTimer)
+      processingTimer = null
+    }
 
-    let stepIndex = 0
     processingTimer = setInterval(() => {
-      const currentStep = agentSteps.value[stepIndex]
-      if (currentStep) {
-        currentStep.status = 'done'
-      }
-      stepIndex++
-      currentStepIndex.value = stepIndex
-
-      if (stepIndex < AGENT_STEPS.length) {
-        const nextStep = agentSteps.value[stepIndex]
-        if (nextStep) {
-          nextStep.status = 'active'
-        }
-      } else {
-        if (processingTimer) {
-          clearInterval(processingTimer)
-          processingTimer = null
-        }
-      }
-    }, 500)
+      const next = currentThinkingIndex.value + 1
+      currentThinkingIndex.value = next % Math.max(THINKING_STAGES.length, 1)
+    }, 1200)
   }
 
   function stopProcessing(): void {
@@ -87,8 +61,7 @@ export function useBuilderAiChat() {
       clearInterval(processingTimer)
       processingTimer = null
     }
-    agentSteps.value = []
-    currentStepIndex.value = 0
+    currentThinkingIndex.value = 0
   }
 
   // ==========================================================================
@@ -109,7 +82,7 @@ export function useBuilderAiChat() {
     aiStore.addMessage({
       role: 'assistant',
       content: t('ai.sidebar.stopped'),
-      type: 'text',
+      type: 'text'
     })
   }
 
@@ -151,7 +124,7 @@ export function useBuilderAiChat() {
     aiStore.addMessage({
       role: 'user',
       content: trimmed,
-      image_url: imageUrl || undefined,
+      image_url: imageUrl || undefined
     })
 
     abortController.value = new AbortController()
@@ -167,9 +140,9 @@ export function useBuilderAiChat() {
         imageUrl || undefined,
         {
           current_floor: contextFloor,
-          current_position: contextPosition,
+          current_position: contextPosition
         },
-        abortController.value.signal,
+        abortController.value.signal
       )
 
       stopProcessing()
@@ -180,12 +153,13 @@ export function useBuilderAiChat() {
       if (
         (error instanceof Error && error.name === 'AbortError') ||
         (error instanceof DOMException && error.name === 'AbortError')
-      ) return
+      )
+        return
       console.error('Chat error:', error)
       aiStore.addMessage({
         role: 'assistant',
         content: parseErrorMessage(error),
-        type: 'error',
+        type: 'error'
       })
     } finally {
       abortController.value = null
@@ -204,12 +178,11 @@ export function useBuilderAiChat() {
 
   return {
     aiStore,
-    agentSteps,
-    currentStepIndex,
+    currentThinkingText,
     sendMessage,
     startProcessing,
     stopProcessing,
     stopResponse,
-    cancelRequest,
+    cancelRequest
   }
 }

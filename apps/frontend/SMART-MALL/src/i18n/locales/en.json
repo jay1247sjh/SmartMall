@@ -55,6 +55,7 @@
     "storeManage": "Store Review",
     "mallBuilder": "Mall Builder",
     "areaApproval": "Area Approval",
+    "layoutReview": "Layout Review",
     "versionManage": "Version Management",
     "userManage": "User Management",
     "workspace": "Workspace",
@@ -339,6 +340,75 @@
     "loadVersionsFailed": "Failed to load version data, please refresh and try again",
     "descriptionUpdated": "Description updated",
     "descriptionUpdateFailed": "Failed to update description",
+    "storeManagePage": {
+      "title": "Store Review Management",
+      "hero": {
+        "descAll": "Review all stores and quickly handle approvals and closures.",
+        "descPending": "Focus on pending stores for approval processing.",
+        "descActive": "Viewing active stores to track operating status.",
+        "descInactive": "Viewing paused stores to follow recovery status.",
+        "descClosed": "Viewing closed stores for historical review.",
+        "statsAll": "stores",
+        "statsPending": "pending",
+        "statsActive": "active",
+        "statsInactive": "paused",
+        "statsClosed": "closed",
+        "categorySegment": "Category \"{category}\"",
+        "keywordSegment": "Keyword \"{keyword}\"",
+        "segmentSeparator": ", ",
+        "descWithFilters": "{description} Currently includes {filters}."
+      },
+      "filters": {
+        "allStatus": "All Statuses",
+        "statusPending": "Pending",
+        "statusActive": "Active",
+        "statusInactive": "Paused",
+        "statusClosed": "Closed",
+        "allCategory": "All Categories",
+        "keywordPlaceholder": "Search store name...",
+        "reset": "Reset",
+        "search": "Search",
+        "total": "{total} stores"
+      },
+      "category": {
+        "catering": "Catering",
+        "retail": "Retail",
+        "clothing": "Clothing",
+        "entertainment": "Entertainment",
+        "service": "Service",
+        "other": "Other"
+      },
+      "closePanel": {
+        "title": "Close store \"{name}\"",
+        "desc": "This action will change the store status to closed. Please enter a reason before confirming.",
+        "reasonPlaceholder": "Enter closure reason",
+        "reasonRequired": "Please enter a closure reason",
+        "processing": "Processing...",
+        "confirm": "Confirm Close",
+        "cancel": "Cancel"
+      },
+      "table": {
+        "loading": "Loading...",
+        "empty": "No store data",
+        "storeName": "Store Name",
+        "merchant": "Merchant",
+        "location": "Location",
+        "category": "Category",
+        "status": "Status",
+        "createdAt": "Created At",
+        "actions": "Actions",
+        "approve": "Approve",
+        "close": "Close",
+        "closed": "Closed"
+      },
+      "message": {
+        "loadDataFailed": "Failed to load data",
+        "approveSuccess": "Store approved",
+        "approveFailed": "Approval failed",
+        "closeSuccess": "Store \"{name}\" has been closed",
+        "closeFailed": "Closure failed"
+      }
+    },
     "userMgmt": {
       "all": "All",
       "statusActive": "Active",
@@ -386,7 +456,20 @@
     "saveSuccess": "Saved successfully",
     "saveFailed": "Failed to save",
     "passwordChanged": "Password changed successfully",
-    "passwordChangeFailed": "Failed to change password"
+    "passwordChangeFailed": "Failed to change password",
+    "lastLogin": "Last Login",
+    "trendTitle": "Activity Trend",
+    "trendDesc": "Last {days} days activity",
+    "metricBrowse": "Browse",
+    "metricOrders": "Orders",
+    "metricFavorites": "Favorites",
+    "recentOrders": "Recent Orders",
+    "recentCoupons": "Recent Coupons",
+    "emptyOrders": "No recent orders",
+    "emptyCoupons": "No recent coupons",
+    "metricOverview": "2D Metrics Overview",
+    "metricOverviewDesc": "Compare key indicators with bar visualization",
+    "statsLoadFailed": "Failed to load dashboard statistics"
   },
   "storeCatalog": {
     "title": "Merchants & Products",
@@ -436,7 +519,6 @@
     "quickActions": "Quick Actions",
     "storeConfig": "Store Config",
     "storeConfigDesc": "Manage store info",
-    "areaApply": "Area Application",
     "areaApplyDesc": "Apply for new area",
     "storeDecoration": "Store Decoration",
     "storeDecorationDesc": "3D scene editing",
@@ -711,7 +793,7 @@
     "sidebar": {
       "title": "AI Assistant",
       "placeholder": "Type a message...",
-      "thinking": "AI is thinking...",
+      "thinking": "Thinking...",
       "stopped": "Response stopped.",
       "pendingImage": "Pending image",
       "errorApiKey": "AI service configuration error, please contact admin",

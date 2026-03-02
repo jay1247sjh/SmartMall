@@ -45,20 +45,12 @@ const MIN_HEIGHT = 120
 const MAX_HEIGHT_RATIO = 0.6
 const DEFAULT_HEIGHT = 200
 
-const AGENT_STEPS_COUNT = 4
-
 // ============================================================================
 // State
 // ============================================================================
 
 const { t } = useI18n()
-const {
-  aiStore,
-  agentSteps,
-  currentStepIndex,
-  sendMessage,
-  stopResponse,
-} = useBuilderAiChat()
+const { aiStore, currentThinkingText, sendMessage, stopResponse } = useBuilderAiChat()
 
 const drawerHeight = ref(DEFAULT_HEIGHT)
 const isDragging = ref(false)
@@ -146,20 +138,26 @@ function collapse() {
 // Watchers & Lifecycle
 // ============================================================================
 
-watch(() => props.visible, (visible) => {
-  if (visible) {
-    scrollToBottom()
-    nextTick(() => {
-      inputRef.value?.focus()
-    })
+watch(
+  () => props.visible,
+  visible => {
+    if (visible) {
+      scrollToBottom()
+      nextTick(() => {
+        inputRef.value?.focus()
+      })
+    }
   }
-})
+)
 
-watch(() => aiStore.messages.length, () => {
-  if (props.visible) {
-    scrollToBottom()
+watch(
+  () => aiStore.messages.length,
+  () => {
+    if (props.visible) {
+      scrollToBottom()
+    }
   }
-})
+)
 
 onBeforeUnmount(() => {
   // Clean up drag listeners if component unmounts during drag
@@ -171,11 +169,7 @@ onBeforeUnmount(() => {
 
 <template>
   <Transition name="drawer-slide">
-    <div
-      v-if="visible"
-      class="bottom-drawer"
-      :style="{ height: `${drawerHeight}px` }"
-    >
+    <div v-if="visible" class="bottom-drawer" :style="{ height: `${drawerHeight}px` }">
       <!-- Drag Handle -->
       <div
         class="drag-handle"
@@ -202,18 +196,20 @@ onBeforeUnmount(() => {
         </div>
         <button class="btn-collapse" :title="t('builder.bottomDrawer.collapse')" @click="collapse">
           <svg viewBox="0 0 16 16" fill="none">
-            <path d="M4 6l4 4 4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+            <path
+              d="M4 6l4 4 4-4"
+              stroke="currentColor"
+              stroke-width="1.5"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            />
           </svg>
         </button>
       </div>
 
       <!-- Messages -->
       <div ref="messagesContainer" class="messages-container">
-        <div
-          v-for="msg in aiStore.messages"
-          :key="msg.id"
-          :class="['message', msg.role]"
-        >
+        <div v-for="msg in aiStore.messages" :key="msg.id" :class="['message', msg.role]">
           <!-- User message -->
           <template v-if="msg.role === 'user'">
             <div class="message-content user-message">
@@ -233,21 +229,9 @@ onBeforeUnmount(() => {
         <!-- Processing steps -->
         <div v-if="aiStore.isSending" class="message assistant">
           <div class="message-content assistant-message processing">
-            <div class="progress-bar">
-              <div
-                class="progress-fill"
-                :style="{ width: `${(currentStepIndex / AGENT_STEPS_COUNT) * 100}%` }"
-              />
-            </div>
-            <div class="agent-steps">
-              <div
-                v-for="(step, index) in agentSteps"
-                :key="index"
-                :class="['agent-step', step.status]"
-              >
-                <span class="step-dot" />
-                <span class="step-text">{{ t(step.text) }}</span>
-              </div>
+            <div class="thinking-line">
+              <span class="thinking-dot" />
+              <span class="thinking-text">{{ currentThinkingText }}</span>
             </div>
             <button class="btn-stop" @click="stopResponse">
               <span>{{ t('common.cancel') }}</span>
@@ -264,7 +248,9 @@ onBeforeUnmount(() => {
             v-model="inputValue"
             class="chat-input"
             rows="1"
-            :placeholder="aiStore.isSending ? t('ai.sidebar.thinking') : t('builder.bottomDrawer.placeholder')"
+            :placeholder="
+              aiStore.isSending ? t('ai.sidebar.thinking') : t('builder.bottomDrawer.placeholder')
+            "
             :disabled="aiStore.isSending"
             @keydown.stop
             @keydown="handleInputKeydown"
@@ -275,7 +261,13 @@ onBeforeUnmount(() => {
             @click="handleSend"
           >
             <svg viewBox="0 0 16 16" fill="none">
-              <path d="M14 2L2 8.5l4.5 2L10 6l-2.5 5.5L14 2z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+              <path
+                d="M14 2L2 8.5l4.5 2L10 6l-2.5 5.5L14 2z"
+                stroke="currentColor"
+                stroke-width="1.5"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              />
             </svg>
             <span>{{ t('builder.bottomDrawer.send') }}</span>
           </button>
@@ -446,19 +438,36 @@ onBeforeUnmount(() => {
     padding: $space-3;
     min-width: 160px;
 
-    .progress-bar {
-      height: 2px;
-      background: var(--border-subtle);
-      border-radius: 1px;
-      margin-bottom: $space-3;
-      overflow: hidden;
-    }
+    .thinking-line {
+      @include flex-center-y;
+      gap: $space-2;
 
-    .progress-fill {
-      height: 100%;
-      background: var(--accent-primary);
-      border-radius: 1px;
-      transition: width $duration-slow;
+      .thinking-dot {
+        width: 6px;
+        height: 6px;
+        flex-shrink: 0;
+        border-radius: $radius-full;
+        background: var(--accent-primary);
+        box-shadow: 0 0 0 3px rgba(var(--accent-primary-rgb), 0.18);
+        animation: pulse-dot 1.3s ease-in-out infinite;
+      }
+
+      .thinking-text {
+        font-size: $font-size-xs;
+        font-weight: $font-weight-medium;
+        background: linear-gradient(
+          120deg,
+          var(--text-muted) 10%,
+          var(--text-primary) 45%,
+          var(--text-muted) 85%
+        );
+        background-size: 220% 100%;
+        background-position: 100% 0;
+        -webkit-background-clip: text;
+        background-clip: text;
+        color: transparent;
+        animation: thinking-glow 1.8s linear infinite;
+      }
     }
   }
 }
@@ -467,71 +476,23 @@ onBeforeUnmount(() => {
   white-space: pre-wrap;
 }
 
-// ============================================================================
-// Agent Steps
-// ============================================================================
-
-.agent-steps {
-  @include flex-column;
-  gap: $space-1;
-}
-
-.agent-step {
-  @include flex-center-y;
-  gap: $space-2;
-  font-size: $font-size-xs;
-
-  &.pending {
-    .step-dot {
-      background: var(--border-muted);
-    }
-
-    .step-text {
-      color: var(--text-muted);
-    }
-  }
-
-  &.active {
-    .step-dot {
-      background: var(--accent-primary);
-      box-shadow: 0 0 0 3px rgba(var(--accent-primary-rgb), 0.2);
-      animation: pulse-dot 1.5s ease-in-out infinite;
-    }
-
-    .step-text {
-      color: var(--text-primary);
-      font-weight: $font-weight-medium;
-    }
-  }
-
-  &.done {
-    .step-dot {
-      background: var(--success);
-    }
-
-    .step-text {
-      color: var(--text-secondary);
-    }
-  }
-}
-
-.step-dot {
-  width: 5px;
-  height: 5px;
-  flex-shrink: 0;
-  border-radius: $radius-full;
-  background: var(--border-muted);
-  transition: all $duration-normal;
-}
-
-.step-text {
-  color: var(--text-muted);
-  transition: color $duration-normal;
-}
-
 @keyframes pulse-dot {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.5; }
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
+@keyframes thinking-glow {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
 }
 
 .btn-stop {
@@ -626,7 +587,9 @@ onBeforeUnmount(() => {
 
 .drawer-slide-enter-active,
 .drawer-slide-leave-active {
-  transition: transform $duration-slow $ease-in-out, opacity $duration-slow;
+  transition:
+    transform $duration-slow $ease-in-out,
+    opacity $duration-slow;
 }
 
 .drawer-slide-enter-from,

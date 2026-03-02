@@ -102,6 +102,41 @@ export interface ConfirmRequest {
   confirmed: boolean
 }
 
+/** 语音会话创建请求 */
+export interface VoiceSessionRequest {
+  scene?: string
+  language?: string
+}
+
+/** 语音会话创建响应 */
+export interface VoiceSessionResponse {
+  sessionId: string
+  wsUrl: string
+  expiresAt: string
+}
+
+export interface VoiceCapabilities {
+  provider?: string
+  asr_mode?: string
+  tts_mode?: string
+  degraded?: boolean
+  message?: string
+}
+
+/** 语音 WebSocket 事件 */
+export type VoiceWsEvent =
+  | { type: 'session_ready'; session_id: string; capabilities?: VoiceCapabilities }
+  | { type: 'started' }
+  | { type: 'asr_partial'; text: string }
+  | { type: 'asr_final'; text: string }
+  | { type: 'assistant_text_delta'; text: string }
+  | { type: 'assistant_text_final'; text: string }
+  | { type: 'tts_chunk'; audio_base64: string }
+  | { type: 'confirmation_required'; action: string; args?: Record<string, unknown>; message?: string }
+  | { type: 'done'; status?: 'ok' | 'interrupted' }
+  | { type: 'pong' }
+  | { type: 'error'; message: string; error_type?: string }
+
 /** 聊天消息（前端展示用） */
 export interface ChatMessage {
   id: string
@@ -183,6 +218,15 @@ export const intelligenceApi = {
 
     return http.post<ChatResponse>('/ai/confirm', request, {
       timeout: 60000  // 60 秒超时
+    })
+  },
+
+  /**
+   * 创建语音会话
+   */
+  async createVoiceSession(request?: VoiceSessionRequest): Promise<VoiceSessionResponse> {
+    return http.post<VoiceSessionResponse>('/ai/voice/session', request ?? {}, {
+      timeout: 15000,
     })
   },
 

@@ -75,6 +75,11 @@ intelligence:
   service:
     url: ${INTELLIGENCE_SERVICE_URL:http://localhost:19191}
     timeout: 60000
+    voice:
+      enabled: ${AI_VOICE_ENABLED:true}
+      session-ttl-sec: ${VOICE_SESSION_TTL_SEC:180}
+      signing-secret: ${VOICE_SIGNING_SECRET:smart-mall-voice-secret}
+      ws-url: ${INTELLIGENCE_VOICE_WS_URL:ws://localhost:19191/api/voice/ws}
 
 # 本地商品图片上传配置
 smartmall:
@@ -83,6 +88,10 @@ smartmall:
     base-url: ${SMART_MALL_UPLOAD_BASE_URL:/api/uploads}
     max-images-per-request: ${SMART_MALL_UPLOAD_MAX_IMAGES:10}
     max-file-size-bytes: ${SMART_MALL_UPLOAD_MAX_FILE_SIZE:5242880}
+
+navigation:
+  dynamic:
+    enabled: ${NAVIGATION_DYNAMIC_ENABLED:false}
 
 # SpringDoc OpenAPI 配置
 springdoc:

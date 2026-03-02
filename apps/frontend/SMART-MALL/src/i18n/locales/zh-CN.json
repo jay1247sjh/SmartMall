@@ -55,6 +55,7 @@
     "storeManage": "店铺审核",
     "mallBuilder": "商城建模",
     "areaApproval": "区域审批",
+    "layoutReview": "建模审核",
     "versionManage": "版本管理",
     "userManage": "账号管理",
     "workspace": "工作区",
@@ -339,6 +340,75 @@
     "loadVersionsFailed": "无法加载版本数据，请刷新页面重试",
     "descriptionUpdated": "描述已更新",
     "descriptionUpdateFailed": "描述更新失败",
+    "storeManagePage": {
+      "title": "店铺审核管理",
+      "hero": {
+        "descAll": "统一查看所有店铺，快速处理审批与关店操作。",
+        "descPending": "当前聚焦待审批店铺，可批量处理准入审核。",
+        "descActive": "当前查看营业中店铺，便于追踪经营状态。",
+        "descInactive": "当前查看暂停营业店铺，便于排查恢复情况。",
+        "descClosed": "当前查看已关闭店铺，便于复盘历史处理记录。",
+        "statsAll": "家店铺",
+        "statsPending": "家待审批",
+        "statsActive": "家营业中",
+        "statsInactive": "家暂停营业",
+        "statsClosed": "家已关闭",
+        "categorySegment": "分类「{category}」",
+        "keywordSegment": "关键词「{keyword}」",
+        "segmentSeparator": "、",
+        "descWithFilters": "{description} 当前包含{filters}。"
+      },
+      "filters": {
+        "allStatus": "全部状态",
+        "statusPending": "待审批",
+        "statusActive": "营业中",
+        "statusInactive": "暂停营业",
+        "statusClosed": "已关闭",
+        "allCategory": "全部分类",
+        "keywordPlaceholder": "搜索店铺名称...",
+        "reset": "重置",
+        "search": "搜索",
+        "total": "共 {total} 家店铺"
+      },
+      "category": {
+        "catering": "餐饮",
+        "retail": "零售",
+        "clothing": "服装",
+        "entertainment": "娱乐",
+        "service": "服务",
+        "other": "其他"
+      },
+      "closePanel": {
+        "title": "关闭店铺「{name}」",
+        "desc": "此操作会将店铺状态变更为已关闭，请填写关闭原因后确认。",
+        "reasonPlaceholder": "请输入关闭原因",
+        "reasonRequired": "请输入关闭原因",
+        "processing": "处理中...",
+        "confirm": "确认关闭",
+        "cancel": "取消"
+      },
+      "table": {
+        "loading": "加载中...",
+        "empty": "暂无店铺数据",
+        "storeName": "店铺名称",
+        "merchant": "商家",
+        "location": "位置",
+        "category": "分类",
+        "status": "状态",
+        "createdAt": "创建时间",
+        "actions": "操作",
+        "approve": "通过",
+        "close": "关闭",
+        "closed": "已关闭"
+      },
+      "message": {
+        "loadDataFailed": "加载数据失败",
+        "approveSuccess": "店铺审批通过",
+        "approveFailed": "审批失败",
+        "closeSuccess": "店铺「{name}」已关闭",
+        "closeFailed": "关闭失败"
+      }
+    },
     "userMgmt": {
       "all": "全部",
       "statusActive": "正常",
@@ -386,7 +456,20 @@
     "saveSuccess": "保存成功",
     "saveFailed": "保存失败",
     "passwordChanged": "密码修改成功",
-    "passwordChangeFailed": "密码修改失败"
+    "passwordChangeFailed": "密码修改失败",
+    "lastLogin": "最近登录",
+    "trendTitle": "行为趋势",
+    "trendDesc": "近 {days} 天互动数据",
+    "metricBrowse": "浏览",
+    "metricOrders": "下单",
+    "metricFavorites": "收藏",
+    "recentOrders": "最近订单",
+    "recentCoupons": "最近优惠券",
+    "emptyOrders": "暂无近期订单",
+    "emptyCoupons": "暂无近期优惠券",
+    "metricOverview": "2D 数据总览",
+    "metricOverviewDesc": "用柱状图快速对比核心指标",
+    "statsLoadFailed": "加载统计数据失败"
   },
   "storeCatalog": {
     "title": "商家与商品",
@@ -436,7 +519,6 @@
     "quickActions": "快捷操作",
     "storeConfig": "店铺配置",
     "storeConfigDesc": "管理店铺信息",
-    "areaApply": "区域申请",
     "areaApplyDesc": "申请新区域",
     "storeDecoration": "店铺装修",
     "storeDecorationDesc": "3D场景编辑",
@@ -711,7 +793,7 @@
     "sidebar": {
       "title": "AI 助手",
       "placeholder": "输入消息...",
-      "thinking": "AI 正在思考中...",
+      "thinking": "Thinking...",
       "stopped": "已停止回答。",
       "pendingImage": "待发送图片",
       "errorApiKey": "AI 服务配置异常，请联系管理员",

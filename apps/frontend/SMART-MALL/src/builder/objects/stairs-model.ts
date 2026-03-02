@@ -19,14 +19,16 @@ export function createStairsModel(
   group: THREE.Group,
   width: number,
   depth: number,
+  spanHeight: number,
   color: number,
   isSelected: boolean,
-  heightScale: number = 1.0
+  heightScale: number = 1.0,
 ): void {
-  const height = 3.5 * heightScale
-  const stepCount = Math.max(3, Math.floor(14 * heightScale))
+  const height = Math.max(0.6, spanHeight * heightScale)
+  const stepCount = Math.max(3, Math.floor(height / 0.2))
   const stepHeight = height / stepCount
   const stepDepth = depth / stepCount
+  const treadThickness = 0.05
   
   const stepMaterial = getWoodMaterial()
   const handrailMaterial = getHandrailMaterial()
@@ -34,10 +36,10 @@ export function createStairsModel(
   
   for (let i = 0; i < stepCount; i++) {
     const tread = new THREE.Mesh(
-      getBoxGeometry(width, 0.05, stepDepth + 0.02),
+      getBoxGeometry(width, treadThickness, stepDepth + 0.02),
       stepMaterial
     )
-    tread.position.set(0, i * stepHeight + stepHeight, -depth / 2 + i * stepDepth + stepDepth / 2)
+    tread.position.set(0, i * stepHeight + treadThickness / 2, -depth / 2 + i * stepDepth + stepDepth / 2)
     tread.castShadow = true
     tread.receiveShadow = true
     group.add(tread)
@@ -46,9 +48,28 @@ export function createStairsModel(
       getBoxGeometry(width, stepHeight, 0.03),
       stepMaterial
     )
-    riser.position.set(0, i * stepHeight + stepHeight / 2, -depth / 2 + i * stepDepth)
+    riser.position.set(0, i * stepHeight + stepHeight / 2, -depth / 2 + i * stepDepth + 0.01)
     group.add(riser)
   }
+
+  const landingDepth = Math.max(0.25, stepDepth * 0.7)
+  const bottomLanding = new THREE.Mesh(
+    getBoxGeometry(width, treadThickness, landingDepth),
+    stepMaterial,
+  )
+  bottomLanding.position.set(0, treadThickness / 2, -depth / 2 - landingDepth / 2)
+  bottomLanding.castShadow = true
+  bottomLanding.receiveShadow = true
+  group.add(bottomLanding)
+
+  const topLanding = new THREE.Mesh(
+    getBoxGeometry(width, treadThickness, landingDepth),
+    stepMaterial,
+  )
+  topLanding.position.set(0, height + treadThickness / 2, depth / 2 + landingDepth / 2)
+  topLanding.castShadow = true
+  topLanding.receiveShadow = true
+  group.add(topLanding)
   
   const postInterval = Math.max(1, Math.floor(stepCount / 4))
   const postHeight = 0.9 * heightScale
@@ -69,8 +90,8 @@ export function createStairsModel(
 
   
   const handrailPath = new THREE.CatmullRomCurve3([
-    new THREE.Vector3(0, 0.9 * heightScale, depth / 2),
-    new THREE.Vector3(0, height + 0.9 * heightScale, -depth / 2),
+    new THREE.Vector3(0, 0.9 * heightScale, -depth / 2),
+    new THREE.Vector3(0, height + 0.9 * heightScale, depth / 2),
   ])
   
   const handrailGeometry = new THREE.TubeGeometry(handrailPath, 20, 0.035, 8, false)

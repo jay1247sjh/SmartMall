@@ -243,7 +243,7 @@ onMounted(() => {
     <section class="quick-section" :aria-label="t('dashboard.quickActions')">
       <h3 class="section-title">{{ t('dashboard.quickActions') }}</h3>
       <ElRow :gutter="16">
-        <ElCol v-for="action in quickActions" :key="action.path" :xs="24" :sm="12" :md="6">
+        <ElCol v-for="action in quickActions" :key="action.path" class="quick-col" :xs="24" :sm="12" :md="6">
           <QuickActionCard
             :title="action.title"
             :description="action.description"
@@ -343,6 +343,12 @@ onMounted(() => {
     border-radius: $radius-lg;
     margin-bottom: $space-4;
     background: rgba(var(--bg-secondary-rgb), 0.8);
+  }
+
+  .quick-section {
+    .quick-col {
+      margin-bottom: $space-4;
+    }
   }
 
   .approvals-section {

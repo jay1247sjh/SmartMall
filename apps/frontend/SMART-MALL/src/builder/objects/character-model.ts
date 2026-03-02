@@ -7,6 +7,7 @@ import * as THREE from 'three'
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js'
 import type { Point2D, Polygon } from '../geometry/types'
 import { isPointInside } from '../geometry/polygon'
+import { devLog } from '@/utils/dev-log'
 
 // 可用的角色模型列表
 const CHARACTER_MODELS = [
@@ -34,6 +35,8 @@ interface CharacterModelResult {
   model: THREE.Group
   animations: THREE.AnimationClip[]
 }
+
+export type GroundResolver = (x: number, z: number) => number | null | undefined
 
 /**
  * 加载角色模型
@@ -69,9 +72,9 @@ export async function loadCharacterModel(modelName: string = 'character-male-a')
           modelName: modelName,
         }
         
-        console.log(`[loadCharacterModel] 模型加载成功: ${modelName}, 动画数量: ${gltf.animations.length}`)
+        devLog(`[loadCharacterModel] 模型加载成功: ${modelName}, 动画数量: ${gltf.animations.length}`)
         if (gltf.animations.length > 0) {
-          console.log('[loadCharacterModel] 可用动画:', gltf.animations.map(a => a.name))
+          devLog('[loadCharacterModel] 可用动画:', gltf.animations.map(a => a.name))
         }
         
         resolve({
@@ -81,7 +84,7 @@ export async function loadCharacterModel(modelName: string = 'character-male-a')
       },
       (progress) => {
         if (progress.total > 0) {
-          console.log(`[loadCharacterModel] 加载进度: ${(progress.loaded / progress.total * 100).toFixed(1)}%`)
+          devLog(`[loadCharacterModel] 加载进度: ${(progress.loaded / progress.total * 100).toFixed(1)}%`)
         }
       },
       (error) => {
@@ -144,7 +147,7 @@ export class CharacterController {
     } else {
       this.moveSpeed = speed
     }
-    console.log(`[CharacterController] 移动速度设置为: ${this.moveSpeed}`)
+    devLog(`[CharacterController] 移动速度设置为: ${this.moveSpeed}`)
   }
   
   /**
@@ -160,6 +163,7 @@ export class CharacterController {
   
   // 当前楼层高度
   public currentFloorY: number = 0
+  private groundResolver: GroundResolver | null = null
   
   // 边界碰撞检测
   private boundary: Polygon | null = null
@@ -171,15 +175,12 @@ export class CharacterController {
   // 墙壁线段障碍物（用于精确的墙壁碰撞检测）
   private wallSegments: Array<{ start: Point2D; end: Point2D }> = []
   
-  // 模型加载状态
-  private modelLoaded: boolean = false
   private modelName: string = 'character-male-a'
   
   // 动画相关
   private mixer: THREE.AnimationMixer | null = null
   private animations: Map<string, THREE.AnimationAction> = new Map()
   private currentAction: THREE.AnimationAction | null = null
-  private clock: THREE.Clock = new THREE.Clock()
   
   constructor(modelName?: string) {
     // 创建一个临时的空组作为占位符
@@ -234,15 +235,14 @@ export class CharacterController {
         animations.forEach(clip => {
           const action = this.mixer!.clipAction(clip)
           this.animations.set(clip.name, action)
-          console.log(`[CharacterController] 注册动画: ${clip.name}`)
+          devLog(`[CharacterController] 注册动画: ${clip.name}`)
         })
         
         // 尝试播放 idle 动画（如果有的话）
         this.playAnimation('Idle') || this.playAnimation('idle') || this.playFirstAnimation()
       }
       
-      this.modelLoaded = true
-      console.log(`[CharacterController] 角色模型已加载: ${this.modelName}`)
+      devLog(`[CharacterController] 角色模型已加载: ${this.modelName}`)
     } catch (error) {
       console.error('[CharacterController] 加载模型失败，使用备用简单模型', error)
       this.createFallbackModel()
@@ -288,7 +288,6 @@ export class CharacterController {
     mesh.position.y = 0.8
     mesh.castShadow = true
     this.character.add(mesh)
-    this.modelLoaded = true
   }
   
   /**
@@ -300,7 +299,7 @@ export class CharacterController {
         vertices: outline,
         isClosed: true,
       }
-      console.log('[CharacterController] 边界已设置，顶点数:', outline.length)
+      devLog('[CharacterController] 边界已设置，顶点数:', outline.length)
     }
   }
   
@@ -315,7 +314,7 @@ export class CharacterController {
         vertices: area.vertices,
         isClosed: true,
       }))
-    console.log('[CharacterController] 障碍物已设置，数量:', this.obstacles.length)
+    devLog('[CharacterController] 障碍物已设置，数量:', this.obstacles.length)
   }
   
   /**
@@ -324,7 +323,7 @@ export class CharacterController {
    */
   setWallSegments(segments: Array<{ start: Point2D; end: Point2D }>): void {
     this.wallSegments = segments
-    console.log('[CharacterController] 墙壁线段已设置，数量:', this.wallSegments.length)
+    devLog('[CharacterController] 墙壁线段已设置，数量:', this.wallSegments.length)
   }
   
   /**
@@ -380,7 +379,6 @@ export class CharacterController {
     moveX: number, moveZ: number
   ): { x: number; z: number } | null {
     // 将 3D 坐标转换为 2D（x, -z）
-    const pos2D: Point2D = { x: curX, y: -curZ }
     const target2D: Point2D = { x: curX + moveX, y: -(curZ + moveZ) }
     
     // 找到最近的墙壁线段
@@ -488,6 +486,14 @@ export class CharacterController {
   setPosition(x: number, y: number, z: number): void {
     this.character.position.set(x, y, z)
     this.currentFloorY = y
+  }
+
+  setGroundResolver(resolver: GroundResolver): void {
+    this.groundResolver = resolver
+  }
+
+  clearGroundResolver(): void {
+    this.groundResolver = null
   }
   
   /**
@@ -656,8 +662,16 @@ export class CharacterController {
       }
     }
     
-    // 保持在当前楼层高度
-    this.character.position.y = this.currentFloorY
+    // 保持在地面/坡面高度
+    const resolvedY = this.groundResolver
+      ? this.groundResolver(this.character.position.x, this.character.position.z)
+      : null
+    if (resolvedY !== null && resolvedY !== undefined && Number.isFinite(resolvedY)) {
+      this.character.position.y = resolvedY
+      this.currentFloorY = resolvedY
+    } else {
+      this.character.position.y = this.currentFloorY
+    }
   }
   
   /**

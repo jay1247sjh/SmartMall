@@ -12,7 +12,7 @@
 import * as THREE from 'three'
 import type { Point2D, Polygon } from '../geometry/types'
 import type { MallProject, DoorDefinition } from '../types'
-import { polygonToShape, calculateFloorYPosition } from './polygon-to-three'
+import { polygonToShapeWithHoles, calculateFloorYPosition } from './polygon-to-three'
 
 // ============================================================================
 // 类型定义
@@ -31,6 +31,10 @@ export interface RoamingRenderOptions {
   ceilingColor?: number
   /** 墙壁厚度 */
   wallThickness?: number
+  /** 地板开洞 */
+  floorOpenings?: Polygon[]
+  /** 天花板开洞 */
+  ceilingOpenings?: Polygon[]
 }
 
 // ============================================================================
@@ -425,9 +429,10 @@ export function createFloor(
   options: {
     color?: number
     opacity?: number
+    holes?: Polygon[]
   } = {}
 ): THREE.Mesh {
-  const shape = polygonToShape(outline)
+  const shape = polygonToShapeWithHoles(outline, options.holes ?? [])
   const geometry = new THREE.ShapeGeometry(shape)
   
   const floorColor = options.color ?? 0xf5f5f5
@@ -452,9 +457,10 @@ export function createCeiling(
     color?: number
     opacity?: number
     transparent?: boolean
+    holes?: Polygon[]
   } = {}
 ): THREE.Mesh {
-  const shape = polygonToShape(outline)
+  const shape = polygonToShapeWithHoles(outline, options.holes ?? [])
   const geometry = new THREE.ShapeGeometry(shape)
   
   const ceilingColor = options.color ?? 0xfafafa
@@ -505,6 +511,7 @@ export function createRoamingEnvironment(
   // 创建地板（使用明亮的瓷砖效果）
   const floor = createFloor(outline, yPos, {
     color: options.floorColor ?? 0xf5f5f5,
+    holes: options.floorOpenings ?? [],
   })
   group.add(floor)
   
@@ -520,6 +527,7 @@ export function createRoamingEnvironment(
     color: options.ceilingColor ?? 0xfafafa,
     transparent: true,  // 启用透明
     opacity: 0.3,       // 设置为半透明，既能提供光照反射，又不会完全遮挡视角
+    holes: options.ceilingOpenings ?? [],
   })
   group.add(ceiling)
   

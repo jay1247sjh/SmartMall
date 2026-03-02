@@ -6,6 +6,7 @@ import com.smartmall.interfaces.dto.dashboard.AdminStatsDTO;
 import com.smartmall.interfaces.dto.dashboard.MerchantStatsDTO;
 import com.smartmall.interfaces.dto.dashboard.NoticeDTO;
 import com.smartmall.interfaces.dto.dashboard.UserStatsDTO;
+import com.smartmall.interfaces.dto.dashboard.UserTrendStatsDTO;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
@@ -50,6 +51,18 @@ public class DashboardController {
     public ApiResponse<UserStatsDTO> getUserStats(Authentication authentication) {
         String userId = authentication.getName();
         return ApiResponse.success(dashboardService.getUserStats(userId));
+    }
+
+    /**
+     * 获取普通用户趋势统计数据
+     */
+    @GetMapping("/user/stats/trend")
+    @PreAuthorize("hasRole('USER')")
+    public ApiResponse<UserTrendStatsDTO> getUserTrendStats(
+            Authentication authentication,
+            @RequestParam(value = "days", defaultValue = "7") int days) {
+        String userId = authentication.getName();
+        return ApiResponse.success(dashboardService.getUserTrendStats(userId, days));
     }
 
     /**

@@ -28,11 +28,12 @@ export function createEscalatorModel(
   group: THREE.Group,
   width: number,
   depth: number,
+  spanHeight: number,
   color: number,
   isSelected: boolean,
-  heightScale: number = 1.0
+  heightScale: number = 1.0,
 ): void {
-  const height = 4 * heightScale
+  const height = Math.max(0.6, spanHeight * heightScale)
   const angle = Math.atan2(height, depth)
   const escalatorLength = Math.sqrt(depth * depth + height * height)
   const stepCount = Math.max(3, Math.floor(escalatorLength / 0.4))

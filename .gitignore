@@ -57,6 +57,10 @@ npm-debug.log*
 *.spec.js
 __tests__/
 !apps/frontend/SMART-MALL/src/utils/business-hours.test.ts
+!apps/frontend/SMART-MALL/src/builder/connections/vertical-passage.test.ts
+!apps/frontend/SMART-MALL/src/builder/connections/vertical-ground.test.ts
+!apps/frontend/SMART-MALL/src/builder/rendering/roaming-openings.test.ts
+!apps/frontend/SMART-MALL/src/views/admin/mall-builder/vertical-traversal.test.ts
 
 # OS files
 .DS_Store

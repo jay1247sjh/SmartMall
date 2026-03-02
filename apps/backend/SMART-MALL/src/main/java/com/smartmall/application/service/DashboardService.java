@@ -21,14 +21,21 @@ import com.smartmall.infrastructure.mapper.UserOrderMapper;
 import com.smartmall.interfaces.dto.dashboard.AdminStatsDTO;
 import com.smartmall.interfaces.dto.dashboard.MerchantStatsDTO;
 import com.smartmall.interfaces.dto.dashboard.NoticeDTO;
+import com.smartmall.interfaces.dto.dashboard.UserDailyCountDTO;
 import com.smartmall.interfaces.dto.dashboard.UserStatsDTO;
+import com.smartmall.interfaces.dto.dashboard.UserTrendPointDTO;
+import com.smartmall.interfaces.dto.dashboard.UserTrendStatsDTO;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
@@ -43,6 +50,7 @@ public class DashboardService {
     private static final String ADMIN_STATS_CACHE_KEY = "dashboard:admin:stats";
     private static final String MERCHANT_STATS_CACHE_KEY_PREFIX = "dashboard:merchant:stats:";
     private static final String USER_STATS_CACHE_KEY_PREFIX = "dashboard:user:stats:";
+    private static final String USER_TREND_STATS_CACHE_KEY_PREFIX = "dashboard:user:trend:";
     private static final long CACHE_TTL_MINUTES = 5;
 
     private final UserMapper userMapper;
@@ -143,6 +151,34 @@ public class DashboardService {
     }
 
     /**
+     * 获取普通用户趋势统计数据（带 Redis 缓存降级）
+     */
+    public UserTrendStatsDTO getUserTrendStats(String userId, int days) {
+        int finalDays = sanitizeTrendDays(days);
+        String cacheKey = USER_TREND_STATS_CACHE_KEY_PREFIX + userId + ":" + finalDays;
+
+        try {
+            String cached = redisTemplate.opsForValue().get(cacheKey);
+            if (cached != null) {
+                return objectMapper.readValue(cached, UserTrendStatsDTO.class);
+            }
+        } catch (Exception e) {
+            log.warn("Redis 读取用户趋势统计缓存失败，降级为数据库查询, userId={}, days={}", userId, finalDays, e);
+        }
+
+        UserTrendStatsDTO trendStats = queryUserTrendStatsFromDB(userId, finalDays);
+
+        try {
+            String json = objectMapper.writeValueAsString(trendStats);
+            redisTemplate.opsForValue().set(cacheKey, json, CACHE_TTL_MINUTES, TimeUnit.MINUTES);
+        } catch (JsonProcessingException e) {
+            log.warn("Redis 写入用户趋势统计缓存失败, userId={}, days={}", userId, finalDays, e);
+        }
+
+        return trendStats;
+    }
+
+    /**
      * 获取系统公告列表
      */
     public List<NoticeDTO> getNotices(int limit) {
@@ -186,6 +222,10 @@ public class DashboardService {
     public void evictUserStatsCache(String userId) {
         try {
             redisTemplate.delete(USER_STATS_CACHE_KEY_PREFIX + userId);
+            Set<String> trendKeys = redisTemplate.keys(USER_TREND_STATS_CACHE_KEY_PREFIX + userId + ":*");
+            if (trendKeys != null && !trendKeys.isEmpty()) {
+                redisTemplate.delete(trendKeys);
+            }
         } catch (Exception e) {
             log.warn("Redis 清除用户统计缓存失败, userId={}", userId, e);
         }
@@ -251,6 +291,48 @@ public class DashboardService {
         stats.setOrderCount(userOrderMapper.countByUserId(userId));
         stats.setAvailableCouponCount(userCouponMapper.countAvailableByUserId(userId));
         return stats;
+    }
+
+    private UserTrendStatsDTO queryUserTrendStatsFromDB(String userId, int days) {
+        LocalDate startDate = LocalDate.now().minusDays(days - 1L);
+        LocalDateTime startTime = startDate.atStartOfDay();
+
+        Map<LocalDate, Long> browseCountByDay = toDailyCountMap(userBrowseHistoryMapper.countDailyByUserId(userId, startTime));
+        Map<LocalDate, Long> orderCountByDay = toDailyCountMap(userOrderMapper.countDailyByUserId(userId, startTime));
+        Map<LocalDate, Long> favoriteCountByDay = toDailyCountMap(userFavoriteStoreMapper.countDailyByUserId(userId, startTime));
+
+        List<UserTrendPointDTO> points = new ArrayList<>(days);
+        for (int i = 0; i < days; i++) {
+            LocalDate date = startDate.plusDays(i);
+            UserTrendPointDTO point = new UserTrendPointDTO();
+            point.setDate(date);
+            point.setBrowseCount(browseCountByDay.getOrDefault(date, 0L));
+            point.setOrderCount(orderCountByDay.getOrDefault(date, 0L));
+            point.setFavoriteCount(favoriteCountByDay.getOrDefault(date, 0L));
+            points.add(point);
+        }
+
+        UserTrendStatsDTO trendStatsDTO = new UserTrendStatsDTO();
+        trendStatsDTO.setDays(days);
+        trendStatsDTO.setPoints(points);
+        return trendStatsDTO;
+    }
+
+    private Map<LocalDate, Long> toDailyCountMap(List<UserDailyCountDTO> rows) {
+        return rows.stream()
+                .filter(row -> row.getDay() != null)
+                .collect(Collectors.toMap(
+                        UserDailyCountDTO::getDay,
+                        UserDailyCountDTO::getTotal,
+                        Long::sum
+                ));
+    }
+
+    private int sanitizeTrendDays(int days) {
+        if (days < 1 || days > 30) {
+            return 7;
+        }
+        return days;
     }
 
     private NoticeDTO convertToNoticeDTO(Notice notice) {

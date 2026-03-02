@@ -1,4 +1,17 @@
 <script setup lang="ts">
+import { Box } from '@element-plus/icons-vue'
+import {
+  ElContainer,
+  ElHeader,
+  ElIcon,
+  ElMain,
+  ElMenu,
+  ElMenuItem,
+} from 'element-plus'
+import { useI18n } from 'vue-i18n'
+import { useRouter } from 'vue-router'
+import SettingsPanel from '@/components/settings/SettingsPanel.vue'
+import { cleanupOnLogout } from '@/router'
 /**
  * 主布局组件
  *
@@ -30,19 +43,6 @@
  * - 所有已登录用户可访问
  */
 import { useUserStore } from '@/stores'
-import { useRouter } from 'vue-router'
-import { useI18n } from 'vue-i18n'
-import { cleanupOnLogout } from '@/router'
-import SettingsPanel from '@/components/settings/SettingsPanel.vue'
-import {
-  ElContainer,
-  ElHeader,
-  ElMain,
-  ElMenu,
-  ElMenuItem,
-  ElIcon,
-} from 'element-plus'
-import { Box } from '@element-plus/icons-vue'
 
 const userStore = useUserStore()
 const router = useRouter()
@@ -60,12 +60,14 @@ function handleMenuSelect(path: string) {
 
 <template>
   <ElContainer class="main-layout" direction="vertical">
-    <div class="layout-bg"></div>
+    <div class="layout-bg" />
 
     <ElHeader class="layout-header">
       <nav class="header-left">
         <router-link to="/mall" class="logo">
-          <ElIcon :size="18" class="logo-icon"><Box /></ElIcon>
+          <ElIcon :size="18" class="logo-icon">
+            <Box />
+          </ElIcon>
           <span class="logo-text">Smart Mall</span>
         </router-link>
 
@@ -75,8 +77,12 @@ function handleMenuSelect(path: string) {
           class="nav-menu"
           @select="handleMenuSelect"
         >
-          <ElMenuItem index="/mall">{{ t('nav.mall') }}</ElMenuItem>
-          <ElMenuItem index="/user/profile">{{ t('nav.profile') }}</ElMenuItem>
+          <ElMenuItem index="/mall">
+            {{ t('nav.mall') }}
+          </ElMenuItem>
+          <ElMenuItem index="/user/profile">
+            {{ t('nav.profile') }}
+          </ElMenuItem>
         </ElMenu>
       </nav>
 
@@ -97,18 +103,20 @@ function handleMenuSelect(path: string) {
 @use '@/assets/styles/scss/mixins' as *;
 
 .main-layout {
-  min-height: 100vh;
+  height: 100vh;
   background: var(--bg-primary);
   color: var(--text-primary);
   position: relative;
+  overflow: hidden;
 
   .layout-bg {
     position: fixed;
     inset: 0;
     pointer-events: none;
     z-index: 0;
-    background: radial-gradient(ellipse 50% 30% at 70% 10%, rgba(var(--accent-primary-rgb), 0.04) 0%, transparent 50%),
-                radial-gradient(ellipse 40% 30% at 30% 90%, rgba(168, 85, 247, 0.03) 0%, transparent 50%);
+    background:
+      radial-gradient(ellipse 50% 30% at 70% 10%, rgba(var(--accent-primary-rgb), 0.04) 0%, transparent 50%),
+      radial-gradient(ellipse 40% 30% at 30% 90%, rgba(168, 85, 247, 0.03) 0%, transparent 50%);
   }
 
   .layout-header {
@@ -161,8 +169,15 @@ function handleMenuSelect(path: string) {
           border-bottom: none;
           color: var(--text-secondary);
 
-          &:hover { background: transparent; color: var(--text-primary); }
-          &.is-active { background: transparent; color: var(--accent-primary); border-bottom: 2px solid var(--accent-primary); }
+          &:hover {
+            background: transparent;
+            color: var(--text-primary);
+          }
+          &.is-active {
+            background: transparent;
+            color: var(--accent-primary);
+            border-bottom: 2px solid var(--accent-primary);
+          }
         }
       }
     }
@@ -171,16 +186,26 @@ function handleMenuSelect(path: string) {
       @include flex-center-y;
       gap: $space-4;
 
-      .username { font-size: $font-size-base; color: var(--text-primary); }
-      .mr-1 { margin-right: $space-1; }
+      .username {
+        font-size: $font-size-base;
+        color: var(--text-primary);
+      }
+      .mr-1 {
+        margin-right: $space-1;
+      }
     }
   }
 
   .layout-content {
     flex: 1;
+    min-height: 0;
     position: relative;
     z-index: 1;
     padding: 0;
+    overflow-y: auto;
+    overflow-x: hidden;
+    scrollbar-width: thin;
+    @include scrollbar-themed;
   }
 }
 </style>

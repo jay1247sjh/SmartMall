@@ -18,10 +18,11 @@
 import { ref, nextTick, watch, onUnmounted, computed } from 'vue'
 import { useRoute } from 'vue-router'
 import { ElInput, ElButton, ElIcon, ElUpload, ElMessage } from 'element-plus'
-import { Promotion, Picture, Close } from '@element-plus/icons-vue'
+import { Promotion, Picture, Close, Microphone } from '@element-plus/icons-vue'
 import { useI18n } from 'vue-i18n'
 import { intelligenceApi } from '@/api/intelligence.api'
 import { useAiStore } from '@/stores'
+import { useVoiceSession } from '@/composables/ai/useVoiceSession'
 
 // ============================================================================
 // Props & Emits
@@ -33,7 +34,7 @@ interface Props {
 }
 
 const props = withDefaults(defineProps<Props>(), {
-  width: 380,
+  width: 380
 })
 
 const emit = defineEmits<{
@@ -54,19 +55,74 @@ const messagesContainer = ref<HTMLElement | null>(null)
 const inputRef = ref<InstanceType<typeof ElInput> | null>(null)
 const abortController = ref<AbortController | null>(null)
 
-/** Agent processing steps */
-const agentSteps = ref<Array<{ text: string; status: 'pending' | 'active' | 'done' }>>([])
-const currentStepIndex = ref(0)
+/** 当前 thinking 阶段索引 */
+const currentThinkingIndex = ref(0)
 let processingTimer: ReturnType<typeof setInterval> | null = null
 
-const AGENT_STEPS = [
-  { text: 'ai.steps.analyze', delay: 400 },
-  { text: 'ai.steps.retrieve', delay: 500 },
-  { text: 'ai.steps.execute', delay: 600 },
-  { text: 'ai.steps.generate', delay: 400 },
-]
+const THINKING_STAGES = computed(() => [t('ai.sidebar.thinking')])
+
+const currentThinkingText = computed(() => {
+  return THINKING_STAGES.value[currentThinkingIndex.value] || t('ai.sidebar.thinking')
+})
 
 const isCollapsed = computed(() => !props.visible)
+
+const voiceSession = useVoiceSession({
+  language: 'zh-CN',
+  onAsrFinal: text => {
+    if (!text.trim()) return
+    aiStore.addMessage({
+      role: 'user',
+      content: text,
+      type: 'text'
+    })
+    scrollToBottom()
+  },
+  onAssistantFinal: text => {
+    aiStore.addMessage({
+      role: 'assistant',
+      content: text,
+      type: 'text'
+    })
+    scrollToBottom()
+  },
+  onConfirmationRequired: payload => {
+    aiStore.setPendingConfirmation({
+      action: payload.action,
+      args: payload.args || {},
+      message: payload.message || t('ai.confirmAction')
+    })
+    aiStore.addMessage({
+      role: 'assistant',
+      content: payload.message || t('ai.confirmAction'),
+      type: 'confirmation_required',
+      action: payload.action,
+      args: payload.args || {}
+    })
+    scrollToBottom()
+  },
+  onError: message => {
+    aiStore.addMessage({
+      role: 'assistant',
+      content: message || t('ai.sidebar.errorGeneral'),
+      type: 'error'
+    })
+    scrollToBottom()
+  }
+})
+
+const voiceState = computed(() => voiceSession.voiceState.value)
+const isVoiceListening = computed(() => voiceSession.isListening.value)
+const voicePartial = computed(() => voiceSession.asrPartial.value)
+const voiceModeHint = computed(() => voiceSession.modeHint.value)
+const voiceStateLabel = computed(() => {
+  if (voiceState.value === 'listening') return '语音识别中...'
+  if (voiceState.value === 'thinking') return '语音处理中...'
+  if (voiceState.value === 'speaking') return '语音播报中...'
+  if (voiceState.value === 'interrupted') return '已打断，准备新输入'
+  if (voiceState.value === 'error') return '语音不可用，请改用文本'
+  return '点击麦克风开始语音'
+})
 
 // ============================================================================
 // Methods
@@ -81,34 +137,17 @@ function scrollToBottom() {
 }
 
 function startProcessing() {
-  agentSteps.value = AGENT_STEPS.map((step, index) => ({
-    text: step.text,
-    status: index === 0 ? 'active' : ('pending' as const),
-  }))
-  currentStepIndex.value = 0
+  currentThinkingIndex.value = 0
 
-  let stepIndex = 0
+  if (processingTimer) {
+    clearInterval(processingTimer)
+    processingTimer = null
+  }
+
   processingTimer = setInterval(() => {
-    const currentStep = agentSteps.value[stepIndex]
-    if (currentStep) {
-      currentStep.status = 'done'
-    }
-    stepIndex++
-    currentStepIndex.value = stepIndex
-
-    if (stepIndex < AGENT_STEPS.length) {
-      const nextStep = agentSteps.value[stepIndex]
-      if (nextStep) {
-        nextStep.status = 'active'
-      }
-      scrollToBottom()
-    } else {
-      if (processingTimer) {
-        clearInterval(processingTimer)
-        processingTimer = null
-      }
-    }
-  }, 500)
+    const next = currentThinkingIndex.value + 1
+    currentThinkingIndex.value = next % Math.max(THINKING_STAGES.value.length, 1)
+  }, 1200)
 }
 
 function stopProcessing() {
@@ -116,8 +155,7 @@ function stopProcessing() {
     clearInterval(processingTimer)
     processingTimer = null
   }
-  agentSteps.value = []
-  currentStepIndex.value = 0
+  currentThinkingIndex.value = 0
 }
 
 function stopResponse() {
@@ -130,7 +168,7 @@ function stopResponse() {
   aiStore.addMessage({
     role: 'assistant',
     content: t('ai.sidebar.stopped'),
-    type: 'text',
+    type: 'text'
   })
   scrollToBottom()
 }
@@ -169,7 +207,7 @@ async function sendMessage() {
   aiStore.addMessage({
     role: 'user',
     content: text,
-    image_url: pendingImage.value || undefined,
+    image_url: pendingImage.value || undefined
   })
 
   const imageUrl = pendingImage.value
@@ -186,7 +224,7 @@ async function sendMessage() {
       text,
       imageUrl || undefined,
       { current_floor: route.path },
-      abortController.value.signal,
+      abortController.value.signal
     )
 
     stopProcessing()
@@ -199,7 +237,7 @@ async function sendMessage() {
     aiStore.addMessage({
       role: 'assistant',
       content: parseErrorMessage(error),
-      type: 'error',
+      type: 'error'
     })
   } finally {
     abortController.value = null
@@ -224,7 +262,7 @@ async function confirmAction(confirmed: boolean) {
     aiStore.addMessage({
       role: 'assistant',
       content: t('ai.sidebar.actionFailed'),
-      type: 'error',
+      type: 'error'
     })
   } finally {
     aiStore.setSending(false)
@@ -261,25 +299,37 @@ function handleKeydown(event: Event) {
   }
 }
 
+async function toggleVoice() {
+  try {
+    await voiceSession.toggleListening()
+  } catch {
+    ElMessage.error('无法启动语音，请检查麦克风权限')
+  }
+}
+
 // ============================================================================
 // Watchers & Lifecycle
 // ============================================================================
 
-watch(() => props.visible, (visible) => {
-  if (visible) {
-    aiStore.initWelcomeMessage()
-    scrollToBottom()
-    nextTick(() => {
-      inputRef.value?.focus()
-    })
+watch(
+  () => props.visible,
+  visible => {
+    if (visible) {
+      aiStore.initWelcomeMessage()
+      scrollToBottom()
+      nextTick(() => {
+        inputRef.value?.focus()
+      })
+    }
   }
-})
+)
 
 onUnmounted(() => {
   stopProcessing()
   if (abortController.value) {
     abortController.value.abort()
   }
+  voiceSession.cleanup()
 })
 </script>
 
@@ -303,11 +353,7 @@ onUnmounted(() => {
 
       <!-- Messages -->
       <div ref="messagesContainer" class="messages-container">
-        <div
-          v-for="msg in aiStore.messages"
-          :key="msg.id"
-          :class="['message', msg.role]"
-        >
+        <div v-for="msg in aiStore.messages" :key="msg.id" :class="['message', msg.role]">
           <template v-if="msg.role === 'user'">
             <div class="message-content user-message">
               <img v-if="msg.image_url" :src="msg.image_url" class="message-image" />
@@ -336,22 +382,9 @@ onUnmounted(() => {
         <!-- Processing steps -->
         <div v-if="aiStore.isSending" class="message assistant">
           <div class="message-content assistant-message processing">
-            <div class="progress-bar">
-              <div
-                class="progress-fill"
-                :style="{ width: `${(currentStepIndex / AGENT_STEPS.length) * 100}%` }"
-              />
-            </div>
-            <div class="agent-steps">
-              <div
-                v-for="(step, index) in agentSteps"
-                :key="index"
-                class="agent-step"
-                :class="step.status"
-              >
-                <span class="step-dot" />
-                <span class="step-text">{{ t(step.text) }}</span>
-              </div>
+            <div class="thinking-line">
+              <span class="thinking-dot" />
+              <span class="thinking-text">{{ currentThinkingText }}</span>
             </div>
             <button class="btn-stop" @click="stopResponse">
               <span>{{ t('common.cancel') }}</span>
@@ -362,6 +395,12 @@ onUnmounted(() => {
 
       <!-- Input area -->
       <div class="input-area">
+        <div class="voice-status" :class="voiceState">
+          <span>{{ voiceStateLabel }}</span>
+          <span v-if="voicePartial" class="voice-partial">{{ voicePartial }}</span>
+          <span v-else-if="voiceModeHint" class="voice-partial">{{ voiceModeHint }}</span>
+        </div>
+
         <div v-if="pendingImage" class="pending-image">
           <img :src="pendingImage" :alt="t('ai.sidebar.pendingImage')" />
           <button class="btn-remove" @click="removePendingImage">
@@ -374,10 +413,24 @@ onUnmounted(() => {
             :show-file-list="false"
             :before-upload="handleImageUpload"
             accept="image/*"
-            :disabled="aiStore.isSending"
+            :disabled="aiStore.isSending || isVoiceListening"
           >
-            <ElButton :icon="Picture" circle class="btn-upload" :disabled="aiStore.isSending" />
+            <ElButton
+              :icon="Picture"
+              circle
+              class="btn-upload"
+              :disabled="aiStore.isSending || isVoiceListening"
+            />
           </ElUpload>
+
+          <ElButton
+            :icon="Microphone"
+            circle
+            class="btn-voice"
+            :type="isVoiceListening ? 'danger' : 'default'"
+            :disabled="aiStore.isSending"
+            @click="toggleVoice"
+          />
 
           <ElInput
             ref="inputRef"
@@ -385,8 +438,10 @@ onUnmounted(() => {
             type="textarea"
             :rows="1"
             :autosize="{ minRows: 1, maxRows: 4 }"
-            :placeholder="aiStore.isSending ? t('ai.sidebar.thinking') : t('ai.sidebar.placeholder')"
-            :disabled="aiStore.isSending"
+            :placeholder="
+              aiStore.isSending ? t('ai.sidebar.thinking') : t('ai.sidebar.placeholder')
+            "
+            :disabled="aiStore.isSending || isVoiceListening"
             resize="none"
             @keydown="handleKeydown"
           />
@@ -418,7 +473,9 @@ onUnmounted(() => {
   height: 100%;
   border-left: 1px solid var(--border-subtle);
   background: var(--bg-secondary);
-  transition: width $duration-slow $ease-in-out, opacity $duration-normal;
+  transition:
+    width $duration-slow $ease-in-out,
+    opacity $duration-normal;
   overflow: hidden;
 
   &.collapsed {
@@ -532,79 +589,38 @@ onUnmounted(() => {
   border-bottom-left-radius: 2px;
 
   &.processing {
-    padding: 14px $space-4;
+    padding: 12px $space-4;
     min-width: 180px;
 
-    .progress-bar {
-      height: 2px;
-      background: var(--border-subtle);
-      border-radius: 1px;
-      margin-bottom: 14px;
-      overflow: hidden;
-
-      .progress-fill {
-        height: 100%;
-        background: var(--accent-primary);
-        border-radius: 1px;
-        transition: width $duration-slow;
-      }
-    }
-
-    .agent-steps {
-      @include flex-column;
-      gap: $space-2;
-    }
-
-    .agent-step {
+    .thinking-line {
       @include flex-center-y;
-      gap: 10px;
-      font-size: $font-size-sm + 1;
+      gap: $space-2;
 
-      .step-dot {
-        width: 6px;
-        height: 6px;
+      .thinking-dot {
+        width: 7px;
+        height: 7px;
         flex-shrink: 0;
         border-radius: $radius-full;
-        background: var(--border-muted);
-        transition: all $duration-normal;
+        background: var(--accent-primary);
+        box-shadow: 0 0 0 3px rgba(var(--accent-primary-rgb), 0.18);
+        animation: pulse-dot 1.3s ease-in-out infinite;
       }
 
-      .step-text {
-        color: var(--text-muted);
-        transition: color $duration-normal;
-      }
-
-      &.pending {
-        .step-dot {
-          background: var(--border-muted);
-        }
-
-        .step-text {
-          color: var(--text-muted);
-        }
-      }
-
-      &.active {
-        .step-dot {
-          background: var(--accent-primary);
-          box-shadow: 0 0 0 3px rgba(var(--accent-primary-rgb), 0.2);
-          animation: pulse-dot 1.5s ease-in-out infinite;
-        }
-
-        .step-text {
-          color: var(--text-primary);
-          font-weight: $font-weight-medium;
-        }
-      }
-
-      &.done {
-        .step-dot {
-          background: var(--success);
-        }
-
-        .step-text {
-          color: var(--text-secondary);
-        }
+      .thinking-text {
+        font-size: $font-size-sm;
+        font-weight: $font-weight-medium;
+        background: linear-gradient(
+          120deg,
+          var(--text-muted) 10%,
+          var(--text-primary) 45%,
+          var(--text-muted) 85%
+        );
+        background-size: 220% 100%;
+        background-position: 100% 0;
+        -webkit-background-clip: text;
+        background-clip: text;
+        color: transparent;
+        animation: thinking-glow 1.8s linear infinite;
       }
     }
 
@@ -628,12 +644,23 @@ onUnmounted(() => {
 }
 
 @keyframes pulse-dot {
-  0%, 100% {
+  0%,
+  100% {
     opacity: 1;
   }
 
   50% {
     opacity: 0.5;
+  }
+}
+
+@keyframes thinking-glow {
+  0% {
+    background-position: 200% 0;
+  }
+
+  100% {
+    background-position: -200% 0;
   }
 }
 
@@ -655,6 +682,32 @@ onUnmounted(() => {
   padding: $space-3 $space-4;
   border-top: 1px solid var(--border-subtle);
   background: var(--bg-primary);
+}
+
+.voice-status {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: $space-2;
+  font-size: $font-size-sm;
+  color: var(--text-muted);
+
+  .voice-partial {
+    margin-left: $space-2;
+    color: var(--text-secondary);
+  }
+
+  &.listening {
+    color: var(--accent-primary);
+  }
+
+  &.speaking {
+    color: var(--success);
+  }
+
+  &.error {
+    color: var(--error);
+  }
 }
 
 .pending-image {
@@ -688,7 +741,8 @@ onUnmounted(() => {
   @include flex-center-y;
   gap: $space-2;
 
-  .btn-upload {
+  .btn-upload,
+  .btn-voice {
     flex-shrink: 0;
   }
 

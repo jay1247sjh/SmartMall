@@ -1,4 +1,26 @@
 <script setup lang="ts">
+import type { AdminStats, NoticeItem } from '@/api/admin.api'
+import type { MerchantStats } from '@/api/merchant.api'
+import type { UpdateProfileRequest, UserProfile } from '@/api/user.api'
+import { Edit, Lock, Shop, Star, Ticket, User, View } from '@element-plus/icons-vue'
+import {
+  ElAlert,
+  ElAvatar,
+  ElButton,
+  ElCard,
+  ElDescriptions,
+  ElDescriptionsItem,
+  ElDialog,
+  ElDivider,
+  ElEmpty,
+  ElForm,
+  ElFormItem,
+  ElIcon,
+  ElInput,
+  ElSkeleton,
+  ElSpace,
+  ElTag,
+} from 'element-plus'
 /**
  * 个人中心视图
  *
@@ -30,28 +52,10 @@
  * - 所有已登录用户可访问
  * - 只能编辑自己的信息
  */
-import { ref, computed, onMounted } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
+import { adminApi, merchantApi, passwordApi, userApi } from '@/api'
 import { useUserStore } from '@/stores'
-import { userApi, passwordApi } from '@/api'
-import type { UserProfile, UpdateProfileRequest } from '@/api/user.api'
-import {
-  ElCard,
-  ElAvatar,
-  ElTag,
-  ElDescriptions,
-  ElDescriptionsItem,
-  ElButton,
-  ElForm,
-  ElFormItem,
-  ElInput,
-  ElDialog,
-  ElAlert,
-  ElSkeleton,
-  ElSpace,
-  ElDivider,
-} from 'element-plus'
-import { Edit, Lock } from '@element-plus/icons-vue'
 
 const { t } = useI18n()
 const userStore = useUserStore()
@@ -60,6 +64,7 @@ const isLoading = ref(false)
 const isEditing = ref(false)
 const isSaving = ref(false)
 const error = ref<string | null>(null)
+const dashboardError = ref<string | null>(null)
 const successMessage = ref<string | null>(null)
 
 const profile = ref<UserProfile | null>(null)
@@ -73,6 +78,16 @@ const passwordForm = ref({
 })
 const passwordError = ref<string | null>(null)
 const isChangingPassword = ref(false)
+const isDashboardLoading = ref(false)
+const adminStats = ref<AdminStats | null>(null)
+const merchantStats = ref<MerchantStats | null>(null)
+const userStats = ref<{
+  availableCouponCount: number
+  browseHistoryCount: number
+  favoriteStoreCount: number
+  orderCount: number
+} | null>(null)
+const notices = ref<NoticeItem[]>([])
 
 const roleDisplayName = computed(() => {
   const roleMap: Record<string, string> = {
@@ -92,8 +107,8 @@ const statusDisplayName = computed(() => {
   return statusMap[profile.value?.status || ''] || t('profile.statusUnknown')
 })
 
-const avatarLetter = computed(() => 
-  profile.value?.username?.charAt(0).toUpperCase() || 'U'
+const avatarLetter = computed(() =>
+  profile.value?.username?.charAt(0).toUpperCase() || 'U',
 )
 
 const statusTagType = computed(() => {
@@ -105,35 +120,160 @@ const statusTagType = computed(() => {
   return statusMap[profile.value?.status || ''] || 'info'
 })
 
+const currentRole = computed(() => profile.value?.userType || userStore.currentUser?.userType || '')
+
+const metricCards = computed(() => {
+  if (currentRole.value === 'ADMIN' && adminStats.value) {
+    return [
+      { icon: User, key: 'merchantCount', label: t('dashboard.statMerchantCount'), value: adminStats.value.merchantCount },
+      { icon: Shop, key: 'storeCount', label: t('dashboard.statStoreCount'), value: adminStats.value.storeCount },
+      { icon: Ticket, key: 'pendingApprovals', label: t('dashboard.statPending'), value: adminStats.value.pendingApprovals },
+      { icon: View, key: 'todayActiveUsers', label: t('dashboard.statTodayActive'), value: adminStats.value.todayActiveUsers },
+    ]
+  }
+
+  if (currentRole.value === 'MERCHANT' && merchantStats.value) {
+    return [
+      { icon: Shop, key: 'storeCount', label: t('dashboard.statMyStores'), value: merchantStats.value.storeCount },
+      { icon: Star, key: 'productCount', label: t('dashboard.statProductCount'), value: merchantStats.value.productCount },
+      { icon: Ticket, key: 'pendingApplications', label: t('dashboard.statPendingApps'), value: merchantStats.value.pendingApplications },
+    ]
+  }
+
+  if (currentRole.value === 'USER' && userStats.value) {
+    return [
+      { icon: Star, key: 'favoriteStoreCount', label: t('dashboard.statFavorites'), value: userStats.value.favoriteStoreCount },
+      { icon: View, key: 'browseHistoryCount', label: t('dashboard.statHistory'), value: userStats.value.browseHistoryCount },
+      { icon: Shop, key: 'orderCount', label: t('dashboard.statOrders'), value: userStats.value.orderCount },
+      { icon: Ticket, key: 'availableCouponCount', label: t('dashboard.statCoupons'), value: userStats.value.availableCouponCount },
+    ]
+  }
+
+  return []
+})
+
+const metricMax = computed(() =>
+  Math.max(1, ...metricCards.value.map(item => Number(item.value || 0))),
+)
+
+function getMetricBarWidth(value: number) {
+  return Math.max(8, (Number(value || 0) / metricMax.value) * 100)
+}
+
+function formatDateTime(value?: string) {
+  if (!value)
+    return t('profile.notSet')
+  const parsed = new Date(value)
+  if (Number.isNaN(parsed.getTime()))
+    return value
+  const yy = parsed.getFullYear()
+  const mm = String(parsed.getMonth() + 1).padStart(2, '0')
+  const dd = String(parsed.getDate()).padStart(2, '0')
+  const hh = String(parsed.getHours()).padStart(2, '0')
+  const ii = String(parsed.getMinutes()).padStart(2, '0')
+  return `${yy}-${mm}-${dd} ${hh}:${ii}`
+}
+
 const isPasswordFormValid = computed(() =>
-  passwordForm.value.currentPassword.length >= 6 &&
-  passwordForm.value.newPassword.length >= 6 &&
-  passwordForm.value.newPassword === passwordForm.value.confirmPassword
+  passwordForm.value.currentPassword.length >= 6
+  && passwordForm.value.newPassword.length >= 6
+  && passwordForm.value.newPassword === passwordForm.value.confirmPassword,
 )
 
 async function loadProfile() {
   isLoading.value = true
   error.value = null
-  
+
   try {
     const data = await userApi.getProfile()
     profile.value = data
-    
+
     editForm.value = {
       email: data.email,
       phone: data.phone,
     }
 
     syncUserStoreProfile(data)
-  } catch (e: unknown) {
+  }
+  catch (e: unknown) {
     error.value = (e as Error).message || t('profile.loadFailed')
-  } finally {
+  }
+  finally {
     isLoading.value = false
   }
 }
 
+async function loadDashboard() {
+  if (!currentRole.value)
+    return
+
+  isDashboardLoading.value = true
+  dashboardError.value = null
+  adminStats.value = null
+  merchantStats.value = null
+  userStats.value = null
+  notices.value = []
+
+  if (currentRole.value === 'ADMIN') {
+    const [statsRes, noticesRes] = await Promise.allSettled([
+      adminApi.getStats(),
+      adminApi.getNotices(6),
+    ])
+
+    if (statsRes.status === 'fulfilled') {
+      adminStats.value = statsRes.value
+    }
+    else {
+      dashboardError.value = t('profile.statsLoadFailed')
+    }
+
+    if (noticesRes.status === 'fulfilled') {
+      notices.value = noticesRes.value
+    }
+  }
+
+  if (currentRole.value === 'MERCHANT') {
+    const [statsRes, noticesRes] = await Promise.allSettled([
+      merchantApi.getStats(),
+      adminApi.getNotices(6),
+    ])
+
+    if (statsRes.status === 'fulfilled') {
+      merchantStats.value = statsRes.value
+    }
+    else {
+      dashboardError.value = t('profile.statsLoadFailed')
+    }
+
+    if (noticesRes.status === 'fulfilled') {
+      notices.value = noticesRes.value
+    }
+  }
+
+  if (currentRole.value === 'USER') {
+    const [statsRes, noticesRes] = await Promise.allSettled([
+      userApi.getDashboardStats(),
+      adminApi.getNotices(6),
+    ])
+
+    if (statsRes.status === 'fulfilled') {
+      userStats.value = statsRes.value
+    }
+    else {
+      dashboardError.value = t('profile.statsLoadFailed')
+    }
+
+    if (noticesRes.status === 'fulfilled') {
+      notices.value = noticesRes.value
+    }
+  }
+
+  isDashboardLoading.value = false
+}
+
 function syncUserStoreProfile(data: UserProfile) {
-  if (!userStore.currentUser) return
+  if (!userStore.currentUser)
+    return
 
   const nextUser = {
     ...userStore.currentUser,
@@ -143,6 +283,7 @@ function syncUserStoreProfile(data: UserProfile) {
     status: data.status,
     email: data.email,
     phone: data.phone,
+    lastLoginTime: data.lastLoginTime,
   }
 
   userStore.currentUser = nextUser
@@ -165,22 +306,27 @@ function cancelEditing() {
 }
 
 async function saveProfile() {
-  if (!profile.value) return
-  
+  if (!profile.value)
+    return
+
   isSaving.value = true
   error.value = null
   successMessage.value = null
-  
+
   try {
     const updated = await userApi.updateProfile(editForm.value)
     profile.value = updated
     syncUserStoreProfile(updated)
     isEditing.value = false
     successMessage.value = t('profile.saveSuccess')
-    setTimeout(() => { successMessage.value = null }, 3000)
-  } catch (e: unknown) {
+    setTimeout(() => {
+      successMessage.value = null
+    }, 3000)
+  }
+  catch (e: unknown) {
     error.value = (e as Error).message || t('profile.saveFailed')
-  } finally {
+  }
+  finally {
     isSaving.value = false
   }
 }
@@ -192,11 +338,12 @@ function openPasswordModal() {
 }
 
 async function changePassword() {
-  if (!isPasswordFormValid.value) return
-  
+  if (!isPasswordFormValid.value)
+    return
+
   isChangingPassword.value = true
   passwordError.value = null
-  
+
   try {
     await passwordApi.changePassword({
       oldPassword: passwordForm.value.currentPassword,
@@ -204,16 +351,20 @@ async function changePassword() {
     })
     showPasswordModal.value = false
     successMessage.value = t('profile.passwordChanged')
-    setTimeout(() => { successMessage.value = null }, 3000)
-  } catch (e: unknown) {
+    setTimeout(() => {
+      successMessage.value = null
+    }, 3000)
+  }
+  catch (e: unknown) {
     passwordError.value = (e as Error).message || t('profile.passwordChangeFailed')
-  } finally {
+  }
+  finally {
     isChangingPassword.value = false
   }
 }
 
 onMounted(() => {
-  loadProfile()
+  loadProfile().then(loadDashboard)
 })
 </script>
 
@@ -232,7 +383,7 @@ onMounted(() => {
       class="message-alert"
       @close="error = null"
     />
-    
+
     <ElAlert
       v-if="successMessage"
       :title="successMessage"
@@ -252,8 +403,12 @@ onMounted(() => {
             {{ avatarLetter }}
           </ElAvatar>
           <hgroup class="profile-info">
-            <h2 class="profile-name">{{ profile.username }}</h2>
-            <ElTag type="primary" size="small">{{ roleDisplayName }}</ElTag>
+            <h2 class="profile-name">
+              {{ profile.username }}
+            </h2>
+            <ElTag type="primary" size="small">
+              {{ roleDisplayName }}
+            </ElTag>
           </hgroup>
         </header>
       </template>
@@ -292,17 +447,102 @@ onMounted(() => {
       <!-- 操作按钮 -->
       <footer class="profile-actions">
         <ElSpace v-if="isEditing">
-          <ElButton @click="cancelEditing" :disabled="isSaving">{{ t('common.cancel') }}</ElButton>
-          <ElButton type="primary" @click="saveProfile" :loading="isSaving">
+          <ElButton :disabled="isSaving" @click="cancelEditing">
+            {{ t('common.cancel') }}
+          </ElButton>
+          <ElButton type="primary" :loading="isSaving" @click="saveProfile">
             {{ isSaving ? t('profile.saving') : t('common.save') }}
           </ElButton>
         </ElSpace>
         <ElSpace v-else>
-          <ElButton :icon="Lock" @click="openPasswordModal">{{ t('profile.changePassword') }}</ElButton>
-          <ElButton type="primary" :icon="Edit" @click="startEditing">{{ t('profile.editProfile') }}</ElButton>
+          <ElButton :icon="Lock" @click="openPasswordModal">
+            {{ t('profile.changePassword') }}
+          </ElButton>
+          <ElButton type="primary" :icon="Edit" @click="startEditing">
+            {{ t('profile.editProfile') }}
+          </ElButton>
         </ElSpace>
       </footer>
     </ElCard>
+
+    <ElAlert
+      v-if="dashboardError"
+      :title="dashboardError"
+      type="warning"
+      show-icon
+      closable
+      class="message-alert"
+      @close="dashboardError = null"
+    />
+
+    <section v-if="!isLoading && (isDashboardLoading || metricCards.length > 0)" class="profile-analytics">
+      <ElCard shadow="never" class="analytics-card">
+        <template #header>
+          <header class="analytics-head">
+            <h3 class="analytics-title">
+              {{ t('profile.metricOverview') }}
+            </h3>
+            <p class="analytics-subtitle">
+              {{ t('profile.metricOverviewDesc') }}
+            </p>
+          </header>
+        </template>
+
+        <ElSkeleton v-if="isDashboardLoading" :rows="3" animated />
+
+        <template v-else>
+          <div class="metric-grid">
+            <article v-for="metric in metricCards" :key="metric.key" class="metric-item">
+              <ElIcon class="metric-icon">
+                <component :is="metric.icon" />
+              </ElIcon>
+              <div class="metric-main">
+                <span class="metric-label">{{ metric.label }}</span>
+                <strong class="metric-value">{{ metric.value }}</strong>
+              </div>
+            </article>
+          </div>
+
+          <div class="metric-bars">
+            <div v-for="metric in metricCards" :key="`bar-${metric.key}`" class="metric-row">
+              <div class="metric-row-head">
+                <span>{{ metric.label }}</span>
+                <strong>{{ metric.value }}</strong>
+              </div>
+              <div class="metric-track">
+                <div class="metric-fill" :style="{ width: `${getMetricBarWidth(metric.value)}%` }" />
+              </div>
+            </div>
+          </div>
+        </template>
+      </ElCard>
+
+      <ElCard shadow="never" class="analytics-card">
+        <template #header>
+          <h3 class="analytics-title">
+            {{ t('dashboard.systemNotices') }}
+          </h3>
+        </template>
+
+        <ElSkeleton v-if="isDashboardLoading" :rows="3" animated />
+
+        <ElEmpty
+          v-else-if="notices.length === 0"
+          :description="t('dashboard.noNotices')"
+          :image-size="68"
+        />
+
+        <div v-else class="notice-list">
+          <article v-for="notice in notices" :key="notice.noticeId" class="notice-item">
+            <header>
+              <h4>{{ notice.title }}</h4>
+              <time>{{ formatDateTime(notice.publishedAt) }}</time>
+            </header>
+            <p>{{ notice.content }}</p>
+          </article>
+        </div>
+      </ElCard>
+    </section>
 
     <!-- 修改密码弹窗 -->
     <ElDialog
@@ -354,7 +594,9 @@ onMounted(() => {
 
       <template #footer>
         <ElSpace>
-          <ElButton @click="showPasswordModal = false">{{ t('common.cancel') }}</ElButton>
+          <ElButton @click="showPasswordModal = false">
+            {{ t('common.cancel') }}
+          </ElButton>
           <ElButton
             type="primary"
             :disabled="!isPasswordFormValid"
@@ -423,6 +665,157 @@ onMounted(() => {
     }
   }
 
+  .profile-analytics {
+    margin-top: $space-5;
+    display: grid;
+    grid-template-columns: 1.2fr 1fr;
+    gap: $space-4;
+
+    .analytics-card {
+      @include card-base;
+      border-radius: $radius-lg;
+      background: rgba(var(--bg-secondary-rgb), 0.86);
+    }
+
+    .analytics-title {
+      margin: 0;
+      font-size: $font-size-lg;
+      font-weight: $font-weight-medium;
+      color: var(--text-primary);
+    }
+
+    .analytics-subtitle {
+      margin: $space-1 0 0;
+      font-size: $font-size-sm;
+      color: var(--text-muted);
+    }
+
+    .metric-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: $space-3;
+      margin-bottom: $space-4;
+    }
+
+    .metric-item {
+      display: flex;
+      align-items: center;
+      gap: $space-3;
+      border: 1px solid var(--border-subtle);
+      border-radius: $radius-md;
+      background: rgba(var(--bg-primary-rgb), 0.6);
+      padding: $space-3;
+    }
+
+    .metric-icon {
+      width: 32px;
+      height: 32px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 8px;
+      color: var(--accent-primary);
+      background: rgba(var(--accent-primary-rgb), 0.14);
+      border: 1px solid rgba(var(--accent-primary-rgb), 0.24);
+    }
+
+    .metric-main {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .metric-label {
+      font-size: $font-size-sm;
+      color: var(--text-secondary);
+    }
+
+    .metric-value {
+      font-size: $font-size-lg;
+      color: var(--text-primary);
+      font-weight: $font-weight-semibold;
+    }
+
+    .metric-bars {
+      display: flex;
+      flex-direction: column;
+      gap: $space-3;
+    }
+
+    .metric-row {
+      display: flex;
+      flex-direction: column;
+      gap: $space-2;
+    }
+
+    .metric-row-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      color: var(--text-secondary);
+      font-size: $font-size-sm;
+
+      strong {
+        color: var(--text-primary);
+      }
+    }
+
+    .metric-track {
+      width: 100%;
+      height: 8px;
+      border-radius: 999px;
+      background: rgba(var(--bg-primary-rgb), 0.7);
+      border: 1px solid var(--border-subtle);
+      overflow: hidden;
+    }
+
+    .metric-fill {
+      height: 100%;
+      border-radius: 999px;
+      background: linear-gradient(90deg, var(--accent-primary), rgba(var(--accent-primary-rgb), 0.35));
+    }
+
+    .notice-list {
+      display: flex;
+      flex-direction: column;
+      gap: $space-3;
+    }
+
+    .notice-item {
+      border: 1px solid var(--border-subtle);
+      border-radius: $radius-md;
+      background: rgba(var(--bg-primary-rgb), 0.6);
+      padding: $space-3;
+
+      header {
+        display: flex;
+        align-items: baseline;
+        justify-content: space-between;
+        gap: $space-2;
+        margin-bottom: $space-2;
+      }
+
+      h4 {
+        margin: 0;
+        font-size: $font-size-base;
+        color: var(--text-primary);
+      }
+
+      time {
+        color: var(--text-muted);
+        font-size: $font-size-sm;
+        white-space: nowrap;
+      }
+
+      p {
+        margin: 0;
+        color: var(--text-secondary);
+        font-size: $font-size-sm;
+        line-height: 1.5;
+      }
+    }
+  }
+
   @media (max-width: 600px) {
     padding: $space-4;
 
@@ -430,6 +823,14 @@ onMounted(() => {
       .profile-header {
         flex-direction: column;
         text-align: center;
+      }
+    }
+
+    .profile-analytics {
+      grid-template-columns: 1fr;
+
+      .metric-grid {
+        grid-template-columns: 1fr;
       }
     }
   }

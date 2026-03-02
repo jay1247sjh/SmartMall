@@ -3,17 +3,19 @@
  * 处理 3D 场景渲染逻辑
  */
 import * as THREE from 'three'
-import type { MallProject, AreaDefinition } from '@/builder'
+import type { MallProject, AreaDefinition, VerticalConnection, FloorDefinition } from '@/builder'
 import {
   createPolygonMesh3D,
   createPolygonOutline,
   createGlowOutline,
   createFloorMesh,
+  createFloor as createRoamingFloorSurface,
   calculateFloorYPosition,
   createRoamingEnvironment,
   clearRoamingEnvironment,
   clearConnectionIndicators,
   getAreaCenter,
+  isPointInside,
   getEdges,
   createElevatorModel,
   createEscalatorModel,
@@ -33,13 +35,246 @@ import {
   createClockModel,
   createFireExtinguisherModel,
   getMaterialPresetByAreaType,
+  createInsetOpeningPolygon,
+  normalizeVerticalPassageProfile,
 } from '@/builder'
 import { AreaType, AREA_TYPE_COLORS } from '@smart-mall/shared-types'
+
+const VERTICAL_AREA_TYPE_SET = new Set<string>(['elevator', 'escalator', 'stairs'])
+const FACILITY_AREA_TYPE_SET = new Set<string>(['restroom', 'service'])
+const SHOP_AREA_TYPE_SET = new Set<string>(['retail', 'food', 'service', 'anchor'])
+
+export interface RoamingSecondaryFloorMask {
+  floorId: string
+  center2D: { x: number; y: number }
+  radius: number
+}
 
 export interface RenderOptions {
   renderAllFloors?: boolean
   useFullHeight?: boolean
   isRoamingMode?: boolean
+  verticalConnections?: VerticalConnection[]
+  roamingVisibleFloorIds?: string[]
+  roamingSecondaryFloorMask?: RoamingSecondaryFloorMask[]
+}
+
+interface ProjectedVerticalArea {
+  area: AreaDefinition
+  sourceFloorId: string
+}
+
+function isVerticalConnectionArea(area: AreaDefinition): boolean {
+  return VERTICAL_AREA_TYPE_SET.has(area.type)
+}
+
+function cloneAreaDefinition(area: AreaDefinition): AreaDefinition {
+  return {
+    ...area,
+    shape: {
+      ...area.shape,
+      vertices: area.shape.vertices.map(vertex => ({ ...vertex })),
+    },
+    properties: {
+      ...area.properties,
+      custom: area.properties.custom ? { ...area.properties.custom } : undefined,
+    },
+    doors: area.doors?.map(door => ({ ...door })),
+  }
+}
+
+/**
+ * 生成“跨层投影”的垂直连接区域：
+ * 当某垂直连接关联了多个楼层，但区域实体仅存在于源楼层时，
+ * 在其他连接楼层渲染同位模型，确保楼层切换后也能看到对应设施。
+ */
+function buildProjectedVerticalAreasByFloor(
+  project: MallProject,
+  verticalConnections: VerticalConnection[],
+): Map<string, ProjectedVerticalArea[]> {
+  const projectedByFloor = new Map<string, ProjectedVerticalArea[]>()
+  if (verticalConnections.length === 0) return projectedByFloor
+
+  const sourceAreaById = new Map<string, AreaDefinition>()
+  const sourceFloorByAreaId = new Map<string, string>()
+  const floorById = new Map(project.floors.map(floor => [floor.id, floor]))
+
+  project.floors.forEach(floor => {
+    floor.areas.forEach(area => {
+      if (!sourceAreaById.has(area.id)) {
+        sourceAreaById.set(area.id, area)
+        sourceFloorByAreaId.set(area.id, floor.id)
+      }
+    })
+  })
+
+  verticalConnections.forEach(connection => {
+    const sourceArea = sourceAreaById.get(connection.areaId)
+    if (!sourceArea || !isVerticalConnectionArea(sourceArea)) return
+
+    const sourceFloorId = sourceFloorByAreaId.get(connection.areaId)
+    if (!sourceFloorId) return
+
+    connection.connectedFloors.forEach(targetFloorId => {
+      if (targetFloorId === sourceFloorId) return
+
+      const targetFloor = floorById.get(targetFloorId)
+      if (!targetFloor) return
+
+      // 目标楼层已经存在同一 area（极少见）时，不重复投影
+      if (targetFloor.areas.some(area => area.id === sourceArea.id)) return
+      // 目标楼层已存在同位垂直区域时，不重复投影
+      const sourceCenter = getAreaCenter(sourceArea.shape.vertices)
+      const hasSimilarVerticalArea = targetFloor.areas.some((area) => {
+        if (!isVerticalConnectionArea(area)) return false
+        if (area.type !== sourceArea.type) return false
+        const center = getAreaCenter(area.shape.vertices)
+        const distance = Math.hypot(center.x - sourceCenter.x, center.z - sourceCenter.z)
+        return distance <= 1.2
+      })
+      if (hasSimilarVerticalArea) return
+
+      const projectedAreas = projectedByFloor.get(targetFloorId) ?? []
+      projectedAreas.push({
+        area: cloneAreaDefinition(sourceArea),
+        sourceFloorId,
+      })
+      projectedByFloor.set(targetFloorId, projectedAreas)
+    })
+  })
+
+  return projectedByFloor
+}
+
+function getFloorPositionMap(project: MallProject): Map<string, number> {
+  const map = new Map<string, number>()
+  const heights = project.floors.map(floor => floor.height)
+  project.floors.forEach((floor, index) => {
+    map.set(floor.id, calculateFloorYPosition(index, heights))
+  })
+  return map
+}
+
+function estimateAreaAscendAngleDeg(area: AreaDefinition): number {
+  const vertices = area.shape.vertices
+  if (!vertices || vertices.length < 2)
+    return 0
+
+  let longest = -1
+  let bestFrom = vertices[0]!
+  let bestTo = vertices[1]!
+  for (let i = 0; i < vertices.length; i++) {
+    const from = vertices[i]!
+    const to = vertices[(i + 1) % vertices.length]!
+    const length = Math.hypot(to.x - from.x, to.y - from.y)
+    if (length > longest) {
+      longest = length
+      bestFrom = from
+      bestTo = to
+    }
+  }
+  const angle = (Math.atan2(bestTo.y - bestFrom.y, bestTo.x - bestFrom.x) * 180) / Math.PI
+  const normalized = angle % 360
+  return normalized < 0 ? normalized + 360 : normalized
+}
+
+function getConnectedFloorsByLevel(
+  connection: VerticalConnection,
+  floorById: Map<string, FloorDefinition>,
+) {
+  return connection.connectedFloors
+    .map(floorId => floorById.get(floorId))
+    .filter((floor): floor is FloorDefinition => !!floor)
+    .sort((a, b) => a.level - b.level)
+}
+
+function buildRoamingOpeningsForFloor(params: {
+  floorId: string
+  floorById: Map<string, FloorDefinition>
+  verticalConnections: VerticalConnection[]
+  areaById: Map<string, AreaDefinition>
+}): {
+  floorOpenings: AreaDefinition['shape'][]
+  ceilingOpenings: AreaDefinition['shape'][]
+} {
+  const { floorId, floorById, verticalConnections, areaById } = params
+  const floorOpenings: AreaDefinition['shape'][] = []
+  const ceilingOpenings: AreaDefinition['shape'][] = []
+  const currentFloor = floorById.get(floorId)
+  const currentLevel = currentFloor?.level ?? 0
+
+  verticalConnections
+    .filter(connection => connection.type !== 'elevator' && connection.connectedFloors.includes(floorId))
+    .forEach((connection) => {
+      const area = areaById.get(connection.areaId)
+      if (!area) return
+
+      const profile = normalizeVerticalPassageProfile(
+        connection.passageProfile,
+        estimateAreaAscendAngleDeg(area),
+      )
+      const opening = createInsetOpeningPolygon(area.shape, profile.lanePadding)
+      if (!opening) return
+
+      const connectedFloors = getConnectedFloorsByLevel(connection, floorById)
+      const hasUpper = connectedFloors.some(floor => floor.level > currentLevel)
+      const hasLower = connectedFloors.some(floor => floor.level < currentLevel)
+      if (hasUpper) {
+        ceilingOpenings.push(opening)
+      }
+      if (hasLower) {
+        floorOpenings.push(opening)
+      }
+    })
+
+  return { floorOpenings, ceilingOpenings }
+}
+
+function distancePointToSegment2D(
+  point: { x: number; y: number },
+  start: { x: number; y: number },
+  end: { x: number; y: number },
+): number {
+  const dx = end.x - start.x
+  const dy = end.y - start.y
+  const lenSq = dx * dx + dy * dy
+  if (lenSq <= 1e-6) {
+    return Math.hypot(point.x - start.x, point.y - start.y)
+  }
+  const t = Math.max(0, Math.min(1, ((point.x - start.x) * dx + (point.y - start.y) * dy) / lenSq))
+  const projX = start.x + dx * t
+  const projY = start.y + dy * t
+  return Math.hypot(point.x - projX, point.y - projY)
+}
+
+function doesAreaIntersectMask(area: AreaDefinition, mask: RoamingSecondaryFloorMask): boolean {
+  const vertices = area.shape.vertices
+  if (!vertices || vertices.length < 3) return false
+
+  const radiusSq = mask.radius * mask.radius
+  const center = mask.center2D
+  const anyVertexInside = vertices.some((vertex) => {
+    const dx = vertex.x - center.x
+    const dy = vertex.y - center.y
+    return dx * dx + dy * dy <= radiusSq
+  })
+  if (anyVertexInside) return true
+
+  if (vertices.every(vertex => Number.isFinite(vertex.x) && Number.isFinite(vertex.y))) {
+    if (center && isPointInside(center, area.shape)) return true
+  }
+
+  for (let i = 0; i < vertices.length; i += 1) {
+    const start = vertices[i]!
+    const end = vertices[(i + 1) % vertices.length]!
+    if (distancePointToSegment2D(center, start, end) <= mask.radius) {
+      return true
+    }
+  }
+
+  const areaCenter = getAreaCenter(vertices)
+  const areaCenter2D = { x: areaCenter.x, y: -areaCenter.z }
+  return Math.hypot(areaCenter2D.x - center.x, areaCenter2D.y - center.y) <= mask.radius
 }
 
 /**
@@ -228,7 +463,6 @@ export function createAreaWalls(
   yPosition: number,
   wallHeight: number,
   wallThickness: number,
-  color: number,
   isSelected: boolean
 ): THREE.Group {
   const group = new THREE.Group()
@@ -363,19 +597,22 @@ export function useRendering() {
   function renderArea(
     scene: THREE.Scene,
     area: AreaDefinition,
+    floorId: string,
     yPosition: number,
     fullHeight: boolean,
     selectedAreaId: string | null,
     overlappingAreas: string[],
-    showLabels: boolean
+    showLabels: boolean,
+    connectionByAreaId: Map<string, VerticalConnection>,
+    floorById: Map<string, FloorDefinition>,
+    floorYById: Map<string, number>,
   ) {
-    const color = parseInt(area.color.replace('#', ''), 16)
     const isSelected = area.id === selectedAreaId
     const isOverlapping = overlappingAreas.includes(area.id)
 
     const isInfrastructure = (area.properties?.custom as Record<string, unknown>)?.isInfrastructure === true
-    const isVerticalConnection = [AreaType.ELEVATOR, AreaType.ESCALATOR, AreaType.STAIRS].includes(area.type)
-    const isFacility = [AreaType.RESTROOM, AreaType.SERVICE].includes(area.type)
+    const isVerticalConnection = VERTICAL_AREA_TYPE_SET.has(area.type)
+    const isFacility = FACILITY_AREA_TYPE_SET.has(area.type)
 
     const center = getAreaCenter(area.shape.vertices)
     const heightScale = fullHeight ? 1.0 : 0.3
@@ -395,7 +632,17 @@ export function useRendering() {
         scene.add(model)
       }
     } else if (isVerticalConnection) {
-      renderVerticalConnectionModel(scene, area, yPosition, isSelected, fullHeight)
+      renderVerticalConnectionModel(
+        scene,
+        area,
+        floorId,
+        yPosition,
+        isSelected,
+        fullHeight,
+        connectionByAreaId.get(area.id) ?? null,
+        floorById,
+        floorYById,
+      )
     } else if (isFacility) {
       renderFacilityModel(scene, area, yPosition, isSelected, fullHeight)
     } else {
@@ -437,10 +684,9 @@ export function useRendering() {
       mesh.name = `area-${area.id}`
       scene.add(mesh)
 
-      const isShopType = [AreaType.RETAIL, AreaType.FOOD, AreaType.SERVICE, AreaType.ANCHOR].includes(area.type)
-        || area.type === 'store'  // AI 生成的区域使用 "store" 类型
+      const isShopType = SHOP_AREA_TYPE_SET.has(area.type)
       if (isShopType && area.shape.vertices.length >= 3) {
-        const wallGroup = createAreaWalls(area, yPosition, wallHeight, wallThickness, uniformColor, isSelected)
+        const wallGroup = createAreaWalls(area, yPosition, wallHeight, wallThickness, isSelected)
         wallGroup.userData = { isArea: true, areaId: area.id }
         scene.add(wallGroup)
       }
@@ -476,9 +722,13 @@ export function useRendering() {
   function renderVerticalConnectionModel(
     scene: THREE.Scene,
     area: AreaDefinition,
+    floorId: string,
     yPosition: number,
     isSelected: boolean,
-    fullHeight: boolean
+    fullHeight: boolean,
+    connection: VerticalConnection | null,
+    floorById: Map<string, FloorDefinition>,
+    floorYById: Map<string, number>,
   ) {
     const center = getAreaCenter(area.shape.vertices)
     const color = parseInt(area.color.replace('#', ''), 16)
@@ -487,6 +737,46 @@ export function useRendering() {
     const width = bounds.maxX - bounds.minX
     const depth = bounds.maxY - bounds.minY
     const size = Math.min(width, depth)
+    const floorSurfaceY = floorYById.get(floorId) ?? (yPosition - 0.1)
+    let modelBaseY = floorSurfaceY
+    let spanHeight = fullHeight ? 4 : 1.2
+    let rotationY = 0
+
+    if (connection && (connection.type === 'stairs' || connection.type === 'escalator')) {
+      const connectedFloors = getConnectedFloorsByLevel(connection, floorById)
+      const currentIndex = connectedFloors.findIndex(item => item.id === floorId)
+      if (currentIndex >= 0) {
+        const higherFloor = connectedFloors[currentIndex + 1] ?? null
+        const lowerFloor = connectedFloors[currentIndex - 1] ?? null
+        const currentFloorY = floorYById.get(floorId) ?? floorSurfaceY
+
+        if (higherFloor) {
+          const higherFloorY = floorYById.get(higherFloor.id)
+          if (higherFloorY !== undefined) {
+            spanHeight = Math.max(0.5, Math.abs(higherFloorY - currentFloorY))
+            modelBaseY = floorSurfaceY
+          }
+        } else if (lowerFloor) {
+          const lowerFloorY = floorYById.get(lowerFloor.id)
+          if (lowerFloorY !== undefined) {
+            spanHeight = Math.max(0.5, Math.abs(currentFloorY - lowerFloorY))
+            modelBaseY = floorSurfaceY - spanHeight
+          }
+        }
+      }
+
+      const profile = normalizeVerticalPassageProfile(
+        connection.passageProfile,
+        estimateAreaAscendAngleDeg(area),
+      )
+      if (connection.type === 'stairs') {
+        // 楼梯模型局部 +Z 为上行方向
+        rotationY = THREE.MathUtils.degToRad(profile.ascendAngleDeg + 90)
+      } else {
+        // 扶梯模型局部 -Z 为上行方向
+        rotationY = THREE.MathUtils.degToRad(profile.ascendAngleDeg - 90)
+      }
+    }
 
     const heightScale = fullHeight ? 1.0 : 0.3
 
@@ -497,12 +787,13 @@ export function useRendering() {
     if (area.type === 'elevator') {
       createElevatorModel(group, size, color, isSelected, heightScale)
     } else if (area.type === 'escalator') {
-      createEscalatorModel(group, width, depth, color, isSelected, heightScale)
+      createEscalatorModel(group, width, depth, spanHeight, color, isSelected, heightScale)
     } else if (area.type === 'stairs') {
-      createStairsModel(group, width, depth, color, isSelected, heightScale)
+      createStairsModel(group, width, depth, spanHeight, color, isSelected, heightScale)
     }
 
-    group.position.set(center.x, yPosition, center.z)
+    group.position.set(center.x, modelBaseY, center.z)
+    group.rotation.y = rotationY
     scene.add(group)
   }
 
@@ -610,7 +901,33 @@ export function useRendering() {
       renderAllFloors = false,
       useFullHeight = false,
       isRoamingMode = false,
+      verticalConnections = [],
+      roamingVisibleFloorIds = [],
+      roamingSecondaryFloorMask = [],
     } = options
+    const roamingVisibleFloorSet = new Set(
+      roamingVisibleFloorIds.filter(floorId => typeof floorId === 'string' && floorId.length > 0),
+    )
+    const secondaryMasksByFloor = new Map<string, RoamingSecondaryFloorMask[]>()
+    roamingSecondaryFloorMask.forEach((mask) => {
+      const list = secondaryMasksByFloor.get(mask.floorId) ?? []
+      list.push(mask)
+      secondaryMasksByFloor.set(mask.floorId, list)
+    })
+    const floorById = new Map(project.floors.map(floor => [floor.id, floor]))
+    const floorYById = getFloorPositionMap(project)
+    const connectionByAreaId = new Map<string, VerticalConnection>()
+    verticalConnections.forEach((connection) => {
+      connectionByAreaId.set(connection.areaId, connection)
+    })
+    const areaById = new Map<string, AreaDefinition>()
+    project.floors.forEach((floor) => {
+      floor.areas.forEach((area) => {
+        if (!areaById.has(area.id)) {
+          areaById.set(area.id, area)
+        }
+      })
+    })
 
     // 计算商城轮廓中心
     let outlineCenter = { x: 0, z: 0 }
@@ -624,12 +941,21 @@ export function useRendering() {
 
     // 漫游模式：创建封闭的室内空间
     if (isRoamingMode && currentFloorId) {
+      const { floorOpenings, ceilingOpenings } = buildRoamingOpeningsForFloor({
+        floorId: currentFloorId,
+        floorById,
+        verticalConnections,
+        areaById,
+      })
+
       const roamingEnv = createRoamingEnvironment(project, {
         currentFloorId: currentFloorId,
         wallColor: 0xf0f0f0,
         floorColor: 0xf5f5f5,
         ceilingColor: 0xfafafa,
         wallThickness: 0.3,
+        floorOpenings,
+        ceilingOpenings,
       })
       scene.add(roamingEnv)
     } else {
@@ -640,23 +966,59 @@ export function useRendering() {
     }
 
     // 渲染楼层
-    const floorHeights = project.floors.map(f => f.height)
     const showLabels = project.settings?.display?.showAreaLabels !== false
+    const projectedVerticalAreasByFloor = buildProjectedVerticalAreasByFloor(project, verticalConnections)
 
     project.floors.forEach((floor, index) => {
       if (!floor.visible) return
 
-      const yPos = calculateFloorYPosition(index, floorHeights)
+      const yPos = floorYById.get(floor.id) ?? calculateFloorYPosition(index, project.floors.map(f => f.height))
       const outline = floor.shape || project.outline
       const isCurrentFloor = floor.id === currentFloorId
       const color = parseInt(floor.color?.replace('#', '') || AREA_TYPE_COLORS[AreaType.COMMON].replace('#', ''), 16)
+      const floorMasks = secondaryMasksByFloor.get(floor.id) ?? []
+      const isSecondaryMaskedFloor = isRoamingMode && !isCurrentFloor && floorMasks.length > 0
 
-      // 漫游模式只渲染当前楼层
-      if (isRoamingMode && !isCurrentFloor) return
+      // 漫游模式默认仅渲染当前楼层；连续爬升时按可见楼层集合渲染
+      if (isRoamingMode) {
+        const visibleByMask = isSecondaryMaskedFloor
+        const visibleByMainSet = roamingVisibleFloorSet.size > 0
+          ? roamingVisibleFloorSet.has(floor.id)
+          : isCurrentFloor
+        if (!visibleByMask && !visibleByMainSet) return
 
-      const shouldRenderFull = renderAllFloors || isCurrentFloor
+        if (roamingVisibleFloorSet.size > 0) {
+          if (!roamingVisibleFloorSet.has(floor.id) && !visibleByMask) return
+        } else if (!isCurrentFloor) {
+          if (!visibleByMask) return
+        }
+      }
+
+      const shouldRenderFull = renderAllFloors || isCurrentFloor || isSecondaryMaskedFloor
 
       if (shouldRenderFull) {
+        if (isRoamingMode && isSecondaryMaskedFloor) {
+          const { floorOpenings } = buildRoamingOpeningsForFloor({
+            floorId: floor.id,
+            floorById,
+            verticalConnections,
+            areaById,
+          })
+          const secondaryFloorSurface = createRoamingFloorSurface(outline, yPos + 0.02, {
+            color: color,
+            holes: floorOpenings,
+          })
+          const material = secondaryFloorSurface.material
+          if (material instanceof THREE.MeshStandardMaterial) {
+            material.transparent = true
+            material.opacity = 0.24
+            material.depthWrite = false
+          }
+          secondaryFloorSurface.renderOrder = 180
+          secondaryFloorSurface.name = `secondary-floor-surface-${floor.id}`
+          scene.add(secondaryFloorSurface)
+        }
+
         if (!isRoamingMode) {
           const floorGroup = createFloorMesh(outline, {
             height: floor.height,
@@ -669,13 +1031,58 @@ export function useRendering() {
           scene.add(floorGroup)
         }
 
+        const shouldRenderAreaInMask = (area: AreaDefinition): boolean => {
+          if (!isSecondaryMaskedFloor) return true
+          return floorMasks.some(mask => doesAreaIntersectMask(area, mask))
+        }
+
         // 渲染楼层的区域
-        floor.areas.forEach(area => {
-          renderArea(scene, area, yPos + 0.1, useFullHeight, selectedAreaId, overlappingAreas, showLabels)
+        floor.areas.forEach((area) => {
+          if (!shouldRenderAreaInMask(area)) return
+          renderArea(
+            scene,
+            area,
+            floor.id,
+            yPos + 0.1,
+            useFullHeight,
+            selectedAreaId,
+            overlappingAreas,
+            showLabels,
+            connectionByAreaId,
+            floorById,
+            floorYById,
+          )
           // 编辑模式下渲染区域的门指示器
           if (!isRoamingMode && area.doors?.length) {
             renderDoorIndicators(scene, area, yPos + 0.1)
           }
+        })
+
+        // 渲染跨层投影区域（垂直连接在其他楼层的同位模型）
+        const projectedAreas = projectedVerticalAreasByFloor.get(floor.id)
+        projectedAreas?.forEach((projected) => {
+          const area = projected.area
+          if (isRoamingMode) {
+            const sourceVisibleByMainSet = roamingVisibleFloorSet.size > 0
+              ? roamingVisibleFloorSet.has(projected.sourceFloorId)
+              : projected.sourceFloorId === currentFloorId
+            const sourceVisibleByMask = (secondaryMasksByFloor.get(projected.sourceFloorId)?.length ?? 0) > 0
+            if (sourceVisibleByMainSet || sourceVisibleByMask) return
+          }
+          if (!shouldRenderAreaInMask(area)) return
+          renderArea(
+            scene,
+            area,
+            floor.id,
+            yPos + 0.1,
+            useFullHeight,
+            selectedAreaId,
+            overlappingAreas,
+            showLabels,
+            connectionByAreaId,
+            floorById,
+            floorYById,
+          )
         })
       } else {
         // 非当前楼层只显示淡化的轮廓线

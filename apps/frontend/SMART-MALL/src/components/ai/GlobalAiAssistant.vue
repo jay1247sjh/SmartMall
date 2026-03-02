@@ -24,26 +24,31 @@
  * ============================================================================
  */
 import { ref, computed, nextTick, watch, onUnmounted } from 'vue'
-import { useRouter, useRoute } from 'vue-router'
+import { useRoute } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { ElInput, ElButton, ElIcon, ElUpload, ElMessage } from 'element-plus'
-import { Promotion, Picture, Close } from '@element-plus/icons-vue'
+import { Promotion, Picture, Close, Microphone } from '@element-plus/icons-vue'
 import { intelligenceApi } from '@/api/intelligence.api'
 import AiFloatingTrigger from '@/components/ai/AiFloatingTrigger.vue'
 import { useAiStore } from '@/stores'
+import { devLog } from '@/utils/dev-log'
+import { useVoiceSession } from '@/composables/ai/useVoiceSession'
 
 // ============================================================================
 // 状态
 // ============================================================================
 
-const router = useRouter()
 const route = useRoute()
 const { t } = useI18n()
 const aiStore = useAiStore()
 
 /** 是否在 Admin 或 Merchant 或 Mall Dashboard 路由下（AI 由 Layout 内的 AiSidebar 处理） */
 const isAdminOrMerchantRoute = computed(() => {
-  return route.path.startsWith('/admin') || route.path.startsWith('/merchant') || route.path.startsWith('/mall')
+  return (
+    route.path.startsWith('/admin') ||
+    route.path.startsWith('/merchant') ||
+    route.path.startsWith('/mall')
+  )
 })
 
 /** 输入框内容 */
@@ -61,22 +66,81 @@ const inputRef = ref<InstanceType<typeof ElInput> | null>(null)
 /** 当前请求的 AbortController */
 const abortController = ref<AbortController | null>(null)
 
-/** 处理步骤（企业级） */
-const agentSteps = ref<Array<{ text: string; status: 'pending' | 'active' | 'done' }>>([])
+/** 当前 thinking 阶段索引 */
+const currentThinkingIndex = ref(0)
 
-/** 当前步骤索引 */
-const currentStepIndex = ref(0)
-
-/** 处理动画定时器 */
+/** thinking 动画定时器 */
 let processingTimer: ReturnType<typeof setInterval> | null = null
 
-// Agent 处理步骤（企业级文案）
-const AGENT_STEPS = computed(() => [
-  { text: t('ai.steps.analyze'), delay: 400 },
-  { text: t('ai.steps.retrieve'), delay: 500 },
-  { text: t('ai.steps.execute'), delay: 600 },
-  { text: t('ai.steps.generate'), delay: 400 },
-])
+const THINKING_STAGES = computed(() => [t('ai.sidebar.thinking')])
+
+const currentThinkingText = computed(() => {
+  return THINKING_STAGES.value[currentThinkingIndex.value] || t('ai.sidebar.thinking')
+})
+
+const voiceSession = useVoiceSession({
+  language: 'zh-CN',
+  onAsrFinal: text => {
+    if (!text.trim()) return
+    aiStore.addMessage({
+      role: 'user',
+      content: text,
+      type: 'text'
+    })
+    scrollToBottom()
+  },
+  onAssistantFinal: text => {
+    aiStore.addMessage({
+      role: 'assistant',
+      content: text,
+      type: 'text'
+    })
+    scrollToBottom()
+  },
+  onConfirmationRequired: payload => {
+    aiStore.setPendingConfirmation({
+      action: payload.action,
+      args: payload.args || {},
+      message: payload.message || t('ai.confirmAction')
+    })
+    aiStore.addMessage({
+      role: 'assistant',
+      content: payload.message || t('ai.confirmAction'),
+      type: 'confirmation_required',
+      action: payload.action,
+      args: payload.args || {}
+    })
+    scrollToBottom()
+  },
+  onError: message => {
+    aiStore.addMessage({
+      role: 'assistant',
+      content: message || t('ai.sidebar.errorGeneral'),
+      type: 'error'
+    })
+    scrollToBottom()
+  },
+  onModeInfo: capabilities => {
+    if (capabilities.degraded && capabilities.message) {
+      devLog('[AI Voice] degraded mode:', capabilities.message)
+    }
+  }
+})
+
+const voiceStateLabel = computed(() => {
+  const state = voiceSession.voiceState.value
+  if (state === 'listening') return '语音识别中...'
+  if (state === 'thinking') return '语音处理中...'
+  if (state === 'speaking') return '语音播报中...'
+  if (state === 'interrupted') return '已打断，准备新输入'
+  if (state === 'error') return '语音不可用，请改用文本'
+  return '点击麦克风开始语音'
+})
+
+const voiceState = computed(() => voiceSession.voiceState.value)
+const isVoiceListening = computed(() => voiceSession.isListening.value)
+const voicePartial = computed(() => voiceSession.asrPartial.value)
+const voiceModeHint = computed(() => voiceSession.modeHint.value)
 
 // ============================================================================
 // 方法
@@ -93,40 +157,17 @@ function scrollToBottom() {
 
 /** 开始处理动画 */
 function startProcessing() {
-  // 初始化步骤
-  agentSteps.value = AGENT_STEPS.value.map((step, index) => ({
-    text: step.text,
-    status: index === 0 ? 'active' : 'pending'
-  }))
-  currentStepIndex.value = 0
-  
-  // 逐步推进
-  let stepIndex = 0
+  currentThinkingIndex.value = 0
+
+  if (processingTimer) {
+    clearInterval(processingTimer)
+    processingTimer = null
+  }
+
   processingTimer = setInterval(() => {
-    // 将当前步骤标记为完成
-    const currentStep = agentSteps.value[stepIndex]
-    if (currentStep) {
-      currentStep.status = 'done'
-    }
-    
-    stepIndex++
-    currentStepIndex.value = stepIndex
-    
-    // 激活下一步
-    if (stepIndex < AGENT_STEPS.value.length) {
-      const nextStep = agentSteps.value[stepIndex]
-      if (nextStep) {
-        nextStep.status = 'active'
-      }
-      scrollToBottom()
-    } else {
-      // 全部完成，停止定时器
-      if (processingTimer) {
-        clearInterval(processingTimer)
-        processingTimer = null
-      }
-    }
-  }, 500)
+    const next = currentThinkingIndex.value + 1
+    currentThinkingIndex.value = next % Math.max(THINKING_STAGES.value.length, 1)
+  }, 1200)
 }
 
 /** 停止处理动画 */
@@ -135,8 +176,7 @@ function stopProcessing() {
     clearInterval(processingTimer)
     processingTimer = null
   }
-  agentSteps.value = []
-  currentStepIndex.value = 0
+  currentThinkingIndex.value = 0
 }
 
 /** 停止回答 */
@@ -147,12 +187,12 @@ function stopResponse() {
   }
   stopProcessing()
   aiStore.setSending(false)
-  
+
   // 添加一条提示消息
   aiStore.addMessage({
     role: 'assistant',
     content: t('ai.sidebar.stopped'),
-    type: 'text',
+    type: 'text'
   })
   scrollToBottom()
 }
@@ -162,7 +202,7 @@ function parseErrorMessage(error: unknown): string {
   // 如果是 HTTP 错误对象
   if (error && typeof error === 'object') {
     const err = error as Record<string, unknown>
-    
+
     // 检查常见的错误结构
     const message = err.message || err.msg || err.detail
     if (typeof message === 'string') {
@@ -183,7 +223,7 @@ function parseErrorMessage(error: unknown): string {
         return t('ai.sidebar.errorNetwork')
       }
     }
-    
+
     // 检查 HTTP 状态码
     const status = err.status || err.statusCode
     if (typeof status === 'number') {
@@ -193,7 +233,7 @@ function parseErrorMessage(error: unknown): string {
       if (status >= 500) return t('ai.sidebar.errorGeneral')
     }
   }
-  
+
   // 默认错误消息
   return t('ai.sidebar.errorGeneral')
 }
@@ -208,7 +248,7 @@ async function sendMessage() {
   aiStore.addMessage({
     role: 'user',
     content: text,
-    image_url: pendingImage.value || undefined,
+    image_url: pendingImage.value || undefined
   })
 
   const imageUrl = pendingImage.value
@@ -218,42 +258,42 @@ async function sendMessage() {
 
   // 创建 AbortController 用于取消请求
   abortController.value = new AbortController()
-  
+
   // 调用 AI 服务（后端会处理意图识别）
   aiStore.setSending(true)
   startProcessing()
 
   try {
     const response = await intelligenceApi.chat(
-      text, 
-      imageUrl || undefined, 
+      text,
+      imageUrl || undefined,
       { current_floor: route.path },
       abortController.value.signal
     )
-    
+
     stopProcessing()
-    
-    console.log('[AI] Response received:', response)
-    
+
+    devLog('[AI] Response received:', response)
+
     // 处理响应 — 统一由 ai.store 的 handleResponse + ToolHandlerRegistry 处理
     aiStore.handleResponse(response)
     scrollToBottom()
   } catch (error: unknown) {
     stopProcessing()
-    
+
     // 检查是否是用户主动取消
     if (error instanceof Error && error.name === 'AbortError') {
-      console.log('Request aborted by user')
+      devLog('Request aborted by user')
       return
     }
-    
+
     // 显示错误消息
     console.error('Chat error:', error)
     const errorMessage = parseErrorMessage(error)
     aiStore.addMessage({
       role: 'assistant',
       content: errorMessage,
-      type: 'error',
+      type: 'error'
     })
   } finally {
     abortController.value = null
@@ -281,7 +321,7 @@ async function confirmAction(confirmed: boolean) {
     aiStore.addMessage({
       role: 'assistant',
       content: t('ai.sidebar.actionFailed'),
-      type: 'error',
+      type: 'error'
     })
   } finally {
     aiStore.setSending(false)
@@ -325,6 +365,14 @@ function handleKeydown(event: Event) {
   }
 }
 
+async function toggleVoice() {
+  try {
+    await voiceSession.toggleListening()
+  } catch {
+    ElMessage.error('无法启动语音，请检查麦克风权限')
+  }
+}
+
 /** 快捷导航 - 通过 AI 处理 */
 function quickNavigate(label: string) {
   inputText.value = `打开${label}`
@@ -336,15 +384,18 @@ function quickNavigate(label: string) {
 // ============================================================================
 
 // 监听面板显示状态 — 初始化欢迎消息并聚焦输入框
-watch(() => aiStore.isPanelVisible, (visible) => {
-  if (visible) {
-    aiStore.initWelcomeMessage()
-    scrollToBottom()
-    nextTick(() => {
-      inputRef.value?.focus()
-    })
+watch(
+  () => aiStore.isPanelVisible,
+  visible => {
+    if (visible) {
+      aiStore.initWelcomeMessage()
+      scrollToBottom()
+      nextTick(() => {
+        inputRef.value?.focus()
+      })
+    }
   }
-})
+)
 
 // 组件卸载时清理
 onUnmounted(() => {
@@ -352,6 +403,7 @@ onUnmounted(() => {
   if (abortController.value) {
     abortController.value.abort()
   }
+  voiceSession.cleanup()
 })
 </script>
 
@@ -376,19 +428,23 @@ onUnmounted(() => {
 
         <!-- 快捷操作 -->
         <div class="quick-actions">
-          <button class="quick-btn" @click="quickNavigate(t('ai.quick.dashboard'))">{{ t('ai.quick.dashboard') }}</button>
-          <button class="quick-btn" @click="quickNavigate(t('ai.quick.productManage'))">{{ t('ai.quick.productManage') }}</button>
-          <button class="quick-btn" @click="quickNavigate(t('ai.quick.mallBuilder'))">{{ t('ai.quick.mallBuilder') }}</button>
-          <button class="quick-btn" @click="quickNavigate(t('ai.quick.mall3d'))">{{ t('ai.quick.mall3d') }}</button>
+          <button class="quick-btn" @click="quickNavigate(t('ai.quick.dashboard'))">
+            {{ t('ai.quick.dashboard') }}
+          </button>
+          <button class="quick-btn" @click="quickNavigate(t('ai.quick.productManage'))">
+            {{ t('ai.quick.productManage') }}
+          </button>
+          <button class="quick-btn" @click="quickNavigate(t('ai.quick.mallBuilder'))">
+            {{ t('ai.quick.mallBuilder') }}
+          </button>
+          <button class="quick-btn" @click="quickNavigate(t('ai.quick.mall3d'))">
+            {{ t('ai.quick.mall3d') }}
+          </button>
         </div>
 
         <!-- 消息列表 -->
         <div ref="messagesContainer" class="messages-container">
-          <div
-            v-for="msg in aiStore.messages"
-            :key="msg.id"
-            :class="['message', msg.role]"
-          >
+          <div v-for="msg in aiStore.messages" :key="msg.id" :class="['message', msg.role]">
             <!-- 用户消息 -->
             <template v-if="msg.role === 'user'">
               <div class="message-content user-message">
@@ -401,9 +457,12 @@ onUnmounted(() => {
             <template v-else>
               <div class="message-content assistant-message">
                 <p class="message-text">{{ msg.content }}</p>
-                
+
                 <!-- 确认按钮 -->
-                <div v-if="msg.type === 'confirmation_required' || msg.type === 'confirm'" class="confirm-actions">
+                <div
+                  v-if="msg.type === 'confirmation_required' || msg.type === 'confirm'"
+                  class="confirm-actions"
+                >
                   <ElButton type="primary" size="small" @click="confirmAction(true)">
                     {{ t('common.confirm') }}
                   </ElButton>
@@ -418,27 +477,11 @@ onUnmounted(() => {
           <!-- 加载中 - 企业级 Agent 步骤 -->
           <div v-if="aiStore.isSending" class="message assistant">
             <div class="message-content assistant-message processing">
-              <!-- 进度条 -->
-              <div class="progress-bar">
-                <div 
-                  class="progress-fill" 
-                  :style="{ width: `${(currentStepIndex / AGENT_STEPS.length) * 100}%` }"
-                />
+              <div class="thinking-line">
+                <span class="thinking-dot" />
+                <span class="thinking-text">{{ currentThinkingText }}</span>
               </div>
-              
-              <!-- Agent 步骤列表 -->
-              <div class="agent-steps">
-                <div 
-                  v-for="(step, index) in agentSteps" 
-                  :key="index"
-                  class="agent-step"
-                  :class="step.status"
-                >
-                  <span class="step-dot" />
-                  <span class="step-text">{{ step.text }}</span>
-                </div>
-              </div>
-              
+
               <!-- 取消按钮 -->
               <button class="btn-stop" @click="stopResponse">
                 <span>{{ t('common.cancel') }}</span>
@@ -449,6 +492,12 @@ onUnmounted(() => {
 
         <!-- 输入区域 -->
         <div class="input-area">
+          <div class="voice-status" :class="voiceState">
+            <span>{{ voiceStateLabel }}</span>
+            <span v-if="voicePartial" class="voice-partial">{{ voicePartial }}</span>
+            <span v-else-if="voiceModeHint" class="voice-partial">{{ voiceModeHint }}</span>
+          </div>
+
           <!-- 待上传图片预览 -->
           <div v-if="pendingImage" class="pending-image">
             <img :src="pendingImage" :alt="t('ai.sidebar.pendingImage')" />
@@ -463,10 +512,24 @@ onUnmounted(() => {
               :show-file-list="false"
               :before-upload="handleImageUpload"
               accept="image/*"
-              :disabled="aiStore.isSending"
+              :disabled="aiStore.isSending || isVoiceListening"
             >
-              <ElButton :icon="Picture" circle class="btn-upload" :disabled="aiStore.isSending" />
+              <ElButton
+                :icon="Picture"
+                circle
+                class="btn-upload"
+                :disabled="aiStore.isSending || isVoiceListening"
+              />
             </ElUpload>
+
+            <ElButton
+              :icon="Microphone"
+              circle
+              class="btn-voice"
+              :type="isVoiceListening ? 'danger' : 'default'"
+              :disabled="aiStore.isSending"
+              @click="toggleVoice"
+            />
 
             <!-- 文本输入 -->
             <ElInput
@@ -476,7 +539,7 @@ onUnmounted(() => {
               :rows="1"
               :autosize="{ minRows: 1, maxRows: 4 }"
               :placeholder="aiStore.isSending ? t('ai.sidebar.thinking') : t('ai.inputPlaceholder')"
-              :disabled="aiStore.isSending"
+              :disabled="aiStore.isSending || isVoiceListening"
               resize="none"
               @keydown="handleKeydown"
             />
@@ -495,7 +558,6 @@ onUnmounted(() => {
     </Transition>
   </div>
 </template>
-
 
 <style scoped lang="scss">
 @use '@/assets/styles/scss/variables' as *;
@@ -525,7 +587,9 @@ onUnmounted(() => {
 /* 面板动画 */
 .panel-slide-enter-active,
 .panel-slide-leave-active {
-  transition: opacity $duration-normal, transform $duration-normal;
+  transition:
+    opacity $duration-normal,
+    transform $duration-normal;
 }
 
 .panel-slide-enter-from,
@@ -656,87 +720,43 @@ onUnmounted(() => {
   color: var(--text-primary);
   border-bottom-left-radius: 2px;
 
-  /* 处理中状态 - 企业级 Agent 步骤 */
+  /* 处理中状态 */
   &.processing {
-    padding: 14px $space-4;
-    min-width: 200px;
-    
-    /* 进度条 */
-    .progress-bar {
-      height: 2px;
-      background: var(--border-subtle);
-      border-radius: 1px;
-      margin-bottom: 14px;
-      overflow: hidden;
-      
-      .progress-fill {
-        height: 100%;
-        background: var(--accent-primary);
-        border-radius: 1px;
-        transition: width $duration-slow;
-      }
-    }
-    
-    /* Agent 步骤列表 */
-    .agent-steps {
-      @include flex-column;
-      gap: $space-2;
-    }
-    
-    .agent-step {
+    padding: 12px $space-4;
+    min-width: 180px;
+
+    .thinking-line {
       @include flex-center-y;
-      gap: 10px;
-      font-size: 13px;
-      
-      .step-dot {
-        width: 6px;
-        height: 6px;
+      gap: $space-2;
+
+      .thinking-dot {
+        width: 7px;
+        height: 7px;
         border-radius: 50%;
-        background: var(--border-muted);
-        transition: all 0.2s ease;
+        background: var(--accent-primary);
+        box-shadow: 0 0 0 3px rgba(var(--accent-primary-rgb), 0.18);
+        animation: pulse-dot 1.3s ease-in-out infinite;
         flex-shrink: 0;
       }
-      
-      .step-text {
-        color: var(--text-muted);
-        transition: color 0.2s ease;
-      }
-      
-      /* 待处理 */
-      &.pending {
-        .step-dot {
-          background: var(--border-muted);
-        }
-        .step-text {
-          color: var(--text-muted);
-        }
-      }
-      
-      /* 进行中 */
-      &.active {
-        .step-dot {
-          background: var(--accent-primary);
-          box-shadow: 0 0 0 3px rgba(var(--accent-primary-rgb), 0.2);
-          animation: pulse-dot 1.5s ease-in-out infinite;
-        }
-        .step-text {
-          color: var(--text-primary);
-          font-weight: $font-weight-medium;
-        }
-      }
-      
-      /* 已完成 */
-      &.done {
-        .step-dot {
-          background: var(--success);
-        }
-        .step-text {
-          color: var(--text-secondary);
-        }
+
+      .thinking-text {
+        font-size: 13px;
+        font-weight: $font-weight-medium;
+        background: linear-gradient(
+          120deg,
+          var(--text-muted) 10%,
+          var(--text-primary) 45%,
+          var(--text-muted) 85%
+        );
+        background-size: 220% 100%;
+        background-position: 100% 0;
+        -webkit-background-clip: text;
+        background-clip: text;
+        color: transparent;
+        animation: thinking-glow 1.8s linear infinite;
       }
     }
-    
-    /* 取消按钮 */
+
     .btn-stop {
       @include flex-center-y;
       margin-top: $space-3;
@@ -747,7 +767,7 @@ onUnmounted(() => {
       color: var(--text-muted);
       font-size: $font-size-sm;
       @include clickable;
-      
+
       &:hover {
         border-color: var(--border-muted);
         color: var(--text-secondary);
@@ -757,11 +777,21 @@ onUnmounted(() => {
 }
 
 @keyframes pulse-dot {
-  0%, 100% {
+  0%,
+  100% {
     opacity: 1;
   }
   50% {
     opacity: 0.5;
+  }
+}
+
+@keyframes thinking-glow {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
   }
 }
 
@@ -781,6 +811,32 @@ onUnmounted(() => {
   padding: $space-3 $space-4;
   border-top: 1px solid var(--border-subtle);
   background: var(--bg-primary);
+}
+
+.voice-status {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: $space-2;
+  font-size: $font-size-sm;
+  color: var(--text-muted);
+
+  .voice-partial {
+    margin-left: $space-2;
+    color: var(--text-secondary);
+  }
+
+  &.listening {
+    color: var(--accent-primary);
+  }
+
+  &.speaking {
+    color: var(--success);
+  }
+
+  &.error {
+    color: var(--error);
+  }
 }
 
 .pending-image {
@@ -814,7 +870,8 @@ onUnmounted(() => {
   @include flex-center-y;
   gap: $space-2;
 
-  .btn-upload {
+  .btn-upload,
+  .btn-voice {
     flex-shrink: 0;
   }
 
