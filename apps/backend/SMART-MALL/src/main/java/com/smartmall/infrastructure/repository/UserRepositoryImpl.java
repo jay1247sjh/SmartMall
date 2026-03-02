@@ -47,7 +47,10 @@ public class UserRepositoryImpl implements UserRepository {
         if (user.getUserId() == null) {
             userMapper.insert(user);
         } else {
-            userMapper.updateById(user);
+            int affectedRows = userMapper.updateById(user);
+            if (affectedRows == 0) {
+                userMapper.insert(user);
+            }
         }
         return user;
     }

@@ -2,6 +2,7 @@ package com.smartmall.application.service.navigation;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.smartmall.application.service.MallBuilderService;
+import com.smartmall.domain.entity.NavigationDynamicEvent;
 import com.smartmall.domain.entity.Store;
 import com.smartmall.infrastructure.mapper.StoreMapper;
 import com.smartmall.interfaces.dto.mallbuilder.AreaResponse;
@@ -12,9 +13,15 @@ import com.smartmall.interfaces.dto.navigation.NavigationPlanRequest;
 import com.smartmall.interfaces.dto.navigation.NavigationPlanResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
+import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
@@ -28,9 +35,20 @@ import java.util.stream.Collectors;
 public class PublishedNavigationService {
 
     private static final Set<String> VALID_TARGET_TYPES = Set.of("store", "area", "facility");
+    private static final String REQUEST_MODE_REROUTE = "REROUTE";
+
+    private static final double WALK_SPEED_MPS = 1.2D;
+    private static final double STAIRS_SPEED_MPS = 0.75D;
+    private static final double ESCALATOR_SPEED_MPS = 0.9D;
+    private static final double ELEVATOR_SPEED_MPS = 0.6D;
+    private static final double DEFAULT_FLOOR_HEIGHT_METERS = 4D;
 
     private final MallBuilderService mallBuilderService;
     private final StoreMapper storeMapper;
+    private final NavigationDynamicEventService navigationDynamicEventService;
+
+    @Value("${navigation.dynamic.enabled:false}")
+    private boolean navigationDynamicEnabled;
 
     /**
      * key: projectId:updatedAt
@@ -55,6 +73,8 @@ public class PublishedNavigationService {
             return NavigationPlanResponse.fail("ROUTE_NOT_FOUND", "已发布模型缺少可导航节点");
         }
 
+        DynamicOverlay dynamicOverlay = resolveDynamicOverlay(published.getProjectId());
+
         TargetResolution target = resolveTarget(
                 request.getTargetType().trim().toLowerCase(),
                 request.getTargetKeyword().trim(),
@@ -69,12 +89,28 @@ public class PublishedNavigationService {
             return NavigationPlanResponse.fail("ROUTE_NOT_FOUND", "无法确定起点，请提供有效起点信息");
         }
 
-        List<PathHop> hops = shortestPath(snapshot.graph, source.id, target.targetNode.id, snapshot.floorLevelMap);
-        if (hops == null || hops.isEmpty()) {
+        PathResult pathResult = shortestPath(
+                snapshot.graph,
+                source.id,
+                target.targetNode.id,
+                snapshot.floorLevelMap,
+                dynamicOverlay
+        );
+        if (pathResult == null || pathResult.hops == null || pathResult.hops.isEmpty()) {
             return NavigationPlanResponse.fail("ROUTE_NOT_FOUND", "已找到目标，但当前模型不可达，请检查走廊/门/楼层连接并重新发布");
         }
 
-        NavigationPlanResponse.RouteData route = buildRouteData(hops, snapshot);
+        NavigationPlanResponse.RouteData route = buildRouteData(pathResult.hops, snapshot);
+        route.setRouteId(buildRouteId(pathResult.hops));
+        route.setRouteVersion(resolveRouteVersion(request, route.getRouteId()));
+        route.setDynamicVersion(dynamicOverlay.dynamicVersion);
+        route.setReplanned(isReroute(request));
+        route.setReplanReason(isReroute(request) ? defaultString(request.getRerouteReason(), "UNKNOWN") : null);
+        route.setChanged(resolveRouteChanged(request, route.getRouteId()));
+        route.setAppliedEventIds(new ArrayList<>(pathResult.appliedEventIds));
+        if (pathResult.totalCostSeconds > 0) {
+            route.setEta(round(pathResult.totalCostSeconds / 60D));
+        }
         NavigationPlanResponse.TargetData targetData = buildTargetData(target, snapshot);
         return NavigationPlanResponse.ok(route, targetData, snapshot.warnings);
     }
@@ -200,8 +236,8 @@ public class PublishedNavigationService {
                     .filter(c -> !src.id.equals(c.id))
                     .sorted(Comparator.comparingDouble(c -> planarDistance(src, c)))
                     .limit(k)
-                    .forEach(dst -> {
-                        double cost = Math.max(1D, planarDistance(src, dst));
+                .forEach(dst -> {
+                        double cost = walkTimeSeconds(src, dst);
                         graph.addUndirectedEdge(src.id, dst.id, cost, transitionType);
                     });
         }
@@ -228,6 +264,7 @@ public class PublishedNavigationService {
             if (isBlank(areaId)) {
                 continue;
             }
+            snapshot.verticalConnectionAreaIdByConnectionId.put(connectionId, areaId);
             GraphNode areaNode = snapshot.areaNodeByAreaId.get(areaId);
             if (areaNode == null) {
                 snapshot.warnings.add("垂直连接引用的区域不存在: " + areaId);
@@ -430,20 +467,22 @@ public class PublishedNavigationService {
                 .orElse(null);
     }
 
-    private List<PathHop> shortestPath(
+    private PathResult shortestPath(
             Graph graph,
             String startId,
             String endId,
-            Map<String, Integer> floorLevelMap
+            Map<String, Integer> floorLevelMap,
+            DynamicOverlay dynamicOverlay
     ) {
         if (!graph.nodes.containsKey(startId) || !graph.nodes.containsKey(endId)) {
-            return Collections.emptyList();
+            return PathResult.empty();
         }
 
         Map<String, Double> gScore = new HashMap<>();
         Map<String, Double> fScore = new HashMap<>();
         Map<String, String> cameFrom = new HashMap<>();
         Map<String, String> cameByTransition = new HashMap<>();
+        Map<String, Set<String>> cameByEventIds = new HashMap<>();
 
         for (String nodeId : graph.nodes.keySet()) {
             gScore.put(nodeId, Double.POSITIVE_INFINITY);
@@ -465,7 +504,7 @@ public class PublishedNavigationService {
                 continue;
             }
             if (endId.equals(current)) {
-                return reconstructPath(graph, cameFrom, cameByTransition, endId);
+                return reconstructPath(graph, cameFrom, cameByTransition, cameByEventIds, endId, gScore.get(endId));
             }
             closed.add(current);
 
@@ -473,10 +512,20 @@ public class PublishedNavigationService {
                 if (closed.contains(edge.to)) {
                     continue;
                 }
-                double tentative = gScore.get(current) + edge.cost;
+                DynamicEdgeEffect edgeEffect = resolveDynamicEdgeEffect(
+                        graph.nodes.get(current),
+                        graph.nodes.get(edge.to),
+                        edge,
+                        dynamicOverlay
+                );
+                if (edgeEffect.blocked) {
+                    continue;
+                }
+                double tentative = gScore.get(current) + edge.cost * edgeEffect.multiplier;
                 if (tentative < gScore.getOrDefault(edge.to, Double.POSITIVE_INFINITY)) {
                     cameFrom.put(edge.to, current);
                     cameByTransition.put(edge.to, edge.transitionType);
+                    cameByEventIds.put(edge.to, new LinkedHashSet<>(edgeEffect.eventIds));
                     gScore.put(edge.to, tentative);
                     double estimate = tentative + heuristic(graph.nodes.get(edge.to), graph.nodes.get(endId), floorLevelMap);
                     fScore.put(edge.to, estimate);
@@ -484,20 +533,27 @@ public class PublishedNavigationService {
                 }
             }
         }
-        return Collections.emptyList();
+        return PathResult.empty();
     }
 
-    private List<PathHop> reconstructPath(
+    private PathResult reconstructPath(
             Graph graph,
             Map<String, String> cameFrom,
             Map<String, String> cameByTransition,
-            String endId
+            Map<String, Set<String>> cameByEventIds,
+            String endId,
+            Double totalCostSeconds
     ) {
         LinkedList<PathHop> result = new LinkedList<>();
+        LinkedHashSet<String> appliedEventIds = new LinkedHashSet<>();
         String current = endId;
         result.addFirst(new PathHop(graph.nodes.get(current), "walk"));
 
         while (cameFrom.containsKey(current)) {
+            Set<String> edgeEvents = cameByEventIds.get(current);
+            if (edgeEvents != null) {
+                appliedEventIds.addAll(edgeEvents);
+            }
             String prev = cameFrom.get(current);
             String transitionType = cameByTransition.getOrDefault(current, "walk");
             result.addFirst(new PathHop(graph.nodes.get(prev), transitionType));
@@ -510,7 +566,11 @@ public class PublishedNavigationService {
                 result.get(i).transitionType = result.get(i - 1).transitionType;
             }
         }
-        return result;
+        return new PathResult(
+                result,
+                new ArrayList<>(appliedEventIds),
+                totalCostSeconds == null || !Double.isFinite(totalCostSeconds) ? 0D : totalCostSeconds
+        );
     }
 
     private double heuristic(GraphNode a, GraphNode b, Map<String, Integer> floorLevelMap) {
@@ -520,7 +580,9 @@ public class PublishedNavigationService {
         double planar = Math.hypot(a.x - b.x, a.z - b.z);
         int la = floorLevelMap.getOrDefault(a.floorId, 0);
         int lb = floorLevelMap.getOrDefault(b.floorId, 0);
-        return planar + Math.abs(la - lb) * 6D;
+        double planarSeconds = planar / WALK_SPEED_MPS;
+        double verticalLowerBoundSeconds = Math.abs(la - lb) * 2D;
+        return planarSeconds + verticalLowerBoundSeconds;
     }
 
     private NavigationPlanResponse.RouteData buildRouteData(List<PathHop> hops, GraphSnapshot snapshot) {
@@ -557,6 +619,14 @@ public class PublishedNavigationService {
                         transition.setToFloorId(node.floorId);
                         transition.setToFloorName(snapshot.floorNameMap.getOrDefault(node.floorId, node.floorId));
                         transition.setType(defaultString(hop.transitionType, "vertical"));
+                        String connectionId = extractConnectionIdFromVerticalNodeId(node.id);
+                        if (isBlank(connectionId)) {
+                            connectionId = extractConnectionIdFromVerticalNodeId(prev.id);
+                        }
+                        if (!isBlank(connectionId)) {
+                            transition.setConnectionId(connectionId);
+                            transition.setConnectionAreaId(snapshot.verticalConnectionAreaIdByConnectionId.get(connectionId));
+                        }
                         transition.setPosition(toRoutePoint(node));
                         transitions.add(transition);
                     }
@@ -579,7 +649,7 @@ public class PublishedNavigationService {
         route.setTransitions(transitions);
         route.setSteps(steps);
         route.setDistance(round(distance));
-        route.setEta(round(distance / 1.2D / 60D));
+        route.setEta(round(distance / WALK_SPEED_MPS / 60D));
         return route;
     }
 
@@ -646,15 +716,9 @@ public class PublishedNavigationService {
         int a = floorLevelMap.getOrDefault(fromFloorId, 0);
         int b = floorLevelMap.getOrDefault(toFloorId, 0);
         int levelDiff = Math.abs(a - b);
-        double weight;
-        if ("elevator".equals(type)) {
-            weight = 4D;
-        } else if ("escalator".equals(type)) {
-            weight = 5D;
-        } else {
-            weight = 6D;
-        }
-        return Math.max(1D, levelDiff * 6D + weight);
+        double verticalDistance = Math.max(1D, levelDiff * DEFAULT_FLOOR_HEIGHT_METERS);
+        double speed = speedForTransition(type);
+        return Math.max(1D, verticalDistance / Math.max(0.1D, speed));
     }
 
     private boolean isFacilityType(String areaType) {
@@ -679,6 +743,129 @@ public class PublishedNavigationService {
         return -1;
     }
 
+    private DynamicOverlay resolveDynamicOverlay(String projectId) {
+        if (!navigationDynamicEnabled || isBlank(projectId)) {
+            return DynamicOverlay.disabled();
+        }
+
+        List<NavigationDynamicEvent> activeEvents = navigationDynamicEventService.listActiveEvents(projectId, LocalDateTime.now());
+        String dynamicVersion = navigationDynamicEventService.buildDynamicVersion(projectId, activeEvents);
+        if (activeEvents.isEmpty()) {
+            return new DynamicOverlay(dynamicVersion, Map.of(), Map.of());
+        }
+
+        Map<String, List<NavigationDynamicEvent>> byAreaId = new HashMap<>();
+        Map<String, List<NavigationDynamicEvent>> byConnectionId = new HashMap<>();
+        for (NavigationDynamicEvent event : activeEvents) {
+            if (event == null || isBlank(event.getScopeId())) {
+                continue;
+            }
+            String scopeType = normalize(event.getScopeType());
+            if ("area".equals(scopeType)) {
+                byAreaId.computeIfAbsent(event.getScopeId(), key -> new ArrayList<>()).add(event);
+            } else if ("connection".equals(scopeType)) {
+                byConnectionId.computeIfAbsent(event.getScopeId(), key -> new ArrayList<>()).add(event);
+            }
+        }
+        return new DynamicOverlay(dynamicVersion, byAreaId, byConnectionId);
+    }
+
+    private DynamicEdgeEffect resolveDynamicEdgeEffect(
+            GraphNode from,
+            GraphNode to,
+            GraphEdge edge,
+            DynamicOverlay overlay
+    ) {
+        if (overlay == null || !overlay.enabled()) {
+            return DynamicEdgeEffect.none();
+        }
+
+        List<NavigationDynamicEvent> matchedEvents = new ArrayList<>();
+        if (from != null && !isBlank(from.areaId)) {
+            matchedEvents.addAll(overlay.byAreaId.getOrDefault(from.areaId, List.of()));
+        }
+        if (to != null && !isBlank(to.areaId)) {
+            matchedEvents.addAll(overlay.byAreaId.getOrDefault(to.areaId, List.of()));
+        }
+
+        String fromConnectionId = from == null ? null : extractConnectionIdFromVerticalNodeId(from.id);
+        String toConnectionId = to == null ? null : extractConnectionIdFromVerticalNodeId(to.id);
+        if (!isBlank(fromConnectionId)) {
+            matchedEvents.addAll(overlay.byConnectionId.getOrDefault(fromConnectionId, List.of()));
+        }
+        if (!isBlank(toConnectionId)) {
+            matchedEvents.addAll(overlay.byConnectionId.getOrDefault(toConnectionId, List.of()));
+        }
+
+        if (matchedEvents.isEmpty()) {
+            return DynamicEdgeEffect.none();
+        }
+
+        boolean blocked = false;
+        double multiplier = 1D;
+        LinkedHashSet<String> eventIds = new LinkedHashSet<>();
+        for (NavigationDynamicEvent event : matchedEvents) {
+            String eventType = normalize(event.getEventType());
+            if ("block".equals(eventType)) {
+                blocked = true;
+                if (!isBlank(event.getEventId())) {
+                    eventIds.add(event.getEventId());
+                }
+                continue;
+            }
+            if ("congestion".equals(eventType)) {
+                multiplier = Math.max(multiplier, navigationDynamicEventService.resolveCongestionMultiplier(event));
+                if (!isBlank(event.getEventId())) {
+                    eventIds.add(event.getEventId());
+                }
+            }
+        }
+
+        return new DynamicEdgeEffect(blocked, multiplier, new ArrayList<>(eventIds));
+    }
+
+    private Integer resolveRouteVersion(NavigationPlanRequest request, String routeId) {
+        Integer currentVersion = request == null ? null : request.getCurrentRouteVersion();
+        if (currentVersion == null || currentVersion < 1) {
+            return 1;
+        }
+        if (resolveRouteChanged(request, routeId)) {
+            return currentVersion + 1;
+        }
+        return currentVersion;
+    }
+
+    private boolean resolveRouteChanged(NavigationPlanRequest request, String routeId) {
+        if (!isReroute(request)) {
+            return false;
+        }
+        if (request == null || isBlank(request.getCurrentRouteId())) {
+            return true;
+        }
+        return !Objects.equals(request.getCurrentRouteId(), routeId);
+    }
+
+    private boolean isReroute(NavigationPlanRequest request) {
+        if (request == null || request.getRequestMode() == null) {
+            return false;
+        }
+        return REQUEST_MODE_REROUTE.equalsIgnoreCase(request.getRequestMode().trim());
+    }
+
+    private String buildRouteId(List<PathHop> hops) {
+        if (hops == null || hops.isEmpty()) {
+            return md5Hex("route:empty");
+        }
+        StringBuilder builder = new StringBuilder();
+        for (PathHop hop : hops) {
+            if (hop == null || hop.node == null) {
+                continue;
+            }
+            builder.append(hop.node.id).append("->");
+        }
+        return md5Hex(builder.toString());
+    }
+
     private String transitionTypeText(String type) {
         if ("elevator".equals(type)) {
             return "电梯";
@@ -690,6 +877,21 @@ public class PublishedNavigationService {
             return "楼梯";
         }
         return "通道";
+    }
+
+    private String extractConnectionIdFromVerticalNodeId(String nodeId) {
+        if (isBlank(nodeId)) {
+            return null;
+        }
+        if (!nodeId.startsWith("vc:")) {
+            return null;
+        }
+        int firstSep = nodeId.indexOf(':');
+        int secondSep = nodeId.indexOf(':', firstSep + 1);
+        if (secondSep <= firstSep + 1) {
+            return null;
+        }
+        return nodeId.substring(firstSep + 1, secondSep);
     }
 
     private String normalizeFloorId(String floorId, Set<String> availableFloorIds) {
@@ -704,6 +906,23 @@ public class PublishedNavigationService {
 
     private double planarDistance(GraphNode a, GraphNode b) {
         return Math.hypot(a.x - b.x, a.z - b.z);
+    }
+
+    private double walkTimeSeconds(GraphNode a, GraphNode b) {
+        return Math.max(1D, planarDistance(a, b) / WALK_SPEED_MPS);
+    }
+
+    private double speedForTransition(String transitionType) {
+        if ("stairs".equals(transitionType)) {
+            return STAIRS_SPEED_MPS;
+        }
+        if ("escalator".equals(transitionType)) {
+            return ESCALATOR_SPEED_MPS;
+        }
+        if ("elevator".equals(transitionType)) {
+            return ELEVATOR_SPEED_MPS;
+        }
+        return WALK_SPEED_MPS;
     }
 
     private double distance3d(GraphNode a, GraphNode b) {
@@ -757,13 +976,65 @@ public class PublishedNavigationService {
         return isBlank(text) ? fallback : text;
     }
 
+    private String md5Hex(String value) {
+        try {
+            MessageDigest digest = MessageDigest.getInstance("MD5");
+            byte[] hash = digest.digest(value.getBytes(StandardCharsets.UTF_8));
+            return HexFormat.of().formatHex(hash);
+        } catch (NoSuchAlgorithmException e) {
+            log.warn("MD5 算法不可用，回退原值: {}", e.getMessage());
+            return value;
+        }
+    }
+
     private static class GraphSnapshot {
         private Graph graph = new Graph();
         private final Map<String, String> floorNameMap = new HashMap<>();
         private final Map<String, Integer> floorLevelMap = new HashMap<>();
         private final Map<String, GraphNode> areaNodeByAreaId = new HashMap<>();
         private final Map<String, AreaResponse> areaByAreaId = new HashMap<>();
+        private final Map<String, String> verticalConnectionAreaIdByConnectionId = new HashMap<>();
         private final List<String> warnings = new ArrayList<>();
+    }
+
+    private static class DynamicOverlay {
+        private final String dynamicVersion;
+        private final Map<String, List<NavigationDynamicEvent>> byAreaId;
+        private final Map<String, List<NavigationDynamicEvent>> byConnectionId;
+
+        private DynamicOverlay(
+                String dynamicVersion,
+                Map<String, List<NavigationDynamicEvent>> byAreaId,
+                Map<String, List<NavigationDynamicEvent>> byConnectionId
+        ) {
+            this.dynamicVersion = dynamicVersion;
+            this.byAreaId = byAreaId;
+            this.byConnectionId = byConnectionId;
+        }
+
+        private boolean enabled() {
+            return byAreaId != null && byConnectionId != null;
+        }
+
+        private static DynamicOverlay disabled() {
+            return new DynamicOverlay("disabled", null, null);
+        }
+    }
+
+    private static class DynamicEdgeEffect {
+        private final boolean blocked;
+        private final double multiplier;
+        private final List<String> eventIds;
+
+        private DynamicEdgeEffect(boolean blocked, double multiplier, List<String> eventIds) {
+            this.blocked = blocked;
+            this.multiplier = multiplier;
+            this.eventIds = eventIds;
+        }
+
+        private static DynamicEdgeEffect none() {
+            return new DynamicEdgeEffect(false, 1D, List.of());
+        }
     }
 
     private static class Graph {
@@ -849,6 +1120,22 @@ public class PublishedNavigationService {
         private PathHop(GraphNode node, String transitionType) {
             this.node = node;
             this.transitionType = transitionType;
+        }
+    }
+
+    private static class PathResult {
+        private final List<PathHop> hops;
+        private final List<String> appliedEventIds;
+        private final double totalCostSeconds;
+
+        private PathResult(List<PathHop> hops, List<String> appliedEventIds, double totalCostSeconds) {
+            this.hops = hops;
+            this.appliedEventIds = appliedEventIds;
+            this.totalCostSeconds = totalCostSeconds;
+        }
+
+        private static PathResult empty() {
+            return new PathResult(List.of(), List.of(), 0D);
         }
     }
 

@@ -148,6 +148,12 @@ public class RouteService {
                     .meta(RouteMeta.builder().title("版本管理").icon("history").build())
                     .build(),
                 RouteDTO.builder()
+                    .path("layout-review")
+                    .name("AdminLayoutReview")
+                    .component("AdminLayoutReview")
+                    .meta(RouteMeta.builder().title("建模审核").icon("audit").build())
+                    .build(),
+                RouteDTO.builder()
                     .path("users")
                     .name("AdminUserManage")
                     .component("AdminUserManage")

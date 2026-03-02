@@ -66,6 +66,8 @@ public enum ResultCode {
     APPLICATION_ALREADY_PROCESSED("A6007", "申请已处理，不可重复操作"),
     PERMISSION_NOT_FOUND("A6008", "权限记录不存在"),
     PERMISSION_ALREADY_REVOKED("A6009", "权限已被撤销"),
+    LAYOUT_PROPOSAL_NOT_FOUND("A6010", "建模提案不存在"),
+    LAYOUT_PROPOSAL_STATUS_INVALID("A6011", "建模提案状态不允许该操作"),
     
     // 店铺管理相关错误码
     STORE_AREA_NO_PERMISSION("A7001", "无该区域权限"),
@@ -90,6 +92,9 @@ public enum ResultCode {
     PRODUCT_IMAGE_INVALID("A7020", "商品图片格式无效"),
     PRODUCT_IMAGE_TOO_LARGE("A7021", "商品图片超过大小限制"),
     PRODUCT_IMAGE_TOO_MANY("A7022", "商品图片数量超过限制"),
+    AI_VOICE_DISABLED("A8001", "语音功能未开启"),
+    AI_VOICE_SESSION_EXPIRED("A8002", "语音会话已过期"),
+    AI_VOICE_TOKEN_INVALID("A8003", "语音会话令牌无效"),
 
     // B - 系统内部错误
     SYSTEM_ERROR("B1001", "系统内部错误"),
@@ -98,7 +103,8 @@ public enum ResultCode {
 
     // C - 外部依赖错误
     EXTERNAL_SERVICE_ERROR("C1001", "外部服务异常"),
-    EXTERNAL_SERVICE_TIMEOUT("C1002", "外部服务超时");
+    EXTERNAL_SERVICE_TIMEOUT("C1002", "外部服务超时"),
+    AI_ASR_PROVIDER_UNAVAILABLE("C1003", "语音识别服务不可用");
 
     private final String code;
     private final String message;

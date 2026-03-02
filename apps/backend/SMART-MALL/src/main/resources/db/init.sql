@@ -184,7 +184,65 @@ CREATE INDEX IF NOT EXISTS idx_area_permission_deleted ON area_permission(is_del
 CREATE UNIQUE INDEX IF NOT EXISTS idx_area_permission_unique_active ON area_permission(area_id) WHERE status = 'ACTIVE' AND is_deleted = FALSE;
 
 -- ============================================================
--- 8. 商城表
+-- 8. 区域建模提案表
+-- ============================================================
+
+CREATE TABLE IF NOT EXISTS layout_proposal (
+    proposal_id VARCHAR(32) PRIMARY KEY,
+    area_id VARCHAR(32) NOT NULL,
+    merchant_id VARCHAR(32) NOT NULL,
+    status VARCHAR(30) NOT NULL DEFAULT 'DRAFT',
+    layout_data JSONB NOT NULL,
+    submit_note TEXT,
+    reviewed_by VARCHAR(32),
+    reviewed_at TIMESTAMP,
+    reject_reason TEXT,
+    version INTEGER DEFAULT 0,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    is_deleted BOOLEAN NOT NULL DEFAULT FALSE
+);
+
+CREATE INDEX IF NOT EXISTS idx_layout_proposal_area ON layout_proposal(area_id);
+CREATE INDEX IF NOT EXISTS idx_layout_proposal_merchant ON layout_proposal(merchant_id);
+CREATE INDEX IF NOT EXISTS idx_layout_proposal_status ON layout_proposal(status);
+CREATE INDEX IF NOT EXISTS idx_layout_proposal_deleted ON layout_proposal(is_deleted);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_layout_proposal_unique_active
+    ON layout_proposal(area_id, merchant_id)
+    WHERE is_deleted = FALSE;
+
+-- ============================================================
+-- 9. 导航动态事件表
+-- ============================================================
+
+CREATE TABLE IF NOT EXISTS navigation_dynamic_event (
+    event_id VARCHAR(32) PRIMARY KEY,
+    project_id VARCHAR(32) NOT NULL,
+    event_type VARCHAR(16) NOT NULL,
+    scope_type VARCHAR(16) NOT NULL,
+    scope_id VARCHAR(64) NOT NULL,
+    severity VARCHAR(16),
+    cost_multiplier NUMERIC(6,3),
+    starts_at TIMESTAMP NOT NULL,
+    ends_at TIMESTAMP,
+    status VARCHAR(16) NOT NULL DEFAULT 'ACTIVE',
+    reason VARCHAR(255),
+    created_by VARCHAR(32) NOT NULL,
+    version INTEGER DEFAULT 0,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    is_deleted BOOLEAN NOT NULL DEFAULT FALSE
+);
+
+CREATE INDEX IF NOT EXISTS idx_nav_event_project_status
+    ON navigation_dynamic_event(project_id, status, is_deleted);
+CREATE INDEX IF NOT EXISTS idx_nav_event_scope
+    ON navigation_dynamic_event(scope_type, scope_id, status, is_deleted);
+CREATE INDEX IF NOT EXISTS idx_nav_event_time
+    ON navigation_dynamic_event(starts_at, ends_at, status);
+
+-- ============================================================
+-- 10. 商城表
 -- ============================================================
 
 CREATE TABLE IF NOT EXISTS mall (
@@ -206,7 +264,7 @@ CREATE INDEX IF NOT EXISTS idx_mall_deleted ON mall(is_deleted);
 
 
 -- ============================================================
--- 9. 布局版本表
+-- 11. 布局版本表
 -- ============================================================
 
 CREATE TABLE IF NOT EXISTS layout_version (
@@ -232,7 +290,7 @@ CREATE INDEX IF NOT EXISTS idx_layout_version_created ON layout_version(created_
 CREATE INDEX IF NOT EXISTS idx_layout_version_deleted ON layout_version(is_deleted);
 
 -- ============================================================
--- 10. 店铺表
+-- 12. 店铺表
 -- ============================================================
 
 CREATE TABLE IF NOT EXISTS store (
@@ -263,7 +321,7 @@ CREATE INDEX IF NOT EXISTS idx_store_deleted ON store(is_deleted);
 CREATE UNIQUE INDEX IF NOT EXISTS idx_store_area_unique ON store(area_id) WHERE is_deleted = FALSE;
 
 -- ============================================================
--- 11. 商品表
+-- 13. 商品表
 -- ============================================================
 
 CREATE TABLE IF NOT EXISTS product (
@@ -296,7 +354,7 @@ ALTER TABLE product ADD COLUMN IF NOT EXISTS rating_avg NUMERIC(3,2) NOT NULL DE
 ALTER TABLE product ADD COLUMN IF NOT EXISTS rating_count INTEGER NOT NULL DEFAULT 0;
 
 -- ============================================================
--- 11.1 商品评价表
+-- 13.1 商品评价表
 -- ============================================================
 
 CREATE TABLE IF NOT EXISTS product_review (
@@ -321,7 +379,7 @@ CREATE UNIQUE INDEX IF NOT EXISTS uk_product_review_product_user
     ON product_review(product_id, user_id) WHERE is_deleted = FALSE;
 
 -- ============================================================
--- 11.2 商品评价回复表
+-- 13.2 商品评价回复表
 -- ============================================================
 
 CREATE TABLE IF NOT EXISTS product_review_reply (
@@ -342,7 +400,7 @@ CREATE UNIQUE INDEX IF NOT EXISTS uk_product_review_reply_review
     ON product_review_reply(review_id) WHERE is_deleted = FALSE;
 
 -- ============================================================
--- 12. 系统公告表
+-- 14. 系统公告表
 -- ============================================================
 
 CREATE TABLE IF NOT EXISTS notice (
@@ -362,7 +420,7 @@ CREATE INDEX IF NOT EXISTS idx_notice_active_published ON notice(is_active, publ
 CREATE INDEX IF NOT EXISTS idx_notice_deleted ON notice(is_deleted);
 
 -- ============================================================
--- 13. 用户收藏店铺表
+-- 15. 用户收藏店铺表
 -- ============================================================
 
 CREATE TABLE IF NOT EXISTS user_favorite_store (
@@ -382,7 +440,7 @@ CREATE UNIQUE INDEX IF NOT EXISTS idx_user_favorite_unique_active
     ON user_favorite_store(user_id, store_id) WHERE is_deleted = FALSE;
 
 -- ============================================================
--- 14. 用户浏览记录表
+-- 16. 用户浏览记录表
 -- ============================================================
 
 CREATE TABLE IF NOT EXISTS user_browse_history (
@@ -402,7 +460,7 @@ CREATE INDEX IF NOT EXISTS idx_user_browse_browse_at ON user_browse_history(brow
 CREATE INDEX IF NOT EXISTS idx_user_browse_deleted ON user_browse_history(is_deleted);
 
 -- ============================================================
--- 15. 用户订单表（MVP）
+-- 17. 用户订单表（MVP）
 -- ============================================================
 
 CREATE TABLE IF NOT EXISTS user_order (
@@ -423,7 +481,7 @@ CREATE INDEX IF NOT EXISTS idx_user_order_deleted ON user_order(is_deleted);
 CREATE INDEX IF NOT EXISTS idx_user_order_created ON user_order(created_at DESC);
 
 -- ============================================================
--- 16. 用户优惠券表（MVP）
+-- 18. 用户优惠券表（MVP）
 -- ============================================================
 
 CREATE TABLE IF NOT EXISTS user_coupon (
@@ -447,7 +505,7 @@ CREATE INDEX IF NOT EXISTS idx_user_coupon_expires ON user_coupon(expires_at);
 CREATE INDEX IF NOT EXISTS idx_user_coupon_deleted ON user_coupon(is_deleted);
 
 -- ============================================================
--- 17. 用户偏好表
+-- 19. 用户偏好表
 -- ============================================================
 
 CREATE TABLE IF NOT EXISTS user_preferences (
@@ -476,7 +534,7 @@ CREATE TRIGGER trigger_user_preferences_version
     FOR EACH ROW EXECUTE FUNCTION increment_version();
 
 -- ============================================================
--- 18. 同步事件日志表
+-- 20. 同步事件日志表
 -- ============================================================
 
 CREATE TABLE IF NOT EXISTS sync_event_log (
@@ -511,7 +569,7 @@ CREATE TRIGGER trigger_sync_event_log_version
     FOR EACH ROW EXECUTE FUNCTION increment_version();
 
 -- ============================================================
--- 19. 种子数据
+-- 21. 种子数据
 -- ============================================================
 
 -- 测试用户（密码都是 123456，BCrypt cost=10）

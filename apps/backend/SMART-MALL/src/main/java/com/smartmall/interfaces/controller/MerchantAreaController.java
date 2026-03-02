@@ -1,10 +1,14 @@
 package com.smartmall.interfaces.controller;
 
 import com.smartmall.application.service.MerchantAreaService;
+import com.smartmall.application.service.LayoutProposalService;
 import com.smartmall.common.response.ApiResponse;
 import com.smartmall.interfaces.dto.merchant.AILayoutRequest;
-import com.smartmall.interfaces.dto.merchant.ApplyLayoutRequest;
+import com.smartmall.interfaces.dto.merchant.AreaLayoutResponse;
+import com.smartmall.interfaces.dto.merchant.LayoutProposalListItemDTO;
+import com.smartmall.interfaces.dto.merchant.SaveLayoutDraftRequest;
 import com.smartmall.interfaces.dto.merchant.StoreLayoutResponse;
+import com.smartmall.interfaces.dto.merchant.SubmitLayoutProposalRequest;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
@@ -27,6 +31,7 @@ import org.springframework.web.bind.annotation.*;
 public class MerchantAreaController {
 
     private final MerchantAreaService merchantAreaService;
+    private final LayoutProposalService layoutProposalService;
 
     /**
      * AI 生成店铺布局
@@ -49,22 +54,42 @@ public class MerchantAreaController {
         return ApiResponse.success(response);
     }
 
-    /**
-     * 应用 AI 生成的布局
-     *
-     * 校验商家权限 → 持久化布局数据 → 更新区域状态为 OCCUPIED
-     */
-    @Operation(summary = "应用 AI 生成的布局")
-    @PostMapping("/{areaId}/apply-layout")
+    @Operation(summary = "获取商家区域布局（草稿优先）")
+    @GetMapping("/{areaId}/layout")
     @PreAuthorize("hasRole('MERCHANT')")
-    public ApiResponse<Void> applyLayout(
+    public ApiResponse<AreaLayoutResponse> getAreaLayout(
             @PathVariable String areaId,
-            @Valid @RequestBody ApplyLayoutRequest request,
             Authentication authentication) {
         String merchantId = authentication.getName();
-        log.info("商家应用布局: merchantId={}, areaId={}", merchantId, areaId);
+        AreaLayoutResponse response = layoutProposalService.getAreaLayout(areaId, merchantId);
+        return ApiResponse.success(response);
+    }
 
-        merchantAreaService.applyLayout(areaId, request.getLayoutData(), merchantId);
-        return ApiResponse.success(null);
+    @Operation(summary = "保存商家建模草稿")
+    @PutMapping("/{areaId}/layout/draft")
+    @PreAuthorize("hasRole('MERCHANT')")
+    public ApiResponse<LayoutProposalListItemDTO> saveLayoutDraft(
+            @PathVariable String areaId,
+            @Valid @RequestBody SaveLayoutDraftRequest request,
+            Authentication authentication) {
+        String merchantId = authentication.getName();
+        LayoutProposalListItemDTO response = layoutProposalService.saveDraft(
+                areaId, request.getLayoutData(), merchantId
+        );
+        return ApiResponse.success(response);
+    }
+
+    @Operation(summary = "提交商家建模提案")
+    @PostMapping("/{areaId}/layout/submit")
+    @PreAuthorize("hasRole('MERCHANT')")
+    public ApiResponse<LayoutProposalListItemDTO> submitLayoutProposal(
+            @PathVariable String areaId,
+            @Valid @RequestBody SubmitLayoutProposalRequest request,
+            Authentication authentication) {
+        String merchantId = authentication.getName();
+        LayoutProposalListItemDTO response = layoutProposalService.submitProposal(
+                areaId, request.getLayoutData(), request.getSubmitNote(), merchantId
+        );
+        return ApiResponse.success(response);
     }
 }

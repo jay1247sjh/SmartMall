@@ -66,6 +66,13 @@ public class NavigationPlanResponse {
 
     @Data
     public static class RouteData {
+        private String routeId;
+        private Integer routeVersion;
+        private String dynamicVersion;
+        private Boolean replanned;
+        private String replanReason;
+        private Boolean changed;
+        private List<String> appliedEventIds = new ArrayList<>();
         private List<RouteSegment> segments = new ArrayList<>();
         private List<RouteTransition> transitions = new ArrayList<>();
         private List<String> steps = new ArrayList<>();
@@ -87,6 +94,8 @@ public class NavigationPlanResponse {
         private String toFloorId;
         private String toFloorName;
         private String type;
+        private String connectionAreaId;
+        private String connectionId;
         private RoutePoint position;
     }
 
