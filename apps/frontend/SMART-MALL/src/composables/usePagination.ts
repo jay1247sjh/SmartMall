@@ -162,6 +162,7 @@ export function usePagination(options: UsePaginationOptions): UsePaginationRetur
    */
   function setPageSize(size: number): void {
     if (size < 1) return
+    if (!pageSizes.includes(size)) return
     
     // 计算新的页码，尽量保持当前位置
     const currentFirstItem = startIndex.value

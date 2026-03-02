@@ -406,6 +406,37 @@ export interface StoreLayoutResponse {
   data?: StoreLayoutData
 }
 
+/**
+ * 商家区域布局查询响应
+ */
+export interface AreaLayoutResponse {
+  source: 'PROPOSAL' | 'AREA' | 'EMPTY'
+  proposalId?: string
+  proposalStatus?: 'DRAFT' | 'PENDING_REVIEW' | 'APPROVED' | 'REJECTED' | 'NONE'
+  rejectReason?: string
+  updatedAt?: string
+  layoutData?: StoreLayoutData
+}
+
+/**
+ * 建模提案列表项
+ */
+export interface LayoutProposalListItem {
+  proposalId: string
+  areaId: string
+  areaName?: string
+  floorName?: string
+  merchantId: string
+  merchantName?: string
+  status: 'DRAFT' | 'PENDING_REVIEW' | 'APPROVED' | 'REJECTED'
+  submitNote?: string
+  rejectReason?: string
+  objectCount?: number
+  createdAt?: string
+  updatedAt?: string
+  reviewedAt?: string
+}
+
 // ============================================================================
 // AI 布局生成 API 方法
 // ============================================================================
@@ -428,19 +459,46 @@ export async function generateAILayout(
 }
 
 /**
- * 应用布局到区域
+ * 获取区域布局（草稿优先）
+ */
+export async function getAreaLayout(areaId: string): Promise<AreaLayoutResponse> {
+  return http.get<AreaLayoutResponse>(`/merchant/area/${areaId}/layout`)
+}
+
+/**
+ * 保存区域布局草稿
+ */
+export async function saveLayoutDraft(
+  areaId: string,
+  layoutData: StoreLayoutData,
+): Promise<LayoutProposalListItem> {
+  return http.put<LayoutProposalListItem>(`/merchant/area/${areaId}/layout/draft`, { layoutData })
+}
+
+/**
+ * 提交区域布局提案
+ */
+export async function submitLayoutProposal(
+  areaId: string,
+  layoutData: StoreLayoutData,
+  submitNote?: string,
+): Promise<LayoutProposalListItem> {
+  return http.post<LayoutProposalListItem>(`/merchant/area/${areaId}/layout/submit`, {
+    layoutData,
+    submitNote,
+  })
+}
+
+/**
+ * 应用布局（兼容旧调用，已迁移为“提交审核提案”）
  *
- * 商家确认 AI 生成的布局后，将布局数据持久化到后端，
- * 并更新区域状态为 OCCUPIED。
- *
- * @param areaId - 目标区域 ID
- * @param layoutData - 要应用的布局数据
+ * @deprecated 使用 submitLayoutProposal
  */
 export async function applyLayout(
   areaId: string,
   layoutData: StoreLayoutData,
 ): Promise<void> {
-  await http.post(`/merchant/area/${areaId}/apply-layout`, { layoutData })
+  await submitLayoutProposal(areaId, layoutData)
 }
 
 // ============================================================================
@@ -455,6 +513,9 @@ export const merchantApi = {
   getAvailableAreas,
   applyForArea,
   generateAILayout,
+  getAreaLayout,
+  saveLayoutDraft,
+  submitLayoutProposal,
   applyLayout,
 }
 

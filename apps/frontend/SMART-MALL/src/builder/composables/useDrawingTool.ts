@@ -97,6 +97,7 @@ export function useDrawingTool(
   const currentPolygon = computed<Polygon | null>(() => {
     if (mode.value === 'rectangle' && points.value.length === 1 && previewPoint.value) {
       const p1 = points.value[0]
+      if (!p1) return null
       const p2 = previewPoint.value
       return {
         vertices: [
@@ -154,6 +155,7 @@ export function useDrawingTool(
     if (config.value.existingAreas) {
       for (let i = 0; i < config.value.existingAreas.length; i++) {
         const existing = config.value.existingAreas[i]
+        if (!existing) continue
         if (doPolygonsOverlap(polygon, existing)) {
           warnings.push(`与现有区域 ${i + 1} 重叠`)
         }

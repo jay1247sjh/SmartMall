@@ -51,16 +51,6 @@ function getStatusClass(status: string): string {
 function handleClick() {
   emit('click')
 }
-
-function handleEdit(event: Event) {
-  event.stopPropagation()
-  emit('edit')
-}
-
-function handleDelete(event: Event) {
-  event.stopPropagation()
-  emit('delete')
-}
 </script>
 
 <template>

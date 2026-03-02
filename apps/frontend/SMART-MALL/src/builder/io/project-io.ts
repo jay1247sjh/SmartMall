@@ -67,6 +67,10 @@ export interface ImportResult {
   warnings?: string[]
 }
 
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null
+}
+
 /**
  * 从JSON字符串导入项目
  */
@@ -104,22 +108,22 @@ function parseProjectData(data: unknown): ImportResult {
   const warnings: string[] = []
   
   // 检查是否为对象
-  if (typeof data !== 'object' || data === null) {
+  if (!isRecord(data)) {
     return { success: false, error: '无效的项目数据格式' }
   }
   
-  const obj = data as Record<string, unknown>
+  const obj = data
   
   // 检查是否为导出格式
   if ('formatVersion' in obj && 'project' in obj) {
-    const exportData = obj as ProjectExport
+    const formatVersion = typeof obj.formatVersion === 'string' ? obj.formatVersion : 'unknown'
     
     // 版本检查
-    if (exportData.formatVersion !== FORMAT_VERSION) {
-      warnings.push(`文件版本 ${exportData.formatVersion} 与当前版本 ${FORMAT_VERSION} 不同，可能存在兼容性问题`)
+    if (formatVersion !== FORMAT_VERSION) {
+      warnings.push(`文件版本 ${formatVersion} 与当前版本 ${FORMAT_VERSION} 不同，可能存在兼容性问题`)
     }
     
-    const projectResult = validateAndMigrateProject(exportData.project)
+    const projectResult = validateAndMigrateProject(obj.project)
     if (!projectResult.success) {
       return projectResult
     }
@@ -133,7 +137,7 @@ function parseProjectData(data: unknown): ImportResult {
   
   // 尝试直接解析为项目
   if ('outline' in obj && 'floors' in obj) {
-    return validateAndMigrateProject(obj as MallProject)
+    return validateAndMigrateProject(obj)
   }
   
   return { success: false, error: '无法识别的项目格式' }
@@ -142,9 +146,13 @@ function parseProjectData(data: unknown): ImportResult {
 /**
  * 验证并迁移项目数据
  */
-function validateAndMigrateProject(project: MallProject): ImportResult {
+function validateAndMigrateProject(project: unknown): ImportResult {
+  if (!isRecord(project)) {
+    return { success: false, error: '项目数据必须是对象' }
+  }
+
   const warnings: string[] = []
-  const migrated = structuredClone(project)
+  const migrated = structuredClone(project) as Partial<MallProject>
   
   // 确保有ID
   if (!migrated.id) {
@@ -193,6 +201,7 @@ function validateAndMigrateProject(project: MallProject): ImportResult {
   // 验证每个楼层
   for (let i = 0; i < migrated.floors.length; i++) {
     const floor = migrated.floors[i]
+    if (!floor) continue
     
     if (!floor.id) {
       floor.id = generateId()
@@ -245,7 +254,7 @@ function validateAndMigrateProject(project: MallProject): ImportResult {
   
   return {
     success: true,
-    project: migrated,
+    project: migrated as MallProject,
     warnings: warnings.length > 0 ? warnings : undefined,
   }
 }

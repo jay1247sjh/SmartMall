@@ -13,32 +13,32 @@
  */
 
 import type { Router } from 'vue-router'
-import { toolHandlerRegistry } from './tool-handler-registry'
-import { useBuilderNavigationStore } from '@/stores'
 import type { NavigationTargetType } from '@/api/mall-manage.api'
+import { useBuilderNavigationStore } from '@/stores'
+import { useAiStore } from '@/stores/ai.store'
+import { extractNavigationKeyword, resolveNavigationExecutionPreference } from './navigation-intent'
+import { toolHandlerRegistry } from './tool-handler-registry'
 
-function isBuilderRoute(path: string): boolean {
-  return path.startsWith('/admin/builder') || path.startsWith('/builder')
+function isNavigationExecutionRoute(path: string): boolean {
+  return path.startsWith('/mall/3d') || path.startsWith('/admin/builder') || path.startsWith('/builder')
 }
 
-function asString(value: unknown): string | null {
-  if (typeof value === 'string' && value.trim()) return value.trim()
-  if (typeof value === 'number') return String(value)
-  return null
-}
-
-function resolveTargetKeyword(
-  args: Record<string, unknown>,
-  result: Record<string, unknown>,
-  fieldNames: string[],
-): string | null {
-  for (const name of fieldNames) {
-    const fromArgs = asString(args[name])
-    if (fromArgs) return fromArgs
-    const fromResult = asString(result[name])
-    if (fromResult) return fromResult
+function generateIntentId(): string {
+  if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
+    return crypto.randomUUID()
   }
-  return null
+  return `intent_${Date.now()}_${Math.random().toString(36).slice(2, 10)}`
+}
+
+function resolveLatestUserMessageContent(): string {
+  const aiStore = useAiStore()
+  for (let i = aiStore.messages.length - 1; i >= 0; i -= 1) {
+    const msg = aiStore.messages[i]
+    if (msg?.role === 'user' && typeof msg.content === 'string') {
+      return msg.content
+    }
+  }
+  return ''
 }
 
 function enqueueBuilderNavigationIntent(
@@ -47,13 +47,20 @@ function enqueueBuilderNavigationIntent(
   result: Record<string, unknown>,
   keywordFields: string[],
 ): boolean {
-  const keyword = resolveTargetKeyword(args, result, keywordFields)
-  if (!keyword) return false
+  const keyword = extractNavigationKeyword(args, result, keywordFields)
+  if (!keyword) {
+    return false
+  }
+
+  const latestUserMessage = resolveLatestUserMessageContent()
+  const executionPreference = resolveNavigationExecutionPreference(latestUserMessage)
 
   const builderNavigationStore = useBuilderNavigationStore()
   builderNavigationStore.setPendingIntent({
+    intentId: generateIntentId(),
     targetType,
     targetKeyword: keyword,
+    executionPreference,
     source: 'ai-tool',
     rawArgs: args,
     rawResult: result,
@@ -68,42 +75,45 @@ function enqueueBuilderNavigationIntent(
  * 在 App 启动时调用一次，传入 router 实例
  */
 export function initToolHandlers(router: Router): void {
-  toolHandlerRegistry.register('navigate_to_store', (_fn, args, result) => {
-    if (!result.success) return
+  toolHandlerRegistry.register('navigate_to_store', async (_fn, args, result) => {
+    if (!result.success) {
+      return
+    }
 
     const currentPath = router.currentRoute.value.path
-    if (isBuilderRoute(currentPath)) {
-      const queued = enqueueBuilderNavigationIntent(
-        'store',
-        args,
-        result,
-        ['store_name', 'storeName', 'keyword', 'query', 'name'],
-      )
-      if (queued) return
+    const queued = enqueueBuilderNavigationIntent(
+      'store',
+      args,
+      result,
+      ['store_name', 'storeName', 'keyword', 'query', 'name'],
+    )
+    if (!queued) {
+      return
     }
 
-    if (!currentPath.startsWith('/mall')) {
-      router.push('/mall')
+    if (!isNavigationExecutionRoute(currentPath)) {
+      await router.push('/mall/3d')
     }
-    // 3D 场景导航通过事件总线或 store 通知
   })
 
-  toolHandlerRegistry.register('navigate_to_area', (_fn, args, result) => {
-    if (!result.success) return
-
-    const currentPath = router.currentRoute.value.path
-    if (isBuilderRoute(currentPath)) {
-      const queued = enqueueBuilderNavigationIntent(
-        'area',
-        args,
-        result,
-        ['area_name', 'areaName', 'keyword', 'query', 'name'],
-      )
-      if (queued) return
+  toolHandlerRegistry.register('navigate_to_area', async (_fn, args, result) => {
+    if (!result.success) {
+      return
     }
 
-    if (!currentPath.startsWith('/mall')) {
-      router.push('/mall')
+    const currentPath = router.currentRoute.value.path
+    const queued = enqueueBuilderNavigationIntent(
+      'area',
+      args,
+      result,
+      ['area_name', 'areaName', 'keyword', 'query', 'name'],
+    )
+    if (!queued) {
+      return
+    }
+
+    if (!isNavigationExecutionRoute(currentPath)) {
+      await router.push('/mall/3d')
     }
   })
 

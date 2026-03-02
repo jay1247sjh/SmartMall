@@ -36,6 +36,7 @@
 import type { Router, RouteLocationNormalized } from 'vue-router'
 import { useUserStore } from '@/stores'
 import { setupDynamicRoutes, isDynamicRoutesLoaded, removeDynamicRoutes } from './dynamic'
+import { devLog } from '@/utils/dev-log'
 
 // ============================================================================
 // 白名单配置
@@ -205,7 +206,7 @@ export function setupRouterGuards(router: Router): void {
       // ----------------------------------------
       
       if (!isAuthenticated) {
-        console.log('[Guard] 未登录，重定向到登录页')
+        devLog('[Guard] 未登录，重定向到登录页')
         /**
          * 【redirect 参数】
          * 将原本要访问的路径作为 redirect 参数传递给登录页。

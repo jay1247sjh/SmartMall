@@ -44,7 +44,16 @@ const props = defineProps<{
   /** 占位符文字 */
   placeholder?: string
   /** 浏览器自动填充提示 */
-  autocomplete?: string
+  autocomplete?:
+    | ''
+    | 'on'
+    | 'off'
+    | 'username'
+    | 'current-password'
+    | 'new-password'
+    | 'email'
+    | 'tel'
+    | 'one-time-code'
   /** 是否必填 */
   required?: boolean
   /** 错误消息（有值时显示错误状态） */

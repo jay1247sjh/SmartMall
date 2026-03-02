@@ -8,6 +8,7 @@
 import { ref, computed, type Ref } from 'vue'
 import * as THREE from 'three'
 import type { MallProject, MaterialPreset, MaterialCategory, AreaDefinition } from '@/builder'
+import { devLog } from '@/utils/dev-log'
 import {
   getAllMaterialPresets,
   getAllCategories,
@@ -134,8 +135,12 @@ export function useMaterialSystem(
       },
       color: preset.color,
       properties: {
-        infrastructureType: infrastructureType,
-        isInfrastructure: true,
+        area: 1,
+        perimeter: 4,
+        custom: {
+          infrastructureType,
+          isInfrastructure: true,
+        },
       },
       visible: true,
       locked: false,
@@ -143,7 +148,7 @@ export function useMaterialSystem(
     
     currentFloor.value.areas.push(infrastructureArea)
     
-    console.log(`[placeInfrastructure] 放置 ${preset.name} 在 (${point.x}, ${point.y})`)
+    devLog(`[placeInfrastructure] 放置 ${preset.name} 在 (${point.x}, ${point.y})`)
   }
 
   /**

@@ -2,7 +2,7 @@
  * 项目管理 Composable
  * 处理项目的创建、保存、加载、导入导出
  */
-import { ref } from 'vue'
+import { onScopeDispose, ref } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import type { MallProject, MallTemplate } from '@/builder'
 import {
@@ -22,6 +22,7 @@ export function useProjectManagement() {
   const isSaving = ref(false)
   const isPublishing = ref(false)
   const saveMessage = ref<string | null>(null)
+  let saveMessageTimer: ReturnType<typeof setTimeout> | null = null
   const showProjectListModal = ref(false)
   const projectList = ref<{
     projectId: string
@@ -36,6 +37,26 @@ export function useProjectManagement() {
 
   // 未保存更改跟踪（纯数据比较，无布尔标志）
   const lastSavedState = ref<string | null>(null)
+
+  function clearSaveMessageTimer() {
+    if (saveMessageTimer !== null) {
+      clearTimeout(saveMessageTimer)
+      saveMessageTimer = null
+    }
+  }
+
+  function showSaveMessage(message: string, durationMs: number) {
+    clearSaveMessageTimer()
+    saveMessage.value = message
+    saveMessageTimer = setTimeout(() => {
+      saveMessage.value = null
+      saveMessageTimer = null
+    }, durationMs)
+  }
+
+  onScopeDispose(() => {
+    clearSaveMessageTimer()
+  })
 
   function isServerProjectId(projectId?: string | null): boolean {
     if (!projectId) return false
@@ -126,6 +147,7 @@ export function useProjectManagement() {
     if (isSaving.value) return false
 
     isSaving.value = true
+    clearSaveMessageTimer()
     saveMessage.value = null
 
     try {
@@ -180,14 +202,12 @@ export function useProjectManagement() {
       }
 
       markSaved(project)
-      saveMessage.value = '保存成功'
-      setTimeout(() => { saveMessage.value = null }, 2000)
+      showSaveMessage('保存成功', 2000)
       return true
     } catch (err: unknown) {
       console.error('保存失败:', err)
       const errorMessage = err instanceof Error ? err.message : '保存失败，请重试'
-      saveMessage.value = errorMessage
-      setTimeout(() => { saveMessage.value = null }, 3000)
+      showSaveMessage(errorMessage, 3000)
       return false
     } finally {
       isSaving.value = false
@@ -309,19 +329,18 @@ export function useProjectManagement() {
     if (isPublishing.value) return false
 
     isPublishing.value = true
+    clearSaveMessageTimer()
     saveMessage.value = null
 
     try {
       const { mallBuilderApi } = await import('@/api/mall-builder.api')
       await mallBuilderApi.publishProject(projectId)
-      saveMessage.value = '发布成功'
-      setTimeout(() => { saveMessage.value = null }, 2000)
+      showSaveMessage('发布成功', 2000)
       return true
     } catch (err: unknown) {
       console.error('发布失败:', err)
       const errorMessage = err instanceof Error ? err.message : '发布失败，请重试'
-      saveMessage.value = errorMessage
-      setTimeout(() => { saveMessage.value = null }, 3000)
+      showSaveMessage(errorMessage, 3000)
       return false
     } finally {
       isPublishing.value = false

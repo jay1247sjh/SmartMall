@@ -52,6 +52,11 @@ export interface NavigationPlanRequest {
     y: number
     z: number
   }
+  requestMode?: 'INITIAL' | 'REROUTE'
+  rerouteReason?: 'OFF_ROUTE' | 'BLOCKED_AHEAD' | 'EVENT_UPDATE' | 'MANUAL_REFRESH'
+  currentRouteId?: string
+  currentRouteVersion?: number
+  dynamicVersion?: string
 }
 
 export interface NavigationRoutePoint {
@@ -73,10 +78,19 @@ export interface NavigationRouteTransition {
   toFloorId: string
   toFloorName?: string
   type: string
+  connectionAreaId?: string
+  connectionId?: string
   position: NavigationRoutePoint
 }
 
 export interface NavigationRouteData {
+  routeId?: string
+  routeVersion?: number
+  dynamicVersion?: string
+  replanned?: boolean
+  replanReason?: string
+  changed?: boolean
+  appliedEventIds?: string[]
   segments: NavigationRouteSegment[]
   transitions: NavigationRouteTransition[]
   steps: string[]
@@ -103,6 +117,53 @@ export interface NavigationPlanResponse {
   warnings?: string[]
 }
 
+export interface NavigationDynamicEventDTO {
+  eventId: string
+  projectId: string
+  eventType: 'BLOCK' | 'CONGESTION'
+  scopeType: 'AREA' | 'CONNECTION'
+  scopeId: string
+  severity?: 'LOW' | 'MEDIUM' | 'HIGH'
+  costMultiplier?: number
+  startsAt: string
+  endsAt?: string
+  status: 'ACTIVE' | 'INACTIVE' | 'EXPIRED'
+  reason?: string
+  createdBy: string
+  createdAt?: string
+  updatedAt?: string
+}
+
+export interface CreateNavigationDynamicEventRequest {
+  projectId: string
+  eventType: 'BLOCK' | 'CONGESTION'
+  scopeType: 'AREA' | 'CONNECTION'
+  scopeId: string
+  severity?: 'LOW' | 'MEDIUM' | 'HIGH'
+  costMultiplier?: number
+  startsAt: string
+  endsAt?: string
+  reason?: string
+}
+
+export interface UpdateNavigationDynamicEventRequest {
+  eventType?: 'BLOCK' | 'CONGESTION'
+  scopeType?: 'AREA' | 'CONNECTION'
+  scopeId?: string
+  severity?: 'LOW' | 'MEDIUM' | 'HIGH'
+  costMultiplier?: number
+  startsAt?: string
+  endsAt?: string
+  status?: 'ACTIVE' | 'INACTIVE' | 'EXPIRED'
+  reason?: string
+}
+
+export interface NavigationDynamicVersionResponse {
+  projectId?: string
+  dynamicVersion: string
+  serverTime: string
+}
+
 // ============================================================================
 // 商城数据 API
 // ============================================================================
@@ -123,6 +184,39 @@ export async function planPublishedMallNavigation(
   request: NavigationPlanRequest
 ): Promise<NavigationPlanResponse> {
   return http.post<NavigationPlanResponse>('/public/mall/navigation/plan', request)
+}
+
+export async function getPublishedMallNavigationDynamicVersion(
+  projectId?: string
+): Promise<NavigationDynamicVersionResponse> {
+  return http.get<NavigationDynamicVersionResponse>('/public/mall/navigation/dynamic-version', {
+    params: { projectId }
+  })
+}
+
+export async function listNavigationDynamicEvents(
+  projectId?: string
+): Promise<NavigationDynamicEventDTO[]> {
+  return http.get<NavigationDynamicEventDTO[]>('/mall/navigation/dynamic-events', {
+    params: { projectId }
+  })
+}
+
+export async function createNavigationDynamicEvent(
+  payload: CreateNavigationDynamicEventRequest
+): Promise<NavigationDynamicEventDTO> {
+  return http.post<NavigationDynamicEventDTO>('/mall/navigation/dynamic-events', payload)
+}
+
+export async function updateNavigationDynamicEvent(
+  eventId: string,
+  payload: UpdateNavigationDynamicEventRequest
+): Promise<NavigationDynamicEventDTO> {
+  return http.put<NavigationDynamicEventDTO>(`/mall/navigation/dynamic-events/${eventId}`, payload)
+}
+
+export async function deleteNavigationDynamicEvent(eventId: string): Promise<void> {
+  return http.delete<void>(`/mall/navigation/dynamic-events/${eventId}`)
 }
 
 // ============================================================================
@@ -178,6 +272,11 @@ export async function deleteVersion(versionId: string): Promise<void> {
 export const mallManageApi = {
   getPublishedMallData,
   planPublishedMallNavigation,
+  getPublishedMallNavigationDynamicVersion,
+  listNavigationDynamicEvents,
+  createNavigationDynamicEvent,
+  updateNavigationDynamicEvent,
+  deleteNavigationDynamicEvent,
   getVersions,
   getVersionSnapshot,
   updateVersionDescription,

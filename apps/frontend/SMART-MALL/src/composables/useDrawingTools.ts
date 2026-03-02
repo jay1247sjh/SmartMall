@@ -6,21 +6,24 @@
  * - 绘图预览
  * - 重叠检测
  */
-import { ref, shallowRef, type Ref } from 'vue'
+import { onScopeDispose, ref, shallowRef, type Ref } from 'vue'
 import * as THREE from 'three'
 import type { MallProject, AreaDefinition, AreaType } from '@/builder'
 import {
   generateId,
-  getAreaTypeColor,
-  snapToGrid,
   isContainedIn,
   doPolygonsOverlap,
   isSelfIntersecting,
   calculateArea,
   calculatePerimeter,
 } from '@/builder'
+import { AREA_TYPE_COLORS, AreaType as SharedAreaTypeEnum } from '@smart-mall/shared-types'
 
 type Tool = 'select' | 'pan' | 'draw-rect' | 'draw-poly' | 'draw-outline' | 'edit-vertex'
+
+function resolveAreaColor(areaType: AreaType): string {
+  return AREA_TYPE_COLORS[areaType as SharedAreaTypeEnum] ?? '#6b7280'
+}
 
 export function useDrawingTools(
   scene: Ref<THREE.Scene | null>,
@@ -38,6 +41,27 @@ export function useDrawingTools(
   const snapEnabled = ref(true)
   const overlappingAreas = ref<string[]>([])
   const boundaryWarning = ref<string | null>(null)
+  let boundaryWarningTimer: ReturnType<typeof setTimeout> | null = null
+
+  function clearBoundaryWarningTimer() {
+    if (boundaryWarningTimer !== null) {
+      clearTimeout(boundaryWarningTimer)
+      boundaryWarningTimer = null
+    }
+  }
+
+  function showBoundaryWarning(message: string) {
+    clearBoundaryWarningTimer()
+    boundaryWarning.value = message
+    boundaryWarningTimer = setTimeout(() => {
+      boundaryWarning.value = null
+      boundaryWarningTimer = null
+    }, 3000)
+  }
+
+  onScopeDispose(() => {
+    clearBoundaryWarningTimer()
+  })
 
   /**
    * 设置当前工具
@@ -143,7 +167,7 @@ export function useDrawingTools(
         ],
         isClosed: true,
       },
-      color: areaColor || getAreaTypeColor(areaType),
+      color: areaColor || resolveAreaColor(areaType),
       properties: {
         area: width * height,
         perimeter: 2 * (width + height),
@@ -153,8 +177,7 @@ export function useDrawingTools(
     }
 
     if (!isContainedIn(newArea.shape, project.value.outline)) {
-      boundaryWarning.value = '区域超出商城边界'
-      setTimeout(() => { boundaryWarning.value = null }, 3000)
+      showBoundaryWarning('区域超出商城边界')
     }
 
     checkOverlaps(newArea)
@@ -186,8 +209,7 @@ export function useDrawingTools(
     }
 
     if (isSelfIntersecting(polygon)) {
-      boundaryWarning.value = '多边形不能自相交，请重新绘制'
-      setTimeout(() => { boundaryWarning.value = null }, 3000)
+      showBoundaryWarning('多边形不能自相交，请重新绘制')
       cancelDraw()
       return
     }
@@ -203,7 +225,7 @@ export function useDrawingTools(
       name: areaName || `区域-${currentFloor.value.areas.length + 1}`,
       type: areaType,
       shape: polygon,
-      color: areaColor || getAreaTypeColor(areaType),
+      color: areaColor || resolveAreaColor(areaType),
       properties: {
         area: calculateArea(polygon),
         perimeter: calculatePerimeter(polygon),
@@ -213,8 +235,7 @@ export function useDrawingTools(
     }
 
     if (!isContainedIn(newArea.shape, project.value.outline)) {
-      boundaryWarning.value = '区域超出商城边界'
-      setTimeout(() => { boundaryWarning.value = null }, 3000)
+      showBoundaryWarning('区域超出商城边界')
     }
 
     checkOverlaps(newArea)
@@ -271,8 +292,7 @@ export function useDrawingTools(
       floor.shape = undefined
     })
     
-    boundaryWarning.value = '轮廓已重置，可使用轮廓工具重新绘制'
-    setTimeout(() => { boundaryWarning.value = null }, 3000)
+    showBoundaryWarning('轮廓已重置，可使用轮廓工具重新绘制')
   }
 
   return {

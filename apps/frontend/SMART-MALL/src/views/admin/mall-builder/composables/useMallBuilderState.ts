@@ -9,7 +9,6 @@ import type {
   MallProject,
   AreaDefinition,
   MallTemplate,
-  MaterialPreset,
   MaterialCategory,
   VerticalConnection,
 } from '@/builder'
@@ -36,9 +35,9 @@ export function useMallBuilderState() {
   const engine = shallowRef<MallBuilderEngine | null>(null)
 
   // Three.js 对象（通过 engine 访问）
-  const scene = computed(() => engine.value?.scene || null)
-  const camera = computed(() => engine.value?.camera || null)
-  const renderer = computed(() => engine.value?.renderer || null)
+  const scene = computed(() => engine.value?.getScene() || null)
+  const camera = computed(() => engine.value?.getCamera() || null)
+  const renderer = computed(() => engine.value?.getRenderer() || null)
   const controls = computed(() => engine.value?.getOrbitControls() || null)
 
   // 加载状态

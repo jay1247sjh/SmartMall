@@ -133,7 +133,21 @@ export interface Floor {
 /**
  * 区域类型
  */
-export type AreaType = 'store' | 'corridor' | 'elevator' | 'escalator' | 'stairs' | 'restroom' | 'service'
+export type AreaType =
+  | 'retail'
+  | 'food'
+  | 'service'
+  | 'anchor'
+  | 'common'
+  | 'corridor'
+  | 'elevator'
+  | 'escalator'
+  | 'stairs'
+  | 'restroom'
+  | 'storage'
+  | 'office'
+  | 'parking'
+  | 'other'
 
 /**
  * 2D 坐标点

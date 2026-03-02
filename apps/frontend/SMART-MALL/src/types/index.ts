@@ -1,39 +1,10 @@
 /**
- * 类型统一导出（向后兼容）
- * 
- * ⚠️ 注意：此文件仅用于向后兼容
- * 新代码应该直接从各领域模块导入：
- * - domain/scene
- * - domain/mall
- * - domain/user
- * - domain/permission
- * - protocol
- * - shared
- * - types/domain
- * - types/api
- * - types/ui
+ * 类型统一导出（轻量入口）
+ *
+ * 仅保留前端公共基础类型，避免与 domain 层的重名符号冲突。
+ * 领域类型请从 `@/domain/*` 直接导入。
  */
 
-// 场景领域
-export * from '../domain/scene'
-
-// 商城领域
-export * from '../domain/mall'
-
-// 用户领域
-export * from '../domain/user'
-
-// 权限领域
-export * from '../domain/permission'
-
-// 协议层
-export * from '../protocol'
-
-// 共享模块
-export * from '../shared'
-
-// 新增类型定义
-export * from './domain'
 export * from './api'
 export * from './ui'
 export * from './settings'

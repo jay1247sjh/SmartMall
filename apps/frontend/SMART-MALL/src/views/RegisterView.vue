@@ -46,7 +46,7 @@
  * - 前端验证只是辅助，后端会再次验证所有数据
  * ============================================================================
  */
-import { ref, computed, watch } from 'vue'
+import { ref, computed, watch, onBeforeUnmount } from 'vue'
 import { useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { registerApi } from '@/api'
@@ -120,6 +120,8 @@ const emailAvailable = ref<boolean | null>(null)
 let usernameTimer: number | null = null
 /** 邮箱检查防抖定时器 */
 let emailTimer: number | null = null
+/** 注册成功后的跳转定时器 */
+let redirectTimer: number | null = null
 
 // ============================================================================
 // 品牌展示内容
@@ -241,6 +243,21 @@ watch(email, (val) => {
   }
 })
 
+onBeforeUnmount(() => {
+  if (usernameTimer) {
+    clearTimeout(usernameTimer)
+    usernameTimer = null
+  }
+  if (emailTimer) {
+    clearTimeout(emailTimer)
+    emailTimer = null
+  }
+  if (redirectTimer) {
+    clearTimeout(redirectTimer)
+    redirectTimer = null
+  }
+})
+
 // ============================================================================
 // 事件处理
 // ============================================================================
@@ -271,7 +288,11 @@ async function handleRegister() {
     
     successMsg.value = t('auth.registerSuccess')
     // 2秒后跳转到登录页，给用户时间看到成功消息
-    setTimeout(() => router.push('/login'), 2000)
+    if (redirectTimer) clearTimeout(redirectTimer)
+    redirectTimer = window.setTimeout(() => {
+      redirectTimer = null
+      router.push('/login')
+    }, 2000)
   } catch (error: any) {
     errorMsg.value = error?.message || t('auth.registerFailed')
   } finally {

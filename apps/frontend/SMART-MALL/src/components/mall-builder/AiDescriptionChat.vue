@@ -234,7 +234,8 @@ async function retryLastMessage() {
   // 找到最后一条 error 状态的 assistant 消息（反向查找）
   let lastErrorIdx = -1
   for (let i = messages.value.length - 1; i >= 0; i--) {
-    if (messages.value[i].role === 'assistant' && messages.value[i].status === 'error') {
+    const message = messages.value[i]
+    if (message && message.role === 'assistant' && message.status === 'error') {
       lastErrorIdx = i
       break
     }
@@ -242,6 +243,7 @@ async function retryLastMessage() {
   if (lastErrorIdx === -1) return
 
   const errorMsg = messages.value[lastErrorIdx]
+  if (!errorMsg) return
   errorMsg.status = 'sending'
   errorMsg.content = ''
 

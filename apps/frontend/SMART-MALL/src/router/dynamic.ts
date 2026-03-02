@@ -12,6 +12,7 @@ import type { RouteConfig } from './types'
 import { getComponent, isComponentAllowed } from './componentMap'
 import { routeApi } from '@/api'
 import { notFoundRoute } from './index'
+import { devLog } from '@/utils/dev-log'
 
 // ============================================================================
 // 状态管理
@@ -85,7 +86,7 @@ export async function setupDynamicRoutes(router: Router): Promise<boolean> {
     }
 
     isRoutesLoaded = true
-    console.log(`[Router] 动态路由加载完成，共 ${routeConfigs.length} 个顶级路由`)
+    devLog(`[Router] 动态路由加载完成，共 ${routeConfigs.length} 个顶级路由`)
     
     return true
   } catch (error) {
@@ -109,7 +110,7 @@ export function removeDynamicRoutes(router: Router): void {
   registeredRouteNames = []
   isRoutesLoaded = false
   
-  console.log('[Router] 动态路由已清除')
+  devLog('[Router] 动态路由已清除')
 }
 
 /**

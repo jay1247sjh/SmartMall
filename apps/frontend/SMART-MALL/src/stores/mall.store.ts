@@ -30,7 +30,7 @@
  * 3. Area（区域/铺位）
  *    - 楼层内的可租赁空间单元
  *    - 有四种状态：LOCKED（锁定）、PENDING（审批中）、AUTHORIZED（已授权）、OCCUPIED（已入驻）
- *    - 有四种类型：RETAIL（零售）、FOOD（餐饮）、ENTERTAINMENT（娱乐）、SERVICE（服务）
+ *    - 区域类型对齐共享枚举：retail/food/service/anchor/common/corridor 等
  *    - 包含几何边界信息，用于 3D 渲染和碰撞检测
  *
  * 4. Store（店铺）
@@ -86,7 +86,21 @@ export interface Vector3D {
 export type AreaStatus = 'LOCKED' | 'PENDING' | 'AUTHORIZED' | 'OCCUPIED'
 
 /** 区域类型 */
-export type AreaType = 'RETAIL' | 'FOOD' | 'ENTERTAINMENT' | 'SERVICE'
+export type AreaType =
+  | 'retail'
+  | 'food'
+  | 'service'
+  | 'anchor'
+  | 'common'
+  | 'corridor'
+  | 'elevator'
+  | 'escalator'
+  | 'stairs'
+  | 'restroom'
+  | 'storage'
+  | 'office'
+  | 'parking'
+  | 'other'
 
 /** 商城状态 */
 export type MallStatus = 'DRAFT' | 'ACTIVE' | 'CLOSED'

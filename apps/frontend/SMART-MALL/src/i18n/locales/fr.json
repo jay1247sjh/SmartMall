@@ -54,6 +54,7 @@
     "mallManage": "Gestion du centre",
     "mallBuilder": "Constructeur du centre",
     "areaApproval": "Approbation des zones",
+    "layoutReview": "Revue de modélisation",
     "versionManage": "Gestion des versions",
     "userManage": "Gestion des comptes",
     "workspace": "Espace de travail",
@@ -112,7 +113,7 @@
     "sidebar": {
       "title": "Assistant IA",
       "placeholder": "Tapez un message...",
-      "thinking": "L'IA réfléchit...",
+      "thinking": "Thinking...",
       "stopped": "Réponse arrêtée.",
       "pendingImage": "Image en attente",
       "errorApiKey": "Erreur de configuration du service IA, contactez l'administrateur",
@@ -235,6 +236,77 @@
       "featureDataAnalysis": "Analyse de données en temps réel pour saisir chaque opportunité commerciale",
       "featureDragEdit": "Édition de boutiques par glisser-déposer, conception spatiale WYSIWYG",
       "featureMultiDevice": "Collaboration multi-appareils, gardez le contrôle à tout moment et en tout lieu"
+    }
+  },
+  "admin": {
+    "storeManagePage": {
+      "title": "Gestion de validation des boutiques",
+      "hero": {
+        "descAll": "Consulte toutes les boutiques et traitez rapidement les validations et fermetures.",
+        "descPending": "Concentrez-vous sur les boutiques en attente pour traiter les validations.",
+        "descActive": "Affichage des boutiques actives pour suivre leur activité.",
+        "descInactive": "Affichage des boutiques en pause pour suivre leur reprise.",
+        "descClosed": "Affichage des boutiques fermées pour consulter l’historique.",
+        "statsAll": "boutiques",
+        "statsPending": "en attente",
+        "statsActive": "actives",
+        "statsInactive": "en pause",
+        "statsClosed": "fermées",
+        "categorySegment": "Catégorie \"{category}\"",
+        "keywordSegment": "Mot-clé \"{keyword}\"",
+        "segmentSeparator": ", ",
+        "descWithFilters": "{description} Filtres actuels : {filters}."
+      },
+      "filters": {
+        "allStatus": "Tous les statuts",
+        "statusPending": "En attente",
+        "statusActive": "Active",
+        "statusInactive": "En pause",
+        "statusClosed": "Fermée",
+        "allCategory": "Toutes les catégories",
+        "keywordPlaceholder": "Rechercher le nom de la boutique...",
+        "reset": "Réinitialiser",
+        "search": "Rechercher",
+        "total": "{total} boutiques"
+      },
+      "category": {
+        "catering": "Restauration",
+        "retail": "Commerce",
+        "clothing": "Vêtements",
+        "entertainment": "Divertissement",
+        "service": "Services",
+        "other": "Autres"
+      },
+      "closePanel": {
+        "title": "Fermer la boutique \"{name}\"",
+        "desc": "Cette action passera le statut de la boutique à fermée. Veuillez saisir un motif avant de confirmer.",
+        "reasonPlaceholder": "Saisissez le motif de fermeture",
+        "reasonRequired": "Veuillez saisir un motif de fermeture",
+        "processing": "Traitement...",
+        "confirm": "Confirmer la fermeture",
+        "cancel": "Annuler"
+      },
+      "table": {
+        "loading": "Chargement...",
+        "empty": "Aucune donnée de boutique",
+        "storeName": "Nom de la boutique",
+        "merchant": "Commerçant",
+        "location": "Emplacement",
+        "category": "Catégorie",
+        "status": "Statut",
+        "createdAt": "Date de création",
+        "actions": "Actions",
+        "approve": "Approuver",
+        "close": "Fermer",
+        "closed": "Fermée"
+      },
+      "message": {
+        "loadDataFailed": "Échec du chargement des données",
+        "approveSuccess": "Boutique approuvée",
+        "approveFailed": "Échec de l’approbation",
+        "closeSuccess": "La boutique \"{name}\" a été fermée",
+        "closeFailed": "Échec de la fermeture"
+      }
     }
   }
 }

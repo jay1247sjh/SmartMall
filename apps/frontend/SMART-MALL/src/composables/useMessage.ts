@@ -2,7 +2,7 @@
  * 消息提示 Composable
  * 统一管理页面内的消息提示状态
  */
-import { ref } from 'vue'
+import { onScopeDispose, ref } from 'vue'
 
 export type MessageType = 'success' | 'error' | 'warning' | 'info'
 
@@ -13,17 +13,34 @@ export interface Message {
 
 export function useMessage(autoHideDelay = 3000) {
   const message = ref<Message | null>(null)
+  let hideTimer: ReturnType<typeof setTimeout> | null = null
+
+  function clearHideTimer() {
+    if (hideTimer !== null) {
+      clearTimeout(hideTimer)
+      hideTimer = null
+    }
+  }
 
   function showMessage(type: MessageType, text: string) {
+    clearHideTimer()
     message.value = { type, text }
     if (autoHideDelay > 0) {
-      setTimeout(() => { message.value = null }, autoHideDelay)
+      hideTimer = setTimeout(() => {
+        message.value = null
+        hideTimer = null
+      }, autoHideDelay)
     }
   }
 
   function clearMessage() {
+    clearHideTimer()
     message.value = null
   }
+
+  onScopeDispose(() => {
+    clearHideTimer()
+  })
 
   const success = (text: string) => showMessage('success', text)
   const error = (text: string) => showMessage('error', text)

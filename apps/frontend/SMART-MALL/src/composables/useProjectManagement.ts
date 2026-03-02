@@ -6,7 +6,7 @@
  * - 导入导出功能
  * - 未保存更改跟踪
  */
-import { ref, computed } from 'vue'
+import { computed, onScopeDispose, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import type { MallProject, MallTemplate } from '@/builder'
 import {
@@ -35,6 +35,7 @@ export function useProjectManagement() {
   const saveMessage = ref<string | null>(null)
   const hasUnsavedChanges = ref(false)
   const lastSavedState = ref<string | null>(null)
+  let saveMessageTimer: ReturnType<typeof setTimeout> | null = null
   
   // 项目列表
   const showProjectListModal = ref(false)
@@ -55,6 +56,26 @@ export function useProjectManagement() {
   
   // 模板列表
   const templates = computed(() => getAllTemplates())
+
+  function clearSaveMessageTimer() {
+    if (saveMessageTimer !== null) {
+      clearTimeout(saveMessageTimer)
+      saveMessageTimer = null
+    }
+  }
+
+  function showSaveMessage(message: string, durationMs: number) {
+    clearSaveMessageTimer()
+    saveMessage.value = message
+    saveMessageTimer = setTimeout(() => {
+      saveMessage.value = null
+      saveMessageTimer = null
+    }, durationMs)
+  }
+
+  onScopeDispose(() => {
+    clearSaveMessageTimer()
+  })
 
   /**
    * 创建新项目（从模板）
@@ -127,6 +148,7 @@ export function useProjectManagement() {
     if (!project.value || isSaving.value) return
     
     isSaving.value = true
+    clearSaveMessageTimer()
     saveMessage.value = null
     
     try {
@@ -150,13 +172,11 @@ export function useProjectManagement() {
       
       markSaved()
       
-      saveMessage.value = '保存成功'
-      setTimeout(() => { saveMessage.value = null }, 2000)
+      showSaveMessage('保存成功', 2000)
     } catch (err: unknown) {
       console.error('保存失败:', err)
       const errorMessage = err instanceof Error ? err.message : '保存失败，请重试'
-      saveMessage.value = errorMessage
-      setTimeout(() => { saveMessage.value = null }, 3000)
+      showSaveMessage(errorMessage, 3000)
     } finally {
       isSaving.value = false
     }

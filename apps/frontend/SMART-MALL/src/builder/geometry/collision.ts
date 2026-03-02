@@ -8,14 +8,22 @@
 import { getEdges, getCentroid, distance } from './polygon'
 import type { Point2D, LineSegment, Polygon } from './types'
 import type { FloorDefinition, DoorDefinition } from '../types/mall-project.types'
-import { AreaType, isShopAreaType } from '@smart-mall/shared-types'
+import { AreaType } from '@smart-mall/shared-types'
+
+function shouldGenerateAreaBoundaryCollision(areaType: string): boolean {
+  // 与漫游渲染对齐：仅店铺类使用“区域边界=墙体”的碰撞。
+  // COMMON/RESTROOM/SERVICE 等不再默认整圈封死，避免出现大面积不可达。
+  return areaType === AreaType.RETAIL
+    || areaType === AreaType.FOOD
+    || areaType === AreaType.ANCHOR
+}
 
 /**
  * 从楼层区域边界提取墙壁碰撞线段
  *
- * 遍历楼层中所有非走廊区域，将每个区域的边作为墙壁碰撞线段。
- * 走廊区域（CORRIDOR）是可通行区域，不生成墙壁。
- * 店铺类型区域的入口边（最长边）留出门洞，与渲染层 createAreaWalls 一致。
+ * 仅对“店铺类区域”提取区域边界作为墙壁碰撞线段。
+ * 这样与漫游渲染的可见墙体保持一致，避免公共区/设施区被无形墙封死。
+ * 店铺区域的入口边（最长边）留出门洞，与渲染层 createAreaWalls 一致。
  *
  * @param floor - 楼层定义
  * @returns 墙壁碰撞线段数组
@@ -24,11 +32,11 @@ export function extractWallSegments(floor: FloorDefinition): LineSegment[] {
   const segments: LineSegment[] = []
 
   for (const area of floor.areas) {
-    if (area.type === AreaType.CORRIDOR) continue
+    if (!shouldGenerateAreaBoundaryCollision(String(area.type))) {
+      continue
+    }
 
     const edges = getEdges(area.shape)
-    const isShop = isShopAreaType(area.type as AreaType)
-      || area.type === ('store' as string)
     const areaDoors = area.doors ?? []
 
     // 有手动放置的门 → 按门定义挖洞（适用于所有区域类型）
@@ -87,12 +95,6 @@ export function extractWallSegments(floor: FloorDefinition): LineSegment[] {
           })
         }
       }
-      continue
-    }
-
-    // 无手动门 + 非店铺区域：所有边都是碰撞墙
-    if (!isShop) {
-      segments.push(...edges)
       continue
     }
 

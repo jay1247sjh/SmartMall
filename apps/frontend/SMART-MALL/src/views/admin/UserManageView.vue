@@ -117,8 +117,8 @@ async function loadUsers() {
  */
 function handleSearchParamsUpdate(params: UserSearchParams) {
   searchParams.keyword = params.keyword
-  searchParams.userType = params.userType
-  searchParams.status = params.status
+  searchParams.userType = params.userType as UserSearchParams['userType']
+  searchParams.status = params.status as UserSearchParams['status']
 }
 
 /**
@@ -127,8 +127,8 @@ function handleSearchParamsUpdate(params: UserSearchParams) {
 function handleSearch() {
   // 同步搜索参数到 searchForm
   searchForm.keyword = searchParams.keyword
-  searchForm.userType = searchParams.userType
-  searchForm.status = searchParams.status
+  searchForm.userType = searchParams.userType as UserListParams['userType']
+  searchForm.status = searchParams.status as UserListParams['status']
   searchForm.page = 1
   loadUsers()
 }
@@ -270,8 +270,8 @@ onMounted(() => {
       :users="users"
       :loading="isLoading"
       :total="total"
-      :current-page="searchForm.page"
-      :page-size="searchForm.pageSize"
+      :current-page="searchForm.page ?? 1"
+      :page-size="searchForm.pageSize ?? 10"
       :error="error"
       @row-click="handleRowClick"
       @freeze="handleFreezeUser"

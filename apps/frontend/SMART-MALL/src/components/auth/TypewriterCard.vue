@@ -104,6 +104,7 @@ let pauseTimer: number | null = null
 function typeText() {
   // 获取当前要显示的完整文本
   const fullText = props.texts[currentIndex.value]
+  if (!fullText) return
   
   // 字符索引，用于追踪当前显示到第几个字符
   let charIndex = 0

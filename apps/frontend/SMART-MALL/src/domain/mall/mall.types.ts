@@ -159,7 +159,21 @@ export interface GeneratedAreaData {
   /** 区域名称 */
   name: string
   /** 区域类型 */
-  type: 'store' | 'corridor' | 'facility' | 'entrance'
+  type:
+    | 'retail'
+    | 'food'
+    | 'service'
+    | 'anchor'
+    | 'common'
+    | 'corridor'
+    | 'elevator'
+    | 'escalator'
+    | 'stairs'
+    | 'restroom'
+    | 'storage'
+    | 'office'
+    | 'parking'
+    | 'other'
   /** 区域颜色（十六进制） */
   color?: string
   /** 区域形状 */

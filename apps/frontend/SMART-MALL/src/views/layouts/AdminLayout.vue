@@ -68,6 +68,7 @@ const menuItems = [
   { path: '/admin/mall', labelKey: 'nav.mallManage', icon: Shop },
   { path: '/admin/store-manage', labelKey: 'nav.storeManage', icon: Shop },
   { path: '/admin/area-approval', labelKey: 'nav.areaApproval', icon: Document },
+  { path: '/admin/layout-review', labelKey: 'nav.layoutReview', icon: Document },
   { path: '/admin/layout-version', labelKey: 'nav.versionManage', icon: Clock },
   { path: '/admin/users', labelKey: 'nav.userManage', icon: User },
   { path: '/admin/builder', labelKey: 'nav.mallBuilder', icon: Tools },

@@ -137,6 +137,10 @@ export {
 } from './merchant.api'
 export { default as merchantApiDefault } from './merchant.api'
 
+/** 建模提案 API - 商家提交、管理员审核 */
+export * from './layout-proposal.api'
+export { default as layoutProposalApi } from './layout-proposal.api'
+
 // ============================================================================
 // 商城相关 API
 // ============================================================================

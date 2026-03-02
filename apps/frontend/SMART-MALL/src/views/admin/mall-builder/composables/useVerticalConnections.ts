@@ -4,7 +4,7 @@
  */
 import { ref, computed } from 'vue'
 import * as THREE from 'three'
-import type { MallProject, AreaDefinition, VerticalConnection } from '@/builder'
+import type { MallProject, AreaDefinition, VerticalConnection, VerticalPassageProfile } from '@/builder'
 import {
   createVerticalConnection,
   getConnectionTypeName,
@@ -71,7 +71,7 @@ export function useVerticalConnections(project: () => MallProject | null) {
   /**
    * 确认楼层连接
    */
-  function confirmFloorConnection(): VerticalConnection | null {
+  function confirmFloorConnection(passageProfile?: VerticalPassageProfile): VerticalConnection | null {
     if (!pendingConnectionArea.value || selectedFloorIds.value.length === 0) {
       cancelFloorConnection()
       return null
@@ -81,7 +81,24 @@ export function useVerticalConnections(project: () => MallProject | null) {
       areaId: pendingConnectionArea.value.id,
       type: pendingConnectionArea.value.type as 'elevator' | 'escalator' | 'stairs',
       floorIds: selectedFloorIds.value,
+      passageProfile,
     })
+
+    const existing = verticalConnections.value.find(item => item.areaId === connection.areaId)
+    if (existing) {
+      verticalConnections.value = verticalConnections.value.filter(
+        item => item.areaId !== connection.areaId
+      )
+      const updated: VerticalConnection = {
+        ...connection,
+        id: existing.id,
+        createdAt: existing.createdAt,
+        passageProfile: passageProfile ?? existing.passageProfile,
+      }
+      verticalConnections.value.push(updated)
+      cancelFloorConnection()
+      return updated
+    }
 
     verticalConnections.value.push(connection)
     cancelFloorConnection()

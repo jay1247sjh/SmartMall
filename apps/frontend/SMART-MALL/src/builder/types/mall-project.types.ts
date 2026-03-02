@@ -10,15 +10,19 @@
  * - 不包含任何业务逻辑
  */
 
-import type { Point2D, Polygon, Rectangle, Transform2D } from '../geometry/types'
-import { 
-  AreaType, 
-  AREA_TYPE_NAMES, 
-  AREA_TYPE_COLORS 
+import type { Polygon, Rectangle, Transform2D } from '../geometry/types'
+import {
+  AreaType as SharedAreaTypeEnum,
+  AREA_TYPE_NAMES,
+  AREA_TYPE_COLORS,
 } from '@smart-mall/shared-types'
 
-// 重新导出共享类型，保持向后兼容
-export { AreaType, AREA_TYPE_NAMES, AREA_TYPE_COLORS }
+// 对外同时提供：
+// 1) 值空间：AreaType.RETAIL 这样的枚举访问
+// 2) 类型空间：'retail' 这样的字符串联合
+export const AreaType = SharedAreaTypeEnum
+export type AreaType = `${SharedAreaTypeEnum}`
+export { AREA_TYPE_NAMES, AREA_TYPE_COLORS }
 
 // ============================================================================
 // 项目级别类型

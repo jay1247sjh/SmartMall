@@ -7,11 +7,38 @@
 import type {
   VerticalConnection,
   VerticalConnectionType,
+  VerticalPassageProfile,
   FloorConnection,
   CreateConnectionParams,
   ConnectionValidationResult,
 } from './types'
 import { generateId } from '../utils'
+
+export const DEFAULT_VERTICAL_PASSAGE_LANE_PADDING = 0.12
+
+function normalizeAngleDeg(angleDeg: number): number {
+  const normalized = angleDeg % 360
+  return normalized < 0 ? normalized + 360 : normalized
+}
+
+function clampLanePadding(value: number): number {
+  return Math.max(0, Math.min(0.45, value))
+}
+
+export function normalizeVerticalPassageProfile(
+  profile?: Partial<VerticalPassageProfile> | null,
+  fallbackAngleDeg: number = 0,
+): VerticalPassageProfile {
+  const rawAngle = Number(profile?.ascendAngleDeg)
+  const rawPadding = Number(profile?.lanePadding)
+
+  return {
+    ascendAngleDeg: Number.isFinite(rawAngle) ? normalizeAngleDeg(rawAngle) : normalizeAngleDeg(fallbackAngleDeg),
+    lanePadding: Number.isFinite(rawPadding)
+      ? clampLanePadding(rawPadding)
+      : DEFAULT_VERTICAL_PASSAGE_LANE_PADDING,
+  }
+}
 
 /**
  * 创建垂直连接
@@ -22,6 +49,9 @@ export function createVerticalConnection(params: CreateConnectionParams): Vertic
     areaId: params.areaId,
     type: params.type,
     connectedFloors: params.floorIds,
+    passageProfile: params.passageProfile
+      ? normalizeVerticalPassageProfile(params.passageProfile)
+      : undefined,
     createdAt: Date.now(),
   }
 }

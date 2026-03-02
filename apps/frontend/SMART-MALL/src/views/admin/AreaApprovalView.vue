@@ -88,7 +88,12 @@ async function handleApprove(approval: AreaApplyDTO) {
     await areaPermissionApi.approveApplication(approval.applyId)
     
     const index = approvals.value.findIndex(a => a.applyId === approval.applyId)
-    if (index !== -1) approvals.value[index].status = 'APPROVED'
+    if (index !== -1) {
+      const targetApproval = approvals.value[index]
+      if (targetApproval) {
+        targetApproval.status = 'APPROVED'
+      }
+    }
     
     showDetailModal.value = false
     showMessage('success', '审批通过成功')
@@ -114,8 +119,11 @@ async function handleReject(reason: string) {
     
     const index = approvals.value.findIndex(a => a.applyId === selectedApproval.value!.applyId)
     if (index !== -1) {
-      approvals.value[index].status = 'REJECTED'
-      approvals.value[index].rejectReason = reason
+      const targetApproval = approvals.value[index]
+      if (targetApproval) {
+        targetApproval.status = 'REJECTED'
+        targetApproval.rejectReason = reason
+      }
     }
     
     showRejectModal.value = false

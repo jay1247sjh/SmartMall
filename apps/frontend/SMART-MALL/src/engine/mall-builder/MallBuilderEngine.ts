@@ -45,6 +45,7 @@ import { ThreeEngine, type CameraMode, type EngineOptions, type ThreePointLightC
 import { MaterialManager } from '@/engine/materials/MaterialManager'
 import { EnvironmentManager } from '@/engine/environment/EnvironmentManager'
 import { type SceneTheme, type SceneThemePreset, getSceneThemePreset } from './theme-presets'
+import { devLog } from '@/utils/dev-log'
 
 // ============================================================================
 // 类型定义
@@ -886,7 +887,7 @@ export class MallBuilderEngine extends ThreeEngine {
     // 调用父类的销毁方法
     super.dispose()
 
-    console.log('[MallBuilderEngine] Disposed successfully')
+    devLog('[MallBuilderEngine] Disposed successfully')
   }
 
   // ==========================================================================

@@ -4,7 +4,7 @@
  * 将 Intelligence Service 返回的 MallLayoutData 转换为建模器使用的 MallProject 格式。
  */
 
-import type { Point2D, Polygon } from '../geometry/types'
+import type { Polygon } from '../geometry/types'
 import { calculateArea, calculatePerimeter } from '../geometry/polygon'
 import type {
   MallProject,
@@ -73,10 +73,6 @@ const AREA_TYPE_MAP: Record<string, AreaType> = {
   office: AreaType.OFFICE,
   parking: AreaType.PARKING,
   other: AreaType.OTHER,
-  // 兼容旧的 type 值
-  store: AreaType.RETAIL,
-  facility: AreaType.COMMON,
-  entrance: AreaType.COMMON,
 }
 
 // ============================================================================

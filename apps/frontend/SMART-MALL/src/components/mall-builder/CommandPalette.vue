@@ -85,9 +85,14 @@ async function handleSubmit() {
   abortController.value = new AbortController()
 
   try {
+    const stepAnalyze = steps.value[0]
+    const stepSearch = steps.value[1]
+    const stepGenerate = steps.value[2]
+    if (!stepAnalyze || !stepSearch || !stepGenerate) return
+
     // Step 1 → 2
-    steps.value[0].status = 'done'
-    steps.value[1].status = 'active'
+    stepAnalyze.status = 'done'
+    stepSearch.status = 'active'
 
     const response: ChatResponse = await intelligenceApi.chat(
       query,
@@ -97,13 +102,13 @@ async function handleSubmit() {
     )
 
     // Step 2 → 3
-    steps.value[1].status = 'done'
-    steps.value[2].status = 'active'
+    stepSearch.status = 'done'
+    stepGenerate.status = 'active'
 
     responseText.value = response.content || response.message || ''
 
     // All done
-    steps.value[2].status = 'done'
+    stepGenerate.status = 'done'
   } catch (error: unknown) {
     if (error instanceof DOMException && error.name === 'AbortError') {
       // User cancelled, no error to show

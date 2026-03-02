@@ -5,6 +5,7 @@
  */
 import { ElCard, ElStatistic, ElIcon, ElTag } from 'element-plus'
 import { Top, Bottom } from '@element-plus/icons-vue'
+import { computed } from 'vue'
 
 interface Props {
   value: string | number
@@ -15,24 +16,31 @@ interface Props {
   }
 }
 
-defineProps<Props>()
+const props = defineProps<Props>()
+const statisticValue = computed(() => {
+  if (typeof props.value === 'number') {
+    return props.value
+  }
+  const parsed = Number(props.value)
+  return Number.isFinite(parsed) ? parsed : 0
+})
 </script>
 
 <template>
   <ElCard shadow="hover" class="stat-card">
     <article class="stat-content">
-      <ElStatistic :title="label" :value="value" class="stat-statistic" />
+      <ElStatistic :title="props.label" :value="statisticValue" class="stat-statistic" />
       <ElTag
-        v-if="trend"
-        :type="trend.direction === 'up' ? 'success' : 'danger'"
+        v-if="props.trend"
+        :type="props.trend.direction === 'up' ? 'success' : 'danger'"
         size="small"
         class="stat-trend"
       >
         <ElIcon :size="12">
-          <Top v-if="trend.direction === 'up'" />
+          <Top v-if="props.trend.direction === 'up'" />
           <Bottom v-else />
         </ElIcon>
-        <span>{{ trend.value }}%</span>
+        <span>{{ props.trend.value }}%</span>
       </ElTag>
     </article>
   </ElCard>

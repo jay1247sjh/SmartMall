@@ -54,6 +54,7 @@
     "mallManage": "商城管理",
     "mallBuilder": "商城建模",
     "areaApproval": "區域審批",
+    "layoutReview": "建模審核",
     "versionManage": "版本管理",
     "userManage": "帳號管理",
     "workspace": "工作區",
@@ -112,7 +113,7 @@
     "sidebar": {
       "title": "AI 助手",
       "placeholder": "輸入訊息...",
-      "thinking": "AI 正在思考中...",
+      "thinking": "Thinking...",
       "stopped": "已停止回答。",
       "pendingImage": "待發送圖片",
       "errorApiKey": "AI 服務設定異常，請聯繫管理員",
@@ -235,6 +236,77 @@
       "featureDataAnalysis": "即時數據分析，洞察每一個商業機會",
       "featureDragEdit": "拖曳式店鋪編輯，所見即所得的空間設計",
       "featureMultiDevice": "多端協同工作，隨時隨地掌控全局"
+    }
+  },
+  "admin": {
+    "storeManagePage": {
+      "title": "店鋪審核管理",
+      "hero": {
+        "descAll": "統一查看所有店鋪，快速處理審批與關店操作。",
+        "descPending": "目前聚焦待審批店鋪，可批量處理准入審核。",
+        "descActive": "目前查看營業中店鋪，便於追蹤經營狀態。",
+        "descInactive": "目前查看暫停營業店鋪，便於排查恢復情況。",
+        "descClosed": "目前查看已關閉店鋪，便於複盤歷史處理記錄。",
+        "statsAll": "家店鋪",
+        "statsPending": "家待審批",
+        "statsActive": "家營業中",
+        "statsInactive": "家暫停營業",
+        "statsClosed": "家已關閉",
+        "categorySegment": "分類「{category}」",
+        "keywordSegment": "關鍵詞「{keyword}」",
+        "segmentSeparator": "、",
+        "descWithFilters": "{description} 目前包含{filters}。"
+      },
+      "filters": {
+        "allStatus": "全部狀態",
+        "statusPending": "待審批",
+        "statusActive": "營業中",
+        "statusInactive": "暫停營業",
+        "statusClosed": "已關閉",
+        "allCategory": "全部分類",
+        "keywordPlaceholder": "搜尋店鋪名稱...",
+        "reset": "重置",
+        "search": "搜尋",
+        "total": "共 {total} 家店鋪"
+      },
+      "category": {
+        "catering": "餐飲",
+        "retail": "零售",
+        "clothing": "服裝",
+        "entertainment": "娛樂",
+        "service": "服務",
+        "other": "其他"
+      },
+      "closePanel": {
+        "title": "關閉店鋪「{name}」",
+        "desc": "此操作會將店鋪狀態變更為已關閉，請填寫關閉原因後確認。",
+        "reasonPlaceholder": "請輸入關閉原因",
+        "reasonRequired": "請輸入關閉原因",
+        "processing": "處理中...",
+        "confirm": "確認關閉",
+        "cancel": "取消"
+      },
+      "table": {
+        "loading": "載入中...",
+        "empty": "暫無店鋪資料",
+        "storeName": "店鋪名稱",
+        "merchant": "商家",
+        "location": "位置",
+        "category": "分類",
+        "status": "狀態",
+        "createdAt": "建立時間",
+        "actions": "操作",
+        "approve": "通過",
+        "close": "關閉",
+        "closed": "已關閉"
+      },
+      "message": {
+        "loadDataFailed": "載入資料失敗",
+        "approveSuccess": "店鋪審批通過",
+        "approveFailed": "審批失敗",
+        "closeSuccess": "店鋪「{name}」已關閉",
+        "closeFailed": "關閉失敗"
+      }
     }
   }
 }

@@ -5,10 +5,10 @@
  */
 import { ref, computed, onMounted } from 'vue'
 import { 
-  DataTable, Modal, CustomSelect, FilterBar, 
+  DataTable, CustomSelect, FilterBar, 
   MessageAlert, StatusBadge, ActionButton, ConfirmModal 
 } from '@/components'
-import { useMessage, useFormatters, useStatusConfig } from '@/composables'
+import { useMessage, useFormatters } from '@/composables'
 import { areaPermissionApi } from '@/api'
 import type { AreaPermissionDTO } from '@/api/area-permission.api'
 
@@ -18,7 +18,6 @@ import type { AreaPermissionDTO } from '@/api/area-permission.api'
 
 const { message, success, error } = useMessage()
 const { formatDateTime } = useFormatters()
-const { getStatusText, getStatusClass } = useStatusConfig('permission')
 
 // ============================================================================
 // State
@@ -84,7 +83,12 @@ async function handleRevoke(reason: string) {
     await areaPermissionApi.revokePermission(selectedPermission.value.permissionId, reason)
     
     const index = permissions.value.findIndex(p => p.permissionId === selectedPermission.value!.permissionId)
-    if (index !== -1) permissions.value[index].status = 'REVOKED'
+    if (index !== -1) {
+      const targetPermission = permissions.value[index]
+      if (targetPermission) {
+        targetPermission.status = 'REVOKED'
+      }
+    }
     
     showRevokeModal.value = false
     success('权限已撤销')

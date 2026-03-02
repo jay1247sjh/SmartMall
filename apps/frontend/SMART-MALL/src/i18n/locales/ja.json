@@ -54,6 +54,7 @@
     "mallManage": "モール管理",
     "mallBuilder": "モールビルダー",
     "areaApproval": "エリア承認",
+    "layoutReview": "モデリング審査",
     "versionManage": "バージョン管理",
     "userManage": "アカウント管理",
     "workspace": "ワークスペース",
@@ -112,7 +113,7 @@
     "sidebar": {
       "title": "AIアシスタント",
       "placeholder": "メッセージを入力...",
-      "thinking": "AIが考え中...",
+      "thinking": "Thinking...",
       "stopped": "回答を停止しました。",
       "pendingImage": "送信待ち画像",
       "errorApiKey": "AIサービスの設定エラーです。管理者にお問い合わせください",
@@ -235,6 +236,77 @@
       "featureDataAnalysis": "リアルタイムデータ分析で、あらゆるビジネスチャンスを把握",
       "featureDragEdit": "ドラッグ＆ドロップで店舗編集、WYSIWYGの空間デザイン",
       "featureMultiDevice": "マルチデバイス連携、いつでもどこでも全体を把握"
+    }
+  },
+  "admin": {
+    "storeManagePage": {
+      "title": "店舗審査管理",
+      "hero": {
+        "descAll": "すべての店舗を一覧し、承認と閉店処理をすばやく行えます。",
+        "descPending": "承認待ち店舗に集中して審査を処理できます。",
+        "descActive": "営業中店舗を確認し、運営状況を追跡できます。",
+        "descInactive": "一時停止中の店舗を確認し、再開状況を把握できます。",
+        "descClosed": "閉店済み店舗を確認し、対応履歴を振り返れます。",
+        "statsAll": "店舗",
+        "statsPending": "承認待ち",
+        "statsActive": "営業中",
+        "statsInactive": "一時停止",
+        "statsClosed": "閉店済み",
+        "categorySegment": "カテゴリ「{category}」",
+        "keywordSegment": "キーワード「{keyword}」",
+        "segmentSeparator": "、",
+        "descWithFilters": "{description} 現在の絞り込み: {filters}。"
+      },
+      "filters": {
+        "allStatus": "すべてのステータス",
+        "statusPending": "承認待ち",
+        "statusActive": "営業中",
+        "statusInactive": "一時停止",
+        "statusClosed": "閉店済み",
+        "allCategory": "すべてのカテゴリ",
+        "keywordPlaceholder": "店舗名を検索...",
+        "reset": "リセット",
+        "search": "検索",
+        "total": "合計 {total} 店舗"
+      },
+      "category": {
+        "catering": "飲食",
+        "retail": "小売",
+        "clothing": "衣料",
+        "entertainment": "娯楽",
+        "service": "サービス",
+        "other": "その他"
+      },
+      "closePanel": {
+        "title": "店舗「{name}」を閉店",
+        "desc": "この操作により店舗ステータスは「閉店」になります。理由を入力して確定してください。",
+        "reasonPlaceholder": "閉店理由を入力",
+        "reasonRequired": "閉店理由を入力してください",
+        "processing": "処理中...",
+        "confirm": "閉店を確定",
+        "cancel": "キャンセル"
+      },
+      "table": {
+        "loading": "読み込み中...",
+        "empty": "店舗データがありません",
+        "storeName": "店舗名",
+        "merchant": "事業者",
+        "location": "位置",
+        "category": "カテゴリ",
+        "status": "ステータス",
+        "createdAt": "作成日時",
+        "actions": "操作",
+        "approve": "承認",
+        "close": "閉店",
+        "closed": "閉店済み"
+      },
+      "message": {
+        "loadDataFailed": "データの読み込みに失敗しました",
+        "approveSuccess": "店舗を承認しました",
+        "approveFailed": "承認に失敗しました",
+        "closeSuccess": "店舗「{name}」を閉店しました",
+        "closeFailed": "閉店処理に失敗しました"
+      }
     }
   }
 }

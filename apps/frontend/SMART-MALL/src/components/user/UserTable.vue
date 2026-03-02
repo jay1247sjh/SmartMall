@@ -33,8 +33,6 @@
  */
 import {
   ElCard,
-  ElTable,
-  ElTableColumn,
   ElTag,
   ElPagination,
   ElButton,
@@ -102,7 +100,7 @@ const { getStatusConfig } = useStatusConfig('user')
 // 用户类型配置
 // ============================================================================
 
-const userTypeConfig: Record<string, { label: string; tagType: '' | 'success' | 'warning' | 'info' | 'danger' }> = {
+const userTypeConfig: Record<string, { label: string; tagType: 'success' | 'warning' | 'info' | 'primary' | 'danger' }> = {
   ADMIN: { label: '管理员', tagType: 'danger' },
   MERCHANT: { label: '商家', tagType: 'warning' },
   USER: { label: '普通用户', tagType: 'info' },
@@ -116,7 +114,7 @@ const userTypeConfig: Record<string, { label: string; tagType: '' | 'success' | 
  * 获取用户类型配置
  */
 function getUserTypeConfig(userType: string) {
-  return userTypeConfig[userType] || { label: userType, tagType: '' as const }
+  return userTypeConfig[userType] || { label: userType, tagType: 'info' as const }
 }
 
 /**
@@ -209,8 +207,8 @@ function handleRetry() {
             -->
             <tr
               v-for="user in users"
-              :key="user.id"
-              v-memo="[user.id, user.username, user.email, user.userType, user.status, user.createdAt]"
+              :key="user.userId"
+              v-memo="[user.userId, user.username, user.email, user.userType, user.status, user.createdAt]"
               class="user-row"
               @click="handleRowClick(user)"
             >
@@ -228,7 +226,7 @@ function handleRetry() {
                 />
                 <span class="status-text">{{ getUserStatusConfig(user.status).text }}</span>
               </td>
-              <td>{{ formatDate(user.createdAt, 'date') }}</td>
+              <td>{{ formatDate(user.createdAt) }}</td>
               <td>
                 <ElSpace>
                   <template v-if="user.userType !== 'ADMIN'">

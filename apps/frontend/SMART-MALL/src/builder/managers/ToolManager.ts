@@ -10,6 +10,7 @@
 
 import type { BuilderTool } from '../BuilderEngine'
 import { BaseManager } from '../core/BaseManager'
+import { devLog } from '@/utils/dev-log'
 
 /**
  * 鼠标事件数据
@@ -64,7 +65,7 @@ export class ToolManager extends BaseManager<BuilderTool> {
     this.currentTool = tool
     this.notify(tool)
 
-    console.log(`[ToolManager] Tool changed to: ${tool}`)
+    devLog(`[ToolManager] Tool changed to: ${tool}`)
   }
 
   /**

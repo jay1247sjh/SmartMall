@@ -95,6 +95,22 @@ export function polygonToShape(polygon: Polygon): THREE.Shape {
 }
 
 /**
+ * 将外轮廓与孔洞多边形转换为 Three.js Shape
+ */
+export function polygonToShapeWithHoles(
+  outer: Polygon,
+  holes: Polygon[] = [],
+): THREE.Shape {
+  const shape = polygonToShape(outer)
+  holes.forEach((hole) => {
+    if (!hole?.vertices || hole.vertices.length < 3) return
+    const holePath = polygonToShape(hole)
+    shape.holes.push(holePath)
+  })
+  return shape
+}
+
+/**
  * 将多边形转换为 2D 平面几何体
  */
 export function polygonToPlaneGeometry(polygon: Polygon): THREE.ShapeGeometry {

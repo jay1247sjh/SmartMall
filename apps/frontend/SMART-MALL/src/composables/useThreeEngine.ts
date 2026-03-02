@@ -19,6 +19,21 @@ export function useThreeEngine(containerRef: Ref<HTMLElement | null>) {
   const controls = shallowRef<OrbitControls | null>(null)
   const isLoading = ref(true)
   const loadProgress = ref(0)
+  let loadingTimer: ReturnType<typeof setTimeout> | null = null
+
+  function clearLoadingTimer() {
+    if (!loadingTimer) return
+    clearTimeout(loadingTimer)
+    loadingTimer = null
+  }
+
+  function hideLoading(delay = 300) {
+    clearLoadingTimer()
+    loadingTimer = setTimeout(() => {
+      isLoading.value = false
+      loadingTimer = null
+    }, delay)
+  }
 
   /**
    * 初始化 Three.js 引擎
@@ -98,7 +113,7 @@ export function useThreeEngine(containerRef: Ref<HTMLElement | null>) {
     animate()
 
     loadProgress.value = 100
-    setTimeout(() => { isLoading.value = false }, 300)
+    hideLoading()
   }
 
   /**
@@ -208,6 +223,7 @@ export function useThreeEngine(containerRef: Ref<HTMLElement | null>) {
    * 清理资源
    */
   function dispose() {
+    clearLoadingTimer()
     if (renderer.value && containerRef.value) {
       containerRef.value.removeChild(renderer.value.domElement)
       renderer.value.dispose()

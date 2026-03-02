@@ -5,7 +5,13 @@
  * 新代码请直接使用 AREA_TYPE_NAMES 和 AREA_TYPE_COLORS。
  */
 
-import { AreaType, AREA_TYPE_NAMES, AREA_TYPE_COLORS } from '@smart-mall/shared-types'
+import {
+  AreaType as SharedAreaTypeEnum,
+  AREA_TYPE_NAMES,
+  AREA_TYPE_COLORS,
+} from '@smart-mall/shared-types'
+
+type AreaType = `${SharedAreaTypeEnum}`
 
 /**
  * 获取区域类型的显示名称
@@ -15,7 +21,7 @@ import { AreaType, AREA_TYPE_NAMES, AREA_TYPE_COLORS } from '@smart-mall/shared-
  * @returns 区域类型的中文名称
  */
 export function getAreaTypeName(type: AreaType): string {
-  return AREA_TYPE_NAMES[type] ?? String(type)
+  return AREA_TYPE_NAMES[type as SharedAreaTypeEnum] ?? String(type)
 }
 
 /**
@@ -26,5 +32,5 @@ export function getAreaTypeName(type: AreaType): string {
  * @returns 区域类型的默认颜色（十六进制）
  */
 export function getAreaTypeColor(type: AreaType): string {
-  return AREA_TYPE_COLORS[type] ?? '#6b7280'
+  return AREA_TYPE_COLORS[type as SharedAreaTypeEnum] ?? '#6b7280'
 }

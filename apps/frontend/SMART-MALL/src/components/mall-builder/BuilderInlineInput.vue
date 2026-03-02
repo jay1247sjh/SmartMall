@@ -43,7 +43,8 @@ const emit = defineEmits<BuilderInlineInputEmits>()
 // ============================================================================
 
 const { t } = useI18n()
-const { aiStore, agentSteps, currentStepIndex, sendMessage, cancelRequest, stopProcessing } = useBuilderAiChat()
+const { aiStore, currentThinkingText, sendMessage, cancelRequest, stopProcessing } =
+  useBuilderAiChat()
 
 const inputRef = ref<HTMLInputElement | null>(null)
 const inputValue = ref('')
@@ -115,22 +116,18 @@ function handleKeydown(e: KeyboardEvent) {
 // Auto-focus input when visible
 watch(
   () => inputRef.value,
-  (el) => {
+  el => {
     if (el) {
       nextTick(() => el.focus())
     }
-  },
+  }
 )
 </script>
 
 <template>
   <Teleport to="body">
     <Transition name="inline-input-fade">
-      <div
-        v-if="visible"
-        class="inline-input-overlay"
-        @click.self="handleOverlayClick"
-      >
+      <div v-if="visible" class="inline-input-overlay" @click.self="handleOverlayClick">
         <div class="inline-input-panel" @keydown="handleKeydown">
           <!-- Input Row -->
           <div class="input-row">
@@ -155,29 +152,11 @@ watch(
             <kbd class="shortcut-hint">ESC</kbd>
           </div>
 
-          <!-- Processing Steps -->
-          <div v-if="aiStore.isSending && agentSteps.length > 0" class="steps-area">
-            <div class="progress-bar">
-              <div
-                class="progress-fill"
-                :style="{ width: `${(currentStepIndex / agentSteps.length) * 100}%` }"
-              />
-            </div>
-            <div
-              v-for="(step, i) in agentSteps"
-              :key="i"
-              :class="['step-item', step.status]"
-            >
-              <svg v-if="step.status === 'done'" class="step-icon" viewBox="0 0 16 16" fill="none">
-                <path d="M3 8l3.5 3.5L13 5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-              </svg>
-              <svg v-else-if="step.status === 'active'" class="step-icon spinning" viewBox="0 0 16 16" fill="none">
-                <circle cx="8" cy="8" r="6" stroke="currentColor" stroke-width="1.5" stroke-dasharray="20 12"/>
-              </svg>
-              <svg v-else class="step-icon" viewBox="0 0 16 16" fill="none">
-                <circle cx="8" cy="8" r="3" fill="currentColor" opacity="0.3"/>
-              </svg>
-              <span>{{ t(step.text) }}</span>
+          <!-- Processing -->
+          <div v-if="aiStore.isSending" class="steps-area">
+            <div class="thinking-line">
+              <span class="thinking-dot" />
+              <span class="thinking-text">{{ currentThinkingText }}</span>
             </div>
           </div>
 
@@ -189,8 +168,13 @@ watch(
           <!-- Error Display -->
           <div v-if="tempError" class="error-area">
             <svg viewBox="0 0 16 16" fill="none">
-              <circle cx="8" cy="8" r="6" stroke="currentColor" stroke-width="1.5"/>
-              <path d="M8 5v3M8 10.5h.01" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+              <circle cx="8" cy="8" r="6" stroke="currentColor" stroke-width="1.5" />
+              <path
+                d="M8 5v3M8 10.5h.01"
+                stroke="currentColor"
+                stroke-width="1.5"
+                stroke-linecap="round"
+              />
             </svg>
             <span>{{ tempError }}</span>
           </div>
@@ -282,50 +266,39 @@ watch(
 // Steps Area
 // ============================================================================
 .steps-area {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
   padding: 12px 16px;
   border-bottom: 1px solid var(--border-subtle);
 
-  .progress-bar {
-    height: 2px;
-    background: var(--border-subtle);
-    border-radius: 1px;
-    margin-bottom: 8px;
-    overflow: hidden;
-
-    .progress-fill {
-      height: 100%;
-      background: var(--accent-primary);
-      border-radius: 1px;
-      transition: width 0.25s;
-    }
-  }
-
-  .step-item {
+  .thinking-line {
     display: flex;
     align-items: center;
     gap: 8px;
-    font-size: var(--text-sm);
-    color: var(--text-muted);
 
-    &.active {
-      color: var(--accent-primary);
+    .thinking-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: var(--accent-primary);
+      box-shadow: 0 0 0 3px rgba(var(--accent-primary-rgb), 0.18);
+      animation: pulse-dot 1.3s ease-in-out infinite;
+      flex-shrink: 0;
     }
 
-    &.done {
-      color: var(--success);
-    }
-  }
-
-  .step-icon {
-    flex-shrink: 0;
-    width: 16px;
-    height: 16px;
-
-    &.spinning {
-      animation: spin 1s linear infinite;
+    .thinking-text {
+      font-size: var(--text-sm);
+      font-weight: 500;
+      background: linear-gradient(
+        120deg,
+        var(--text-muted) 10%,
+        var(--text-primary) 45%,
+        var(--text-muted) 85%
+      );
+      background-size: 220% 100%;
+      background-position: 100% 0;
+      -webkit-background-clip: text;
+      background-clip: text;
+      color: transparent;
+      animation: thinking-glow 1.8s linear infinite;
     }
   }
 }
@@ -380,8 +353,22 @@ watch(
 // ============================================================================
 // Animation
 // ============================================================================
-@keyframes spin {
-  from { transform: rotate(0deg); }
-  to { transform: rotate(360deg); }
+@keyframes pulse-dot {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
+@keyframes thinking-glow {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
 }
 </style>

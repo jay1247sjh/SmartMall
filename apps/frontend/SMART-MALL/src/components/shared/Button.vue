@@ -43,7 +43,7 @@ const emit = defineEmits<{
  * 映射变体到 Element Plus 按钮类型
  */
 const elButtonType = computed(() => {
-  const typeMap: Record<ButtonVariant, string> = {
+  const typeMap: Record<ButtonVariant, '' | 'success' | 'warning' | 'info' | 'text' | 'default' | 'primary' | 'danger'> = {
     primary: 'primary',
     secondary: 'default',
     danger: 'danger',

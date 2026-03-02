@@ -172,7 +172,7 @@
                           :alt="CHARACTER_MODEL_DISPLAY_NAMES[model]"
                           class="character-card__thumb"
                           loading="lazy"
-                          @error="$event.target.style.display='none'"
+                          @error="handleThumbnailError"
                         />
                         <span class="character-card__name">{{ CHARACTER_MODEL_DISPLAY_NAMES[model].split(' ')[1] }}</span>
                       </button>
@@ -467,6 +467,13 @@ function cancelCloseSubmenu() {
   if (closeTimer) {
     clearTimeout(closeTimer)
     closeTimer = null
+  }
+}
+
+function handleThumbnailError(event: Event) {
+  const target = event.target
+  if (target instanceof HTMLImageElement) {
+    target.style.display = 'none'
   }
 }
 

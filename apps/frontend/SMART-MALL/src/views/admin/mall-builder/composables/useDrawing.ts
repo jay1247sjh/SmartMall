@@ -2,7 +2,7 @@
  * 绘制工具 Composable
  * 处理区域绘制逻辑（矩形、多边形、轮廓）
  */
-import { ref, shallowRef } from 'vue'
+import { onScopeDispose, ref, shallowRef } from 'vue'
 import * as THREE from 'three'
 import type { MallBuilderEngine } from '@/engine/mall-builder/MallBuilderEngine'
 import type { MallProject, FloorDefinition, AreaDefinition, MaterialPreset } from '@/builder'
@@ -18,7 +18,7 @@ import {
   isVerticalConnectionAreaType,
 } from '@/builder'
 
-export type Tool = 'select' | 'pan' | 'draw-rect' | 'draw-poly' | 'draw-outline' | 'edit-vertex' | 'place-door'
+type DrawingTool = 'select' | 'pan' | 'draw-rect' | 'draw-poly' | 'draw-outline' | 'edit-vertex' | 'place-door'
 
 export interface DrawingState {
   isDrawing: boolean
@@ -31,7 +31,7 @@ export function useDrawing(
   gridSize: () => number,
   snapEnabled: () => boolean
 ) {
-  const currentTool = ref<Tool>('pan')
+  const currentTool = ref<DrawingTool>('pan')
   const isDrawing = ref(false)
   const drawPoints = ref<{ x: number; y: number }[]>([])
   const previewMesh = shallowRef<THREE.Mesh | null>(null)
@@ -39,11 +39,23 @@ export function useDrawing(
   // 警告信息
   const boundaryWarning = ref<string | null>(null)
   const overlappingAreas = ref<string[]>([])
+  let boundaryWarningTimer: ReturnType<typeof setTimeout> | null = null
+
+  function clearBoundaryWarningTimer() {
+    if (boundaryWarningTimer !== null) {
+      clearTimeout(boundaryWarningTimer)
+      boundaryWarningTimer = null
+    }
+  }
+
+  onScopeDispose(() => {
+    clearBoundaryWarningTimer()
+  })
 
   /**
    * 设置当前工具
    */
-  function setTool(tool: Tool) {
+  function setTool(tool: DrawingTool) {
     if (isDrawing.value) cancelDraw()
     currentTool.value = tool
   }
@@ -226,6 +238,14 @@ export function useDrawing(
     // 检测重叠
     checkOverlaps(newArea, currentFloor)
 
+    // 楼梯/扶梯禁止与任何区域重叠；任何区域也禁止覆盖楼梯/扶梯（跨楼层拦截）
+    const forbiddenOverlap = findForbiddenOverlapWithTransitArea(newArea, project)
+    if (forbiddenOverlap) {
+      showWarning(`楼梯/扶梯区域禁止重叠：与「${forbiddenOverlap.area.name}（${forbiddenOverlap.floorName}）」冲突`)
+      cancelDraw()
+      return
+    }
+
     currentFloor.areas.push(newArea)
     cancelDraw()
     onAreaCreated(newArea)
@@ -296,6 +316,14 @@ export function useDrawing(
 
     checkOverlaps(newArea, currentFloor)
 
+    // 楼梯/扶梯禁止与任何区域重叠；任何区域也禁止覆盖楼梯/扶梯（跨楼层拦截）
+    const forbiddenOverlap = findForbiddenOverlapWithTransitArea(newArea, project)
+    if (forbiddenOverlap) {
+      showWarning(`楼梯/扶梯区域禁止重叠：与「${forbiddenOverlap.area.name}（${forbiddenOverlap.floorName}）」冲突`)
+      cancelDraw()
+      return
+    }
+
     currentFloor.areas.push(newArea)
     cancelDraw()
     onAreaCreated(newArea)
@@ -333,8 +361,41 @@ export function useDrawing(
    * 显示警告
    */
   function showWarning(message: string) {
+    clearBoundaryWarningTimer()
     boundaryWarning.value = message
-    setTimeout(() => { boundaryWarning.value = null }, 3000)
+    boundaryWarningTimer = setTimeout(() => {
+      boundaryWarning.value = null
+      boundaryWarningTimer = null
+    }, 3000)
+  }
+
+  function isRestrictedTransitAreaType(areaType: string): boolean {
+    return areaType === 'stairs' || areaType === 'escalator'
+  }
+
+  /**
+   * 查找“与楼梯/扶梯相关”的非法重叠（跨楼层）
+   * 规则：
+   * 1) 新区域是楼梯/扶梯 -> 不能与任何区域重叠
+   * 2) 新区域是其他类型 -> 不能与已有楼梯/扶梯重叠
+   */
+  function findForbiddenOverlapWithTransitArea(
+    newArea: AreaDefinition,
+    project: MallProject,
+  ): { area: AreaDefinition; floorName: string } | null {
+    const newIsRestricted = isRestrictedTransitAreaType(String(newArea.type))
+
+    for (const floor of project.floors) {
+      for (const area of floor.areas) {
+        const existingIsRestricted = isRestrictedTransitAreaType(String(area.type))
+        if (!newIsRestricted && !existingIsRestricted) continue
+        if (doPolygonsOverlap(newArea.shape, area.shape)) {
+          return { area, floorName: floor.name }
+        }
+      }
+    }
+
+    return null
   }
 
   /**

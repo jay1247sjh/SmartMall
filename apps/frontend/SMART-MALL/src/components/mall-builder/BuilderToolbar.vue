@@ -41,7 +41,7 @@
 // ============================================================================
 
 /** 绘制工具类型 */
-export type DrawingTool = 'select' | 'pan' | 'draw-rect' | 'draw-poly' | 'draw-outline' | 'place-door'
+export type DrawingTool = 'select' | 'pan' | 'draw-rect' | 'draw-poly' | 'draw-outline' | 'edit-vertex' | 'place-door'
 
 /** 工具按钮配置 */
 interface ToolButtonConfig {

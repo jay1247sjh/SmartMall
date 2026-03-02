@@ -54,6 +54,7 @@
     "mallManage": "Center-Verwaltung",
     "mallBuilder": "Center-Builder",
     "areaApproval": "Bereichsgenehmigung",
+    "layoutReview": "Layout-Prüfung",
     "versionManage": "Versionsverwaltung",
     "userManage": "Kontoverwaltung",
     "workspace": "Arbeitsbereich",
@@ -112,7 +113,7 @@
     "sidebar": {
       "title": "KI-Assistent",
       "placeholder": "Nachricht eingeben...",
-      "thinking": "KI denkt nach...",
+      "thinking": "Thinking...",
       "stopped": "Antwort gestoppt.",
       "pendingImage": "Ausstehendes Bild",
       "errorApiKey": "KI-Dienst Konfigurationsfehler, bitte Administrator kontaktieren",
@@ -235,6 +236,77 @@
       "featureDataAnalysis": "Echtzeit-Datenanalyse, um jede Geschäftsmöglichkeit zu erfassen",
       "featureDragEdit": "Drag-and-Drop Shop-Bearbeitung mit WYSIWYG-Raumdesign",
       "featureMultiDevice": "Multi-Geräte-Zusammenarbeit, jederzeit und überall die Kontrolle behalten"
+    }
+  },
+  "admin": {
+    "storeManagePage": {
+      "title": "Shop-Prüfungsverwaltung",
+      "hero": {
+        "descAll": "Alle Shops einsehen und Freigaben sowie Schließungen schnell bearbeiten.",
+        "descPending": "Fokus auf ausstehende Shops zur Freigabebearbeitung.",
+        "descActive": "Aktive Shops anzeigen, um den Betriebsstatus zu verfolgen.",
+        "descInactive": "Pausierte Shops anzeigen, um die Wiederaufnahme zu prüfen.",
+        "descClosed": "Geschlossene Shops anzeigen, um den Verlauf nachzuvollziehen.",
+        "statsAll": "Shops",
+        "statsPending": "ausstehend",
+        "statsActive": "aktiv",
+        "statsInactive": "pausiert",
+        "statsClosed": "geschlossen",
+        "categorySegment": "Kategorie \"{category}\"",
+        "keywordSegment": "Suchbegriff \"{keyword}\"",
+        "segmentSeparator": ", ",
+        "descWithFilters": "{description} Aktuelle Filter: {filters}."
+      },
+      "filters": {
+        "allStatus": "Alle Status",
+        "statusPending": "Ausstehend",
+        "statusActive": "Aktiv",
+        "statusInactive": "Pausiert",
+        "statusClosed": "Geschlossen",
+        "allCategory": "Alle Kategorien",
+        "keywordPlaceholder": "Shop-Name suchen...",
+        "reset": "Zurücksetzen",
+        "search": "Suchen",
+        "total": "{total} Shops"
+      },
+      "category": {
+        "catering": "Gastronomie",
+        "retail": "Einzelhandel",
+        "clothing": "Bekleidung",
+        "entertainment": "Unterhaltung",
+        "service": "Service",
+        "other": "Sonstige"
+      },
+      "closePanel": {
+        "title": "Shop \"{name}\" schließen",
+        "desc": "Diese Aktion setzt den Shop-Status auf geschlossen. Bitte geben Sie vor dem Bestätigen einen Grund an.",
+        "reasonPlaceholder": "Schließungsgrund eingeben",
+        "reasonRequired": "Bitte einen Schließungsgrund eingeben",
+        "processing": "Wird verarbeitet...",
+        "confirm": "Schließen bestätigen",
+        "cancel": "Abbrechen"
+      },
+      "table": {
+        "loading": "Lädt...",
+        "empty": "Keine Shop-Daten",
+        "storeName": "Shop-Name",
+        "merchant": "Händler",
+        "location": "Standort",
+        "category": "Kategorie",
+        "status": "Status",
+        "createdAt": "Erstellt am",
+        "actions": "Aktionen",
+        "approve": "Freigeben",
+        "close": "Schließen",
+        "closed": "Geschlossen"
+      },
+      "message": {
+        "loadDataFailed": "Daten konnten nicht geladen werden",
+        "approveSuccess": "Shop freigegeben",
+        "approveFailed": "Freigabe fehlgeschlagen",
+        "closeSuccess": "Shop \"{name}\" wurde geschlossen",
+        "closeFailed": "Schließen fehlgeschlagen"
+      }
     }
   }
 }

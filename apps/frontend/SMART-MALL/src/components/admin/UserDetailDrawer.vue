@@ -86,12 +86,12 @@ function formatDateTime(dateStr?: string): string {
 }
 
 // 获取用户类型标签类型
-function getUserTypeTagType(userType: string): '' | 'success' | 'warning' | 'info' | 'danger' {
+function getUserTypeTagType(userType: string): 'success' | 'warning' | 'info' | 'primary' | 'danger' {
   switch (userType) {
     case 'ADMIN': return 'danger'
     case 'MERCHANT': return 'warning'
     case 'USER': return 'info'
-    default: return ''
+    default: return 'info'
   }
 }
 
@@ -106,12 +106,12 @@ function getUserTypeLabel(userType: string): string {
 }
 
 // 获取状态标签类型
-function getStatusTagType(status: string): '' | 'success' | 'warning' | 'info' | 'danger' {
+function getStatusTagType(status: string): 'success' | 'warning' | 'info' | 'primary' | 'danger' {
   switch (status) {
     case 'ACTIVE': return 'success'
     case 'FROZEN': return 'warning'
     case 'DELETED': return 'danger'
-    default: return ''
+    default: return 'info'
   }
 }
 

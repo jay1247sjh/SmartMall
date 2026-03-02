@@ -10,6 +10,22 @@
 export type VerticalConnectionType = 'elevator' | 'escalator' | 'stairs'
 
 /**
+ * 垂直连通通道配置
+ */
+export interface VerticalPassageProfile {
+  /**
+   * 上行方向角（建模平面，度）
+   * 0 度表示 +X 方向，90 度表示 +Y 方向
+   */
+  ascendAngleDeg: number
+  /**
+   * 通道内缩比例，避免锚点贴边导致碰撞抖动
+   * 取值范围 [0, 0.45]
+   */
+  lanePadding: number
+}
+
+/**
  * 垂直连接
  */
 export interface VerticalConnection {
@@ -21,6 +37,8 @@ export interface VerticalConnection {
   type: VerticalConnectionType
   /** 连接的楼层 ID 列表 */
   connectedFloors: string[]
+  /** 通道剖面配置（楼梯/扶梯推荐配置） */
+  passageProfile?: VerticalPassageProfile
   /** 创建时间 */
   createdAt: number
 }
@@ -49,6 +67,8 @@ export interface CreateConnectionParams {
   type: VerticalConnectionType
   /** 连接的楼层 ID 列表 */
   floorIds: string[]
+  /** 连通通道配置（可选） */
+  passageProfile?: Partial<VerticalPassageProfile>
 }
 
 /**

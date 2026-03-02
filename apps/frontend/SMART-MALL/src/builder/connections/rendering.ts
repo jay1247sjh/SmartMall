@@ -9,7 +9,6 @@ import type { VerticalConnection, ConnectionRenderOptions } from './types'
 import { getConnectionTypeColor } from './vertical'
 import type { Point2D } from '@smart-mall/shared-types'
 import { getCentroid } from '../geometry/polygon'
-import type { Polygon } from '../geometry/types'
 
 /**
  * 默认渲染选项

@@ -19,6 +19,7 @@ import { CameraController, OrbitController, createPerspectiveCamera, type ThirdP
 import { PostProcessingPipeline, type PostProcessingOptions } from './effects/PostProcessingPipeline'
 import { EnvironmentManager } from './environment/EnvironmentManager'
 import { RaycasterManager } from './interaction'
+import { devLog } from '@/utils/dev-log'
 
 // ============================================================================
 // 类型定义
@@ -864,7 +865,7 @@ export class ThreeEngine {
     // 清空回调列表
     this.onRenderCallbacks = []
     
-    console.log('[ThreeEngine] Disposed successfully')
+    devLog('[ThreeEngine] Disposed successfully')
   }
 
   /**

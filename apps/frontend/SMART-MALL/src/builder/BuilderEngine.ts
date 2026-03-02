@@ -19,11 +19,12 @@ import type { MallProject, AreaDefinition, FloorDefinition, AreaType } from './t
 import { ProjectManager } from './managers/ProjectManager'
 import { ToolManager } from './managers/ToolManager'
 import { HistoryManager } from './managers/HistoryManager'
-import { ConfigurationError, ValidationError, ImportExportError, ErrorCode } from './core/errors'
+import { ConfigurationError, ValidationError, ImportExportError } from './core/errors'
 import { OptionsValidator, validateProjectStructure } from './core/validators'
 import { PerformanceMonitor } from './core/performance'
 import { exportProject, importProject } from './io/project-io'
 import { getAllMaterialPresets, type MaterialPreset } from './materials'
+import { devLog } from '@/utils/dev-log'
 
 // ============================================================================
 // 类型定义
@@ -268,7 +269,7 @@ export class BuilderEngine {
     // 添加网格辅助线
     this.threeEngine.addGridHelper(100, 100)
 
-    console.log('[BuilderEngine] Initialized successfully')
+    devLog('[BuilderEngine] Initialized successfully')
   }
 
   // ==========================================================================
@@ -295,7 +296,7 @@ export class BuilderEngine {
     this.threeEngine.start()
     this.isStarted = true
 
-    console.log('[BuilderEngine] Started')
+    devLog('[BuilderEngine] Started')
   }
 
   /**
@@ -312,7 +313,7 @@ export class BuilderEngine {
     this.threeEngine.stop()
     this.isStarted = false
 
-    console.log('[BuilderEngine] Stopped')
+    devLog('[BuilderEngine] Stopped')
   }
 
   /**
@@ -339,7 +340,7 @@ export class BuilderEngine {
 
     this.isDisposed = true
 
-    console.log('[BuilderEngine] Disposed successfully')
+    devLog('[BuilderEngine] Disposed successfully')
   }
 
   // ==========================================================================
@@ -441,7 +442,7 @@ export class BuilderEngine {
       }
       
       this.loadProject(result.project!)
-      console.log('[BuilderEngine] Project imported successfully')
+      devLog('[BuilderEngine] Project imported successfully')
     })
   }
 
@@ -570,11 +571,19 @@ export class BuilderEngine {
    */
   public updateArea(areaId: string, updates: Partial<AreaDefinition>, floorId?: string): void {
     const { project, floor, index } = this.getTargetArea(areaId, floorId)
+    const currentArea = floor.areas[index]
+    if (!currentArea) {
+      throw new ValidationError('Area not found', { areaId })
+    }
+
+    const sanitizedUpdates = Object.fromEntries(
+      Object.entries(updates).filter(([, value]) => value !== undefined),
+    ) as Partial<AreaDefinition>
 
     // 更新区域属性
     floor.areas[index] = {
-      ...floor.areas[index],
-      ...updates,
+      ...currentArea,
+      ...sanitizedUpdates,
       id: areaId, // 确保 ID 不被覆盖
     }
 
@@ -927,10 +936,19 @@ export class BuilderEngine {
       throw new ValidationError('Floor not found', { floorId })
     }
 
+    const currentFloor = project.floors[index]
+    if (!currentFloor) {
+      throw new ValidationError('Floor not found', { floorId })
+    }
+
+    const sanitizedUpdates = Object.fromEntries(
+      Object.entries(updates).filter(([, value]) => value !== undefined),
+    ) as Partial<FloorDefinition>
+
     // 更新楼层属性
     project.floors[index] = {
-      ...project.floors[index],
-      ...updates,
+      ...currentFloor,
+      ...sanitizedUpdates,
       id: floorId, // 确保 ID 不被覆盖
     }
 
@@ -1326,7 +1344,7 @@ export class BuilderEngine {
    */
   public enablePerformanceMonitoring(enabled: boolean = true): void {
     this.performanceMonitor.updateConfig({ enabled })
-    console.log(`[BuilderEngine] Performance monitoring ${enabled ? 'enabled' : 'disabled'}`)
+    devLog(`[BuilderEngine] Performance monitoring ${enabled ? 'enabled' : 'disabled'}`)
   }
 
   /**
@@ -1362,7 +1380,7 @@ export class BuilderEngine {
    */
   public clearPerformanceRecords(): void {
     this.performanceMonitor.clear()
-    console.log('[BuilderEngine] Performance records cleared')
+    devLog('[BuilderEngine] Performance records cleared')
   }
 
   // ==========================================================================
@@ -1410,7 +1428,11 @@ export class BuilderEngine {
     if (index === -1) {
       throw new ValidationError('Area not found', { areaId })
     }
-    return { project, floor, area: floor.areas[index], index }
+    const area = floor.areas[index]
+    if (!area) {
+      throw new ValidationError('Area not found', { areaId })
+    }
+    return { project, floor, area, index }
   }
 
   /**

@@ -1,16 +1,19 @@
-import { defineStore } from 'pinia'
-import { ref } from 'vue'
 import type {
   NavigationRouteData,
   NavigationTargetData,
   NavigationTargetType,
 } from '@/api/mall-manage.api'
+import { defineStore } from 'pinia'
+import { ref } from 'vue'
 
 export type NavigationExecutionMode = 'none' | 'auto' | 'camera'
+export type NavigationExecutionPreference = 'auto' | 'manual'
 
 export interface BuilderNavigationIntent {
+  intentId: string
   targetType: NavigationTargetType
   targetKeyword: string
+  executionPreference: NavigationExecutionPreference
   source?: 'ai-tool' | 'manual'
   rawArgs?: Record<string, unknown>
   rawResult?: Record<string, unknown>
@@ -30,9 +33,14 @@ export const useBuilderNavigationStore = defineStore('builderNavigation', () => 
   const executionMode = ref<NavigationExecutionMode>('none')
   const isAutoNavigating = ref(false)
   const errorState = ref<BuilderNavigationErrorState | null>(null)
+  const activeTargetKeyword = ref<string | null>(null)
 
   const currentFloorId = ref<string | null>(null)
-  const currentPosition = ref<{ x: number; y: number; z: number } | null>(null)
+  const currentPosition = ref<{
+    x: number
+    y: number
+    z: number
+  } | null>(null)
 
   function setPendingIntent(intent: BuilderNavigationIntent) {
     pendingIntent.value = intent
@@ -52,6 +60,7 @@ export const useBuilderNavigationStore = defineStore('builderNavigation', () => 
   function clearActivePlan() {
     activeRoute.value = null
     activeTarget.value = null
+    activeTargetKeyword.value = null
     warnings.value = []
     executionMode.value = 'none'
     isAutoNavigating.value = false
@@ -75,7 +84,11 @@ export const useBuilderNavigationStore = defineStore('builderNavigation', () => 
 
   function updateContext(payload: {
     floorId?: string | null
-    position?: { x: number; y: number; z: number } | null
+    position?: {
+      x: number
+      y: number
+      z: number
+    } | null
   }) {
     if (payload.floorId !== undefined) {
       currentFloorId.value = payload.floorId
@@ -83,6 +96,10 @@ export const useBuilderNavigationStore = defineStore('builderNavigation', () => 
     if (payload.position !== undefined) {
       currentPosition.value = payload.position
     }
+  }
+
+  function setActiveTargetKeyword(keyword: string | null) {
+    activeTargetKeyword.value = keyword && keyword.trim() ? keyword.trim() : null
   }
 
   return {
@@ -93,6 +110,7 @@ export const useBuilderNavigationStore = defineStore('builderNavigation', () => 
     executionMode,
     isAutoNavigating,
     errorState,
+    activeTargetKeyword,
     currentFloorId,
     currentPosition,
     setPendingIntent,
@@ -104,5 +122,6 @@ export const useBuilderNavigationStore = defineStore('builderNavigation', () => 
     setError,
     clearError,
     updateContext,
+    setActiveTargetKeyword,
   }
 })

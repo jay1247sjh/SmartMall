@@ -54,6 +54,7 @@
     "mallManage": "Gestión del centro",
     "mallBuilder": "Constructor del centro",
     "areaApproval": "Aprobación de zonas",
+    "layoutReview": "Revisión de diseño",
     "versionManage": "Gestión de versiones",
     "userManage": "Gestión de cuentas",
     "workspace": "Espacio de trabajo",
@@ -112,7 +113,7 @@
     "sidebar": {
       "title": "Asistente IA",
       "placeholder": "Escribe un mensaje...",
-      "thinking": "IA está pensando...",
+      "thinking": "Thinking...",
       "stopped": "Respuesta detenida.",
       "pendingImage": "Imagen pendiente",
       "errorApiKey": "Error de configuración del servicio IA, contacte al administrador",
@@ -235,6 +236,77 @@
       "featureDataAnalysis": "Análisis de datos en tiempo real para captar cada oportunidad de negocio",
       "featureDragEdit": "Edición de tiendas con arrastrar y soltar, diseño espacial WYSIWYG",
       "featureMultiDevice": "Colaboración multidispositivo, mantenga el control en cualquier momento y lugar"
+    }
+  },
+  "admin": {
+    "storeManagePage": {
+      "title": "Gestión de revisión de tiendas",
+      "hero": {
+        "descAll": "Revise todas las tiendas y gestione rápidamente aprobaciones y cierres.",
+        "descPending": "Enfoque en tiendas pendientes para procesar aprobaciones.",
+        "descActive": "Visualizando tiendas activas para seguir su operación.",
+        "descInactive": "Visualizando tiendas pausadas para revisar su recuperación.",
+        "descClosed": "Visualizando tiendas cerradas para revisar el historial.",
+        "statsAll": "tiendas",
+        "statsPending": "pendientes",
+        "statsActive": "activas",
+        "statsInactive": "pausadas",
+        "statsClosed": "cerradas",
+        "categorySegment": "Categoría \"{category}\"",
+        "keywordSegment": "Palabra clave \"{keyword}\"",
+        "segmentSeparator": ", ",
+        "descWithFilters": "{description} Filtros actuales: {filters}."
+      },
+      "filters": {
+        "allStatus": "Todos los estados",
+        "statusPending": "Pendiente",
+        "statusActive": "Activa",
+        "statusInactive": "Pausada",
+        "statusClosed": "Cerrada",
+        "allCategory": "Todas las categorías",
+        "keywordPlaceholder": "Buscar nombre de tienda...",
+        "reset": "Restablecer",
+        "search": "Buscar",
+        "total": "{total} tiendas"
+      },
+      "category": {
+        "catering": "Restauración",
+        "retail": "Comercio",
+        "clothing": "Ropa",
+        "entertainment": "Entretenimiento",
+        "service": "Servicios",
+        "other": "Otros"
+      },
+      "closePanel": {
+        "title": "Cerrar tienda \"{name}\"",
+        "desc": "Esta acción cambiará el estado de la tienda a cerrada. Ingrese un motivo antes de confirmar.",
+        "reasonPlaceholder": "Ingrese motivo de cierre",
+        "reasonRequired": "Ingrese un motivo de cierre",
+        "processing": "Procesando...",
+        "confirm": "Confirmar cierre",
+        "cancel": "Cancelar"
+      },
+      "table": {
+        "loading": "Cargando...",
+        "empty": "No hay datos de tiendas",
+        "storeName": "Nombre de tienda",
+        "merchant": "Comerciante",
+        "location": "Ubicación",
+        "category": "Categoría",
+        "status": "Estado",
+        "createdAt": "Fecha de creación",
+        "actions": "Acciones",
+        "approve": "Aprobar",
+        "close": "Cerrar",
+        "closed": "Cerrada"
+      },
+      "message": {
+        "loadDataFailed": "Error al cargar datos",
+        "approveSuccess": "Tienda aprobada",
+        "approveFailed": "Error de aprobación",
+        "closeSuccess": "La tienda \"{name}\" ha sido cerrada",
+        "closeFailed": "Error al cerrar la tienda"
+      }
     }
   }
 }

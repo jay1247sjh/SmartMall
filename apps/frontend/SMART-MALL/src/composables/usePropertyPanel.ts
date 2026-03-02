@@ -6,7 +6,7 @@
  */
 import { ref, type Ref } from 'vue'
 import type { AreaDefinition, AreaType } from '@/builder'
-import { getAreaTypeColor } from '@/builder'
+import { AREA_TYPE_COLORS, AreaType as SharedAreaTypeEnum } from '@smart-mall/shared-types'
 
 export function usePropertyPanel(
   selectedArea: Ref<AreaDefinition | null>,
@@ -41,7 +41,7 @@ export function usePropertyPanel(
     if (areaIndex === -1) return
     
     currentFloor.value.areas[areaIndex].type = type
-    currentFloor.value.areas[areaIndex].color = getAreaTypeColor(type)
+    currentFloor.value.areas[areaIndex].color = AREA_TYPE_COLORS[type as SharedAreaTypeEnum] ?? '#6b7280'
     
     if (onUpdate) {
       onUpdate()

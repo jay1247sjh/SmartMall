@@ -11,13 +11,11 @@ import type {
   TemplateType, 
   OutlineParams,
   MallProject,
-  FloorDefinition,
 } from '../types'
 import { 
   createEmptyProject, 
   createDefaultFloor,
 } from '../factories'
-import { generateId } from '../utils'
 
 // ============================================================================
 // 模板定义
@@ -353,6 +351,7 @@ export function validateOutline(outline: Polygon): { valid: boolean; errors: str
     for (let j = i + 1; j < outline.vertices.length; j++) {
       const vi = outline.vertices[i]
       const vj = outline.vertices[j]
+      if (!vi || !vj) continue
       if (Math.abs(vi.x - vj.x) < 0.001 && Math.abs(vi.y - vj.y) < 0.001) {
         errors.push(`顶点 ${i} 和 ${j} 重复`)
       }

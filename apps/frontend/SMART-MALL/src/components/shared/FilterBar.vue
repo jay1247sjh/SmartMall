@@ -10,7 +10,7 @@ defineProps<{
 </script>
 
 <template>
-  <header class="filter-bar">
+  <div class="filter-bar" role="toolbar" aria-label="筛选工具栏">
     <div class="filter-group">
       <slot />
     </div>
@@ -20,7 +20,7 @@ defineProps<{
         共 {{ total }} {{ totalLabel || '条记录' }}
       </div>
     </div>
-  </header>
+  </div>
 </template>
 
 <style scoped lang="scss">

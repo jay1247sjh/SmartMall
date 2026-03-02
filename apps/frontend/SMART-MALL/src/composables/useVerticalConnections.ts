@@ -4,7 +4,7 @@
  * 职责：
  * - 电梯、扶梯、楼梯的楼层连接管理
  */
-import { ref, computed, type Ref } from 'vue'
+import { computed, onScopeDispose, ref, type Ref } from 'vue'
 import * as THREE from 'three'
 import type { MallProject, AreaDefinition, VerticalConnection } from '@/builder'
 import {
@@ -28,6 +28,27 @@ export function useVerticalConnections(
   const pendingConnectionArea = ref<AreaDefinition | null>(null)
   const selectedFloorIds = ref<string[]>([])
   const boundaryWarning = ref<string | null>(null)
+  let boundaryWarningTimer: ReturnType<typeof setTimeout> | null = null
+
+  function clearBoundaryWarningTimer() {
+    if (boundaryWarningTimer !== null) {
+      clearTimeout(boundaryWarningTimer)
+      boundaryWarningTimer = null
+    }
+  }
+
+  function showBoundaryWarning(message: string) {
+    clearBoundaryWarningTimer()
+    boundaryWarning.value = message
+    boundaryWarningTimer = setTimeout(() => {
+      boundaryWarning.value = null
+      boundaryWarningTimer = null
+    }, 3000)
+  }
+
+  onScopeDispose(() => {
+    clearBoundaryWarningTimer()
+  })
 
   // 计算属性
   const canConfirmConnection = computed(() => {
@@ -41,7 +62,10 @@ export function useVerticalConnections(
         return floor?.level || 0
       })
       if (levels.length === 2) {
-        const diff = Math.abs(levels[0] - levels[1])
+        const firstLevel = levels[0]
+        const secondLevel = levels[1]
+        if (firstLevel === undefined || secondLevel === undefined) return false
+        const diff = Math.abs(firstLevel - secondLevel)
         if (diff !== 1) return false
       }
     }
@@ -83,7 +107,20 @@ export function useVerticalConnections(
       floorIds: selectedFloorIds.value,
     })
 
-    verticalConnections.value.push(connection)
+    const existing = verticalConnections.value.find(item => item.areaId === connection.areaId)
+    if (existing) {
+      verticalConnections.value = verticalConnections.value.filter(
+        item => item.areaId !== connection.areaId
+      )
+      const updated: VerticalConnection = {
+        ...connection,
+        id: existing.id,
+        createdAt: existing.createdAt,
+      }
+      verticalConnections.value.push(updated)
+    } else {
+      verticalConnections.value.push(connection)
+    }
     
     renderConnectionIndicators()
     
@@ -118,14 +155,12 @@ export function useVerticalConnections(
         
         const isAdjacent = selectedFloorLevels.some(level => Math.abs(level - newLevel) === 1)
         if (!isAdjacent) {
-          boundaryWarning.value = '楼梯只能连接相邻楼层'
-          setTimeout(() => { boundaryWarning.value = null }, 3000)
+          showBoundaryWarning('楼梯只能连接相邻楼层')
           return
         }
         
         if (selectedFloorIds.value.length >= 2) {
-          boundaryWarning.value = '楼梯最多只能连接两个相邻楼层'
-          setTimeout(() => { boundaryWarning.value = null }, 3000)
+          showBoundaryWarning('楼梯最多只能连接两个相邻楼层')
           return
         }
       }

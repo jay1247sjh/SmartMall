@@ -70,6 +70,7 @@ export const componentMap: Record<string, (() => Promise<Component>) | Component
   'AdminAreaPermission': () => import('@/views/admin/AreaPermissionManageView.vue'),
   'AdminStoreManage': () => import('@/views/admin/AdminStoreManageView.vue'),
   'AdminLayoutVersion': () => import('@/views/admin/LayoutVersionView.vue'),
+  'AdminLayoutReview': () => import('@/views/admin/LayoutReviewView.vue'),
   // MallBuilderView 使用异步组件优化（1277 行，包含 Three.js）
   'AdminMallBuilder': AsyncMallBuilderView,
   'AdminUserManage': () => import('@/views/admin/UserManageView.vue'),

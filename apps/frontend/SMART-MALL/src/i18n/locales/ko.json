@@ -54,6 +54,7 @@
     "mallManage": "몰 관리",
     "mallBuilder": "몰 빌더",
     "areaApproval": "구역 승인",
+    "layoutReview": "모델링 심사",
     "versionManage": "버전 관리",
     "userManage": "계정 관리",
     "workspace": "워크스페이스",
@@ -112,7 +113,7 @@
     "sidebar": {
       "title": "AI 어시스턴트",
       "placeholder": "메시지를 입력하세요...",
-      "thinking": "AI가 생각 중...",
+      "thinking": "Thinking...",
       "stopped": "응답이 중지되었습니다.",
       "pendingImage": "전송 대기 이미지",
       "errorApiKey": "AI 서비스 설정 오류입니다. 관리자에게 문의하세요",
@@ -235,6 +236,77 @@
       "featureDataAnalysis": "실시간 데이터 분석으로 모든 비즈니스 기회 포착",
       "featureDragEdit": "드래그 앤 드롭 매장 편집, 위지윅 공간 디자인",
       "featureMultiDevice": "멀티 디바이스 협업, 언제 어디서나 전체 관리"
+    }
+  },
+  "admin": {
+    "storeManagePage": {
+      "title": "매장 심사 관리",
+      "hero": {
+        "descAll": "모든 매장을 한곳에서 확인하고 심사 및 폐점 처리를 빠르게 진행합니다.",
+        "descPending": "심사 대기 매장에 집중하여 승인 작업을 처리합니다.",
+        "descActive": "영업 중 매장을 확인해 운영 상태를 추적합니다.",
+        "descInactive": "영업 중지 매장을 확인해 재개 상황을 파악합니다.",
+        "descClosed": "폐점된 매장을 확인해 처리 이력을 점검합니다.",
+        "statsAll": "개 매장",
+        "statsPending": "개 심사 대기",
+        "statsActive": "개 영업 중",
+        "statsInactive": "개 영업 중지",
+        "statsClosed": "개 폐점",
+        "categorySegment": "카테고리 \"{category}\"",
+        "keywordSegment": "키워드 \"{keyword}\"",
+        "segmentSeparator": ", ",
+        "descWithFilters": "{description} 현재 {filters} 조건이 적용되었습니다."
+      },
+      "filters": {
+        "allStatus": "전체 상태",
+        "statusPending": "심사 대기",
+        "statusActive": "영업 중",
+        "statusInactive": "영업 중지",
+        "statusClosed": "폐점",
+        "allCategory": "전체 카테고리",
+        "keywordPlaceholder": "매장명 검색...",
+        "reset": "초기화",
+        "search": "검색",
+        "total": "총 {total}개 매장"
+      },
+      "category": {
+        "catering": "요식업",
+        "retail": "소매",
+        "clothing": "의류",
+        "entertainment": "엔터테인먼트",
+        "service": "서비스",
+        "other": "기타"
+      },
+      "closePanel": {
+        "title": "매장 \"{name}\" 폐점",
+        "desc": "이 작업을 수행하면 매장 상태가 폐점으로 변경됩니다. 사유를 입력한 뒤 확인하세요.",
+        "reasonPlaceholder": "폐점 사유를 입력하세요",
+        "reasonRequired": "폐점 사유를 입력하세요",
+        "processing": "처리 중...",
+        "confirm": "폐점 확인",
+        "cancel": "취소"
+      },
+      "table": {
+        "loading": "로딩 중...",
+        "empty": "매장 데이터가 없습니다",
+        "storeName": "매장명",
+        "merchant": "상인",
+        "location": "위치",
+        "category": "카테고리",
+        "status": "상태",
+        "createdAt": "생성일",
+        "actions": "작업",
+        "approve": "승인",
+        "close": "폐점",
+        "closed": "폐점됨"
+      },
+      "message": {
+        "loadDataFailed": "데이터를 불러오지 못했습니다",
+        "approveSuccess": "매장 승인이 완료되었습니다",
+        "approveFailed": "승인에 실패했습니다",
+        "closeSuccess": "매장 \"{name}\"이(가) 폐점되었습니다",
+        "closeFailed": "폐점 처리에 실패했습니다"
+      }
     }
   }
 }

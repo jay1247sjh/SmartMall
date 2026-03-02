@@ -12,6 +12,8 @@ interface Props {
   closable?: boolean
   teleportTo?: string
   transitionName?: string
+  overlayClass?: string
+  boxClass?: string
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -19,6 +21,8 @@ const props = withDefaults(defineProps<Props>(), {
   closable: true,
   teleportTo: 'body',
   transitionName: '',
+  overlayClass: '',
+  boxClass: '',
 })
 
 const emit = defineEmits<{
@@ -66,10 +70,10 @@ onBeforeUnmount(() => {
     <Transition v-if="transitionName" :name="transitionName">
       <div
         v-if="visible"
-        class="dialog-overlay"
+        :class="['dialog-overlay', overlayClass]"
         @click="handleOverlayClick"
       >
-        <div class="dialog-box" :style="{ width }">
+        <div :class="['dialog-box', boxClass]" :style="{ width }">
           <div class="dialog-header">
             <h3>{{ title }}</h3>
             <button v-if="closable" class="dialog-close" @click="closeDialog">×</button>
@@ -88,10 +92,10 @@ onBeforeUnmount(() => {
 
     <div
       v-else-if="visible"
-      class="dialog-overlay"
+      :class="['dialog-overlay', overlayClass]"
       @click="handleOverlayClick"
     >
-      <div class="dialog-box" :style="{ width }">
+      <div :class="['dialog-box', boxClass]" :style="{ width }">
         <div class="dialog-header">
           <h3>{{ title }}</h3>
           <button v-if="closable" class="dialog-close" @click="closeDialog">×</button>

@@ -56,6 +56,10 @@ export interface NavigationOptions {
   lookAt?: THREE.Vector3
 }
 
+type ResolvedNavigationOptions = Omit<Required<NavigationOptions>, 'lookAt'> & {
+  lookAt?: THREE.Vector3
+}
+
 /** 导航结果 */
 export interface NavigationResult {
   /** 是否成功 */
@@ -90,7 +94,7 @@ export class NavigationBehavior {
   // ===========================================================================
 
   /** 默认导航配置 */
-  private static readonly DEFAULT_OPTIONS: Required<NavigationOptions> = {
+  private static readonly DEFAULT_OPTIONS: ResolvedNavigationOptions = {
     duration: 1000,
     distance: 15,
     heightOffset: 8,
@@ -285,7 +289,7 @@ export class NavigationBehavior {
    */
   private calculateCameraPosition(
     mesh: THREE.Object3D,
-    config: Required<NavigationOptions>
+    config: ResolvedNavigationOptions
   ): THREE.Vector3 {
     const center = this.getMeshCenter(mesh)
 

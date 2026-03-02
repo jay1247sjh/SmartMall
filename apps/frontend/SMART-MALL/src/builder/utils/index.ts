@@ -10,5 +10,3 @@ export * from './id-generator'
 // 克隆工具
 export * from './clone'
 
-// 已弃用函数（向后兼容）
-export * from './deprecated'

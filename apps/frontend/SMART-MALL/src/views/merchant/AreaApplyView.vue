@@ -15,7 +15,7 @@
  */
 import { ref, computed, onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { DataTable, Modal, MessageAlert, StatusBadge } from '@/components'
+import { DataTable, Modal, MessageAlert } from '@/components'
 import { areaPermissionApi } from '@/api'
 import type { AvailableAreaDTO, AreaApplyDTO } from '@/api/area-permission.api'
 import { useMessage, useFormatters } from '@/composables'
@@ -145,7 +145,10 @@ async function submitApplication() {
     // 更新区域状态
     const areaIndex = availableAreas.value.findIndex(a => a.areaId === selectedArea.value!.areaId)
     if (areaIndex !== -1) {
-      availableAreas.value[areaIndex].status = 'LOCKED'
+      const targetArea = availableAreas.value[areaIndex]
+      if (targetArea) {
+        targetArea.status = 'LOCKED'
+      }
     }
     
     showApplyModal.value = false
@@ -251,7 +254,7 @@ onMounted(() => {
             <span class="reason-text">{{ value || '-' }}</span>
           </template>
           <template #createdAt="{ value }">
-            {{ formatDate(value, 'datetime') }}
+            {{ formatDate(value) }}
           </template>
         </DataTable>
       </div>
@@ -342,35 +345,70 @@ onMounted(() => {
 .table-card {
   @include card-base;
   overflow: hidden;
+
+  :deep(.data-table) {
+    --el-table-bg-color: rgba(var(--bg-secondary-rgb), 0.9);
+    --el-table-tr-bg-color: rgba(var(--bg-secondary-rgb), 0.74);
+    --el-table-header-bg-color: rgba(var(--bg-secondary-rgb), 0.95);
+    --el-table-text-color: var(--text-primary);
+    --el-table-header-text-color: var(--text-secondary);
+    --el-table-border-color: var(--border-subtle);
+    --el-table-row-hover-bg-color: rgba(var(--accent-primary-rgb), 0.1);
+    --el-table-current-row-bg-color: rgba(var(--accent-primary-rgb), 0.12);
+    --el-table-striped-bg-color: rgba(var(--bg-tertiary-rgb), 0.82);
+    --el-fill-color-light: rgba(var(--bg-tertiary-rgb), 0.66);
+    --el-fill-color-lighter: rgba(var(--accent-primary-rgb), 0.1);
+  }
+
+  :deep(.data-table .el-table__header-wrapper th.el-table__cell) {
+    border-bottom-color: var(--border-subtle);
+  }
+
+  :deep(.data-table .el-table__body tr.el-table__row td.el-table__cell) {
+    border-bottom-color: var(--border-subtle);
+    transition: background-color $duration-normal;
+  }
+
+  :deep(.data-table .el-table__body tr.el-table__row:hover td.el-table__cell) {
+    background: rgba(var(--accent-primary-rgb), 0.1);
+  }
 }
 
 // 状态徽章
 .status-badge {
   @include status-badge;
+  border: 1px solid transparent;
+  letter-spacing: 0.01em;
 }
 
 .status-available {
-  @include status-variant(var(--accent-muted), var(--accent-primary));
+  @include status-variant(rgba(var(--accent-primary-rgb), 0.18), var(--accent-primary));
+  border-color: rgba(var(--accent-primary-rgb), 0.36);
 }
 
 .status-locked {
-  @include status-variant(rgba(var(--warning-rgb), 0.15), var(--warning));
+  @include status-variant(rgba(var(--warning-rgb), 0.18), var(--warning));
+  border-color: rgba(var(--warning-rgb), 0.34);
 }
 
 .status-occupied {
-  @include status-variant(rgba(var(--text-muted-rgb), 0.15), var(--text-muted));
+  @include status-variant(rgba(var(--text-muted-rgb), 0.16), var(--text-secondary));
+  border-color: rgba(var(--text-muted-rgb), 0.32);
 }
 
 .status-pending {
-  @include status-variant(rgba(var(--warning-rgb), 0.15), var(--warning));
+  @include status-variant(rgba(var(--warning-rgb), 0.18), var(--warning));
+  border-color: rgba(var(--warning-rgb), 0.34);
 }
 
 .status-approved {
-  @include status-variant(rgba(var(--success-rgb), 0.15), var(--success));
+  @include status-variant(rgba(var(--success-rgb), 0.18), var(--success));
+  border-color: rgba(var(--success-rgb), 0.34);
 }
 
 .status-rejected {
-  @include status-variant(rgba(var(--error-rgb), 0.15), var(--error));
+  @include status-variant(rgba(var(--error-rgb), 0.18), var(--error));
+  border-color: rgba(var(--error-rgb), 0.34);
 }
 
 .status-cell {
@@ -399,8 +437,15 @@ onMounted(() => {
   @include btn-action;
 
   &.apply {
-    background: rgba(var(--accent-primary-rgb), 0.2);
+    background: rgba(var(--accent-primary-rgb), 0.16);
+    border: 1px solid rgba(var(--accent-primary-rgb), 0.32);
     color: var(--accent-primary);
+
+    &:hover {
+      background: rgba(var(--accent-primary-rgb), 0.24);
+      border-color: rgba(var(--accent-primary-rgb), 0.44);
+      color: var(--accent-primary);
+    }
   }
 }
 

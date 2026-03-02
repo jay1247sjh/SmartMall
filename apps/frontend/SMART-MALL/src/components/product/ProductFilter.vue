@@ -137,7 +137,7 @@ function getStoreLabel(store: StoreDTO): string {
 
     <template #actions>
       <button
-        class="btn btn-primary"
+        class="btn btn-primary create-btn"
         :disabled="!canCreate"
         :title="canCreate ? '添加商品' : '仅营业中的店铺可新增商品'"
         @click="handleCreate"
@@ -160,7 +160,7 @@ function getStoreLabel(store: StoreDTO): string {
   }
 
   :deep(.filter-right) {
-    gap: $space-5;
+    gap: $space-4;
   }
 
   :deep(.custom-select) {
@@ -172,7 +172,10 @@ function getStoreLabel(store: StoreDTO): string {
 .btn {
   @include btn-base;
 
-  min-width: 112px;
+  min-width: 98px;
+  height: 34px;
+  padding: $space-1 + 2 $space-3 + 2;
+  font-size: $font-size-sm + 1;
   white-space: nowrap;
   box-shadow: 0 6px 14px rgba(var(--accent-primary-rgb), 0.22);
 
@@ -192,5 +195,9 @@ function getStoreLabel(store: StoreDTO): string {
     transform: translateY(-1px);
     box-shadow: 0 10px 18px rgba(var(--accent-primary-rgb), 0.3);
   }
+}
+
+.create-btn {
+  margin: 0 $space-2;
 }
 </style>

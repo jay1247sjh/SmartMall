@@ -64,7 +64,7 @@ const applications = ref<AreaApplication[]>([])
 const quickActions = computed(() => [
   { title: t('dashboard.enterMall'), description: t('dashboard.enterMallDesc'), path: '/merchant/mall-preview' },
   { title: t('merchant.storeConfig'), description: t('merchant.storeConfigDesc'), path: '/merchant/store-config' },
-  { title: t('merchant.areaApply'), description: t('merchant.areaApplyDesc'), path: '/merchant/area-apply' },
+  { title: t('nav.areaApply'), description: t('merchant.areaApplyDesc'), path: '/merchant/area-apply' },
   { title: t('merchant.storeDecoration'), description: t('merchant.storeDecorationDesc'), path: '/merchant/builder' },
   { title: t('merchant.dataAnalysis'), description: t('merchant.dataAnalysisDesc'), path: '/merchant/analytics' },
 ])

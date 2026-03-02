@@ -26,6 +26,8 @@
  * ```
  */
 
+import { devLog } from '@/utils/dev-log'
+
 /**
  * 性能监控配置
  */
@@ -215,7 +217,7 @@ export class PerformanceMonitor {
     if (this.config.logToConsole) {
       const color = duration > 100 ? '\x1b[31m' : duration > 50 ? '\x1b[33m' : '\x1b[32m'
       const reset = '\x1b[0m'
-      console.log(`${color}[Performance]${reset} ${operation}: ${duration.toFixed(2)}ms`)
+      devLog(`${color}[Performance]${reset} ${operation}: ${duration.toFixed(2)}ms`)
     }
   }
   

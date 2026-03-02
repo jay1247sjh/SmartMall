@@ -8,9 +8,9 @@
  * - 展示商家已获得的区域权限列表
  * - 显示权限详情（区域名称、楼层、授权时间）
  * - 显示权限状态
- * - 在区域状态为 AUTHORIZED 时显示「AI 生成布局」按钮
+ * - 在区域状态为 AUTHORIZED / OCCUPIED 时显示「AI 生成布局」按钮
  * - 集成 AILayoutDialog 进行 AI 布局生成
- * - 生成成功后调用 applyLayout 并更新区域状态
+ * - 生成成功后提交建模提案（进入管理员审核）
  *
  * 用户角色：
  * - 仅商家（MERCHANT）可访问
@@ -22,7 +22,7 @@ import { areaPermissionApi } from '@/api'
 import type { AreaPermissionDTO } from '@/api/area-permission.api'
 import { merchantApi } from '@/api/merchant.api'
 import type { StoreLayoutData } from '@/api/merchant.api'
-import { useMessage, useFormatters, useStatusConfig } from '@/composables'
+import { useMessage, useFormatters } from '@/composables'
 import AILayoutDialog from './AILayoutDialog.vue'
 
 // i18n
@@ -31,7 +31,6 @@ const { t } = useI18n()
 // Composables
 const { message, showMessage, clearMessage } = useMessage()
 const { formatDate } = useFormatters()
-const { getStatusConfig } = useStatusConfig()
 
 // ============================================================================
 // State
@@ -82,10 +81,10 @@ async function loadData() {
 
 /**
  * 判断区域是否可以使用 AI 生成布局
- * 仅当权限为 ACTIVE 且区域状态为 AUTHORIZED 时可用
+ * 仅当权限为 ACTIVE 且区域状态为 AUTHORIZED / OCCUPIED 时可用
  */
 function canGenerateLayout(row: AreaPermissionDTO): boolean {
-  return row.status === 'ACTIVE' && row.areaStatus === 'AUTHORIZED'
+  return row.status === 'ACTIVE' && (row.areaStatus === 'AUTHORIZED' || row.areaStatus === 'OCCUPIED')
 }
 
 function getAreaStatusText(status: string | null): string {
@@ -127,7 +126,7 @@ function handleLayoutGenerated(data: StoreLayoutData) {
 
 /**
  * 确认应用布局
- * 调用 applyLayout 持久化并更新区域状态为 OCCUPIED
+ * 提交建模提案，等待管理员审核
  */
 async function confirmApplyLayout() {
   if (!selectedPermission.value || !pendingLayout.value) return
@@ -138,15 +137,7 @@ async function confirmApplyLayout() {
   try {
     await merchantApi.applyLayout(selectedPermission.value.areaId, pendingLayout.value)
 
-    // 更新本地区域状态
-    const idx = permissions.value.findIndex(
-      p => p.permissionId === selectedPermission.value!.permissionId,
-    )
-    if (idx !== -1) {
-      permissions.value[idx].areaStatus = 'OCCUPIED'
-    }
-
-    showMessage('success', t('merchant.areaPermission.layoutApplied'))
+    showMessage('success', '布局提案已提交，等待管理员审核')
   } catch (e: any) {
     if (e.response?.status === 403) {
       showMessage('error', t('merchant.areaPermission.noPermission'))
@@ -215,7 +206,7 @@ onMounted(() => {
           </span>
         </template>
         <template #grantedAt="{ value }">
-          {{ formatDate(value, 'full') }}
+          {{ formatDate(value) }}
         </template>
         <template #actions="{ row }">
           <button
