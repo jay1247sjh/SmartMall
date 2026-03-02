@@ -1,33 +1,33 @@
-# System Landscape
+# 系统全景
 
 ```mermaid
 graph TB
-    User["User / Browser"]
+    User["用户 / 浏览器"]
 
-    subgraph FE["Frontend App\napps/frontend/SMART-MALL"]
-      FE_UI["Vue Views + Components"]
-      FE_API["API Layer\nsrc/api/*"]
-      FE_ROUTER["Router + Guards\nsrc/router/*"]
-      FE_STORE["Pinia Stores\nsrc/stores/*"]
-      FE_3D["Three.js Engine\nsrc/engine + src/builder"]
+    subgraph FE["前端应用\napps/frontend/SMART-MALL"]
+      FE_UI["Vue 页面与组件"]
+      FE_API["API 层\nsrc/api/*"]
+      FE_ROUTER["路由与守卫\nsrc/router/*"]
+      FE_STORE["Pinia 状态仓库\nsrc/stores/*"]
+      FE_3D["Three.js 引擎\nsrc/engine + src/builder"]
     end
 
-    subgraph BE["Backend Service\napps/backend/SMART-MALL"]
-      BE_CTRL["Controllers\ninterfaces/controller"]
-      BE_SVC["Application Services\napplication/service"]
-      BE_SEC["Security\nSecurityConfig + JWT"]
+    subgraph BE["后端服务\napps/backend/SMART-MALL"]
+      BE_CTRL["控制器\ninterfaces/controller"]
+      BE_SVC["应用服务\napplication/service"]
+      BE_SEC["安全层\nSecurityConfig + JWT"]
       BE_MAP["MyBatis Mappers\ninfrastructure/mapper"]
     end
 
-    subgraph IA["Intelligence Service\napps/intelligence/SMART-MALL"]
-      IA_API["FastAPI Routers\napp/api/*"]
-      IA_AGENT["Agent + Tools\napp/core/agent/*"]
+    subgraph IA["智能服务\napps/intelligence/SMART-MALL"]
+      IA_API["FastAPI 路由\napp/api/*"]
+      IA_AGENT["Agent 与工具\napp/core/agent/*"]
       IA_RAG["RAG\napp/core/rag/*"]
       IA_SYNC["Sync\napp/core/sync/*"]
       IA_MEM["Memory\napp/core/memory/*"]
     end
 
-    subgraph INFRA["Infrastructure\ninfra/docker-compose.yml"]
+    subgraph INFRA["基础设施\ninfra/docker-compose.yml"]
       PG["PostgreSQL:5433"]
       REDIS["Redis:6379"]
       MILVUS["Milvus:19530"]

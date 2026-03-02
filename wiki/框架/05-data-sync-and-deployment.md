@@ -1,26 +1,26 @@
-# Data, Sync, And Deployment Architecture
+# 数据同步与部署架构
 
 ```mermaid
 graph LR
-    subgraph JAVA["Backend"]
-      BIZ["Store/Product/Review/Area Services"]
+    subgraph JAVA["后端服务"]
+      BIZ["店铺/商品/评价/区域 服务"]
       PUB["RagSyncEventPublisher"]
     end
 
-    subgraph REDIS["Redis Streams"]
+    subgraph REDIS["Redis Stream"]
       STREAM["smartmall:sync:events"]
       RETRY["smartmall:sync:retry"]
       DLQ["smartmall:sync:dead_letter"]
     end
 
-    subgraph PY["Intelligence Sync"]
+    subgraph PY["智能服务同步模块"]
       CONSUMER["SyncService Consumer"]
       CHECKER["ConsistencyChecker"]
       METRICS["/metrics + /api/sync/status"]
     end
 
-    subgraph VECTOR["Vector Layer"]
-      MILVUS["Milvus Collections\nstores/products/locations"]
+    subgraph VECTOR["向量层"]
+      MILVUS["Milvus 集合\nstores/products/locations"]
       ATTU["Attu"]
     end
 
@@ -38,7 +38,7 @@ graph LR
 
 ```mermaid
 graph TB
-    subgraph DEPLOY["Docker Compose"]
+    subgraph DEPLOY["Docker Compose 部署"]
       PG["postgres:15-alpine\n5433->5432"]
       REDIS["redis:7-alpine\n6379"]
       ETCD["etcd"]
@@ -54,8 +54,8 @@ graph TB
 
 ```mermaid
 flowchart LR
-    FE["Frontend"] -->|"/api/*"| BE["Backend"]
-    FE -->|"/intelligence-api/*"| IA["Intelligence"]
+    FE["前端"] -->|"/api/*"| BE["后端"]
+    FE -->|"/intelligence-api/*"| IA["智能服务"]
     BE --> PG["PostgreSQL"]
     BE --> R["Redis"]
     IA --> PG

@@ -1,13 +1,13 @@
-# Intelligence Architecture
+# 智能服务架构
 
 ```mermaid
 graph TB
-    subgraph ENTRY["FastAPI Entry"]
+    subgraph ENTRY["FastAPI 入口"]
       MAIN["app/main.py"]
-      LIFE["lifespan startup/shutdown"]
+      LIFE["lifespan 启停流程"]
     end
 
-    subgraph API["Routers"]
+    subgraph API["路由层"]
       CHAT["api/chat.py"]
       STREAM["api/chat_stream.py"]
       VOICE["api/voice_ws.py"]
@@ -18,7 +18,7 @@ graph TB
       HEALTH["api/health.py"]
     end
 
-    subgraph CORE["Core Modules"]
+    subgraph CORE["核心模块"]
       AGENT["core/agent/*"]
       RAG["core/rag/*"]
       MEM["core/memory/*"]
@@ -28,7 +28,7 @@ graph TB
       CFG["core/config.py"]
     end
 
-    subgraph STORAGE["Storage"]
+    subgraph STORAGE["存储层"]
       PG[(PostgreSQL)]
       REDIS[(Redis)]
       MILVUS[(Milvus)]
@@ -58,10 +58,10 @@ graph TB
 
 ```mermaid
 flowchart LR
-    Start["Startup"] --> InitRedis["Init Redis Pool"]
-    InitRedis --> InitBus["Init EventBus Group"]
-    InitBus --> InitRag["Init RAG Service"]
-    InitRag --> StartScanner["Start SessionScanner"]
-    StartScanner --> StartConsumer["Start Sync Consumer"]
-    StartConsumer --> Running["Service Running\n(degraded if partial failures)"]
+    Start["启动"] --> InitRedis["初始化 Redis 连接池"]
+    InitRedis --> InitBus["初始化 EventBus 消费组"]
+    InitBus --> InitRag["初始化 RAG 服务"]
+    InitRag --> StartScanner["启动 SessionScanner"]
+    StartScanner --> StartConsumer["启动同步消费者"]
+    StartConsumer --> Running["服务运行中\n(部分失败时降级)"]
 ```
