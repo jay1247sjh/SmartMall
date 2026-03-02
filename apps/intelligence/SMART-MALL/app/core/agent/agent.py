@@ -97,8 +97,7 @@ class SmartMallAgentFactory:
          "Final Answer: 最终回复\n\n"
          "工具名称列表：{tool_names}"),
         MessagesPlaceholder("chat_history", optional=True),
-        ("human", "{input}"),
-        MessagesPlaceholder("agent_scratchpad"),
+        ("human", "{input}\n\nThought:{agent_scratchpad}"),
     ])
 
     @classmethod

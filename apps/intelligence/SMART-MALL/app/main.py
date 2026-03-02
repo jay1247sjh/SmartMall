@@ -33,6 +33,7 @@ from app.api.mall_generator import router as mall_generator_router
 from app.api.mall_describe import router as mall_describe_router
 from app.api.floors import router as floors_router
 from app.api.sync import router as sync_router, metrics_router
+from app.api.voice_ws import router as voice_ws_router
 from app.core.config import settings
 from app.core.redis_pool import RedisPoolFactory
 from app.core.sync.event_bus import EventBus
@@ -201,6 +202,7 @@ app.include_router(mall_describe_router, prefix="/api", tags=["Mall Describe"])
 app.include_router(floors_router, prefix="/api", tags=["Floors"])
 app.include_router(sync_router, tags=["Sync"])
 app.include_router(metrics_router, tags=["Metrics"])
+app.include_router(voice_ws_router, prefix="/api", tags=["Voice"])
 
 
 @app.get("/")

@@ -14,6 +14,7 @@
 |------|------|------|
 | 🗣️ 自然语言对话 | 理解用户意图，生成自然回复 | ✅ |
 | 📡 SSE 流式对话 | 逐 token 推送，实时响应 | ✅ |
+| 🎙️ 全双工语音会话 | WebSocket 语音输入/回复，支持打断 | ✅ |
 | 🔧 Function Calling | 调用工具完成导航、搜索、购物等任务 | ✅ |
 | 👁️ 视觉理解 | 识别图片内容，推荐相似商品/美食 | ✅ |
 | 🛡️ 安全防护 | 提示词注入检测、敏感内容过滤 | ✅ |
@@ -118,6 +119,7 @@ intelligence/SMART-MALL/
 │   ├── api/                        # API 路由层
 │   │   ├── chat.py                 # 对话接口（非流式）
 │   │   ├── chat_stream.py          # SSE 流式对话接口
+│   │   ├── voice_ws.py             # 语音 WebSocket 接口
 │   │   ├── mall_generator.py       # 商城布局生成 API
 │   │   ├── mall_describe.py        # 商城描述多轮对话 API
 │   │   ├── store_layout_generator.py # 店铺布局生成 API
@@ -130,6 +132,7 @@ intelligence/SMART-MALL/
 │   │   ├── config.py               # 配置中心（pydantic-settings）
 │   │   ├── prompt_loader.py        # YAML 提示词加载器
 │   │   ├── llm_provider.py         # LLM 提供商工厂（含 fallback 链）
+│   │   ├── speech/                 # 语音 Provider 抽象层
 │   │   ├── embedding_provider.py   # Embedding 提供商
 │   │   ├── errors.py               # 统一错误解析
 │   │   ├── degradation_handler.py  # LLM 降级日志回调
@@ -164,6 +167,7 @@ intelligence/SMART-MALL/
 │   ├── services/                   # 业务服务层
 │   │   ├── mall_generation_service.py  # 商城生成服务（Config/Parser/Engine 四层）
 │   │   └── store_layout_service.py     # 店铺布局 LLM 生成服务
+│   │   └── realtime_voice_service.py   # 实时语音编排服务
 │   ├── schemas/                    # Pydantic 数据模型
 │   │   ├── base.py                 # 基础 Schema
 │   │   ├── rag.py                  # RAG API Schema
@@ -367,6 +371,7 @@ LLM 生成（mall_generation.yaml 提示词）
 |------|------|------|
 | POST | `/api/chat` | 非流式对话（支持文本 + 图片） |
 | POST | `/api/chat/stream` | SSE 流式对话 |
+| WS | `/api/voice/ws` | 全双工语音会话（ASR + LLM + TTS） |
 
 ### 商城生成
 

@@ -287,7 +287,77 @@ FOR EACH ROW EXECUTE FUNCTION increment_version();
 
 
 -- ============================================================================
--- 8. 店铺表
+-- 8. 区域建模提案表
+-- ============================================================================
+
+CREATE TABLE IF NOT EXISTS layout_proposal (
+    proposal_id      VARCHAR(32) PRIMARY KEY,
+    area_id          VARCHAR(32) NOT NULL,
+    merchant_id      VARCHAR(32) NOT NULL,
+    status           VARCHAR(30) NOT NULL DEFAULT 'DRAFT',
+    layout_data      JSONB NOT NULL,
+    submit_note      TEXT,
+    reviewed_by      VARCHAR(32),
+    reviewed_at      TIMESTAMP,
+    reject_reason    TEXT,
+    version          INTEGER DEFAULT 0,
+    created_at       TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at       TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    is_deleted       BOOLEAN NOT NULL DEFAULT FALSE
+);
+
+CREATE INDEX IF NOT EXISTS idx_layout_proposal_area ON layout_proposal(area_id);
+CREATE INDEX IF NOT EXISTS idx_layout_proposal_merchant ON layout_proposal(merchant_id);
+CREATE INDEX IF NOT EXISTS idx_layout_proposal_status ON layout_proposal(status);
+CREATE INDEX IF NOT EXISTS idx_layout_proposal_deleted ON layout_proposal(is_deleted);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_layout_proposal_unique_active
+    ON layout_proposal(area_id, merchant_id) WHERE is_deleted = FALSE;
+
+-- 触发器
+DROP TRIGGER IF EXISTS trigger_layout_proposal_update_time ON layout_proposal;
+CREATE TRIGGER trigger_layout_proposal_update_time
+BEFORE UPDATE ON layout_proposal
+FOR EACH ROW EXECUTE FUNCTION update_timestamp();
+
+DROP TRIGGER IF EXISTS trigger_layout_proposal_version ON layout_proposal;
+CREATE TRIGGER trigger_layout_proposal_version
+BEFORE UPDATE ON layout_proposal
+FOR EACH ROW EXECUTE FUNCTION increment_version();
+
+
+-- ============================================================================
+-- 9. 导航动态事件表
+-- ============================================================================
+
+CREATE TABLE IF NOT EXISTS navigation_dynamic_event (
+    event_id VARCHAR(32) PRIMARY KEY,
+    project_id VARCHAR(32) NOT NULL,
+    event_type VARCHAR(16) NOT NULL,
+    scope_type VARCHAR(16) NOT NULL,
+    scope_id VARCHAR(64) NOT NULL,
+    severity VARCHAR(16),
+    cost_multiplier NUMERIC(6,3),
+    starts_at TIMESTAMP NOT NULL,
+    ends_at TIMESTAMP,
+    status VARCHAR(16) NOT NULL DEFAULT 'ACTIVE',
+    reason VARCHAR(255),
+    created_by VARCHAR(32) NOT NULL,
+    version INTEGER DEFAULT 0,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    is_deleted BOOLEAN NOT NULL DEFAULT FALSE
+);
+
+CREATE INDEX IF NOT EXISTS idx_nav_event_project_status
+    ON navigation_dynamic_event(project_id, status, is_deleted);
+CREATE INDEX IF NOT EXISTS idx_nav_event_scope
+    ON navigation_dynamic_event(scope_type, scope_id, status, is_deleted);
+CREATE INDEX IF NOT EXISTS idx_nav_event_time
+    ON navigation_dynamic_event(starts_at, ends_at, status);
+
+
+-- ============================================================================
+-- 10. 店铺表
 -- ============================================================================
 
 CREATE TABLE IF NOT EXISTS store (
